@@ -1,1 +1,15 @@
-
+{
+  "levels": [],
+  "ministries": [],
+  "locations": [],
+  "regions": [],
+  "organisation_types": [],
+  "deputation_types": [],
+  "mode_of_application": [],
+  "quick_filter_counts": {
+    "closing7": 0,
+    "closingToday": 0,
+    "delhiNcr": 0,
+    "onlineOnly": 0
+  }
+}
