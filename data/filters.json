@@ -1,15 +1,154 @@
 {
-  "levels": [],
-  "ministries": [],
-  "locations": [],
-  "regions": [],
-  "organisation_types": [],
-  "deputation_types": [],
-  "mode_of_application": [],
+  "levels": [
+    {
+      "value": "Level 10",
+      "count": 4
+    },
+    {
+      "value": "Level 13",
+      "count": 4
+    },
+    {
+      "value": "Level 14",
+      "count": 1
+    },
+    {
+      "value": "Level 8",
+      "count": 3
+    }
+  ],
+  "ministries": [
+    {
+      "value": "Ministry of Defence",
+      "count": 1,
+      "min_code": "MOD"
+    },
+    {
+      "value": "Ministry of Education",
+      "count": 1,
+      "min_code": "MOE"
+    },
+    {
+      "value": "Ministry of Electronics and IT",
+      "count": 7,
+      "min_code": "MEITY"
+    },
+    {
+      "value": "Ministry of Finance",
+      "count": 1,
+      "min_code": "MOF"
+    },
+    {
+      "value": "Ministry of Health",
+      "count": 1,
+      "min_code": "MOHFW"
+    },
+    {
+      "value": "Ministry of Home Affairs",
+      "count": 1,
+      "min_code": "MHA"
+    }
+  ],
+  "locations": [
+    {
+      "value": "Bengaluru, Karnataka",
+      "count": 4,
+      "state": "Karnataka",
+      "region": "South"
+    },
+    {
+      "value": "Bhopal, Madhya Pradesh",
+      "count": 1,
+      "state": "Madhya Pradesh",
+      "region": "Central"
+    },
+    {
+      "value": "Guwahati, Assam",
+      "count": 1,
+      "state": "Assam",
+      "region": "East"
+    },
+    {
+      "value": "Hyderabad, Telangana",
+      "count": 1,
+      "state": "Telangana",
+      "region": "South"
+    },
+    {
+      "value": "Lucknow, Uttar Pradesh",
+      "count": 1,
+      "state": "Uttar Pradesh",
+      "region": "North"
+    },
+    {
+      "value": "Mumbai, Maharashtra",
+      "count": 1,
+      "state": "Maharashtra",
+      "region": "West"
+    },
+    {
+      "value": "New Delhi, Delhi",
+      "count": 3,
+      "state": "Delhi",
+      "region": "North"
+    }
+  ],
+  "regions": [
+    {
+      "value": "Central",
+      "count": 1
+    },
+    {
+      "value": "East",
+      "count": 1
+    },
+    {
+      "value": "North",
+      "count": 4
+    },
+    {
+      "value": "South",
+      "count": 5
+    },
+    {
+      "value": "West",
+      "count": 1
+    }
+  ],
+  "organisation_types": [
+    {
+      "value": "Autonomous",
+      "count": 2
+    },
+    {
+      "value": "Government",
+      "count": 10
+    }
+  ],
+  "deputation_types": [
+    {
+      "value": "Standard",
+      "count": 12
+    }
+  ],
+  "mode_of_application": [
+    {
+      "value": "Online",
+      "count": 9
+    },
+    {
+      "value": "Online/Physical",
+      "count": 1
+    },
+    {
+      "value": "Physical",
+      "count": 2
+    }
+  ],
   "quick_filter_counts": {
-    "closing7": 0,
-    "closingToday": 0,
-    "delhiNcr": 0,
-    "onlineOnly": 0
+    "closing7": 3,
+    "closingToday": 2,
+    "delhiNcr": 3,
+    "onlineOnly": 9
   }
 }

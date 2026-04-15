@@ -1,5 +1,12 @@
 {
   "schema_version": "1.0.0",
-  "generated_at_utc": null,
-  "record_count_total": 0
+  "generated_at_utc": "2026-04-15T19:55:09.945171Z",
+  "source_type": "google_sheet_csv",
+  "source_url_present": true,
+  "record_count_total": 53,
+  "record_count_approved": 12,
+  "record_count_draft": 41,
+  "record_count_active": 11,
+  "record_count_inactive": 1,
+  "record_count_review_flagged": 2
 }

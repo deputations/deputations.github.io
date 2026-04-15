@@ -1,21 +1,113 @@
 {
   "kpis": {
-    "total_vacancies": 0,
-    "active": 0,
-    "closing_soon": 0,
-    "ministries": 0,
-    "locations": 0,
-    "online_applications": 0
+    "total_vacancies": 12,
+    "active": 11,
+    "closing_soon": 3,
+    "ministries": 6,
+    "locations": 7,
+    "online_applications": 9
   },
-  "level_distribution": [],
-  "region_distribution": [],
-  "top_ministries": [],
-  "top_locations": [],
+  "level_distribution": [
+    {
+      "level": 8,
+      "count": 3
+    },
+    {
+      "level": 10,
+      "count": 4
+    },
+    {
+      "level": 13,
+      "count": 4
+    },
+    {
+      "level": 14,
+      "count": 1
+    }
+  ],
+  "region_distribution": [
+    {
+      "region": "Central",
+      "count": 1
+    },
+    {
+      "region": "East",
+      "count": 1
+    },
+    {
+      "region": "North",
+      "count": 4
+    },
+    {
+      "region": "South",
+      "count": 5
+    },
+    {
+      "region": "West",
+      "count": 1
+    }
+  ],
+  "top_ministries": [
+    {
+      "ministry": "Ministry of Electronics and IT",
+      "count": 7
+    },
+    {
+      "ministry": "Ministry of Finance",
+      "count": 1
+    },
+    {
+      "ministry": "Ministry of Home Affairs",
+      "count": 1
+    },
+    {
+      "ministry": "Ministry of Defence",
+      "count": 1
+    },
+    {
+      "ministry": "Ministry of Health",
+      "count": 1
+    },
+    {
+      "ministry": "Ministry of Education",
+      "count": 1
+    }
+  ],
+  "top_locations": [
+    {
+      "location": "Bengaluru, Karnataka",
+      "count": 4
+    },
+    {
+      "location": "New Delhi, Delhi",
+      "count": 3
+    },
+    {
+      "location": "Mumbai, Maharashtra",
+      "count": 1
+    },
+    {
+      "location": "Hyderabad, Telangana",
+      "count": 1
+    },
+    {
+      "location": "Bhopal, Madhya Pradesh",
+      "count": 1
+    },
+    {
+      "location": "Lucknow, Uttar Pradesh",
+      "count": 1
+    },
+    {
+      "location": "Guwahati, Assam",
+      "count": 1
+    }
+  ],
   "deadline_buckets": {
-    "today": 0,
-    "within_3_days": 0,
-    "within_7_days": 0,
-    "within_15_days": 0,
-    "after_15_days": 0
+    "today": 2,
+    "within_3_days": 2,
+    "within_7_days": 3,
+    "within_15_days": 3,
+    "after_15_days": 8
   }
 }
