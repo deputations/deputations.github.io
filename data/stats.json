@@ -1,1 +1,21 @@
-
+{
+  "kpis": {
+    "total_vacancies": 0,
+    "active": 0,
+    "closing_soon": 0,
+    "ministries": 0,
+    "locations": 0,
+    "online_applications": 0
+  },
+  "level_distribution": [],
+  "region_distribution": [],
+  "top_ministries": [],
+  "top_locations": [],
+  "deadline_buckets": {
+    "today": 0,
+    "within_3_days": 0,
+    "within_7_days": 0,
+    "within_15_days": 0,
+    "after_15_days": 0
+  }
+}
