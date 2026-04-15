@@ -1,1 +1,17 @@
-[]
+[
+  {
+    "Vacancy_ID": "TEST001",
+    "Post_Name": "Deputy Director",
+    "Ministry": "Ministry of Finance",
+    "Department_Organisation": "CBDT",
+    "Level_Text": "Level 11",
+    "Location_City": "New Delhi",
+    "Location_State": "Delhi",
+    "Req_Level1": "11",
+    "Req_Level2": "10",
+    "Days_Left": "10",
+    "Status": "Active",
+    "Official_Notification_Link": "",
+    "Application_Form_Link": ""
+  }
+]
