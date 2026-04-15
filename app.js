@@ -61,12 +61,13 @@ document.addEventListener('DOMContentLoaded', () => {
     updateWatchlistUI();
     setLoadingUI();
 
-    Papa.parse(CSV_URL, {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete(results) {
-            rawData = results.data.filter(row => safe(row.Vacancy_ID));
+    loadDataFromJSON();
+
+function loadDataFromJSON() {
+    fetch('data/vacancies.json')
+        .then(res => res.json())
+        .then(data => {
+            rawData = data;
 
             reconcileWatchlistWithData();
             populateFilters();
@@ -76,17 +77,18 @@ document.addEventListener('DOMContentLoaded', () => {
             applyMobileDefaultView();
             renderDashboard();
             lucide.createIcons();
-        },
-        error(err) {
-            console.error('❌ CSV load failed:', err);
+
+            console.log('✅ Loaded', rawData.length, 'vacancies (JSON)');
+        })
+        .catch(err => {
+            console.error('❌ JSON load failed:', err);
             dataContainer.innerHTML = `
                 <div class="empty-state">
-                    Failed to load data. Please check the Google Sheet URL or network access.
+                    Failed to load data.
                 </div>
             `;
-            resultsCount.textContent = 'Failed to load';
-        }
-    });
+        });
+}
 
     function initializeEnhancements() {
         createSearchDatalist();
