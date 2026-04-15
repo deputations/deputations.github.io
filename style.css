@@ -43,6 +43,41 @@ body {
     overflow-x: hidden;
 }
 
+/* =========================
+   TOP NAVIGATION BAR
+   ========================= */
+
+.top-nav {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    padding: 10px 0 16px 0;
+    flex-wrap: wrap;
+}
+
+.top-nav a {
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+/* hover effect */
+.top-nav a:hover {
+    color: var(--primary-color);
+    background: rgba(34, 211, 238, 0.08);
+}
+
+/* active page (optional later) */
+.top-nav a.active {
+    color: var(--primary-color);
+    background: rgba(34, 211, 238, 0.12);
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.2);
+}
+
 /* BACKGROUND BLOBS */
 .bg-shapes {
     position: fixed;
