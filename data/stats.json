@@ -1,8 +1,8 @@
 {
   "kpis": {
     "total_vacancies": 12,
-    "active": 11,
-    "closing_soon": 3,
+    "active": 9,
+    "closing_soon": 1,
     "ministries": 6,
     "locations": 7,
     "online_applications": 9
@@ -104,10 +104,10 @@
     }
   ],
   "deadline_buckets": {
-    "today": 2,
-    "within_3_days": 2,
-    "within_7_days": 3,
-    "within_15_days": 3,
-    "after_15_days": 8
+    "today": 0,
+    "within_3_days": 0,
+    "within_7_days": 1,
+    "within_15_days": 7,
+    "after_15_days": 2
   }
 }
