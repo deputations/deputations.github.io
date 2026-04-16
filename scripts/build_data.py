@@ -1,5 +1,6 @@
 import json
 import os
+from io import StringIO
 from pathlib import Path
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -50,6 +51,10 @@ def safe_str(value) -> str:
     return str(value).strip()
 
 
+def normalize_whitespace(text: str) -> str:
+    return " ".join(safe_str(text).split())
+
+
 def safe_int(value):
     text = safe_str(value)
     if not text:
@@ -58,26 +63,6 @@ def safe_int(value):
         return int(float(text))
     except Exception:
         return None
-
-
-def safe_bool(value) -> bool:
-    text = safe_str(value).lower()
-    return text in {"true", "yes", "y", "1"}
-
-
-def normalize_whitespace(text: str) -> str:
-    return " ".join(safe_str(text).split())
-
-
-def normalize_text_for_search(text: str) -> str:
-    text = normalize_whitespace(text).lower()
-    cleaned = []
-    for ch in text:
-        if ch.isalnum() or ch.isspace():
-            cleaned.append(ch)
-        else:
-            cleaned.append(" ")
-    return " ".join("".join(cleaned).split())
 
 
 def parse_date(value):
@@ -95,15 +80,15 @@ def to_iso(date_obj):
     return date_obj.isoformat() if date_obj else None
 
 
-def is_valid_url(url: str) -> bool:
-    url = safe_str(url)
-    if not url:
-        return False
-    try:
-        parsed = urlparse(url)
-        return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
-    except Exception:
-        return False
+def normalize_text_for_search(text: str) -> str:
+    text = normalize_whitespace(text).lower()
+    cleaned = []
+    for ch in text:
+        if ch.isalnum() or ch.isspace():
+            cleaned.append(ch)
+        else:
+            cleaned.append(" ")
+    return " ".join("".join(cleaned).split())
 
 
 def normalize_url(url: str) -> str:
@@ -117,18 +102,28 @@ def normalize_url(url: str) -> str:
     return url
 
 
-def split_keywords(value):
+def is_valid_url(url: str) -> bool:
+    url = safe_str(url)
+    if not url:
+        return False
+    try:
+        parsed = urlparse(url)
+        return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+    except Exception:
+        return False
+
+
+def split_keywords_text(value: str) -> str:
+    """
+    Keep a normalized string for frontend compatibility.
+    """
     text = safe_str(value)
     if not text:
-        return []
-    raw_parts = []
-    for sep in ["|", ";", ",", "/"]:
-        if sep in text:
-            raw_parts = [p.strip() for p in text.replace("/", ",").replace(";", ",").replace("|", ",").split(",")]
-            break
-    if not raw_parts:
-        raw_parts = [text]
-    return [p for p in raw_parts if p]
+        return ""
+    for sep in ["|", ";", "/"]:
+        text = text.replace(sep, ",")
+    parts = [p.strip() for p in text.split(",") if p.strip()]
+    return ", ".join(parts)
 
 
 def compute_delhi_ncr(city: str, state: str, location_label: str) -> bool:
@@ -166,19 +161,19 @@ def build_eligibility_rules(req1, exp1, req2, exp2):
 def compute_completeness_score(record):
     score = 100
 
-    if not record["official_notification_link"]:
+    if not record["Official_Notification_Link"]:
         score -= 20
-    if not record["application_form_link"]:
+    if not record["Application_Form_Link"]:
         score -= 10
-    if not record["last_date_to_apply"]:
+    if not record["Last_Date_To_Apply"]:
         score -= 20
-    if not record["location_label"]:
+    if not record["Location_Label"]:
         score -= 10
-    if record["eligibility_text"] == "Not specified":
+    if record["Eligibility_Text"] == "Not specified":
         score -= 15
-    if not record["ministry"]:
+    if not record["Ministry"]:
         score -= 15
-    if not record["post_name"]:
+    if not record["Post_Name"]:
         score -= 15
 
     return max(score, 0)
@@ -187,13 +182,13 @@ def compute_completeness_score(record):
 def compute_data_quality_flag(record):
     flags = []
 
-    if not record["official_notification_link"]:
+    if not record["Official_Notification_Link"]:
         flags.append("MISSING_NOTIFICATION_LINK")
-    if not record["application_form_link"]:
+    if not record["Application_Form_Link"]:
         flags.append("MISSING_APPLY_LINK")
-    if not record["last_date_to_apply"]:
+    if not record["Last_Date_To_Apply"]:
         flags.append("MISSING_LAST_DATE")
-    if record["eligibility_text"] == "Not specified":
+    if record["Eligibility_Text"] == "Not specified":
         flags.append("MISSING_ELIGIBILITY")
 
     if not flags:
@@ -216,7 +211,6 @@ def load_sheet_df() -> pd.DataFrame:
     response = requests.get(SHEET_CSV_URL, timeout=60)
     response.raise_for_status()
 
-    from io import StringIO
     df = pd.read_csv(StringIO(response.text), dtype=str).fillna("")
     require_columns(df)
     return df
@@ -260,11 +254,11 @@ def build_records(df: pd.DataFrame):
         notification_date = parse_date(row.get("Notification_Date"))
         last_date = parse_date(row.get("Last_Date_To_Apply"))
 
-        days_left_sheet = safe_int(row.get("Days_Left"))
+        sheet_days_left = safe_int(row.get("Days_Left"))
         if last_date is not None:
             days_left = (last_date - today).days
         else:
-            days_left = days_left_sheet if days_left_sheet is not None else None
+            days_left = sheet_days_left
 
         status = "Inactive" if days_left is not None and days_left < 0 else "Active"
         closing_soon = bool(days_left is not None and 0 <= days_left < 15)
@@ -283,84 +277,68 @@ def build_records(df: pd.DataFrame):
         if not is_valid_url(source_website):
             source_website = ""
 
-        tags_keywords = split_keywords(row.get("Tags_Keywords", ""))
+        record = {
+            "Vacancy_ID": vacancy_id,
+            "Ministry": ministry,
+            "Min_Code": min_code,
+            "Department": department,
+            "Department_Organisation": organisation,
+            "Organisation": organisation,
+            "Post_Name": post_name,
+            "Level": level,
+            "Level_Text": level_text,
+            "Location_City": city,
+            "Location_State": state,
+            "Region": region,
+            "Req_Level1": req1,
+            "Min_Years_Experience": exp1,
+            "Organisation_Type": normalize_whitespace(row.get("Organisation_Type", "")),
+            "Req_Level2": req2,
+            "Min_Years_Experience2": exp2,
+            "Tags_Keywords": split_keywords_text(row.get("Tags_Keywords", "")),
+            "Eligible_Service": normalize_whitespace(row.get("Eligible_Service", "")),
+            "Essential_Qualification": normalize_whitespace(row.get("Essential_Qualification", "")),
+            "No_of_Posts": safe_int(row.get("No_of_Posts")),
+            "Deputation_Period_Years": safe_int(row.get("Deputation_Period_Years")),
+            "Deputation_Type": normalize_whitespace(row.get("Deputation_Type", "")),
+            "Notification_Date": to_iso(notification_date),
+            "Last_Date_To_Apply": to_iso(last_date),
+            "Days_Left": days_left,
+            "Status": status,
+            "Closing_Soon": closing_soon,
+            "Official_Notification_Link": official_notification_link,
+            "Application_Form_Link": application_form_link,
+            "Source_Website": source_website,
+            "Functional_Area": normalize_whitespace(row.get("Functional_Area", "")),
+            "Mode_of_Application": normalize_whitespace(row.get("Mode_of_Application", "")),
+            "DRAFT_APPROVED": approval_status,
+            "Source_File": normalize_whitespace(row.get("Source File", "")),
+            "Source_Category": normalize_whitespace(row.get("Source Category", "")),
+            "Location_Label": location_label,
+            "Eligibility_Text": eligibility_text,
+            "Eligibility_Rules": eligibility_rules,
+            "Delhi_NCR_Flag": delhi_ncr_flag,
+            "Expired_Flag": expired_flag,
+        }
 
-      record = {
-    "Vacancy_ID": vacancy_id,
-    "Ministry": ministry,
-    "Min_Code": min_code,
-    "Department": department,
-    "Department_Organisation": organisation,
-    "Organisation": organisation,
-    "Post_Name": post_name,
-    "Level": level,
-    "Level_Text": level_text,
-    "Location_City": city,
-    "Location_State": state,
-    "Region": region,
-    "Req_Level1": req1,
-    "Min_Years_Experience": exp1,
-    "Organisation_Type": normalize_whitespace(row.get("Organisation_Type", "")),
-    "Req_Level2": req2,
-    "Min_Years_Experience2": exp2,
-    "Tags_Keywords": tags_keywords,
-    "Eligible_Service": normalize_whitespace(row.get("Eligible_Service", "")),
-    "Essential_Qualification": normalize_whitespace(row.get("Essential_Qualification", "")),
-    "No_of_Posts": safe_int(row.get("No_of_Posts")),
-    "Deputation_Period_Years": safe_int(row.get("Deputation_Period_Years")),
-    "Deputation_Type": normalize_whitespace(row.get("Deputation_Type", "")),
-    "Notification_Date": to_iso(notification_date),
-    "Last_Date_To_Apply": to_iso(last_date),
-    "Days_Left": days_left,
-    "Status": status,
-    "Closing_Soon": closing_soon,
-    "Official_Notification_Link": official_notification_link,
-    "Application_Form_Link": application_form_link,
-    "Source_Website": source_website,
-    "Functional_Area": normalize_whitespace(row.get("Functional_Area", "")),
-    "Mode_of_Application": normalize_whitespace(row.get("Mode_of_Application", "")),
-    "DRAFT_APPROVED": approval_status,
-    "Source_File": normalize_whitespace(row.get("Source File", "")),
-    "Source_Category": normalize_whitespace(row.get("Source Category", "")),
+        search_parts = [
+            ministry,
+            department,
+            organisation,
+            post_name,
+            level_text,
+            city,
+            state,
+            record["Eligible_Service"],
+            record["Essential_Qualification"],
+            record["Functional_Area"],
+            record["Tags_Keywords"],
+            eligibility_text,
+        ]
 
-    "Location_Label": location_label,
-    "Eligibility_Text": eligibility_text,
-    "Eligibility_Rules": eligibility_rules,
-    "Delhi_NCR_Flag": delhi_ncr_flag,
-    "Expired_Flag": expired_flag,
-}
-
-      search_parts = [
-    ministry,
-    department,
-    organisation,
-    post_name,
-    level_text,
-    city,
-    state,
-    record["Eligible_Service"],
-    record["Essential_Qualification"],
-    record["Functional_Area"],
-    " ".join(tags_keywords),
-    eligibility_text,
-]
-
-record["Search_Text"] = normalize_text_for_search(" ".join([p for p in search_parts if p]))
-record["Completeness_Score"] = compute_completeness_score({
-    "official_notification_link": record["Official_Notification_Link"],
-    "application_form_link": record["Application_Form_Link"],
-    "last_date_to_apply": record["Last_Date_To_Apply"],
-    "location_label": record["Location_Label"],
-    "eligibility_text": record["Eligibility_Text"],
-    "ministry": record["Ministry"],
-    "post_name": record["Post_Name"],
-})
-record["Data_Quality_Flag"] = compute_data_quality_flag({
-    "official_notification_link": record["Official_Notification_Link"],
-    "application_form_link": record["Application_Form_Link"],
-    "last_date_to_apply": record["Last_Date_To_Apply"],
-    "eligibility_text": record["Eligibility_Text"],
-})
+        record["Search_Text"] = normalize_text_for_search(" ".join([p for p in search_parts if p]))
+        record["Completeness_Score"] = compute_completeness_score(record)
+        record["Data_Quality_Flag"] = compute_data_quality_flag(record)
 
         records.append(record)
 
@@ -370,6 +348,9 @@ record["Data_Quality_Flag"] = compute_data_quality_flag({
 def make_count_list(values, key_name="value", extra_transform=None):
     counts = {}
     for v in values:
+        if v is None:
+            continue
+        v = safe_str(v)
         if not v:
             continue
         counts[v] = counts.get(v, 0) + 1
@@ -384,97 +365,88 @@ def make_count_list(values, key_name="value", extra_transform=None):
 
 
 def build_filters(records):
-    levels = make_count_list([r["level_text"] for r in records])
-    ministries = []
+    levels = make_count_list([r["Level_Text"] for r in records])
+
     ministry_counts = {}
     ministry_codes = {}
-
     for r in records:
-        ministry = r["ministry"]
+        ministry = r["Ministry"]
         if not ministry:
             continue
         ministry_counts[ministry] = ministry_counts.get(ministry, 0) + 1
-        if r["min_code"]:
-            ministry_codes[ministry] = r["min_code"]
+        if r["Min_Code"]:
+            ministry_codes[ministry] = r["Min_Code"]
 
-    for ministry in sorted(ministry_counts.keys()):
-        ministries.append({
+    ministries = [
+        {
             "value": ministry,
             "count": ministry_counts[ministry],
             "min_code": ministry_codes.get(ministry, "")
-        })
+        }
+        for ministry in sorted(ministry_counts.keys())
+    ]
 
-    locations = []
     location_map = {}
     for r in records:
-        loc = r["location_label"]
+        loc = r["Location_Label"]
         if not loc:
             continue
         if loc not in location_map:
             location_map[loc] = {
                 "value": loc,
                 "count": 0,
-                "state": r["location_state"],
-                "region": r["region"]
+                "state": r["Location_State"],
+                "region": r["Region"]
             }
         location_map[loc]["count"] += 1
 
     locations = [location_map[k] for k in sorted(location_map.keys())]
 
-    filters = {
+    return {
         "levels": levels,
         "ministries": ministries,
         "locations": locations,
-        "regions": make_count_list([r["region"] for r in records]),
-        "organisation_types": make_count_list([r["organisation_type"] for r in records]),
-        "deputation_types": make_count_list([r["deputation_type"] for r in records]),
-        "mode_of_application": make_count_list([r["mode_of_application"] for r in records]),
+        "regions": make_count_list([r["Region"] for r in records]),
+        "organisation_types": make_count_list([r["Organisation_Type"] for r in records]),
+        "deputation_types": make_count_list([r["Deputation_Type"] for r in records]),
+        "mode_of_application": make_count_list([r["Mode_of_Application"] for r in records]),
         "quick_filter_counts": {
-            "closing7": sum(1 for r in records if r["days_left"] is not None and 0 <= r["days_left"] <= 7),
-            "closingToday": sum(1 for r in records if r["days_left"] == 0),
-            "delhiNcr": sum(1 for r in records if r["delhi_ncr_flag"]),
-            "onlineOnly": sum(1 for r in records if safe_str(r["mode_of_application"]).lower() == "online"),
+            "closing7": sum(1 for r in records if r["Days_Left"] is not None and 0 <= r["Days_Left"] <= 7),
+            "closingToday": sum(1 for r in records if r["Days_Left"] == 0),
+            "delhiNcr": sum(1 for r in records if r["Delhi_NCR_Flag"]),
+            "onlineOnly": sum(1 for r in records if safe_str(r["Mode_of_Application"]).lower() == "online"),
         }
     }
-    return filters
 
 
 def build_stats(records):
-    def count_by_int(field):
-        counts = {}
-        for r in records:
-            val = r.get(field)
-            if val is None:
-                continue
-            counts[val] = counts.get(val, 0) + 1
-        return [{"level" if field == "level" else field: k, "count": counts[k]} for k in sorted(counts.keys())]
-
     region_counts = {}
     ministry_counts = {}
     location_counts = {}
+    level_counts = {}
 
     for r in records:
-        if r["region"]:
-            region_counts[r["region"]] = region_counts.get(r["region"], 0) + 1
-        if r["ministry"]:
-            ministry_counts[r["ministry"]] = ministry_counts.get(r["ministry"], 0) + 1
-        if r["location_label"]:
-            location_counts[r["location_label"]] = location_counts.get(r["location_label"], 0) + 1
+        if r["Region"]:
+            region_counts[r["Region"]] = region_counts.get(r["Region"], 0) + 1
+        if r["Ministry"]:
+            ministry_counts[r["Ministry"]] = ministry_counts.get(r["Ministry"], 0) + 1
+        if r["Location_Label"]:
+            location_counts[r["Location_Label"]] = location_counts.get(r["Location_Label"], 0) + 1
+        if r["Level"] is not None:
+            level_counts[r["Level"]] = level_counts.get(r["Level"], 0) + 1
 
-    stats = {
+    return {
         "kpis": {
             "total_vacancies": len(records),
-            "active": sum(1 for r in records if r["status"] == "Active"),
-            "closing_soon": sum(1 for r in records if r["closing_soon"]),
-            "ministries": len({r["ministry"] for r in records if r["ministry"]}),
-            "locations": len({r["location_label"] for r in records if r["location_label"]}),
-            "online_applications": sum(1 for r in records if safe_str(r["mode_of_application"]).lower() == "online"),
+            "active": sum(1 for r in records if r["Status"] == "Active"),
+            "closing_soon": sum(1 for r in records if r["Closing_Soon"]),
+            "ministries": len({r["Ministry"] for r in records if r["Ministry"]}),
+            "locations": len({r["Location_Label"] for r in records if r["Location_Label"]}),
+            "online_applications": sum(1 for r in records if safe_str(r["Mode_of_Application"]).lower() == "online"),
         },
         "level_distribution": [
-            {"level": level, "count": count}
-            for level, count in sorted(
-                {r["level"]: 0 for r in records if r["level"] is not None}.items()
-            )
+            {"level": level, "count": level_counts[level]}
+            for level in sorted(level_counts.keys())
         ],
         "region_distribution": [
             {"region": region, "count": count}
@@ -489,25 +461,13 @@ def build_stats(records):
             for location, count in sorted(location_counts.items(), key=lambda x: x[1], reverse=True)[:10]
         ],
         "deadline_buckets": {
-            "today": sum(1 for r in records if r["days_left"] == 0),
-            "within_3_days": sum(1 for r in records if r["days_left"] is not None and 0 <= r["days_left"] <= 3),
-            "within_7_days": sum(1 for r in records if r["days_left"] is not None and 0 <= r["days_left"] <= 7),
-            "within_15_days": sum(1 for r in records if r["days_left"] is not None and 0 <= r["days_left"] <= 15),
-            "after_15_days": sum(1 for r in records if r["days_left"] is not None and r["days_left"] > 15),
+            "today": sum(1 for r in records if r["Days_Left"] == 0),
+            "within_3_days": sum(1 for r in records if r["Days_Left"] is not None and 0 <= r["Days_Left"] <= 3),
+            "within_7_days": sum(1 for r in records if r["Days_Left"] is not None and 0 <= r["Days_Left"] <= 7),
+            "within_15_days": sum(1 for r in records if r["Days_Left"] is not None and 0 <= r["Days_Left"] <= 15),
+            "after_15_days": sum(1 for r in records if r["Days_Left"] is not None and r["Days_Left"] > 15),
         }
     }
-
-    # fix level_distribution cleanly
-    level_counts = {}
-    for r in records:
-        if r["level"] is not None:
-            level_counts[r["level"]] = level_counts.get(r["level"], 0) + 1
-    stats["level_distribution"] = [
-        {"level": level, "count": level_counts[level]}
-        for level in sorted(level_counts.keys())
-    ]
-
-    return stats
 
 
 def build_meta(df, records):
@@ -516,7 +476,7 @@ def build_meta(df, records):
     total_rows = len(df)
     draft_count = max(total_rows - approved_count, 0)
 
-    meta = {
+    return {
         "schema_version": "1.0.0",
         "generated_at_utc": now.isoformat().replace("+00:00", "Z"),
         "source_type": "google_sheet_csv",
@@ -524,11 +484,10 @@ def build_meta(df, records):
         "record_count_total": total_rows,
         "record_count_approved": approved_count,
         "record_count_draft": draft_count,
-        "record_count_active": sum(1 for r in records if r["status"] == "Active"),
-        "record_count_inactive": sum(1 for r in records if r["status"] == "Inactive"),
-        "record_count_review_flagged": sum(1 for r in records if r["data_quality_flag"] != "OK"),
+        "record_count_active": sum(1 for r in records if r["Status"] == "Active"),
+        "record_count_inactive": sum(1 for r in records if r["Status"] == "Inactive"),
+        "record_count_review_flagged": sum(1 for r in records if r["Data_Quality_Flag"] != "OK"),
     }
-    return meta
 
 
 def write_json(filename: str, payload):
