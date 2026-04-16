@@ -1,28 +1,52 @@
 {
   "kpis": {
-    "total_vacancies": 12,
-    "active": 9,
-    "closing_soon": 1,
-    "ministries": 6,
-    "locations": 7,
+    "total_vacancies": 53,
+    "active": 27,
+    "closing_soon": 8,
+    "ministries": 20,
+    "locations": 24,
     "online_applications": 9
   },
   "level_distribution": [
     {
+      "level": 2,
+      "count": 1
+    },
+    {
+      "level": 5,
+      "count": 1
+    },
+    {
+      "level": 6,
+      "count": 2
+    },
+    {
+      "level": 7,
+      "count": 6
+    },
+    {
       "level": 8,
-      "count": 3
+      "count": 5
     },
     {
       "level": 10,
+      "count": 10
+    },
+    {
+      "level": 11,
+      "count": 11
+    },
+    {
+      "level": 12,
       "count": 4
     },
     {
       "level": 13,
-      "count": 4
+      "count": 8
     },
     {
       "level": 14,
-      "count": 1
+      "count": 5
     }
   ],
   "region_distribution": [
@@ -32,63 +56,99 @@
     },
     {
       "region": "East",
-      "count": 1
-    },
-    {
-      "region": "North",
-      "count": 4
-    },
-    {
-      "region": "South",
       "count": 5
     },
     {
+      "region": "North",
+      "count": 22
+    },
+    {
+      "region": "North East",
+      "count": 2
+    },
+    {
+      "region": "South",
+      "count": 9
+    },
+    {
       "region": "West",
-      "count": 1
+      "count": 3
     }
   ],
   "top_ministries": [
+    {
+      "ministry": "Ministry of Agriculture & Farmers Welfare",
+      "count": 15
+    },
     {
       "ministry": "Ministry of Electronics and IT",
       "count": 7
     },
     {
-      "ministry": "Ministry of Finance",
-      "count": 1
+      "ministry": "Ministry of Ports, Shipping & Waterways",
+      "count": 5
     },
     {
       "ministry": "Ministry of Home Affairs",
-      "count": 1
+      "count": 3
     },
     {
-      "ministry": "Ministry of Defence",
-      "count": 1
-    },
-    {
-      "ministry": "Ministry of Health",
-      "count": 1
+      "ministry": "Ministry of Health and Family Welfare",
+      "count": 3
     },
     {
       "ministry": "Ministry of Education",
-      "count": 1
+      "count": 2
+    },
+    {
+      "ministry": "Ministry of Petroleum & Natural Gas",
+      "count": 2
+    },
+    {
+      "ministry": "Ministry of Jal Shakti",
+      "count": 2
+    },
+    {
+      "ministry": "Ministry of Culture",
+      "count": 2
+    },
+    {
+      "ministry": "Ministry of Corporate Affairs",
+      "count": 2
     }
   ],
   "top_locations": [
+    {
+      "location": "New Delhi, Delhi",
+      "count": 14
+    },
+    {
+      "location": "CCO Delhi, Delhi",
+      "count": 6
+    },
     {
       "location": "Bengaluru, Karnataka",
       "count": 4
     },
     {
-      "location": "New Delhi, Delhi",
+      "location": "Not specified",
+      "count": 4
+    },
+    {
+      "location": "Noida, Uttar Pradesh, Uttar Pradesh",
       "count": 3
     },
     {
       "location": "Mumbai, Maharashtra",
-      "count": 1
+      "count": 2
     },
     {
       "location": "Hyderabad, Telangana",
-      "count": 1
+      "count": 2
+    },
+    {
+      "location": "Principal Bench",
+      "count": 2
     },
     {
       "location": "Bhopal, Madhya Pradesh",
@@ -97,17 +157,13 @@
     {
       "location": "Lucknow, Uttar Pradesh",
       "count": 1
-    },
-    {
-      "location": "Guwahati, Assam",
-      "count": 1
     }
   ],
   "deadline_buckets": {
     "today": 0,
-    "within_3_days": 0,
-    "within_7_days": 1,
-    "within_15_days": 7,
-    "after_15_days": 2
+    "within_3_days": 2,
+    "within_7_days": 3,
+    "within_15_days": 14,
+    "after_15_days": 13
   }
 }

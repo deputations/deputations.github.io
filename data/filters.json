@@ -2,7 +2,7 @@
   "levels": [
     {
       "value": "Level 10",
-      "count": 4
+      "count": 6
     },
     {
       "value": "Level 13",
@@ -15,18 +15,95 @@
     {
       "value": "Level 8",
       "count": 3
+    },
+    {
+      "value": "Level-10",
+      "count": 4
+    },
+    {
+      "value": "Level-11",
+      "count": 10
+    },
+    {
+      "value": "Level-12",
+      "count": 3
+    },
+    {
+      "value": "Level-12 in the pay matrix",
+      "count": 1
+    },
+    {
+      "value": "Level-13",
+      "count": 3
+    },
+    {
+      "value": "Level-13 or Level-12",
+      "count": 1
+    },
+    {
+      "value": "Level-14",
+      "count": 4
+    },
+    {
+      "value": "Level-2",
+      "count": 1
+    },
+    {
+      "value": "Level-5",
+      "count": 1
+    },
+    {
+      "value": "Level-6",
+      "count": 2
+    },
+    {
+      "value": "Level-7",
+      "count": 6
+    },
+    {
+      "value": "Level-8",
+      "count": 2
+    },
+    {
+      "value": "Pay Matrix Level-11 (Rs.67700-208700)",
+      "count": 1
     }
   ],
   "ministries": [
+    {
+      "value": "Ministry of Agriculture & Farmers Welfare",
+      "count": 15,
+      "min_code": "AGRI"
+    },
+    {
+      "value": "Ministry of Chemicals & Fertilizers",
+      "count": 1,
+      "min_code": "CHEM"
+    },
+    {
+      "value": "Ministry of Corporate Affairs",
+      "count": 2,
+      "min_code": "MOCA"
+    },
+    {
+      "value": "Ministry of Culture",
+      "count": 2,
+      "min_code": "CULT"
+    },
     {
       "value": "Ministry of Defence",
       "count": 1,
       "min_code": "MOD"
     },
     {
-      "value": "Ministry of Education",
+      "value": "Ministry of Development of North Eastern Region (DoNER)",
       "count": 1,
-      "min_code": "MOE"
+      "min_code": "DONR"
+    },
+    {
+      "value": "Ministry of Education",
+      "count": 2,
+      "min_code": "EDUC"
     },
     {
       "value": "Ministry of Electronics and IT",
@@ -44,12 +121,63 @@
       "min_code": "MOHFW"
     },
     {
+      "value": "Ministry of Health and Family Welfare",
+      "count": 3,
+      "min_code": "HAFW"
+    },
+    {
       "value": "Ministry of Home Affairs",
+      "count": 3,
+      "min_code": "HOME"
+    },
+    {
+      "value": "Ministry of Jal Shakti",
+      "count": 2,
+      "min_code": "JALS"
+    },
+    {
+      "value": "Ministry of Labour & Employment",
       "count": 1,
-      "min_code": "MHA"
+      "min_code": "LABR"
+    },
+    {
+      "value": "Ministry of Micro, Small & Medium Enterprises",
+      "count": 1,
+      "min_code": "MSME"
+    },
+    {
+      "value": "Ministry of Personnel, Public Grievances & Pensions",
+      "count": 1,
+      "min_code": "DOPT"
+    },
+    {
+      "value": "Ministry of Petroleum & Natural Gas",
+      "count": 2,
+      "min_code": "MPNG"
+    },
+    {
+      "value": "Ministry of Ports, Shipping & Waterways",
+      "count": 5,
+      "min_code": "SHIP"
+    },
+    {
+      "value": "Ministry of Road Transport & Highways",
+      "count": 1,
+      "min_code": "RTHW"
+    },
+    {
+      "value": "Ministry of Rural Development",
+      "count": 1,
+      "min_code": "MORD"
     }
   ],
   "locations": [
+    {
+      "value": "Andaman & Nicobar, Andaman and Nicobar Islands",
+      "count": 1,
+      "state": "Andaman and Nicobar Islands",
+      "region": ""
+    },
     {
       "value": "Bengaluru, Karnataka",
       "count": 4,
@@ -63,15 +191,81 @@
       "region": "Central"
     },
     {
+      "value": "Burnihat, Meghalaya",
+      "count": 1,
+      "state": "Meghalaya",
+      "region": "North East"
+    },
+    {
+      "value": "CCO Delhi, Delhi",
+      "count": 6,
+      "state": "Delhi",
+      "region": "North"
+    },
+    {
+      "value": "Calicut, Kerala",
+      "count": 1,
+      "state": "Kerala",
+      "region": "South"
+    },
+    {
+      "value": "Chennai, Tamil Nadu",
+      "count": 1,
+      "state": "Tamil Nadu",
+      "region": "South"
+    },
+    {
+      "value": "Delhi (4) + other stations, Delhi",
+      "count": 1,
+      "state": "Delhi",
+      "region": "North"
+    },
+    {
+      "value": "Dhanbad, Jharkhand",
+      "count": 1,
+      "state": "Jharkhand",
+      "region": "East"
+    },
+    {
+      "value": "Different parts of India",
+      "count": 1,
+      "state": "",
+      "region": ""
+    },
+    {
       "value": "Guwahati, Assam",
       "count": 1,
       "state": "Assam",
       "region": "East"
     },
     {
-      "value": "Hyderabad, Telangana",
+      "value": "Hajipur, Bihar",
       "count": 1,
+      "state": "Bihar",
+      "region": "East"
+    },
+    {
+      "value": "Hyderabad, Telangana",
+      "count": 2,
       "state": "Telangana",
+      "region": "South"
+    },
+    {
+      "value": "Jaipur SEZ, Rajasthan",
+      "count": 1,
+      "state": "Rajasthan",
+      "region": "West"
+    },
+    {
+      "value": "Kalyani,, West Bengal",
+      "count": 1,
+      "state": "West Bengal",
+      "region": "East"
+    },
+    {
+      "value": "Karaikal, Puducherry",
+      "count": 1,
+      "state": "Puducherry",
       "region": "South"
     },
     {
@@ -82,15 +276,45 @@
     },
     {
       "value": "Mumbai, Maharashtra",
-      "count": 1,
+      "count": 2,
       "state": "Maharashtra",
       "region": "West"
     },
     {
+      "value": "Murshidabad, West Bengal",
+      "count": 1,
+      "state": "West Bengal",
+      "region": "East"
+    },
+    {
       "value": "New Delhi, Delhi",
-      "count": 3,
+      "count": 14,
       "state": "Delhi",
       "region": "North"
+    },
+    {
+      "value": "Noida, Uttar Pradesh, Uttar Pradesh",
+      "count": 3,
+      "state": "Uttar Pradesh",
+      "region": ""
+    },
+    {
+      "value": "Not specified",
+      "count": 4,
+      "state": "",
+      "region": ""
+    },
+    {
+      "value": "Principal Bench",
+      "count": 2,
+      "state": "",
+      "region": ""
+    },
+    {
+      "value": "Shillong, Meghalaya",
+      "count": 1,
+      "state": "Meghalaya",
+      "region": "North East"
     }
   ],
   "regions": [
@@ -100,38 +324,86 @@
     },
     {
       "value": "East",
-      "count": 1
-    },
-    {
-      "value": "North",
-      "count": 4
-    },
-    {
-      "value": "South",
       "count": 5
     },
     {
+      "value": "North",
+      "count": 22
+    },
+    {
+      "value": "North East",
+      "count": 2
+    },
+    {
+      "value": "South",
+      "count": 9
+    },
+    {
       "value": "West",
-      "count": 1
+      "count": 3
     }
   ],
   "organisation_types": [
+    {
+      "value": "Attached Office",
+      "count": 1
+    },
     {
       "value": "Autonomous",
       "count": 2
     },
     {
+      "value": "Autonomous Body",
+      "count": 1
+    },
+    {
+      "value": "Commission / Board",
+      "count": 1
+    },
+    {
       "value": "Government",
       "count": 10
+    },
+    {
+      "value": "Ministry (HQ)",
+      "count": 19
+    },
+    {
+      "value": "Other / Not specified",
+      "count": 6
+    },
+    {
+      "value": "Society / Trust",
+      "count": 1
+    },
+    {
+      "value": "Tribunal / Authority",
+      "count": 6
+    },
+    {
+      "value": "University / Institute",
+      "count": 6
     }
   ],
   "deputation_types": [
+    {
+      "value": "Deputation",
+      "count": 2
+    },
     {
       "value": "Standard",
       "count": 12
     }
   ],
   "mode_of_application": [
+    {
+      "value": "By Transfer on Deputation",
+      "count": 1
+    },
+    {
+      "value": "Offline",
+      "count": 1
+    },
     {
       "value": "Online",
       "count": 9
@@ -146,9 +418,9 @@
     }
   ],
   "quick_filter_counts": {
-    "closing7": 1,
+    "closing7": 3,
     "closingToday": 0,
-    "delhiNcr": 3,
+    "delhiNcr": 24,
     "onlineOnly": 9
   }
 }
