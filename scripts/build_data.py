@@ -222,8 +222,10 @@ def build_records(df: pd.DataFrame):
 
     for _, row in df.iterrows():
         approval_status = normalize_whitespace(row.get("DRAFT / APPROVED", ""))
-        if approval_status.upper() != "APPROVED":
-            continue
+approval_normalized = approval_status.lower()
+
+if not approval_normalized.startswith("approved"):
+    continue
 
         vacancy_id = normalize_whitespace(row.get("Vacancy_ID", ""))
         if not vacancy_id:
