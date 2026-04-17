@@ -65,10 +65,17 @@ document.addEventListener('DOMContentLoaded', () => {
     setLoadingUI();
 
     initializeTheme();
+if (themeToggle && !themeToggle.dataset.bound) {
+  themeToggle.addEventListener('click', toggleTheme);
+  themeToggle.dataset.bound = 'true';
+}
+    
 initializeModal();
 updateWatchlistUI();
 
     loadDataFromJSON();
+
+    
 
 function loadDataFromJSON() {
     fetch('data/vacancies.json')
@@ -297,9 +304,6 @@ function updateMobileFilterToggle() {
             onFilterChange();
         });
 
-if (themeToggle) {
-    themeToggle.addEventListener('click', toggleTheme);
-}
         
         [
             filterMyPayLevel,
