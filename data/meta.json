@@ -1,12 +1,14 @@
 {
-  "schema_version": "1.0.0",
-  "generated_at_utc": "2026-04-17T20:15:55.009621Z",
-  "source_type": "google_sheet_csv",
-  "source_url_present": true,
-  "record_count_total": 53,
-  "record_count_approved": 53,
-  "record_count_draft": 0,
-  "record_count_active": 27,
-  "record_count_inactive": 26,
-  "record_count_review_flagged": 43
+  "generated_at_utc": "2026-04-17T22:39:42Z",
+  "record_count": 53,
+  "active_count": 52,
+  "inactive_count": 1,
+  "closing_soon_count": 16,
+  "source": "private_google_sheet_via_sheets_api",
+  "filter_counts": {
+    "levels": 14,
+    "ministries": 20,
+    "locations": 24,
+    "statuses": 2
+  }
 }

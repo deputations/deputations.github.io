@@ -1,426 +1,90 @@
 {
   "levels": [
-    {
-      "value": "Level 10",
-      "count": 6
-    },
-    {
-      "value": "Level 13",
-      "count": 4
-    },
-    {
-      "value": "Level 14",
-      "count": 1
-    },
-    {
-      "value": "Level 8",
-      "count": 3
-    },
-    {
-      "value": "Level-10",
-      "count": 4
-    },
-    {
-      "value": "Level-11",
-      "count": 10
-    },
-    {
-      "value": "Level-12",
-      "count": 3
-    },
-    {
-      "value": "Level-12 in the pay matrix",
-      "count": 1
-    },
-    {
-      "value": "Level-13",
-      "count": 3
-    },
-    {
-      "value": "Level-13 or Level-12",
-      "count": 1
-    },
-    {
-      "value": "Level-14",
-      "count": 4
-    },
-    {
-      "value": "Level-2",
-      "count": 1
-    },
-    {
-      "value": "Level-5",
-      "count": 1
-    },
-    {
-      "value": "Level-6",
-      "count": 2
-    },
-    {
-      "value": "Level-7",
-      "count": 6
-    },
-    {
-      "value": "Level-8",
-      "count": 2
-    },
-    {
-      "value": "Pay Matrix Level-11 (Rs.67700-208700)",
-      "count": 1
-    }
+    "Level 10",
+    "Level 13",
+    "Level 14",
+    "Level 8",
+    "Level-10",
+    "Level-11",
+    "Level-12",
+    "Level-13",
+    "Level-14",
+    "Level-2",
+    "Level-5",
+    "Level-6",
+    "Level-7",
+    "Level-8"
   ],
   "ministries": [
-    {
-      "value": "Ministry of Agriculture & Farmers Welfare",
-      "count": 15,
-      "min_code": "AGRI"
-    },
-    {
-      "value": "Ministry of Chemicals & Fertilizers",
-      "count": 1,
-      "min_code": "CHEM"
-    },
-    {
-      "value": "Ministry of Corporate Affairs",
-      "count": 2,
-      "min_code": "MOCA"
-    },
-    {
-      "value": "Ministry of Culture",
-      "count": 2,
-      "min_code": "CULT"
-    },
-    {
-      "value": "Ministry of Defence",
-      "count": 1,
-      "min_code": "MOD"
-    },
-    {
-      "value": "Ministry of Development of North Eastern Region (DoNER)",
-      "count": 1,
-      "min_code": "DONR"
-    },
-    {
-      "value": "Ministry of Education",
-      "count": 2,
-      "min_code": "EDUC"
-    },
-    {
-      "value": "Ministry of Electronics and IT",
-      "count": 7,
-      "min_code": "MEITY"
-    },
-    {
-      "value": "Ministry of Finance",
-      "count": 1,
-      "min_code": "MOF"
-    },
-    {
-      "value": "Ministry of Health",
-      "count": 1,
-      "min_code": "MOHFW"
-    },
-    {
-      "value": "Ministry of Health and Family Welfare",
-      "count": 3,
-      "min_code": "HAFW"
-    },
-    {
-      "value": "Ministry of Home Affairs",
-      "count": 3,
-      "min_code": "HOME"
-    },
-    {
-      "value": "Ministry of Jal Shakti",
-      "count": 2,
-      "min_code": "JALS"
-    },
-    {
-      "value": "Ministry of Labour & Employment",
-      "count": 1,
-      "min_code": "LABR"
-    },
-    {
-      "value": "Ministry of Micro, Small & Medium Enterprises",
-      "count": 1,
-      "min_code": "MSME"
-    },
-    {
-      "value": "Ministry of Personnel, Public Grievances & Pensions",
-      "count": 1,
-      "min_code": "DOPT"
-    },
-    {
-      "value": "Ministry of Petroleum & Natural Gas",
-      "count": 2,
-      "min_code": "MPNG"
-    },
-    {
-      "value": "Ministry of Ports, Shipping & Waterways",
-      "count": 5,
-      "min_code": "SHIP"
-    },
-    {
-      "value": "Ministry of Road Transport & Highways",
-      "count": 1,
-      "min_code": "RTHW"
-    },
-    {
-      "value": "Ministry of Rural Development",
-      "count": 1,
-      "min_code": "MORD"
-    }
+    "Ministry of Agriculture & Farmers Welfare",
+    "Ministry of Chemicals & Fertilizers",
+    "Ministry of Corporate Affairs",
+    "Ministry of Culture",
+    "Ministry of Defence",
+    "Ministry of Development of North Eastern Region (DoNER)",
+    "Ministry of Education",
+    "Ministry of Electronics and IT",
+    "Ministry of Finance",
+    "Ministry of Health",
+    "Ministry of Health and Family Welfare",
+    "Ministry of Home Affairs",
+    "Ministry of Jal Shakti",
+    "Ministry of Labour & Employment",
+    "Ministry of Micro, Small & Medium Enterprises",
+    "Ministry of Personnel, Public Grievances & Pensions",
+    "Ministry of Petroleum & Natural Gas",
+    "Ministry of Ports, Shipping & Waterways",
+    "Ministry of Road Transport & Highways",
+    "Ministry of Rural Development"
   ],
   "locations": [
-    {
-      "value": "Andaman & Nicobar, Andaman and Nicobar Islands",
-      "count": 1,
-      "state": "Andaman and Nicobar Islands",
-      "region": ""
-    },
-    {
-      "value": "Bengaluru, Karnataka",
-      "count": 4,
-      "state": "Karnataka",
-      "region": "South"
-    },
-    {
-      "value": "Bhopal, Madhya Pradesh",
-      "count": 1,
-      "state": "Madhya Pradesh",
-      "region": "Central"
-    },
-    {
-      "value": "Burnihat, Meghalaya",
-      "count": 1,
-      "state": "Meghalaya",
-      "region": "North East"
-    },
-    {
-      "value": "CCO Delhi, Delhi",
-      "count": 6,
-      "state": "Delhi",
-      "region": "North"
-    },
-    {
-      "value": "Calicut, Kerala",
-      "count": 1,
-      "state": "Kerala",
-      "region": "South"
-    },
-    {
-      "value": "Chennai, Tamil Nadu",
-      "count": 1,
-      "state": "Tamil Nadu",
-      "region": "South"
-    },
-    {
-      "value": "Delhi (4) + other stations, Delhi",
-      "count": 1,
-      "state": "Delhi",
-      "region": "North"
-    },
-    {
-      "value": "Dhanbad, Jharkhand",
-      "count": 1,
-      "state": "Jharkhand",
-      "region": "East"
-    },
-    {
-      "value": "Different parts of India",
-      "count": 1,
-      "state": "",
-      "region": ""
-    },
-    {
-      "value": "Guwahati, Assam",
-      "count": 1,
-      "state": "Assam",
-      "region": "East"
-    },
-    {
-      "value": "Hajipur, Bihar",
-      "count": 1,
-      "state": "Bihar",
-      "region": "East"
-    },
-    {
-      "value": "Hyderabad, Telangana",
-      "count": 2,
-      "state": "Telangana",
-      "region": "South"
-    },
-    {
-      "value": "Jaipur SEZ, Rajasthan",
-      "count": 1,
-      "state": "Rajasthan",
-      "region": "West"
-    },
-    {
-      "value": "Kalyani,, West Bengal",
-      "count": 1,
-      "state": "West Bengal",
-      "region": "East"
-    },
-    {
-      "value": "Karaikal, Puducherry",
-      "count": 1,
-      "state": "Puducherry",
-      "region": "South"
-    },
-    {
-      "value": "Lucknow, Uttar Pradesh",
-      "count": 1,
-      "state": "Uttar Pradesh",
-      "region": "North"
-    },
-    {
-      "value": "Mumbai, Maharashtra",
-      "count": 2,
-      "state": "Maharashtra",
-      "region": "West"
-    },
-    {
-      "value": "Murshidabad, West Bengal",
-      "count": 1,
-      "state": "West Bengal",
-      "region": "East"
-    },
-    {
-      "value": "New Delhi, Delhi",
-      "count": 14,
-      "state": "Delhi",
-      "region": "North"
-    },
-    {
-      "value": "Noida, Uttar Pradesh, Uttar Pradesh",
-      "count": 3,
-      "state": "Uttar Pradesh",
-      "region": ""
-    },
-    {
-      "value": "Not specified",
-      "count": 4,
-      "state": "",
-      "region": ""
-    },
-    {
-      "value": "Principal Bench",
-      "count": 2,
-      "state": "",
-      "region": ""
-    },
-    {
-      "value": "Shillong, Meghalaya",
-      "count": 1,
-      "state": "Meghalaya",
-      "region": "North East"
-    }
+    "Andaman & Nicobar, Andaman and Nicobar Islands",
+    "Bengaluru, Karnataka",
+    "Bhopal, Madhya Pradesh",
+    "Burnihat, Meghalaya",
+    "CCO Delhi, Delhi",
+    "Calicut, Kerala",
+    "Chennai, Tamil Nadu",
+    "Delhi (4) + other stations, Delhi",
+    "Dhanbad, Jharkhand",
+    "Different parts of India",
+    "Guwahati, Assam",
+    "Hajipur, Bihar",
+    "Hyderabad, Telangana",
+    "Jaipur SEZ, Rajasthan",
+    "Kalyani,, West Bengal",
+    "Karaikal, Puducherry",
+    "Lucknow, Uttar Pradesh",
+    "Mumbai, Maharashtra",
+    "Murshidabad, West Bengal",
+    "New Delhi, Delhi",
+    "Noida, Uttar Pradesh, Uttar Pradesh",
+    "Not specified",
+    "Principal Bench",
+    "Shillong, Meghalaya"
   ],
-  "regions": [
-    {
-      "value": "Central",
-      "count": 1
-    },
-    {
-      "value": "East",
-      "count": 5
-    },
-    {
-      "value": "North",
-      "count": 22
-    },
-    {
-      "value": "North East",
-      "count": 2
-    },
-    {
-      "value": "South",
-      "count": 9
-    },
-    {
-      "value": "West",
-      "count": 3
-    }
+  "statuses": [
+    "Active",
+    "Inactive"
   ],
-  "organisation_types": [
-    {
-      "value": "Attached Office",
-      "count": 1
-    },
-    {
-      "value": "Autonomous",
-      "count": 2
-    },
-    {
-      "value": "Autonomous Body",
-      "count": 1
-    },
-    {
-      "value": "Commission / Board",
-      "count": 1
-    },
-    {
-      "value": "Government",
-      "count": 10
-    },
-    {
-      "value": "Ministry (HQ)",
-      "count": 19
-    },
-    {
-      "value": "Other / Not specified",
-      "count": 6
-    },
-    {
-      "value": "Society / Trust",
-      "count": 1
-    },
-    {
-      "value": "Tribunal / Authority",
-      "count": 6
-    },
-    {
-      "value": "University / Institute",
-      "count": 6
-    }
-  ],
-  "deputation_types": [
-    {
-      "value": "Deputation",
-      "count": 2
-    },
-    {
-      "value": "Standard",
-      "count": 12
-    }
-  ],
-  "mode_of_application": [
-    {
-      "value": "By Transfer on Deputation",
-      "count": 1
-    },
-    {
-      "value": "Offline",
-      "count": 1
-    },
-    {
-      "value": "Online",
-      "count": 9
-    },
-    {
-      "value": "Online/Physical",
-      "count": 1
-    },
-    {
-      "value": "Physical",
-      "count": 2
-    }
-  ],
-  "quick_filter_counts": {
-    "closing7": 5,
-    "closingToday": 2,
-    "delhiNcr": 24,
-    "onlineOnly": 9
-  }
+  "myPayLevels": [
+    "Level 18",
+    "Level 17",
+    "Level 16",
+    "Level 15",
+    "Level 14",
+    "Level 13",
+    "Level 12",
+    "Level 11",
+    "Level 10",
+    "Level 9",
+    "Level 8",
+    "Level 7",
+    "Level 6",
+    "Level 5",
+    "Level 4",
+    "Level 3",
+    "Level 2",
+    "Level 1"
+  ]
 }

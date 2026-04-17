@@ -1,169 +1,47 @@
 {
-  "kpis": {
-    "total_vacancies": 53,
-    "active": 27,
-    "closing_soon": 14,
-    "ministries": 20,
-    "locations": 24,
-    "online_applications": 9
+  "total_vacancies": 53,
+  "active_vacancies": 52,
+  "inactive_vacancies": 1,
+  "closing_soon_vacancies": 16,
+  "delhi_ncr_vacancies": 24,
+  "top_ministries": {
+    "Ministry of Agriculture & Farmers Welfare": 15,
+    "Ministry of Electronics and IT": 7,
+    "Ministry of Ports, Shipping & Waterways": 5,
+    "Ministry of Health and Family Welfare": 3,
+    "Ministry of Home Affairs": 3,
+    "Ministry of Culture": 2,
+    "Ministry of Corporate Affairs": 2,
+    "Ministry of Education": 2,
+    "Ministry of Jal Shakti": 2,
+    "Ministry of Petroleum & Natural Gas": 2
   },
-  "level_distribution": [
-    {
-      "level": 2,
-      "count": 1
-    },
-    {
-      "level": 5,
-      "count": 1
-    },
-    {
-      "level": 6,
-      "count": 2
-    },
-    {
-      "level": 7,
-      "count": 6
-    },
-    {
-      "level": 8,
-      "count": 5
-    },
-    {
-      "level": 10,
-      "count": 10
-    },
-    {
-      "level": 11,
-      "count": 11
-    },
-    {
-      "level": 12,
-      "count": 4
-    },
-    {
-      "level": 13,
-      "count": 8
-    },
-    {
-      "level": 14,
-      "count": 5
-    }
-  ],
-  "region_distribution": [
-    {
-      "region": "Central",
-      "count": 1
-    },
-    {
-      "region": "East",
-      "count": 5
-    },
-    {
-      "region": "North",
-      "count": 22
-    },
-    {
-      "region": "North East",
-      "count": 2
-    },
-    {
-      "region": "South",
-      "count": 9
-    },
-    {
-      "region": "West",
-      "count": 3
-    }
-  ],
-  "top_ministries": [
-    {
-      "ministry": "Ministry of Agriculture & Farmers Welfare",
-      "count": 15
-    },
-    {
-      "ministry": "Ministry of Electronics and IT",
-      "count": 7
-    },
-    {
-      "ministry": "Ministry of Ports, Shipping & Waterways",
-      "count": 5
-    },
-    {
-      "ministry": "Ministry of Home Affairs",
-      "count": 3
-    },
-    {
-      "ministry": "Ministry of Health and Family Welfare",
-      "count": 3
-    },
-    {
-      "ministry": "Ministry of Education",
-      "count": 2
-    },
-    {
-      "ministry": "Ministry of Petroleum & Natural Gas",
-      "count": 2
-    },
-    {
-      "ministry": "Ministry of Jal Shakti",
-      "count": 2
-    },
-    {
-      "ministry": "Ministry of Culture",
-      "count": 2
-    },
-    {
-      "ministry": "Ministry of Corporate Affairs",
-      "count": 2
-    }
-  ],
-  "top_locations": [
-    {
-      "location": "New Delhi, Delhi",
-      "count": 14
-    },
-    {
-      "location": "CCO Delhi, Delhi",
-      "count": 6
-    },
-    {
-      "location": "Bengaluru, Karnataka",
-      "count": 4
-    },
-    {
-      "location": "Not specified",
-      "count": 4
-    },
-    {
-      "location": "Noida, Uttar Pradesh, Uttar Pradesh",
-      "count": 3
-    },
-    {
-      "location": "Mumbai, Maharashtra",
-      "count": 2
-    },
-    {
-      "location": "Hyderabad, Telangana",
-      "count": 2
-    },
-    {
-      "location": "Principal Bench",
-      "count": 2
-    },
-    {
-      "location": "Bhopal, Madhya Pradesh",
-      "count": 1
-    },
-    {
-      "location": "Lucknow, Uttar Pradesh",
-      "count": 1
-    }
-  ],
-  "deadline_buckets": {
-    "today": 2,
-    "within_3_days": 3,
-    "within_7_days": 5,
-    "within_15_days": 14,
-    "after_15_days": 13
+  "top_locations": {
+    "New Delhi, Delhi": 14,
+    "CCO Delhi, Delhi": 6,
+    "Bengaluru, Karnataka": 4,
+    "Not specified": 4,
+    "Noida, Uttar Pradesh, Uttar Pradesh": 3,
+    "Principal Bench": 2,
+    "Hyderabad, Telangana": 2,
+    "Mumbai, Maharashtra": 2,
+    "Delhi (4) + other stations, Delhi": 1,
+    "Chennai, Tamil Nadu": 1
+  },
+  "level_distribution": {
+    "Level-11": 11,
+    "Level-7": 6,
+    "Level 10": 6,
+    "Level-12": 4,
+    "Level-14": 4,
+    "Level-10": 4,
+    "Level-13": 4,
+    "Level 13": 4,
+    "Level 8": 3,
+    "Level-8": 2,
+    "Level-6": 2,
+    "Level-2": 1,
+    "Level-5": 1,
+    "Level 14": 1
   }
 }
