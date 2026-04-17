@@ -1833,3 +1833,8 @@ select:focus {
     max-width: none;
   }
 }
+
+/* ===== remove duplicate top nav items safely ===== */
+.nav-duplicate {
+  display: none !important;
+}
