@@ -1779,3 +1779,57 @@ select:focus {
 .fav-count {
   transition: all 0.2s ease;
 }
+
+/* ===== center last 1–2 cards without breaking mobile ===== */
+
+/* replace rigid grid feeling with centered wrap only in card view */
+.view-card .cards-grid,
+.premium-cards-grid {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-start;
+  gap: 1.5rem;
+}
+
+/* each card keeps the same premium width */
+.view-card .cards-grid > .job-card,
+.premium-cards-grid > .job-card,
+.premium-cards-grid > .premium-card {
+  flex: 0 1 360px;
+  width: min(100%, 420px);
+  max-width: 420px;
+}
+
+/* tablet safety */
+@media (max-width: 1100px) {
+  .view-card .cards-grid,
+  .premium-cards-grid {
+    gap: 1.25rem;
+  }
+
+  .view-card .cards-grid > .job-card,
+  .premium-cards-grid > .job-card,
+  .premium-cards-grid > .premium-card {
+    flex: 1 1 calc(50% - 0.75rem);
+    max-width: none;
+    width: auto;
+  }
+}
+
+/* mobile: full width cards, no visual break */
+@media (max-width: 768px) {
+  .view-card .cards-grid,
+  .premium-cards-grid {
+    justify-content: stretch;
+    gap: 1rem;
+  }
+
+  .view-card .cards-grid > .job-card,
+  .premium-cards-grid > .job-card,
+  .premium-cards-grid > .premium-card {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+  }
+}
