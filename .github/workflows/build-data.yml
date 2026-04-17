@@ -1,14 +1,15 @@
 name: Build deputation data
 
 on:
+  workflow_dispatch:
   schedule:
-    - cron: "35 3 * * *"   # ~09:05 IST daily
+    - cron: "35 3 * * *" # ~09:05 IST daily
   push:
     branches:
       - main
     paths:
-      - scripts/**
-      - .github/workflows/build-data.yml
+      - "scripts/**"
+      - ".github/workflows/build-data.yml"
 
 permissions:
   contents: write
@@ -22,6 +23,12 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -32,19 +39,17 @@ jobs:
 
       - name: Build data files
         env:
-          SHEET_CSV_URL: ${{ secrets.SHEET_CSV_URL }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
         run: python scripts/build_data.py
 
       - name: Commit generated files if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
           git add data/*.json
-
           if git diff --cached --quiet; then
             echo "No data changes to commit"
           else
-            git commit -m "chore: daily deputation data build"
+            git commit -m "chore: build deputation data"
             git push
           fi
