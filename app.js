@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashboardContent = document.querySelector('.dashboard-content');
     const filtersSidebar = document.querySelector('.filters-sidebar');
 
+    const themeToggle = document.getElementById('themeToggle');
+    const THEME_KEY = 'deputation_theme_v1';
+
     const searchPost = document.getElementById('searchPost');
     const filterMyPayLevel = document.getElementById('filterMyPayLevel');
     const filterLevel = document.getElementById('filterLevel');
@@ -60,6 +63,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeModal();
     updateWatchlistUI();
     setLoadingUI();
+
+    initializeTheme();
+initializeModal();
+updateWatchlistUI();
 
     loadDataFromJSON();
 
@@ -290,6 +297,10 @@ function updateMobileFilterToggle() {
             onFilterChange();
         });
 
+if (themeToggle) {
+    themeToggle.addEventListener('click', toggleTheme);
+}
+        
         [
             filterMyPayLevel,
             filterLevel,
@@ -723,12 +734,24 @@ function updateMobileFilterToggle() {
     }
 
     function updateWatchlistUI() {
-        favCount.textContent = String(watchlist.size || 0);
-        favBtn.classList.toggle('active', showWatchlistOnly);
-        favBtn.setAttribute('aria-pressed', String(showWatchlistOnly));
-        favBtn.title = showWatchlistOnly ? 'Show all vacancies' : 'Show watchlist';
-    }
+    const savedCount = watchlist.size;
+    const hasSaved = savedCount > 0;
 
+    favCount.textContent = String(savedCount);
+
+    favBtn.classList.toggle('has-saved', hasSaved);
+    favBtn.classList.toggle('active-watchlist', showWatchlistOnly);
+
+    favBtn.setAttribute('aria-pressed', String(showWatchlistOnly));
+
+    if (showWatchlistOnly) {
+        favBtn.title = 'Showing bookmarked vacancies';
+    } else if (hasSaved) {
+        favBtn.title = 'Show bookmarked vacancies';
+    } else {
+        favBtn.title = 'No bookmarked vacancies yet';
+    }
+}
     function renderActiveFilterChips() {
         const chips = [];
 
@@ -751,6 +774,40 @@ function updateMobileFilterToggle() {
             </button>
         `;
     }
+
+    function initializeTheme() {
+    const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+    applyTheme(savedTheme);
+}
+
+function toggleTheme() {
+    const currentTheme =
+        document.documentElement.getAttribute('data-theme') === 'light'
+            ? 'light'
+            : 'dark';
+
+    const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+    applyTheme(nextTheme);
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(THEME_KEY, theme);
+
+    if (themeToggle) {
+        themeToggle.innerHTML =
+            theme === 'light'
+                ? '<i data-lucide="sun"></i>'
+                : '<i data-lucide="moon"></i>';
+
+        themeToggle.title =
+            theme === 'light'
+                ? 'Switch to dark mode'
+                : 'Switch to light mode';
+    }
+
+    lucide.createIcons();
+}
 
     function renderResults(data, totalCount, totalPages) {
         if (!totalCount) {
