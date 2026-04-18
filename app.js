@@ -254,6 +254,8 @@ function updateMobileFilterToggle() {
     }
 
 function renderTable(data) {
+
+    const hasSavedAny = watchlist.size > 0;
   const rows = data.map((item) => {
     const vacancyId = safe(item.Vacancy_ID);
     const saved = watchlist.has(vacancyId);
@@ -356,9 +358,13 @@ function renderTable(data) {
             ${renderSortableHeader('Status', 'Status', 'status-col')}
             <th class="table-link-cell">Notification</th>
             <th class="table-link-cell">Apply</th>
-            <th class="save-col save-col-heading" title="Bookmark" aria-label="Bookmark">
-              <i data-lucide="bookmark"></i>
-            </th>
+            <th
+  class="save-col save-col-heading ${hasSavedAny ? 'has-saved' : ''}"
+  title="${hasSavedAny ? 'Bookmarks saved' : 'No bookmarks yet'}"
+  aria-label="Bookmark"
+>
+  <i data-lucide="bookmark"></i>
+</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
