@@ -3797,3 +3797,36 @@ html:not([data-theme="light"]) .job-highlight-row .highlight-box:first-child:has
 .modal-close svg * {
   pointer-events: none;
 }
+
+/* ===== Notification Date chip ===== */
+
+.notification-date-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0.42rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 211, 238, 0.20);
+  background: rgba(34, 211, 238, 0.08);
+  color: var(--primary-color);
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+[data-theme="light"] .notification-date-chip {
+  border-color: rgba(109, 40, 217, 0.10);
+  background: linear-gradient(
+    180deg,
+    rgba(248,252,255,0.98) 0%,
+    rgba(242,246,255,0.98) 100%
+  );
+  color: #334155;
+}
+
+.data-table .notification-date-col,
+.data-table td.notification-date-col {
+  min-width: 150px;
+  white-space: nowrap;
+}
