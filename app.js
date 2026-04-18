@@ -483,7 +483,7 @@ function renderTable(data) {
     filterLocation.value = '';
     filterStatus.value = 'Active';
     showWatchlistOnly = false;
-      kpiFilter = 'all';
+    kpiFilter = 'all';
 
     quickFilters = {
       closing7: false,
@@ -497,28 +497,11 @@ function renderTable(data) {
   });
 
   btnTableView.addEventListener('click', () => {
-    currentView = 'table';
-    pagination.currentPage = 1;
-    btnTableView.classList.add('active');
-    btnCardView.classList.remove('active');
-    renderDashboard(false);
+    setView('table', true);
   });
 
-        kpiGrid.addEventListener('click', (e) => {
-  const card = e.target.closest('[data-kpi-filter]');
-  if (!card) return;
-
-  const nextFilter = card.getAttribute('data-kpi-filter') || 'all';
-  kpiFilter = nextFilter;
-  pagination.currentPage = 1;
-  renderDashboard();
-});
   btnCardView.addEventListener('click', () => {
-    currentView = 'card';
-    pagination.currentPage = 1;
-    btnCardView.classList.add('active');
-    btnTableView.classList.remove('active');
-    renderDashboard(false);
+    setView('card', true);
   });
 
   favBtn.addEventListener('click', () => {
@@ -540,7 +523,18 @@ function renderTable(data) {
     if (filterName === 'location') filterLocation.value = '';
     if (filterName === 'status') filterStatus.value = '';
     if (filterName === 'watchlist') showWatchlistOnly = false;
+    if (filterName === 'kpi') kpiFilter = 'all';
 
+    pagination.currentPage = 1;
+    renderDashboard();
+  });
+
+  kpiGrid.addEventListener('click', (e) => {
+    const card = e.target.closest('[data-kpi-filter]');
+    if (!card) return;
+
+    const nextFilter = card.getAttribute('data-kpi-filter') || 'all';
+    kpiFilter = nextFilter;
     pagination.currentPage = 1;
     renderDashboard();
   });
@@ -562,24 +556,24 @@ function renderTable(data) {
       return;
     }
 
-   const pageNavBtn = e.target.closest('[data-page-nav]');
-if (pageNavBtn) {
-  const action = pageNavBtn.getAttribute('data-page-nav');
-  const totalPages = Number(pageNavBtn.getAttribute('data-total-pages')) || 1;
+    const pageNavBtn = e.target.closest('[data-page-nav]');
+    if (pageNavBtn) {
+      const action = pageNavBtn.getAttribute('data-page-nav');
+      const totalPages = Number(pageNavBtn.getAttribute('data-total-pages')) || 1;
 
-  if (action === 'first') {
-    pagination.currentPage = 1;
-  } else if (action === 'prev' && pagination.currentPage > 1) {
-    pagination.currentPage--;
-  } else if (action === 'next' && pagination.currentPage < totalPages) {
-    pagination.currentPage++;
-  } else if (action === 'last') {
-    pagination.currentPage = totalPages;
-  }
+      if (action === 'first') {
+        pagination.currentPage = 1;
+      } else if (action === 'prev' && pagination.currentPage > 1) {
+        pagination.currentPage--;
+      } else if (action === 'next' && pagination.currentPage < totalPages) {
+        pagination.currentPage++;
+      } else if (action === 'last') {
+        pagination.currentPage = totalPages;
+      }
 
-  renderDashboard(false);
-  return;
-}
+      renderDashboard(false);
+      return;
+    }
 
     const cardAction = e.target.closest('[data-card-action]');
     if (cardAction) {
@@ -928,21 +922,22 @@ if (pageNavBtn) {
         favBtn.title = 'No bookmarked vacancies yet';
     }
 }
-    function renderActiveFilterChips() {
-        const chips = [];
+   function renderActiveFilterChips() {
+  const chips = [];
 
-        if (searchPost.value.trim()) chips.push(makeChip('search', `Search: ${escapeHtml(searchPost.value.trim())}`));
-        if (filterMyPayLevel.value) chips.push(makeChip('myPayLevel', `My Pay Level: Level ${filterMyPayLevel.value}`));
-        if (filterLevel.value) chips.push(makeChip('level', `Pay Level: ${escapeHtml(filterLevel.value)}`));
-        if (filterMinistry.value) chips.push(makeChip('ministry', `Ministry: ${escapeHtml(filterMinistry.value)}`));
-        if (filterLocation.value) chips.push(makeChip('location', `Location: ${escapeHtml(filterLocation.value)}`));
-        if (filterStatus.value) chips.push(makeChip('status', `Status: ${escapeHtml(filterStatus.value)}`));
-        if (showWatchlistOnly) chips.push(makeChip('watchlist', 'Watchlist'));
-        if (kpiFilter === 'active') chips.push(makeChip('kpi', 'KPI: Active'));
-if (kpiFilter === 'closingSoon') chips.push(makeChip('kpi', 'KPI: Closing Soon'));
+  if (searchPost.value.trim()) chips.push(makeChip('search', `Search: ${escapeHtml(searchPost.value.trim())}`));
+  if (filterMyPayLevel.value) chips.push(makeChip('myPayLevel', `My Pay Level: Level ${filterMyPayLevel.value}`));
+  if (filterLevel.value) chips.push(makeChip('level', `Pay Level: ${escapeHtml(filterLevel.value)}`));
+  if (filterMinistry.value) chips.push(makeChip('ministry', `Ministry: ${escapeHtml(filterMinistry.value)}`));
+  if (filterLocation.value) chips.push(makeChip('location', `Location: ${escapeHtml(filterLocation.value)}`));
+  if (filterStatus.value) chips.push(makeChip('status', `Status: ${escapeHtml(filterStatus.value)}`));
+  if (showWatchlistOnly) chips.push(makeChip('watchlist', 'Watchlist'));
 
-        activeFilters.innerHTML = chips.join('');
-    }
+  if (kpiFilter === 'active') chips.push(makeChip('kpi', 'KPI: Active'));
+  if (kpiFilter === 'closingSoon') chips.push(makeChip('kpi', 'KPI: Closing Soon'));
+
+  activeFilters.innerHTML = chips.join('');
+}
 
     function makeChip(filterName, label) {
         return `
