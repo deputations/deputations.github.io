@@ -38,10 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let watchlist = loadWatchlist();
     let showWatchlistOnly = false;
 
-    let sortState = {
-        key: 'Days_Left',
-        direction: 'asc'
-    };
+   let sortState = {
+  key: 'Notification_Date',
+  direction: 'desc'
+};
 
     let pagination = {
         currentPage: 1,
@@ -103,6 +103,16 @@ function loadDataFromJSON() {
         });
 }
 
+function getDateSortValue(value) {
+  const raw = safe(value);
+  if (!raw) return 0;
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return 0;
+
+  return parsed.getTime();
+}
+    
     function initializeEnhancements() {
         createSearchDatalist();
         createQuickFiltersBar();
@@ -755,6 +765,10 @@ function renderTable(data) {
                     aVal = parseNumericSafe(a.Days_Left, Number.MAX_SAFE_INTEGER);
                     bVal = parseNumericSafe(b.Days_Left, Number.MAX_SAFE_INTEGER);
                     break;
+                    case 'Notification_Date':
+  aVal = getDateSortValue(a.Notification_Date);
+  bVal = getDateSortValue(b.Notification_Date);
+  break;
                 case 'Status':
                     aVal = safe(a.Status).toLowerCase();
                     bVal = safe(b.Status).toLowerCase();
@@ -992,7 +1006,13 @@ function applyTheme(theme) {
             const status = safe(item.Status) || '—';
             const detailedNotificationLink = normalizeUrl(safe(item.Official_Notification_Link));
             const applyLink = normalizeUrl(safe(item.Application_Form_Link));
+const notificationDateDisplay = formatDisplayDate(safe(item.Notification_Date));
+const notificationDateText =
+  notificationDateDisplay && notificationDateDisplay !== 'Not specified'
+    ? notificationDateDisplay
+    : 'Not specified';
 
+            
             return `
                 <div class="job-card premium-card clickable-card" data-open-details="${escapeHtml(vacancyId)}">
                     <button
@@ -1033,15 +1053,14 @@ function applyTheme(theme) {
 </div>
                         </div>
 
-                        <div class="highlight-box">
-                            <div class="highlight-label">Status</div>
-                            <div class="highlight-value">
-                                <span class="badge ${status === 'Active' ? 'badge-active' : ''}">
-                                    ${escapeHtml(status)}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+                       <div class="highlight-box">
+  <div class="highlight-label">Notification Date</div>
+  <div class="highlight-value">
+    <span class="notification-date-chip">
+      ${escapeHtml(notificationDateText)}
+    </span>
+  </div>
+</div>
 
                     <div class="job-details premium-details">
                         <div class="detail-item">
