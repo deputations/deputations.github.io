@@ -18,6 +18,113 @@
   --shadow-glass: 0 8px 32px -4px rgba(0, 0, 0, 0.4);
 }
 
+/* ===== PREMIUM TYPOGRAPHY SYSTEM ===== */
+
+body,
+input,
+select,
+button,
+textarea,
+table {
+  font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  font-feature-settings: "ss01" 1, "cv01" 1, "cv11" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* major headings */
+.header-logo h1,
+.job-title,
+.vacancy-modal-title,
+.filters-header h2 {
+  font-family: "Sora", "Plus Jakarta Sans", sans-serif;
+  letter-spacing: -0.03em;
+}
+
+/* top navigation */
+.top-nav a {
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* KPI titles and values */
+.kpi-title {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  letter-spacing: 0.06em;
+}
+
+.kpi-value {
+  font-family: "Sora", "Plus Jakarta Sans", sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+/* table headers */
+.data-table th,
+.sort-btn {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* table content */
+.data-table td,
+.table-subtext,
+.detail-value,
+.job-org,
+.results-count,
+.filter-chip,
+.quick-pill,
+.meta-pill,
+.badge,
+.card-action-btn,
+.table-link-btn {
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+}
+
+/* make titles feel more premium */
+.job-title {
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+}
+
+.vacancy-modal-title {
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+
+/* body details */
+.detail-label,
+.highlight-label,
+.modal-field-label,
+.modal-section-title {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* table body readability */
+.data-table td {
+  font-weight: 500;
+}
+
+.data-table td strong {
+  font-family: "Sora", "Plus Jakarta Sans", sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+/* status badge and pills */
+.badge,
+.meta-pill,
+.quick-pill,
+.filter-chip {
+  font-weight: 700;
+}
+
 [data-theme="light"] {
   --bg-main: #f6f8fc;
   --bg-surface: rgba(255, 255, 255, 0.86);
