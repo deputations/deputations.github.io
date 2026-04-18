@@ -3786,4 +3786,14 @@ html:not([data-theme="light"]) .job-highlight-row .highlight-box:first-child:has
   ) !important;
 }
 
+/* ===== modal close button click reliability ===== */
 
+.modal-close {
+  z-index: 30;
+  pointer-events: auto;
+}
+
+.modal-close svg,
+.modal-close svg * {
+  pointer-events: none;
+}
