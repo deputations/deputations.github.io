@@ -335,7 +335,7 @@ function renderTable(data) {
             aria-label="${saved ? 'Remove bookmarked vacancy' : 'Bookmark the Vacancy'}"
             aria-pressed="${saved ? 'true' : 'false'}"
           >
-            <i data-lucide="bookmark"></i>
+           <i data-lucide="heart"></i>
           </button>
         </td>
       </tr>
