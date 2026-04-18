@@ -447,6 +447,22 @@ function updateMobileFilterToggle() {
                 return;
             }
 
+            btnTableView.addEventListener('click', () => {
+  currentView = 'table';
+  pagination.currentPage = 1;
+  btnTableView.classList.add('active');
+  btnCardView.classList.remove('active');
+  renderDashboard(false);
+});
+
+btnCardView.addEventListener('click', () => {
+  currentView = 'card';
+  pagination.currentPage = 1;
+  btnCardView.classList.add('active');
+  btnTableView.classList.remove('active');
+  renderDashboard(false);
+});
+
             const tableAction = e.target.closest('[data-table-action]');
             if (tableAction) {
                 e.stopPropagation();
