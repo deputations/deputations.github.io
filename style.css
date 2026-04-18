@@ -3871,3 +3871,7 @@ html:not([data-theme="light"]) .job-highlight-row .highlight-box:first-child:has
   );
   color: #334155;
 }
+
+.page-nav-btn {
+  min-width: 52px;
+}
