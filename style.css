@@ -2190,3 +2190,43 @@ select:focus {
     0 10px 22px rgba(15, 23, 42, 0.12),
     0 0 0 4px rgba(244, 63, 94, 0.14) !important;
 }
+
+/* ===== table column polish ===== */
+
+.data-table .level-col,
+.data-table td.level-col {
+  min-width: 126px;
+  white-space: nowrap;
+}
+
+.data-table .days-col,
+.data-table td.days-col {
+  min-width: 118px;
+  white-space: nowrap;
+}
+
+.data-table .save-col,
+.data-table .table-heart-cell {
+  width: 74px;
+  min-width: 74px;
+  text-align: center;
+}
+
+.data-table .save-col-heading {
+  text-align: center;
+}
+
+.data-table .save-col-heading svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+/* keep mobile stacked layout safe */
+@media (max-width: 768px) {
+  .responsive-table td.level-col,
+  .responsive-table td.days-col {
+    white-space: normal;
+  }
+}
