@@ -253,6 +253,120 @@ function updateMobileFilterToggle() {
         });
     }
 
+function renderTable(data) {
+  const rows = data.map((item) => {
+    const vacancyId = safe(item.Vacancy_ID);
+    const saved = watchlist.has(vacancyId);
+    const daysLeft = parseInt(item.Days_Left, 10);
+    const closingSoon = !Number.isNaN(daysLeft) && daysLeft >= 0 && daysLeft <= 15;
+    const notificationLink = normalizeUrl(safe(item.Official_Notification_Link));
+    const applyLink = normalizeUrl(safe(item.Application_Form_Link));
+
+    return `
+      <tr class="clickable-row" data-open-details="${escapeHtml(vacancyId)}">
+        <td class="post-col" data-label="Post Name">
+          <strong>${escapeHtml(safe(item.Post_Name) || '—')}</strong>
+          <div class="table-subtext">
+            ${escapeHtml(safe(item.Department_Organisation) || '')}
+          </div>
+        </td>
+
+        <td class="level-col" data-label="Level">
+          ${escapeHtml(safe(item.Level_Text) || '—')}
+        </td>
+
+        <td class="eligibility-col" data-label="Eligibility">
+          ${escapeHtml(formatEligibility(item))}
+        </td>
+
+        <td class="ministry-col" data-label="Ministry">
+          ${escapeHtml(safe(item.Ministry) || '—')}
+        </td>
+
+        <td class="location-col" data-label="Location">
+          ${escapeHtml(formatLocation(item) || '—')}
+        </td>
+
+        <td class="days-col days-left ${closingSoon ? 'closing' : ''}" data-label="Days Left">
+          ${escapeHtml(formatDaysLeft(daysLeft))}
+        </td>
+
+        <td class="status-col" data-label="Status">
+          <span class="badge ${safe(item.Status) === 'Active' ? 'badge-active' : ''}">
+            ${escapeHtml(safe(item.Status) || '—')}
+          </span>
+        </td>
+
+        <td class="table-link-cell" data-label="Notification">
+          ${notificationLink ? `
+            <a
+              class="table-link-btn"
+              href="${escapeHtml(notificationLink)}"
+              target="_blank"
+              rel="noopener noreferrer"
+              onclick="event.stopPropagation();"
+            >
+              Notification
+            </a>
+          ` : '—'}
+        </td>
+
+        <td class="table-link-cell" data-label="Apply">
+          ${applyLink ? `
+            <a
+              class="table-link-btn apply"
+              href="${escapeHtml(applyLink)}"
+              target="_blank"
+              rel="noopener noreferrer"
+              onclick="event.stopPropagation();"
+            >
+              Apply
+            </a>
+          ` : '—'}
+        </td>
+
+        <td class="table-heart-cell save-col" data-label="Bookmark">
+          <button
+            type="button"
+            class="table-heart-btn ${saved ? 'saved' : ''}"
+            data-table-action="watchlist"
+            data-id="${escapeHtml(vacancyId)}"
+            title="Bookmark the Vacancy"
+            aria-label="${saved ? 'Remove bookmarked vacancy' : 'Bookmark the Vacancy'}"
+            aria-pressed="${saved ? 'true' : 'false'}"
+          >
+            <i data-lucide="bookmark"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div class="table-wrapper">
+      <table class="data-table responsive-table">
+        <thead>
+          <tr>
+            ${renderSortableHeader('Post Name', 'Post_Name', 'post-col')}
+            ${renderSortableHeader('Level', 'Level_Text', 'level-col')}
+            ${renderSortableHeader('Eligibility', 'Eligibility', 'eligibility-col')}
+            ${renderSortableHeader('Ministry', 'Ministry', 'ministry-col')}
+            ${renderSortableHeader('Location', 'Location', 'location-col')}
+            ${renderSortableHeader('Days Left', 'Days_Left', 'days-col')}
+            ${renderSortableHeader('Status', 'Status', 'status-col')}
+            <th class="table-link-cell">Notification</th>
+            <th class="table-link-cell">Apply</th>
+            <th class="save-col save-col-heading" title="Bookmark" aria-label="Bookmark">
+              <i data-lucide="bookmark"></i>
+            </th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+    
     function populateFilters() {
         filterMyPayLevel.innerHTML = '<option value="">Any Level</option>';
         for (let i = 18; i >= 1; i--) {
@@ -1006,7 +1120,11 @@ function applyTheme(theme) {
 
   return `
     <th class="${extraClass}">
-      <button type="button" class="sort-btn ${active ? 'active' : ''}" data-sort="${key}">
+      <button
+        type="button"
+        class="sort-btn ${active ? 'active' : ''}"
+        data-sort="${key}"
+      >
         <span>${label}</span>
         <span class="sort-indicator">${active ? dir : '↕'}</span>
       </button>
