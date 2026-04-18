@@ -2706,3 +2706,48 @@ select:focus {
   border-color: rgba(2, 132, 199, 0.24) !important;
   color: #0369a1 !important;
 }
+
+/* ===== subtle hover animation polish ===== */
+
+.job-card,
+.premium-card {
+  transition:
+    transform 0.24s ease,
+    box-shadow 0.24s ease,
+    border-color 0.24s ease,
+    background 0.24s ease;
+  will-change: transform;
+}
+
+.job-card:hover,
+.premium-card:hover {
+  transform: translateY(-6px) scale(1.01);
+}
+
+/* table row hover polish */
+.data-table tr {
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+  transform: translateY(-1px);
+}
+
+/* make hover feel smoother in dark mode */
+.data-table tbody tr:hover td {
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+/* light theme row hover refinement */
+[data-theme="light"] .data-table tbody tr:hover {
+  box-shadow: inset 0 0 0 9999px rgba(2, 132, 199, 0.03);
+}
+
+/* dark theme row hover refinement */
+[data-theme="dark"] .data-table tbody tr:hover,
+html:not([data-theme="light"]) .data-table tbody tr:hover {
+  box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.015);
+}
