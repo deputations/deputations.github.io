@@ -58,23 +58,20 @@ document.addEventListener('DOMContentLoaded', () => {
     let searchDatalist = null;
     let quickFiltersBar = null;
 
-    initializeEnhancements();
-    initializeMobileFilterAccordion();
-    initializeModal();
-    updateWatchlistUI();
-    setLoadingUI();
+   initializeEnhancements();
+initializeMobileFilterAccordion();
+initializeModal();
+updateWatchlistUI();
+setLoadingUI();
+initializeTheme();
 
-    initializeTheme();
 if (themeToggle && !themeToggle.dataset.bound) {
   themeToggle.addEventListener('click', toggleTheme);
   themeToggle.dataset.bound = 'true';
 }
+
+loadDataFromJSON();
     
-initializeModal();
-updateWatchlistUI();
-
-    loadDataFromJSON();
-
  function getCurrentPageSize() {
   return currentView === 'card' ? 9 : 10;
 }   
@@ -214,44 +211,54 @@ function updateMobileFilterToggle() {
     }
 
     function initializeModal() {
-        if (closeModalBtn) {
-            closeModalBtn.addEventListener('click', closeVacancyModal);
-        }
+  if (modal && modal.dataset.bound === 'true') return;
+  if (modal) {
+    modal.dataset.bound = 'true';
+  }
 
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    closeVacancyModal();
-                    return;
-                }
+  if (closeModalBtn && !closeModalBtn.dataset.bound) {
+    closeModalBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeVacancyModal();
+    });
+    closeModalBtn.dataset.bound = 'true';
+  }
 
-                const modalWatchBtn = e.target.closest('[data-modal-action="watchlist"]');
-                if (!modalWatchBtn) return;
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeVacancyModal();
+        return;
+      }
 
-                const vacancyId = modalWatchBtn.getAttribute('data-id');
-                const alreadySaved = watchlist.has(safe(vacancyId));
+      const modalWatchBtn = e.target.closest('[data-modal-action="watchlist"]');
+      if (!modalWatchBtn) return;
 
-                toggleWatchlist(vacancyId);
-                renderDashboard(false);
+      const vacancyId = modalWatchBtn.getAttribute('data-id');
+      const alreadySaved = watchlist.has(safe(vacancyId));
 
-                if (!alreadySaved) {
-                    animateBookmarkButton(vacancyId);
-                }
+      toggleWatchlist(vacancyId);
+      renderDashboard(false);
 
-                if (showWatchlistOnly && alreadySaved) {
-                    closeVacancyModal();
-                } else {
-                    openVacancyModal(vacancyId);
-                }
-            });
-        }
+      if (!alreadySaved) {
+        animateBookmarkButton(vacancyId);
+      }
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
-                closeVacancyModal();
-            }
-        });
+      if (showWatchlistOnly && alreadySaved) {
+        closeVacancyModal();
+      } else {
+        openVacancyModal(vacancyId);
+      }
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
+      closeVacancyModal();
     }
+  });
+}
 
 function renderTable(data) {
 
