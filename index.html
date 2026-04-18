@@ -1,156 +1,148 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deputation Portal</title>
-    <meta name="description" content="Central Government Deputation Vacancies Dashboard with searchable vacancies, ministry-wise insights, rules, and updates.">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deputation Portal</title>
+  <meta
+    name="description"
+    content="Central Government Deputation Vacancies Dashboard with searchable vacancies, ministry-wise insights, rules, and updates."
+  >
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
 
-
-   <nav class="top-nav">
-  <a href="/index.html">Home</a>
-  <a href="/rules.html">Rules</a>
-  <a href="/dex.html">DEX</a>
-  <a href="/report-vacancy.html">Report Vacancy</a>
-  <a href="/contact.html">Contact</a>
-  <a href="/my-deputation.html">My Deputation</a>
-<a href="rules.html" class="nav-link nav-duplicate">
-  <i data-lucide="book-open"></i>
-  <span>Rules</span>
-</a>
-
-<a href="dex.html" class="nav-link nav-duplicate">
-  <i data-lucide="bar-chart-3"></i>
-  <span>DEX</span>
-</a>
-
-</nav>
-
-    
-    <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-    <div class="bg-shapes">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-        <div class="shape shape-3"></div>
-    </div>
+  <nav class="top-nav">
+    <a href="/index.html" class="active">Home</a>
+    <a href="/rules.html">Rules</a>
+    <a href="/dex.html">DEX</a>
+    <a href="/report-vacancy.html">Report Vacancy</a>
+    <a href="/contact.html">Contact</a>
+    <a href="/my-deputation.html">My Deputation</a>
+  </nav>
 
-    <div class="app-container">
-        <header class="app-header">
-            <div class="header-logo">
-                <i data-lucide="building-2"></i>
-                <h1><span class="gradient-text">DEPUTATION</span> VACANCIES</h1>
-            </div>
+  <div class="bg-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
 
-            <div class="header-actions">
-                <button id="favBtn" class="icon-btn" title="My Watchlist" aria-label="My Watchlist">
-                    <i data-lucide="heart"></i>
-                    <span id="favCount" class="fav-count">0</span>
-                </button>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-logo">
+        <i data-lucide="building-2"></i>
+        <h1><span class="gradient-text">DEPUTATION</span> VACANCIES</h1>
+      </div>
 
-                <button id="themeToggle" class="icon-btn" title="Toggle Theme" aria-label="Toggle Theme">
-                    <i data-lucide="moon"></i>
-                </button>
-            </div>
-        </header>
+      <div class="header-actions">
+        <button id="favBtn" class="icon-btn" title="My Watchlist" aria-label="My Watchlist">
+          <i data-lucide="heart"></i>
+          <span id="favCount" class="fav-count">0</span>
+        </button>
 
-        <main class="main-layout">
-            <aside class="filters-sidebar glass-panel">
-                <div class="filters-header">
-                    <h2><i data-lucide="filter"></i> Filters</h2>
-                    <button id="clearFiltersBtn" class="text-btn">Clear All</button>
-                </div>
+        <button id="themeToggle" class="icon-btn" title="Toggle Theme" aria-label="Toggle Theme">
+          <i data-lucide="moon"></i>
+        </button>
+      </div>
+    </header>
 
-                <div class="filter-group">
-                    <label for="searchPost">Search</label>
-                    <div class="input-icon">
-                        <i data-lucide="search"></i>
-                        <input type="text" id="searchPost" placeholder="Post, dept, keywords...">
-                    </div>
-                </div>
-
-                <div class="filter-group">
-                    <label for="filterMyPayLevel">My Pay Level</label>
-                    <select id="filterMyPayLevel">
-                        <option value="">Any Level</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label for="filterLevel">Pay Level</label>
-                    <select id="filterLevel">
-                        <option value="">All Levels</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label for="filterMinistry">Ministry</label>
-                    <select id="filterMinistry">
-                        <option value="">All Ministries</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label for="filterLocation">Location</label>
-                    <select id="filterLocation">
-                        <option value="">All Locations</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label for="filterStatus">Status</label>
-                    <select id="filterStatus">
-                        <option value="">All</option>
-                        <option value="Active" selected>Active</option>
-                        <option value="Inactive">Inactive</option>
-                    </select>
-                </div>
-            </aside>
-
-            <section class="dashboard-content">
-                <div class="kpi-grid" id="kpiGrid"></div>
-
-                <div class="top-toolbar">
-                    <div class="toolbar-line toolbar-line-filters">
-                        <div class="results-count" id="resultsCount">Loading vacancies...</div>
-
-                        <div id="activeFilters" class="active-filters"></div>
-
-                        <div class="quick-filters-bar" id="quickFiltersBar"></div>
-
-                        <div class="view-toggles">
-                            <button id="btnTableView" class="view-btn active" title="Table View" aria-label="Table View">
-                                <i data-lucide="table-2"></i>
-                            </button>
-                            <button id="btnCardView" class="view-btn" title="Card View" aria-label="Card View">
-                                <i data-lucide="layout-grid"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="dataContainer" class="data-container view-table"></div>
-            </section>
-        </main>
-    </div>
-
-    <div id="modal" class="modal">
-        <div class="modal-content glass-panel">
-            <button id="closeModal" class="modal-close" aria-label="Close">
-                <i data-lucide="x"></i>
-            </button>
-            <div id="modalBody"></div>
+    <main class="main-layout">
+      <aside class="filters-sidebar glass-panel">
+        <div class="filters-header">
+          <h2><i data-lucide="filter"></i> Filters</h2>
+          <button id="clearFiltersBtn" class="text-btn">Clear All</button>
         </div>
-    </div>
 
-    <script src="app.js"></script>
+        <div class="filter-group">
+          <label for="searchPost">Search</label>
+          <div class="input-icon">
+            <i data-lucide="search"></i>
+            <input type="text" id="searchPost" placeholder="Post, dept, keywords...">
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label for="filterMyPayLevel">My Pay Level</label>
+          <select id="filterMyPayLevel">
+            <option value="">Any Level</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filterLevel">Pay Level</label>
+          <select id="filterLevel">
+            <option value="">All Levels</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filterMinistry">Ministry</label>
+          <select id="filterMinistry">
+            <option value="">All Ministries</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filterLocation">Location</label>
+          <select id="filterLocation">
+            <option value="">All Locations</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filterStatus">Status</label>
+          <select id="filterStatus">
+            <option value="">All</option>
+            <option value="Active" selected>Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+      </aside>
+
+      <section class="dashboard-content">
+        <div class="kpi-grid" id="kpiGrid"></div>
+
+        <div class="top-toolbar">
+          <div class="toolbar-line toolbar-line-filters">
+            <div class="results-count" id="resultsCount">Loading vacancies...</div>
+            <div id="activeFilters" class="active-filters"></div>
+            <div class="quick-filters-bar" id="quickFiltersBar"></div>
+
+            <div class="view-toggles">
+              <button id="btnTableView" class="view-btn active" title="Table View" aria-label="Table View">
+                <i data-lucide="table-2"></i>
+              </button>
+
+              <button id="btnCardView" class="view-btn" title="Card View" aria-label="Card View">
+                <i data-lucide="layout-grid"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="dataContainer" class="data-container view-table"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal">
+    <div class="modal-content glass-panel">
+      <button id="closeModal" class="modal-close" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
