@@ -857,120 +857,162 @@ function applyTheme(theme) {
         `;
     }
 
-    function renderTable(data) {
-        const rows = data.map(item => {
-            const vacancyId = safe(item.Vacancy_ID);
-            const saved = watchlist.has(vacancyId);
-            const daysLeft = parseInt(item.Days_Left, 10);
-            const closingSoon = !Number.isNaN(daysLeft) && daysLeft >= 0 && daysLeft <= 15;
-            const detailedNotificationLink = normalizeUrl(safe(item.Official_Notification_Link));
-            const applyLink = normalizeUrl(safe(item.Application_Form_Link));
+  /* ===== LIGHT MODE CARD READABILITY POLISH ===== */
 
-            return `
-                <tr class="clickable-row" data-open-details="${escapeHtml(vacancyId)}">
-                    <td class="table-heart-cell" data-label="Save">
-                        <button
-                            type="button"
-                            class="table-heart-btn ${saved ? 'saved' : ''}"
-                            data-table-action="watchlist"
-                            data-id="${escapeHtml(vacancyId)}"
-                            title="Bookmark the Vacancy"
-                            aria-label="${saved ? 'Remove bookmarked vacancy' : 'Bookmark the Vacancy'}"
-                            aria-pressed="${saved ? 'true' : 'false'}"
-                        >
-                            <i data-lucide="heart"></i>
-                        </button>
-                    </td>
+[data-theme="light"] .job-card,
+[data-theme="light"] .premium-card {
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.94),
+    rgba(244, 247, 251, 0.96)
+  ) !important;
+  border-color: rgba(15, 23, 42, 0.10) !important;
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.08),
+    0 1px 0 rgba(255,255,255,0.9) inset !important;
+}
 
-                    <td data-label="Post Name">
-                        <strong>${escapeHtml(safe(item.Post_Name) || '—')}</strong>
-                        <div class="table-subtext">
-                            ${escapeHtml(safe(item.Department_Organisation) || '')}
-                        </div>
-                    </td>
+[data-theme="light"] .job-card:hover,
+[data-theme="light"] .premium-card:hover {
+  border-color: rgba(2, 132, 199, 0.18) !important;
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.10),
+    0 0 0 1px rgba(2,132,199,0.06) !important;
+}
 
-                    <td data-label="Level">${escapeHtml(safe(item.Level_Text) || '—')}</td>
-                    <td data-label="Eligibility">${escapeHtml(formatEligibility(item))}</td>
-                    <td data-label="Ministry">${escapeHtml(safe(item.Ministry) || '—')}</td>
-                    <td data-label="Location">${escapeHtml(formatLocation(item) || '—')}</td>
+/* title + subtitle */
+[data-theme="light"] .job-title {
+  color: #0f172a !important;
+  letter-spacing: -0.03em;
+}
 
-                    <td data-label="Days Left" class="days-left ${closingSoon ? 'closing' : ''}">
-                        ${escapeHtml(formatDaysLeft(daysLeft))}
-                    </td>
+[data-theme="light"] .job-org {
+  color: #475569 !important;
+  font-weight: 500;
+}
 
-                    <td data-label="Status">
-                        <span class="badge ${safe(item.Status) === 'Active' ? 'badge-active' : ''}">
-                            ${escapeHtml(safe(item.Status) || '—')}
-                        </span>
-                    </td>
+/* pills on top */
+[data-theme="light"] .meta-pill {
+  background: rgba(248, 250, 252, 0.96) !important;
+  border-color: rgba(15, 23, 42, 0.10) !important;
+  color: #334155 !important;
+}
 
-                    <td data-label="Notification" class="table-link-cell">
-                        ${detailedNotificationLink ? `
-                            <a
-                                class="table-link-btn"
-                                href="${escapeHtml(detailedNotificationLink)}"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onclick="event.stopPropagation();"
-                            >
-                                Detailed Notification
-                            </a>
-                        ` : '—'}
-                    </td>
+[data-theme="light"] .meta-pill-level {
+  background: rgba(2, 132, 199, 0.08) !important;
+  border-color: rgba(2, 132, 199, 0.18) !important;
+  color: #0284c7 !important;
+}
 
-                    <td data-label="Apply" class="table-link-cell">
-                        ${applyLink ? `
-                            <a
-                                class="table-link-btn apply"
-                                href="${escapeHtml(applyLink)}"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onclick="event.stopPropagation();"
-                            >
-                                Apply
-                            </a>
-                        ` : '—'}
-                    </td>
-                </tr>
-            `;
-        }).join('');
+[data-theme="light"] .meta-pill-eligibility {
+  background: rgba(51, 65, 85, 0.06) !important;
+  border-color: rgba(51, 65, 85, 0.10) !important;
+  color: #334155 !important;
+}
 
-        return `
-            <div class="table-wrapper">
-                <table class="data-table responsive-table">
-                    <thead>
-                        <tr>
-                            <th>Save</th>
-                            ${renderSortableHeader('Post Name', 'Post_Name')}
-                            ${renderSortableHeader('Level', 'Level_Text')}
-                            ${renderSortableHeader('Eligibility', 'Eligibility')}
-                            ${renderSortableHeader('Ministry', 'Ministry')}
-                            ${renderSortableHeader('Location', 'Location')}
-                            ${renderSortableHeader('Days Left', 'Days_Left')}
-                            ${renderSortableHeader('Status', 'Status')}
-                            <th>Notification</th>
-                            <th>Apply</th>
-                        </tr>
-                    </thead>
-                    <tbody>${rows}</tbody>
-                </table>
-            </div>
-        `;
-    }
+/* highlight boxes */
+[data-theme="light"] .highlight-box {
+  background: linear-gradient(
+    180deg,
+    rgba(241, 245, 249, 0.95),
+    rgba(226, 232, 240, 0.88)
+  ) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
 
-    function renderSortableHeader(label, key) {
-        const active = sortState.key === key;
-        const dir = sortState.direction === 'asc' ? '↑' : '↓';
+[data-theme="light"] .highlight-label {
+  color: #64748b !important;
+}
 
-        return `
-            <th>
-                <button type="button" class="sort-btn ${active ? 'active' : ''}" data-sort="${key}">
-                    <span>${label}</span>
-                    <span class="sort-indicator">${active ? dir : '↕'}</span>
-                </button>
-            </th>
-        `;
-    }
+[data-theme="light"] .highlight-value {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .highlight-closing {
+  background: linear-gradient(
+    180deg,
+    rgba(254, 242, 242, 0.98),
+    rgba(254, 226, 226, 0.94)
+  ) !important;
+  border-color: rgba(220, 38, 38, 0.14) !important;
+}
+
+[data-theme="light"] .highlight-expired {
+  background: linear-gradient(
+    180deg,
+    rgba(248, 250, 252, 0.96),
+    rgba(226, 232, 240, 0.92)
+  ) !important;
+  border-color: rgba(100, 116, 139, 0.14) !important;
+}
+
+/* details grid */
+[data-theme="light"] .premium-details {
+  border-top-color: rgba(15, 23, 42, 0.08) !important;
+  border-bottom-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+[data-theme="light"] .detail-label {
+  color: #64748b !important;
+  font-weight: 700;
+}
+
+[data-theme="light"] .detail-value {
+  color: #334155 !important;
+  font-weight: 500;
+}
+
+/* buttons in cards */
+[data-theme="light"] .job-card-footer .card-action-btn.secondary {
+  background: rgba(248, 250, 252, 0.98) !important;
+  border-color: rgba(15, 23, 42, 0.10) !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .job-card-footer .card-action-btn.secondary:hover {
+  border-color: rgba(2, 132, 199, 0.22) !important;
+  background: rgba(240, 249, 255, 0.96) !important;
+  color: #075985 !important;
+}
+
+[data-theme="light"] .job-card-footer .apply-btn {
+  border-color: rgba(22, 163, 74, 0.20) !important;
+  background: rgba(240, 253, 244, 0.98) !important;
+  color: #15803d !important;
+}
+
+/* notification/apply links inside table too */
+[data-theme="light"] .table-link-btn {
+  background: rgba(240, 249, 255, 0.96) !important;
+  border-color: rgba(2, 132, 199, 0.16) !important;
+  color: #0369a1 !important;
+}
+
+[data-theme="light"] .table-link-btn.apply {
+  background: rgba(240, 253, 244, 0.98) !important;
+  border-color: rgba(22, 163, 74, 0.18) !important;
+  color: #15803d !important;
+}
+
+/* slightly stronger separators */
+[data-theme="light"] .data-table td,
+[data-theme="light"] .data-table th {
+  border-bottom-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+    function renderSortableHeader(label, key, extraClass = '') {
+  const active = sortState.key === key;
+  const dir = sortState.direction === 'asc' ? '↑' : '↓';
+
+  return `
+    <th class="${extraClass}">
+      <button type="button" class="sort-btn ${active ? 'active' : ''}" data-sort="${key}">
+        <span>${label}</span>
+        <span class="sort-indicator">${active ? dir : '↕'}</span>
+      </button>
+    </th>
+  `;
+}
 
     function renderCards(data) {
         const cards = data.map(item => {
