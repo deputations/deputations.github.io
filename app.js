@@ -271,8 +271,8 @@ function updateMobileFilterToggle() {
 }
 
 function renderTable(data) {
+  const hasSavedAny = watchlist.size > 0;
 
-    const hasSavedAny = watchlist.size > 0;
   const rows = data.map((item) => {
     const vacancyId = safe(item.Vacancy_ID);
     const saved = watchlist.has(vacancyId);
@@ -280,6 +280,12 @@ function renderTable(data) {
     const closingSoon = !Number.isNaN(daysLeft) && daysLeft >= 0 && daysLeft <= 15;
     const notificationLink = normalizeUrl(safe(item.Official_Notification_Link));
     const applyLink = normalizeUrl(safe(item.Application_Form_Link));
+
+    const notificationDateDisplay = formatDisplayDate(safe(item.Notification_Date));
+    const notificationDateText =
+      notificationDateDisplay && notificationDateDisplay !== 'Not specified'
+        ? notificationDateDisplay
+        : '—';
 
     return `
       <tr class="clickable-row" data-open-details="${escapeHtml(vacancyId)}">
@@ -306,16 +312,14 @@ function renderTable(data) {
           ${escapeHtml(formatLocation(item) || '—')}
         </td>
 
-       <td class="days-col" data-label="Days Left">
-  <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}">
-    ${escapeHtml(formatDaysLeft(daysLeft))}
-  </span>
-</td>
-
-        <td class="status-col" data-label="Status">
-          <span class="badge ${safe(item.Status) === 'Active' ? 'badge-active' : ''}">
-            ${escapeHtml(safe(item.Status) || '—')}
+        <td class="days-col" data-label="Days Left">
+          <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}">
+            ${escapeHtml(formatDaysLeft(daysLeft))}
           </span>
+        </td>
+
+        <td class="notification-date-col" data-label="Notification Date">
+          ${escapeHtml(notificationDateText)}
         </td>
 
         <td class="table-link-cell" data-label="Notification">
@@ -356,7 +360,7 @@ function renderTable(data) {
             aria-label="${saved ? 'Remove bookmarked vacancy' : 'Bookmark the Vacancy'}"
             aria-pressed="${saved ? 'true' : 'false'}"
           >
-           <i data-lucide="heart"></i>
+            <i data-lucide="heart"></i>
           </button>
         </td>
       </tr>
@@ -374,16 +378,16 @@ function renderTable(data) {
             ${renderSortableHeader('Ministry', 'Ministry', 'ministry-col')}
             ${renderSortableHeader('Location', 'Location', 'location-col')}
             ${renderSortableHeader('Days Left', 'Days_Left', 'days-col')}
-            ${renderSortableHeader('Status', 'Status', 'status-col')}
+            ${renderSortableHeader('Notification Date', 'Notification_Date', 'notification-date-col')}
             <th class="table-link-cell">Notification</th>
             <th class="table-link-cell">Apply</th>
             <th
-  class="save-col save-col-heading ${hasSavedAny ? 'has-saved' : ''}"
-  title="${hasSavedAny ? 'Bookmarks saved' : 'No bookmarks yet'}"
-  aria-label="Bookmark"
->
-  <i data-lucide="bookmark"></i>
-</th>
+              class="save-col save-col-heading ${hasSavedAny ? 'has-saved' : ''}"
+              title="${hasSavedAny ? 'Bookmarks saved' : 'No bookmarks yet'}"
+              aria-label="Bookmark"
+            >
+              <i data-lucide="bookmark"></i>
+            </th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
