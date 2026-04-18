@@ -3598,6 +3598,93 @@ html:not([data-theme="light"]) .data-table th:has(.sort-btn.active) {
     inset 0 1px 0 rgba(255,255,255,0.98);
 }
 
+/* ===== Days Left pill styling ===== */
+
+.days-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.days-pill-safe {
+  color: var(--success-color);
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.28);
+}
+
+.days-pill-closing {
+  color: var(--danger-color);
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.28);
+}
+
+.days-pill-expired {
+  color: var(--text-secondary);
+  background: rgba(100, 116, 139, 0.12);
+  border-color: rgba(100, 116, 139, 0.24);
+}
+
+.days-pill-muted {
+  color: var(--text-secondary);
+  background: rgba(148, 163, 184, 0.10);
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+/* table alignment */
+.data-table td .days-pill {
+  min-width: 104px;
+}
+
+/* card view keeps pill compact */
+.highlight-value .days-pill {
+  min-width: 0;
+  width: auto;
+  font-size: 1rem;
+  padding: 0;
+  min-height: auto;
+  border: none;
+  background: transparent;
+}
+
+.highlight-box .days-pill-safe {
+  color: var(--success-color);
+}
+
+.highlight-box .days-pill-closing {
+  color: var(--danger-color);
+}
+
+.highlight-box .days-pill-expired,
+.highlight-box .days-pill-muted {
+  color: var(--text-secondary);
+}
+
+/* light theme refinement */
+[data-theme="light"] .days-pill-safe {
+  color: #15803d;
+  background: rgba(22, 163, 74, 0.10);
+  border-color: rgba(22, 163, 74, 0.18);
+}
+
+[data-theme="light"] .days-pill-closing {
+  color: #e11d48;
+  background: rgba(244, 63, 94, 0.10);
+  border-color: rgba(244, 63, 94, 0.18);
+}
+
+[data-theme="light"] .days-pill-expired,
+[data-theme="light"] .days-pill-muted {
+  color: #64748b;
+}
 
 
 
