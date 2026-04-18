@@ -3875,3 +3875,7 @@ html:not([data-theme="light"]) .job-highlight-row .highlight-box:first-child:has
 .page-nav-btn {
   min-width: 52px;
 }
+
+And in your existing active-filters click handler, add:
+
+if (filterName === 'kpi') kpiFilter = 'all';
