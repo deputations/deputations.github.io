@@ -2493,3 +2493,96 @@ select:focus {
   fill: #ff3355 !important;
   stroke: rgba(255,255,255,0.98) !important;
 }
+
+/* ===== LIGHT THEME GRADIENT UPGRADE ===== */
+
+[data-theme="light"] .filters-sidebar {
+  background:
+    linear-gradient(180deg,
+      rgba(255,255,255,0.92) 0%,
+      rgba(240,248,255,0.88) 52%,
+      rgba(236,245,252,0.90) 100%
+    ) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255,255,255,0.95) !important;
+}
+
+[data-theme="light"] .kpi-card {
+  background:
+    linear-gradient(145deg,
+      rgba(255,255,255,0.96) 0%,
+      rgba(243,248,253,0.94) 48%,
+      rgba(238,244,251,0.96) 100%
+    ) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow:
+    0 12px 28px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255,255,255,0.96) !important;
+}
+
+/* slightly different tones for KPI categories */
+[data-theme="light"] .kpi-cyan {
+  background:
+    linear-gradient(145deg,
+      rgba(255,255,255,0.97) 0%,
+      rgba(236,248,253,0.95) 55%,
+      rgba(228,244,251,0.98) 100%
+    ) !important;
+}
+
+[data-theme="light"] .kpi-green {
+  background:
+    linear-gradient(145deg,
+      rgba(255,255,255,0.97) 0%,
+      rgba(240,252,245,0.94) 55%,
+      rgba(232,247,238,0.98) 100%
+    ) !important;
+}
+
+[data-theme="light"] .kpi-red {
+  background:
+    linear-gradient(145deg,
+      rgba(255,255,255,0.97) 0%,
+      rgba(254,245,247,0.94) 55%,
+      rgba(251,238,241,0.98) 100%
+    ) !important;
+}
+
+[data-theme="light"] .kpi-purple {
+  background:
+    linear-gradient(145deg,
+      rgba(255,255,255,0.97) 0%,
+      rgba(247,243,255,0.94) 55%,
+      rgba(241,236,252,0.98) 100%
+    ) !important;
+}
+
+[data-theme="light"] .job-card,
+[data-theme="light"] .premium-card {
+  background:
+    linear-gradient(165deg,
+      rgba(255,255,255,0.95) 0%,
+      rgba(244,248,252,0.94) 52%,
+      rgba(239,245,251,0.97) 100%
+    ) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255,255,255,0.96) !important;
+}
+
+[data-theme="light"] .job-card:hover,
+[data-theme="light"] .premium-card:hover {
+  background:
+    linear-gradient(165deg,
+      rgba(255,255,255,0.98) 0%,
+      rgba(242,248,253,0.96) 55%,
+      rgba(235,244,251,0.98) 100%
+    ) !important;
+  border-color: rgba(2, 132, 199, 0.16) !important;
+  box-shadow:
+    0 16px 34px rgba(15, 23, 42, 0.10),
+    0 0 0 1px rgba(2,132,199,0.05) !important;
+}
