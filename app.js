@@ -551,20 +551,24 @@ function renderTable(data) {
       return;
     }
 
-    const pageNavBtn = e.target.closest('[data-page-nav]');
-    if (pageNavBtn) {
-      const action = pageNavBtn.getAttribute('data-page-nav');
-      const totalPages = Number(pageNavBtn.getAttribute('data-total-pages')) || 1;
+   const pageNavBtn = e.target.closest('[data-page-nav]');
+if (pageNavBtn) {
+  const action = pageNavBtn.getAttribute('data-page-nav');
+  const totalPages = Number(pageNavBtn.getAttribute('data-total-pages')) || 1;
 
-      if (action === 'prev' && pagination.currentPage > 1) {
-        pagination.currentPage--;
-      } else if (action === 'next' && pagination.currentPage < totalPages) {
-        pagination.currentPage++;
-      }
+  if (action === 'first') {
+    pagination.currentPage = 1;
+  } else if (action === 'prev' && pagination.currentPage > 1) {
+    pagination.currentPage--;
+  } else if (action === 'next' && pagination.currentPage < totalPages) {
+    pagination.currentPage++;
+  } else if (action === 'last') {
+    pagination.currentPage = totalPages;
+  }
 
-      renderDashboard(false);
-      return;
-    }
+  renderDashboard(false);
+  return;
+}
 
     const cardAction = e.target.closest('[data-card-action]');
     if (cardAction) {
@@ -1125,35 +1129,71 @@ function applyTheme(theme) {
 }
 
     function renderPagination(totalPages) {
-        if (totalPages <= 1) return '';
+  if (totalPages <= 1) return '';
 
-        const pages = [];
-        const current = pagination.currentPage;
+  const pages = [];
+  const current = pagination.currentPage;
 
-        for (let i = 1; i <= totalPages; i++) {
-            pages.push(`
-                <button type="button" class="page-btn ${i === current ? 'active' : ''}" data-page="${i}">
-                    ${i}
-                </button>
-            `);
-        }
+  for (let i = 1; i <= totalPages; i++) {
+    pages.push(`
+      <button
+        type="button"
+        class="page-btn ${i === current ? 'active' : ''}"
+        data-page="${i}"
+      >
+        ${i}
+      </button>
+    `);
+  }
 
-        return `
-            <div class="pagination-bar">
-                <button type="button" class="page-nav-btn" data-page-nav="prev" data-total-pages="${totalPages}" ${current === 1 ? 'disabled' : ''}>
-                    Prev
-                </button>
+  return `
+    <div class="pagination-bar">
+      <button
+        type="button"
+        class="page-nav-btn"
+        data-page-nav="first"
+        data-total-pages="${totalPages}"
+        ${current === 1 ? 'disabled' : ''}
+      >
+        First
+      </button>
 
-                <div class="page-numbers">
-                    ${pages.join('')}
-                </div>
+      <button
+        type="button"
+        class="page-nav-btn"
+        data-page-nav="prev"
+        data-total-pages="${totalPages}"
+        ${current === 1 ? 'disabled' : ''}
+      >
+        Prev
+      </button>
 
-                <button type="button" class="page-nav-btn" data-page-nav="next" data-total-pages="${totalPages}" ${current === totalPages ? 'disabled' : ''}>
-                    Next
-                </button>
-            </div>
-        `;
-    }
+      <div class="page-numbers">
+        ${pages.join('')}
+      </div>
+
+      <button
+        type="button"
+        class="page-nav-btn"
+        data-page-nav="next"
+        data-total-pages="${totalPages}"
+        ${current === totalPages ? 'disabled' : ''}
+      >
+        Next
+      </button>
+
+      <button
+        type="button"
+        class="page-nav-btn"
+        data-page-nav="last"
+        data-total-pages="${totalPages}"
+        ${current === totalPages ? 'disabled' : ''}
+      >
+        Last
+      </button>
+    </div>
+  `;
+}
 
     function setView(view, resetPage = false) {
   currentView = view;
