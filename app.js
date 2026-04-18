@@ -75,7 +75,9 @@ updateWatchlistUI();
 
     loadDataFromJSON();
 
-    
+ function getCurrentPageSize() {
+  return currentView === 'card' ? 9 : 10;
+}   
 
 function loadDataFromJSON() {
     fetch('data/vacancies.json')
@@ -484,37 +486,38 @@ function updateMobileFilterToggle() {
     }
 
     function renderDashboard(resetPageIfNeeded = true) {
-        let filteredData = getFilteredData();
-        filteredData = sortData(filteredData);
+  let filteredData = getFilteredData();
+  filteredData = sortData(filteredData);
 
-        const totalPages = Math.max(1, Math.ceil(filteredData.length / pagination.pageSize));
+  const pageSize = getCurrentPageSize();
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
 
-        if (resetPageIfNeeded) {
-            pagination.currentPage = Math.min(pagination.currentPage, totalPages);
-        } else if (pagination.currentPage > totalPages) {
-            pagination.currentPage = totalPages;
-        }
+  if (resetPageIfNeeded) {
+    pagination.currentPage = Math.min(pagination.currentPage, totalPages);
+  } else if (pagination.currentPage > totalPages) {
+    pagination.currentPage = totalPages;
+  }
 
-        const pagedData = paginateData(filteredData);
+  const pagedData = paginateData(filteredData, pageSize);
 
-        renderKPIs(filteredData);
-        renderActiveFilterChips();
-        renderResults(pagedData, filteredData.length, totalPages);
-        updateWatchlistUI();
-        updateQuickFiltersBar();
+  renderKPIs(filteredData);
+  renderActiveFilterChips();
+  renderResults(pagedData, filteredData.length, totalPages);
+  updateWatchlistUI();
+  updateQuickFiltersBar();
 
-        const start = filteredData.length === 0
-            ? 0
-            : ((pagination.currentPage - 1) * pagination.pageSize) + 1;
+  const start = filteredData.length === 0
+    ? 0
+    : ((pagination.currentPage - 1) * pageSize) + 1;
 
-        const end = Math.min(pagination.currentPage * pagination.pageSize, filteredData.length);
+  const end = Math.min(pagination.currentPage * pageSize, filteredData.length);
 
-        resultsCount.textContent = filteredData.length
-            ? `${start}-${end} of ${filteredData.length} vacancies`
-            : '0 vacancies';
+  resultsCount.textContent = filteredData.length
+    ? `${start}-${end} of ${filteredData.length} vacancies`
+    : '0 vacancies';
 
-        lucide.createIcons();
-    }
+  lucide.createIcons();
+}
 
     function applyMobileDefaultView() {
         if (window.innerWidth <= 768) {
@@ -649,11 +652,11 @@ function updateMobileFilterToggle() {
         });
     }
 
-    function paginateData(data) {
-        const start = (pagination.currentPage - 1) * pagination.pageSize;
-        const end = start + pagination.pageSize;
-        return data.slice(start, end);
-    }
+   function paginateData(data, pageSize = getCurrentPageSize()) {
+  const start = (pagination.currentPage - 1) * pageSize;
+  const end = start + pageSize;
+  return data.slice(start, end);
+}
 
     function getKpiSnapshot(filteredData) {
         return {
