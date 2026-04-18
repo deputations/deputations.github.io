@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentView = 'table';
     let watchlist = loadWatchlist();
     let showWatchlistOnly = false;
+    let kpiFilter = 'all';
 
    let sortState = {
   key: 'Notification_Date',
@@ -482,6 +483,7 @@ function renderTable(data) {
     filterLocation.value = '';
     filterStatus.value = 'Active';
     showWatchlistOnly = false;
+      kpiFilter = 'all';
 
     quickFilters = {
       closing7: false,
@@ -502,6 +504,15 @@ function renderTable(data) {
     renderDashboard(false);
   });
 
+        kpiGrid.addEventListener('click', (e) => {
+  const card = e.target.closest('[data-kpi-filter]');
+  if (!card) return;
+
+  const nextFilter = card.getAttribute('data-kpi-filter') || 'all';
+  kpiFilter = nextFilter;
+  pagination.currentPage = 1;
+  renderDashboard();
+});
   btnCardView.addEventListener('click', () => {
     currentView = 'card';
     pagination.currentPage = 1;
@@ -622,8 +633,10 @@ if (pageNavBtn) {
         renderDashboard(false);
     }
 
-    function renderDashboard(resetPageIfNeeded = true) {
-  let filteredData = getFilteredData();
+   function renderDashboard(resetPageIfNeeded = true) {
+  const baseFilteredData = getFilteredData({ applyKpiFilter: false });
+  let filteredData = getFilteredData({ applyKpiFilter: true });
+
   filteredData = sortData(filteredData);
 
   const pageSize = getCurrentPageSize();
@@ -637,7 +650,7 @@ if (pageNavBtn) {
 
   const pagedData = paginateData(filteredData, pageSize);
 
-  renderKPIs(filteredData);
+  renderKPIs(baseFilteredData);
   renderActiveFilterChips();
   renderResults(pagedData, filteredData.length, totalPages);
   updateWatchlistUI();
@@ -667,78 +680,86 @@ if (pageNavBtn) {
     btnCardView.classList.remove('active');
   }
 }
-    function getFilteredData() {
-        const search = searchPost.value.trim().toLowerCase();
-        const myPayLevel = filterMyPayLevel.value;
-        const level = filterLevel.value;
-        const ministry = filterMinistry.value;
-        const location = filterLocation.value;
-        const status = filterStatus.value;
+    function getFilteredData({ applyKpiFilter = true } = {}) {
+  const search = searchPost.value.trim().toLowerCase();
+  const myPayLevel = filterMyPayLevel.value;
+  const level = filterLevel.value;
+  const ministry = filterMinistry.value;
+  const location = filterLocation.value;
+  const status = filterStatus.value;
 
-        return rawData.filter(item => {
-            const itemStatus = safe(item.Status);
-            const itemLevel = safe(item.Level_Text);
-            const itemMinistry = safe(item.Ministry);
-            const itemLocation = formatLocation(item);
-            const itemDaysLeft = parseInt(item.Days_Left, 10);
-            const itemId = safe(item.Vacancy_ID);
+  return rawData.filter(item => {
+    const itemStatus = safe(item.Status);
+    const itemLevel = safe(item.Level_Text);
+    const itemMinistry = safe(item.Ministry);
+    const itemLocation = formatLocation(item);
+    const itemDaysLeft = parseInt(item.Days_Left, 10);
+    const itemId = safe(item.Vacancy_ID);
 
-            const searchableText = [
-                item.Post_Name,
-                item.Department_Organisation,
-                item.Ministry,
-                item.Location_City,
-                item.Location_State,
-                item.Level_Text,
-                item.Req_Level1,
-                item.Req_Level2,
-                item.Keywords,
-                item.Essential_Qualification,
-                item.Desirable_Qualification
-            ].map(safe).join(' ').toLowerCase();
+    const searchableText = [
+      item.Post_Name,
+      item.Department_Organisation,
+      item.Ministry,
+      item.Location_City,
+      item.Location_State,
+      item.Level_Text,
+      item.Req_Level1,
+      item.Req_Level2,
+      item.Keywords,
+      item.Essential_Qualification,
+      item.Desirable_Qualification
+    ].map(safe).join(' ').toLowerCase();
 
-            if (search && !fuzzyIncludes(search, searchableText)) return false;
-            if (level && itemLevel !== level) return false;
-            if (ministry && itemMinistry !== ministry) return false;
-            if (location && itemLocation !== location) return false;
-            if (status && itemStatus !== status) return false;
+    if (search && !fuzzyIncludes(search, searchableText)) return false;
+    if (level && itemLevel !== level) return false;
+    if (ministry && itemMinistry !== ministry) return false;
+    if (location && itemLocation !== location) return false;
+    if (status && itemStatus !== status) return false;
 
-            if (myPayLevel) {
-                const userLevel = Number(myPayLevel);
-                const req1 = parseLevelValue(item.Req_Level1);
-                const req2 = parseLevelValue(item.Req_Level2);
+    if (myPayLevel) {
+      const userLevel = Number(myPayLevel);
+      const req1 = parseLevelValue(item.Req_Level1);
+      const req2 = parseLevelValue(item.Req_Level2);
 
-                if (req1 !== null && req2 !== null) {
-                    const minReq = Math.min(req1, req2);
-                    const maxReq = Math.max(req1, req2);
-                    if (userLevel < minReq || userLevel > maxReq) return false;
-                } else if (req1 !== null) {
-                    if (userLevel !== req1) return false;
-                } else if (req2 !== null) {
-                    if (userLevel !== req2) return false;
-                } else {
-                    return false;
-                }
-            }
-
-            if (showWatchlistOnly && !watchlist.has(itemId)) return false;
-            if (!Number.isNaN(itemDaysLeft) && status === 'Active' && itemDaysLeft < 0) return false;
-
-            if (quickFilters.closing7) {
-                if (Number.isNaN(itemDaysLeft) || itemDaysLeft < 0 || itemDaysLeft > 7) return false;
-            }
-
-            if (quickFilters.closingToday) {
-                if (Number.isNaN(itemDaysLeft) || itemDaysLeft !== 0) return false;
-            }
-
-            if (quickFilters.delhiNcr) {
-                if (!isDelhiNcrLocation(item)) return false;
-            }
-
-            return true;
-        });
+      if (req1 !== null && req2 !== null) {
+        const minReq = Math.min(req1, req2);
+        const maxReq = Math.max(req1, req2);
+        if (userLevel < minReq || userLevel > maxReq) return false;
+      } else if (req1 !== null) {
+        if (userLevel !== req1) return false;
+      } else if (req2 !== null) {
+        if (userLevel !== req2) return false;
+      } else {
+        return false;
+      }
     }
+
+    if (showWatchlistOnly && !watchlist.has(itemId)) return false;
+    if (!Number.isNaN(itemDaysLeft) && status === 'Active' && itemDaysLeft < 0) return false;
+
+    if (quickFilters.closing7) {
+      if (Number.isNaN(itemDaysLeft) || itemDaysLeft < 0 || itemDaysLeft > 7) return false;
+    }
+
+    if (quickFilters.closingToday) {
+      if (Number.isNaN(itemDaysLeft) || itemDaysLeft !== 0) return false;
+    }
+
+    if (quickFilters.delhiNcr) {
+      if (!isDelhiNcrLocation(item)) return false;
+    }
+
+    if (applyKpiFilter) {
+      if (kpiFilter === 'active' && itemStatus !== 'Active') return false;
+
+      if (kpiFilter === 'closingSoon') {
+        if (Number.isNaN(itemDaysLeft) || itemDaysLeft < 0 || itemDaysLeft > 15) return false;
+      }
+    }
+
+    return true;
+  });
+}
 
     function sortData(data) {
         const direction = sortState.direction === 'asc' ? 1 : -1;
@@ -816,47 +837,51 @@ if (pageNavBtn) {
         };
     }
 
-    function renderKPIs(filteredData) {
-        const current = getKpiSnapshot(filteredData);
-        const previous = previousKpiSnapshot;
+ function renderKPIs(filteredData) {
+  const current = getKpiSnapshot(filteredData);
+  const previous = previousKpiSnapshot;
 
-        const totalDelta = previous ? current.total - previous.total : 0;
-        const activeDelta = previous ? current.active - previous.active : 0;
-        const closingSoonDelta = previous ? current.closingSoon - previous.closingSoon : 0;
-        const ministriesDelta = previous ? current.ministries - previous.ministries : 0;
+  const totalDelta = previous ? current.total - previous.total : 0;
+  const activeDelta = previous ? current.active - previous.active : 0;
+  const closingSoonDelta = previous ? current.closingSoon - previous.closingSoon : 0;
+  const ministriesDelta = previous ? current.ministries - previous.ministries : 0;
 
-        kpiGrid.innerHTML = `
-            ${buildKpiCard('Total Vacancies', current.total, 'briefcase', 'cyan', totalDelta)}
-            ${buildKpiCard('Active', current.active, 'check-circle-2', 'green', activeDelta)}
-            ${buildKpiCard('Closing Soon', current.closingSoon, 'clock-3', 'red', closingSoonDelta)}
-            ${buildKpiCard('Ministries', current.ministries, 'building-2', 'purple', ministriesDelta)}
-        `;
+  kpiGrid.innerHTML = `
+    ${buildKpiCard('Total Vacancies', current.total, 'briefcase', 'cyan', totalDelta, 'all')}
+    ${buildKpiCard('Active', current.active, 'check-circle-2', 'green', activeDelta, 'active')}
+    ${buildKpiCard('Closing Soon', current.closingSoon, 'clock-3', 'red', closingSoonDelta, 'closingSoon')}
+    ${buildKpiCard('Ministries', current.ministries, 'building-2', 'purple', ministriesDelta, 'all')}
+  `;
 
-        animateKpiCounters();
-        previousKpiSnapshot = current;
-    }
+  animateKpiCounters();
+  previousKpiSnapshot = current;
+}
 
-    function buildKpiCard(title, value, icon, tone, delta) {
-        const trendClass = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
-        const trendSymbol = delta > 0 ? '↑' : delta < 0 ? '↓' : '•';
-        const trendText = delta === 0 ? 'No change' : `${trendSymbol} ${Math.abs(delta)}`;
+   function buildKpiCard(title, value, icon, tone, delta, filterKey = 'all') {
+  const trendClass = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
+  const trendSymbol = delta > 0 ? '↑' : delta < 0 ? '↓' : '•';
+  const trendText = delta === 0 ? 'No change' : `${trendSymbol} ${Math.abs(delta)}`;
+  const isSelected = kpiFilter === filterKey;
 
-        return `
-            <div class="kpi-card kpi-${tone}">
-                <div class="kpi-icon">
-                    <i data-lucide="${icon}"></i>
-                </div>
-
-                <div class="kpi-title">${title}</div>
-
-                <div class="kpi-value" data-count="${value}">0</div>
-
-                <div class="kpi-trend ${trendClass}">
-                    ${trendText}
-                </div>
-            </div>
-        `;
-    }
+  return `
+    <button
+      type="button"
+      class="kpi-card kpi-${tone} kpi-clickable ${isSelected ? 'kpi-selected' : ''}"
+      data-kpi-filter="${filterKey}"
+      aria-pressed="${isSelected ? 'true' : 'false'}"
+      title="Filter by ${title}"
+    >
+      <div class="kpi-icon">
+        <i data-lucide="${icon}"></i>
+      </div>
+      <div class="kpi-title">${title}</div>
+      <div class="kpi-value" data-count="${value}">0</div>
+      <div class="kpi-trend ${trendClass}">
+        ${trendText}
+      </div>
+    </button>
+  `;
+}
 
     function animateKpiCounters() {
         const counters = kpiGrid.querySelectorAll('.kpi-value[data-count]');
@@ -913,6 +938,8 @@ if (pageNavBtn) {
         if (filterLocation.value) chips.push(makeChip('location', `Location: ${escapeHtml(filterLocation.value)}`));
         if (filterStatus.value) chips.push(makeChip('status', `Status: ${escapeHtml(filterStatus.value)}`));
         if (showWatchlistOnly) chips.push(makeChip('watchlist', 'Watchlist'));
+        if (kpiFilter === 'active') chips.push(makeChip('kpi', 'KPI: Active'));
+if (kpiFilter === 'closingSoon') chips.push(makeChip('kpi', 'KPI: Closing Soon'));
 
         activeFilters.innerHTML = chips.join('');
     }
