@@ -3830,3 +3830,44 @@ html:not([data-theme="light"]) .job-highlight-row .highlight-box:first-child:has
   min-width: 150px;
   white-space: nowrap;
 }
+
+/* ===== card notification date + footer stability ===== */
+
+.notification-date-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0.48rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.42);
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.job-card-footer {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.job-card-footer .card-action-btn {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+/* keep notification chip neat in light theme too */
+[data-theme="light"] .notification-date-chip {
+  border-color: rgba(109, 40, 217, 0.10);
+  background: linear-gradient(
+    180deg,
+    rgba(248,252,255,0.98) 0%,
+    rgba(242,246,255,0.98) 100%
+  );
+  color: #334155;
+}
