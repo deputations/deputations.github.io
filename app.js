@@ -415,12 +415,21 @@ function renderTable(data) {
     }
 
     function bindEvents() {
+
+         btnCardView.addEventListener('click', () => {
+            currentView = 'card';
+            btnCardView.classList.add('active');
+            btnTableView.classList.remove('active');
+            renderDashboard(false);
+        });
+        
         searchPost.addEventListener('input', () => {
             refreshSearchSuggestions(searchPost.value);
             onFilterChange();
         });
 
-        
+
+      
         [
             filterMyPayLevel,
             filterLevel,
@@ -466,19 +475,7 @@ function renderTable(data) {
             renderDashboard();
         });
 
-        btnTableView.addEventListener('click', () => {
-            currentView = 'table';
-            btnTableView.classList.add('active');
-            btnCardView.classList.remove('active');
-            renderDashboard(false);
-        });
-
-        btnCardView.addEventListener('click', () => {
-            currentView = 'card';
-            btnCardView.classList.add('active');
-            btnTableView.classList.remove('active');
-            renderDashboard(false);
-        });
+        
 
         favBtn.addEventListener('click', () => {
             showWatchlistOnly = !showWatchlistOnly;
