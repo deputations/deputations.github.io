@@ -1000,127 +1000,129 @@ function applyTheme(theme) {
   `;
 }
 
-    function renderCards(data) {
-        const cards = data.map(item => {
-            const vacancyId = safe(item.Vacancy_ID);
-            const saved = watchlist.has(vacancyId);
-            const daysLeft = parseInt(item.Days_Left, 10);
-            const closingSoon = !Number.isNaN(daysLeft) && daysLeft >= 0 && daysLeft <= 15;
-            const expired = !Number.isNaN(daysLeft) && daysLeft < 0;
-            const status = safe(item.Status) || '—';
-            const detailedNotificationLink = normalizeUrl(safe(item.Official_Notification_Link));
-            const applyLink = normalizeUrl(safe(item.Application_Form_Link));
-const notificationDateDisplay = formatDisplayDate(safe(item.Notification_Date));
-const notificationDateText =
-  notificationDateDisplay && notificationDateDisplay !== 'Not specified'
-    ? notificationDateDisplay
-    : 'Not specified';
+   function renderCards(data) {
+  const cards = data.map((item) => {
+    const vacancyId = safe(item.Vacancy_ID);
+    const saved = watchlist.has(vacancyId);
+    const daysLeft = parseInt(item.Days_Left, 10);
+    const expired = !Number.isNaN(daysLeft) && daysLeft < 0;
 
-            
-            return `
-                <div class="job-card premium-card clickable-card" data-open-details="${escapeHtml(vacancyId)}">
-                    <button
-                        type="button"
-                        class="card-heart-btn ${saved ? 'saved' : ''}"
-                        data-card-action="watchlist"
-                        data-id="${escapeHtml(vacancyId)}"
-                        title="Bookmark the Vacancy"
-                        aria-label="${saved ? 'Remove bookmarked vacancy' : 'Bookmark the Vacancy'}"
-                        aria-pressed="${saved ? 'true' : 'false'}"
-                    >
-                        <i data-lucide="heart"></i>
-                    </button>
+    const detailedNotificationLink = normalizeUrl(safe(item.Official_Notification_Link));
+    const applyLink = normalizeUrl(safe(item.Application_Form_Link));
 
-                    <div class="job-card-top">
-                        <div class="job-meta-row">
-                            <span class="meta-pill meta-pill-level">
-                                ${escapeHtml(safe(item.Level_Text) || '—')}
-                            </span>
-                            <span class="meta-pill meta-pill-eligibility">
-                                Eligible: ${escapeHtml(formatEligibility(item))}
-                            </span>
-                        </div>
+    const notificationDateDisplay = formatDisplayDate(safe(item.Notification_Date));
+    const notificationDateText =
+      notificationDateDisplay && notificationDateDisplay !== 'Not specified'
+        ? notificationDateDisplay
+        : 'Not specified';
 
-                        <div class="job-title-block">
-                            <div class="job-title">${escapeHtml(safe(item.Post_Name) || '—')}</div>
-                            <div class="job-org">${escapeHtml(safe(item.Ministry) || safe(item.Department_Organisation) || '—')}</div>
-                        </div>
-                    </div>
+    return `
+      <div class="job-card premium-card clickable-card" data-open-details="${escapeHtml(vacancyId)}">
+        <button
+          type="button"
+          class="card-heart-btn ${saved ? 'saved' : ''}"
+          data-card-action="watchlist"
+          data-id="${escapeHtml(vacancyId)}"
+          title="Bookmark the Vacancy"
+          aria-label="${saved ? 'Remove bookmarked vacancy' : 'Bookmark the Vacancy'}"
+          aria-pressed="${saved ? 'true' : 'false'}"
+        >
+          <i data-lucide="heart"></i>
+        </button>
 
-                    <div class="job-highlight-row">
-                        <div class="highlight-box ${expired ? 'highlight-expired' : closingSoon ? 'highlight-closing' : 'highlight-normal'}">
-                            <div class="highlight-label">Days Left</div>
-                           <div class="highlight-value">
-  <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}">
-    ${escapeHtml(formatDaysLeft(daysLeft))}
-  </span>
-</div>
-                        </div>
+        <div class="job-card-top">
+          <div class="job-meta-row">
+            <span class="meta-pill meta-pill-level">
+              ${escapeHtml(safe(item.Level_Text) || '—')}
+            </span>
+            <span class="meta-pill meta-pill-eligibility">
+              Eligible: ${escapeHtml(formatEligibility(item))}
+            </span>
+          </div>
 
-                       <div class="highlight-box">
-  <div class="highlight-label">Notification Date</div>
-  <div class="highlight-value">
-    <span class="notification-date-chip">
-      ${escapeHtml(notificationDateText)}
-    </span>
-  </div>
-</div>
+          <div class="job-title-block">
+            <div class="job-title">${escapeHtml(safe(item.Post_Name) || '—')}</div>
+            <div class="job-org">
+              ${escapeHtml(safe(item.Ministry) || safe(item.Department_Organisation) || '—')}
+            </div>
+          </div>
+        </div>
 
-                    <div class="job-details premium-details">
-                        <div class="detail-item">
-                            <span class="detail-label">Location</span>
-                            <span class="detail-value">${escapeHtml(formatLocation(item) || '—')}</span>
-                        </div>
+        <div class="job-highlight-row">
+          <div class="highlight-box ${expired ? 'highlight-expired' : 'highlight-normal'}">
+            <div class="highlight-label">Days Left</div>
+            <div class="highlight-value">
+              <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}">
+                ${escapeHtml(formatDaysLeft(daysLeft))}
+              </span>
+            </div>
+          </div>
 
-                        <div class="detail-item">
-                            <span class="detail-label">Organisation</span>
-                            <span class="detail-value">${escapeHtml(safe(item.Department_Organisation) || '—')}</span>
-                        </div>
+          <div class="highlight-box">
+            <div class="highlight-label">Notification Date</div>
+            <div class="highlight-value">
+              <span class="notification-date-chip">
+                ${escapeHtml(notificationDateText)}
+              </span>
+            </div>
+          </div>
+        </div>
 
-                        <div class="detail-item">
-                            <span class="detail-label">Level</span>
-                            <span class="detail-value">${escapeHtml(safe(item.Level_Text) || '—')}</span>
-                        </div>
+        <div class="job-details premium-details">
+          <div class="detail-item">
+            <span class="detail-label">Location</span>
+            <span class="detail-value">${escapeHtml(formatLocation(item) || '—')}</span>
+          </div>
 
-                        <div class="detail-item">
-                            <span class="detail-label">Eligibility</span>
-                            <span class="detail-value">${escapeHtml(formatEligibility(item))}</span>
-                        </div>
-                    </div>
+          <div class="detail-item">
+            <span class="detail-label">Organisation</span>
+            <span class="detail-value">${escapeHtml(safe(item.Department_Organisation) || '—')}</span>
+          </div>
 
-                    ${(detailedNotificationLink || applyLink) ? `
-                        <div class="job-card-footer">
-                            ${detailedNotificationLink ? `
-                                <a
-                                    class="card-action-btn secondary"
-                                    href="${escapeHtml(detailedNotificationLink)}"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onclick="event.stopPropagation();"
-                                >
-                                    Detailed Notification
-                                </a>
-                            ` : ''}
+          <div class="detail-item">
+            <span class="detail-label">Level</span>
+            <span class="detail-value">${escapeHtml(safe(item.Level_Text) || '—')}</span>
+          </div>
 
-                            ${applyLink ? `
-                                <a
-                                    class="card-action-btn secondary apply-btn"
-                                    href="${escapeHtml(applyLink)}"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onclick="event.stopPropagation();"
-                                >
-                                    Apply
-                                </a>
-                            ` : ''}
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-        }).join('');
+          <div class="detail-item">
+            <span class="detail-label">Eligibility</span>
+            <span class="detail-value">${escapeHtml(formatEligibility(item))}</span>
+          </div>
+        </div>
 
-        return `<div class="cards-grid premium-cards-grid">${cards}</div>`;
-    }
+        ${(detailedNotificationLink || applyLink) ? `
+          <div class="job-card-footer">
+            ${detailedNotificationLink ? `
+              <a
+                class="card-action-btn secondary"
+                href="${escapeHtml(detailedNotificationLink)}"
+                target="_blank"
+                rel="noopener noreferrer"
+                onclick="event.stopPropagation();"
+              >
+                Notification
+              </a>
+            ` : ''}
+
+            ${applyLink ? `
+              <a
+                class="card-action-btn secondary apply-btn"
+                href="${escapeHtml(applyLink)}"
+                target="_blank"
+                rel="noopener noreferrer"
+                onclick="event.stopPropagation();"
+              >
+                Apply
+              </a>
+            ` : ''}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+
+  return `<div class="cards-grid premium-cards-grid">${cards}</div>`;
+}
 
     function renderPagination(totalPages) {
         if (totalPages <= 1) return '';
