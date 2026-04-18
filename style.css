@@ -2140,3 +2140,53 @@ select:focus {
   border-color: rgba(2, 132, 199, 0.35);
   box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.08);
 }
+/* ===== LIGHT THEME KPI + HEADER HEART POLISH ===== */
+
+[data-theme="light"] .kpi-value {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-weight: 800;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.05em;
+  background: linear-gradient(
+    180deg,
+    #1e4f8f 0%,
+    #163b66 48%,
+    #0f2f57 100%
+  ) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  text-shadow: none !important;
+}
+
+/* make header bookmark visibly saved in light mode */
+[data-theme="light"] .icon-btn.has-saved {
+  border-color: rgba(244, 63, 94, 0.42) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,245,247,0.96)) !important;
+  color: #ff3355 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.95),
+    0 8px 18px rgba(15, 23, 42, 0.10),
+    0 0 0 4px rgba(244, 63, 94, 0.10) !important;
+}
+
+[data-theme="light"] .icon-btn.has-saved svg {
+  stroke: #ff3355 !important;
+  filter:
+    drop-shadow(0 1px 2px rgba(120, 12, 35, 0.18))
+    drop-shadow(0 0 4px rgba(255, 51, 79, 0.18));
+}
+
+[data-theme="light"] .icon-btn.has-saved svg path {
+  fill: #ff3355 !important;
+  stroke: rgba(255,255,255,0.98) !important;
+}
+
+[data-theme="light"] .icon-btn.has-saved:hover {
+  border-color: rgba(244, 63, 94, 0.60) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.98),
+    0 10px 22px rgba(15, 23, 42, 0.12),
+    0 0 0 4px rgba(244, 63, 94, 0.14) !important;
+}
