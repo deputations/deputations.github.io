@@ -1,5 +1,78 @@
-/* ===== FINAL CONSOLIDATED LIGHT THEME ===== */
+/* ===== FINAL TABLE COLUMN POLISH ===== */
+.data-table .level-col,
+.data-table td.level-col {
+  min-width: 126px;
+  white-space: nowrap;
+}
 
+.data-table .days-col,
+.data-table td.days-col {
+  min-width: 118px;
+  white-space: nowrap;
+}
+
+.data-table .save-col,
+.data-table .table-heart-cell {
+  width: 74px;
+  min-width: 74px;
+  text-align: center;
+}
+
+.data-table .save-col-heading {
+  text-align: center;
+}
+
+.data-table .save-col-heading svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+@media (max-width: 768px) {
+  .responsive-table td.level-col,
+  .responsive-table td.days-col {
+    white-space: normal;
+  }
+}
+
+/* ===== FINAL HOVER POLISH ===== */
+.job-card,
+.premium-card {
+  transition:
+    transform 0.24s ease,
+    box-shadow 0.24s ease,
+    border-color 0.24s ease,
+    background 0.24s ease;
+  will-change: transform;
+}
+
+.job-card:hover,
+.premium-card:hover {
+  transform: translateY(-6px) scale(1.01);
+}
+
+.data-table tr {
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+  transform: translateY(-1px);
+}
+
+.data-table tbody tr:hover td {
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+[data-theme="dark"] .data-table tbody tr:hover,
+html:not([data-theme="light"]) .data-table tbody tr:hover {
+  box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.015);
+}
+
+/* ===== FINAL CONSOLIDATED LIGHT THEME ===== */
 [data-theme="light"] {
   --bg-main: #eef6ff;
   --bg-surface: rgba(255, 255, 255, 0.88);
@@ -44,12 +117,6 @@
   border-bottom-color: rgba(91, 33, 182, 0.10);
 }
 
-[data-theme="light"] .header-logo h1,
-[data-theme="light"] .job-title,
-[data-theme="light"] .vacancy-modal-title {
-  color: #111827;
-}
-
 [data-theme="light"] .gradient-text {
   background: linear-gradient(90deg, #00cfff 0%, #8b5cf6 100%);
   -webkit-background-clip: text;
@@ -57,7 +124,7 @@
   background-clip: text;
 }
 
-/* all major surfaces */
+/* main surfaces */
 [data-theme="light"] .filters-sidebar,
 [data-theme="light"] .toolbar-line,
 [data-theme="light"] .table-wrapper,
@@ -138,7 +205,7 @@
     0 0 0 4px rgba(0, 207, 255, 0.08);
 }
 
-/* saved top-right heart */
+/* saved header heart */
 [data-theme="light"] .icon-btn.has-saved {
   border-color: rgba(244, 63, 94, 0.42) !important;
   background:
@@ -227,7 +294,7 @@
   color: #64748b;
 }
 
-/* pills and toggles */
+/* pills + toggles */
 [data-theme="light"] .filter-chip,
 [data-theme="light"] .quick-pill,
 [data-theme="light"] .meta-pill,
@@ -301,6 +368,10 @@
     ) !important;
 }
 
+[data-theme="light"] .data-table tbody tr:hover {
+  box-shadow: inset 0 0 0 9999px rgba(0, 207, 255, 0.03);
+}
+
 [data-theme="light"] .table-subtext,
 [data-theme="light"] .sort-indicator {
   color: #64748b;
@@ -362,8 +433,10 @@
   border-color: rgba(109, 40, 217, 0.08) !important;
 }
 
-[data-theme="light"] .highlight-value {
-  color: #0f172a !important;
+[data-theme="light"] .highlight-value,
+[data-theme="light"] .job-title,
+[data-theme="light"] .vacancy-modal-title {
+  color: #111827 !important;
 }
 
 [data-theme="light"] .badge-active {
