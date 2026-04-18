@@ -2268,3 +2268,228 @@ select:focus {
     white-space: normal;
   }
 }
+
+/* ===== LIGHT THEME PREMIUM REFINEMENT ===== */
+
+[data-theme="light"] body {
+  background:
+    radial-gradient(circle at 14% 18%, rgba(34, 211, 238, 0.10), transparent 28%),
+    radial-gradient(circle at 86% 82%, rgba(167, 139, 250, 0.10), transparent 24%),
+    linear-gradient(180deg, #edf3fa 0%, #f7f9fc 100%);
+  color: #0f172a;
+}
+
+/* surfaces */
+[data-theme="light"] .filters-sidebar,
+[data-theme="light"] .toolbar-line,
+[data-theme="light"] .table-wrapper,
+[data-theme="light"] .job-card,
+[data-theme="light"] .kpi-card,
+[data-theme="light"] .modal-content,
+[data-theme="light"] .modal-section,
+[data-theme="light"] .empty-state {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.88) 0%,
+    rgba(247, 250, 253, 0.92) 100%
+  ) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow:
+    0 12px 30px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255,255,255,0.9) !important;
+  backdrop-filter: blur(14px) saturate(130%);
+}
+
+/* top nav + header */
+[data-theme="light"] .top-nav a {
+  color: #475569;
+}
+
+[data-theme="light"] .top-nav a:hover,
+[data-theme="light"] .top-nav a.active {
+  color: #075985;
+  background: rgba(2, 132, 199, 0.08);
+}
+
+[data-theme="light"] .app-header {
+  border-bottom-color: rgba(15, 23, 42, 0.10);
+}
+
+/* header buttons */
+[data-theme="light"] .icon-btn {
+  background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,250,252,0.96));
+  border-color: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  box-shadow:
+    0 8px 18px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255,255,255,0.95);
+}
+
+[data-theme="light"] .icon-btn:hover {
+  border-color: rgba(2, 132, 199, 0.18);
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.10),
+    0 0 0 4px rgba(2, 132, 199, 0.05);
+}
+
+/* header bookmark symbol */
+[data-theme="light"] .save-col-heading svg {
+  color: #475569;
+  stroke-width: 2.1;
+  opacity: 0.95;
+}
+
+/* inputs */
+[data-theme="light"] input,
+[data-theme="light"] select {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(15, 23, 42, 0.10);
+  color: #0f172a;
+  box-shadow: inset 0 1px 1px rgba(15, 23, 42, 0.02);
+}
+
+[data-theme="light"] input::placeholder {
+  color: #94a3b8;
+}
+
+/* KPI cards */
+[data-theme="light"] .kpi-card {
+  background: linear-gradient(
+    160deg,
+    rgba(255,255,255,0.95) 0%,
+    rgba(244,247,251,0.94) 100%
+  ) !important;
+}
+
+[data-theme="light"] .kpi-title {
+  color: #64748b;
+}
+
+[data-theme="light"] .kpi-value {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-weight: 800;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.05em;
+  background: linear-gradient(
+    180deg,
+    #204b86 0%,
+    #163b66 46%,
+    #0f2f57 100%
+  ) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  text-shadow: none !important;
+}
+
+[data-theme="light"] .kpi-trend.flat {
+  color: #64748b;
+}
+
+/* chips / pills / toggles */
+[data-theme="light"] .filter-chip,
+[data-theme="light"] .quick-pill,
+[data-theme="light"] .meta-pill,
+[data-theme="light"] .application-mode-badge {
+  background: rgba(248, 250, 252, 0.96);
+  border-color: rgba(15, 23, 42, 0.08);
+  color: #334155;
+}
+
+[data-theme="light"] .quick-pill.active,
+[data-theme="light"] .view-btn.active {
+  color: #0369a1;
+  border-color: rgba(2, 132, 199, 0.24);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.06);
+}
+
+[data-theme="light"] .view-btn {
+  background: rgba(255,255,255,0.94);
+  border-color: rgba(15, 23, 42, 0.08);
+  color: #334155;
+}
+
+/* table */
+[data-theme="light"] .data-table th {
+  background: rgba(243, 247, 251, 0.96);
+  color: #64748b;
+  border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="light"] .data-table td {
+  color: #0f172a;
+  border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="light"] .data-table tr:hover {
+  background: rgba(2, 132, 199, 0.035);
+}
+
+[data-theme="light"] .table-subtext,
+[data-theme="light"] .detail-value,
+[data-theme="light"] .job-org,
+[data-theme="light"] .vacancy-modal-subtitle,
+[data-theme="light"] .vacancy-modal-org {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .detail-label,
+[data-theme="light"] .highlight-label,
+[data-theme="light"] .modal-field-label,
+[data-theme="light"] .modal-section-title {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .highlight-box {
+  background: linear-gradient(
+    180deg,
+    rgba(243, 247, 251, 0.95),
+    rgba(230, 236, 243, 0.88)
+  ) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+[data-theme="light"] .highlight-value,
+[data-theme="light"] .job-title,
+[data-theme="light"] .vacancy-modal-title {
+  color: #0f172a !important;
+}
+
+/* buttons */
+[data-theme="light"] .table-link-btn,
+[data-theme="light"] .card-action-btn.secondary {
+  background: rgba(248, 250, 252, 0.96) !important;
+  border-color: rgba(15, 23, 42, 0.10) !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .table-link-btn:hover,
+[data-theme="light"] .card-action-btn.secondary:hover {
+  background: rgba(240, 249, 255, 0.96) !important;
+  border-color: rgba(2, 132, 199, 0.20) !important;
+  color: #075985 !important;
+}
+
+[data-theme="light"] .table-link-btn.apply,
+[data-theme="light"] .apply-btn {
+  background: rgba(240, 253, 244, 0.98) !important;
+  border-color: rgba(22, 163, 74, 0.18) !important;
+  color: #15803d !important;
+}
+
+/* keep saved header heart state premium */
+[data-theme="light"] .icon-btn.has-saved {
+  border-color: rgba(244, 63, 94, 0.42) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,245,247,0.96)) !important;
+  color: #ff3355 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.95),
+    0 8px 18px rgba(15, 23, 42, 0.10),
+    0 0 0 4px rgba(244, 63, 94, 0.10) !important;
+}
+
+[data-theme="light"] .icon-btn.has-saved svg path {
+  fill: #ff3355 !important;
+  stroke: rgba(255,255,255,0.98) !important;
+}
