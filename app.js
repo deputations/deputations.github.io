@@ -416,20 +416,14 @@ function renderTable(data) {
 
     function bindEvents() {
 
-         btnCardView.addEventListener('click', () => {
-            currentView = 'card';
-            btnCardView.classList.add('active');
-            btnTableView.classList.remove('active');
-            renderDashboard(false);
-        });
-        
-        searchPost.addEventListener('input', () => {
-            refreshSearchSuggestions(searchPost.value);
-            onFilterChange();
-        });
+      btnTableView.addEventListener('click', () => {
+  setView('table', true);
+});
 
-
-      
+btnCardView.addEventListener('click', () => {
+  setView('card', true);
+});
+              
         [
             filterMyPayLevel,
             filterLevel,
@@ -501,13 +495,7 @@ function renderTable(data) {
             renderDashboard();
         });
 
-        window.addEventListener('resize', () => {
-            if (window.innerWidth <= 768 && currentView !== 'card') {
-                currentView = 'card';
-                btnCardView.classList.add('active');
-                btnTableView.classList.remove('active');
-                renderDashboard(false);
-            }
+       
         });
 
         dataContainer.addEventListener('click', (e) => {
@@ -646,14 +634,17 @@ btnCardView.addEventListener('click', () => {
   lucide.createIcons();
 }
 
-    function applyMobileDefaultView() {
-        if (window.innerWidth <= 768) {
-            currentView = 'card';
-            btnCardView.classList.add('active');
-            btnTableView.classList.remove('active');
-        }
-    }
-
+   function applyMobileDefaultView() {
+  if (window.innerWidth <= 768) {
+    currentView = 'card';
+    btnCardView.classList.add('active');
+    btnTableView.classList.remove('active');
+  } else {
+    currentView = 'table';
+    btnTableView.classList.add('active');
+    btnCardView.classList.remove('active');
+  }
+}
     function getFilteredData() {
         const search = searchPost.value.trim().toLowerCase();
         const myPayLevel = filterMyPayLevel.value;
@@ -1132,6 +1123,19 @@ function applyTheme(theme) {
             </div>
         `;
     }
+
+    function setView(view, resetPage = false) {
+  currentView = view;
+
+  if (resetPage) {
+    pagination.currentPage = 1;
+  }
+
+  btnTableView.classList.toggle('active', view === 'table');
+  btnCardView.classList.toggle('active', view === 'card');
+
+  renderDashboard(false);
+}
 
     function openVacancyModal(vacancyId) {
         const item = getItemById(vacancyId);
