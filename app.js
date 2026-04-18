@@ -415,175 +415,164 @@ function renderTable(data) {
     }
 
     function bindEvents() {
+  searchPost.addEventListener('input', () => {
+    refreshSearchSuggestions(searchPost.value);
+    onFilterChange();
+  });
 
-      btnTableView.addEventListener('click', () => {
-  setView('table', true);
-});
+  [
+    filterMyPayLevel,
+    filterLevel,
+    filterMinistry,
+    filterLocation,
+    filterStatus
+  ].forEach((el) => {
+    el.addEventListener('change', onFilterChange);
+  });
 
-btnCardView.addEventListener('click', () => {
-  setView('card', true);
-});
-              
-        [
-            filterMyPayLevel,
-            filterLevel,
-            filterMinistry,
-            filterLocation,
-            filterStatus
-        ].forEach(el => {
-            el.addEventListener('change', onFilterChange);
-        });
+  if (quickFiltersBar) {
+    quickFiltersBar.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-quick-filter]');
+      if (!btn) return;
 
-        if (quickFiltersBar) {
-            quickFiltersBar.addEventListener('click', (e) => {
-                const btn = e.target.closest('[data-quick-filter]');
-                if (!btn) return;
+      const key = btn.getAttribute('data-quick-filter');
+      if (!Object.prototype.hasOwnProperty.call(quickFilters, key)) return;
 
-                const key = btn.getAttribute('data-quick-filter');
-                if (!Object.prototype.hasOwnProperty.call(quickFilters, key)) return;
+      quickFilters[key] = !quickFilters[key];
+      pagination.currentPage = 1;
+      updateQuickFiltersBar();
+      renderDashboard();
+    });
+  }
 
-                quickFilters[key] = !quickFilters[key];
-                pagination.currentPage = 1;
-                updateQuickFiltersBar();
-                renderDashboard();
-            });
-        }
+  clearFiltersBtn.addEventListener('click', () => {
+    searchPost.value = '';
+    filterMyPayLevel.value = '';
+    filterLevel.value = '';
+    filterMinistry.value = '';
+    filterLocation.value = '';
+    filterStatus.value = 'Active';
+    showWatchlistOnly = false;
 
-        clearFiltersBtn.addEventListener('click', () => {
-            searchPost.value = '';
-            filterMyPayLevel.value = '';
-            filterLevel.value = '';
-            filterMinistry.value = '';
-            filterLocation.value = '';
-            filterStatus.value = 'Active';
-            showWatchlistOnly = false;
+    quickFilters = {
+      closing7: false,
+      delhiNcr: false,
+      closingToday: false
+    };
 
-            quickFilters = {
-                closing7: false,
-                delhiNcr: false,
-                closingToday: false
-            };
+    pagination.currentPage = 1;
+    updateQuickFiltersBar();
+    renderDashboard();
+  });
 
-            pagination.currentPage = 1;
-            updateQuickFiltersBar();
-            renderDashboard();
-        });
+  btnTableView.addEventListener('click', () => {
+    currentView = 'table';
+    pagination.currentPage = 1;
+    btnTableView.classList.add('active');
+    btnCardView.classList.remove('active');
+    renderDashboard(false);
+  });
 
-        
+  btnCardView.addEventListener('click', () => {
+    currentView = 'card';
+    pagination.currentPage = 1;
+    btnCardView.classList.add('active');
+    btnTableView.classList.remove('active');
+    renderDashboard(false);
+  });
 
-        favBtn.addEventListener('click', () => {
-            showWatchlistOnly = !showWatchlistOnly;
-            pagination.currentPage = 1;
-            renderDashboard();
-        });
+  favBtn.addEventListener('click', () => {
+    showWatchlistOnly = !showWatchlistOnly;
+    pagination.currentPage = 1;
+    renderDashboard();
+  });
 
-        activeFilters.addEventListener('click', (e) => {
-            const chip = e.target.closest('[data-remove-filter]');
-            if (!chip) return;
+  activeFilters.addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-remove-filter]');
+    if (!chip) return;
 
-            const filterName = chip.getAttribute('data-remove-filter');
+    const filterName = chip.getAttribute('data-remove-filter');
 
-            if (filterName === 'search') searchPost.value = '';
-            if (filterName === 'myPayLevel') filterMyPayLevel.value = '';
-            if (filterName === 'level') filterLevel.value = '';
-            if (filterName === 'ministry') filterMinistry.value = '';
-            if (filterName === 'location') filterLocation.value = '';
-            if (filterName === 'status') filterStatus.value = '';
-            if (filterName === 'watchlist') showWatchlistOnly = false;
+    if (filterName === 'search') searchPost.value = '';
+    if (filterName === 'myPayLevel') filterMyPayLevel.value = '';
+    if (filterName === 'level') filterLevel.value = '';
+    if (filterName === 'ministry') filterMinistry.value = '';
+    if (filterName === 'location') filterLocation.value = '';
+    if (filterName === 'status') filterStatus.value = '';
+    if (filterName === 'watchlist') showWatchlistOnly = false;
 
-            pagination.currentPage = 1;
-            renderDashboard();
-        });
+    pagination.currentPage = 1;
+    renderDashboard();
+  });
 
-       
-        });
-
-        dataContainer.addEventListener('click', (e) => {
-            const sortBtn = e.target.closest('[data-sort]');
-            if (sortBtn) {
-                toggleSort(sortBtn.getAttribute('data-sort'));
-                return;
-            }
-
-            const pageBtn = e.target.closest('[data-page]');
-            if (pageBtn) {
-                const page = Number(pageBtn.getAttribute('data-page'));
-                if (!Number.isNaN(page)) {
-                    pagination.currentPage = page;
-                    renderDashboard(false);
-                }
-                return;
-            }
-
-            const pageNavBtn = e.target.closest('[data-page-nav]');
-            if (pageNavBtn) {
-                const action = pageNavBtn.getAttribute('data-page-nav');
-                const totalPages = Number(pageNavBtn.getAttribute('data-total-pages')) || 1;
-
-                if (action === 'prev' && pagination.currentPage > 1) {
-                    pagination.currentPage--;
-                } else if (action === 'next' && pagination.currentPage < totalPages) {
-                    pagination.currentPage++;
-                }
-
-                renderDashboard(false);
-                return;
-            }
-
-            const cardAction = e.target.closest('[data-card-action]');
-            if (cardAction) {
-                e.stopPropagation();
-
-                const action = cardAction.getAttribute('data-card-action');
-                const vacancyId = cardAction.getAttribute('data-id');
-
-                if (action === 'watchlist') {
-                    const wasSaved = watchlist.has(safe(vacancyId));
-                    toggleWatchlist(vacancyId);
-                    renderDashboard(false);
-                    if (!wasSaved) animateBookmarkButton(vacancyId);
-                }
-                return;
-            }
-
-            btnTableView.addEventListener('click', () => {
-  currentView = 'table';
-  pagination.currentPage = 1;
-  btnTableView.classList.add('active');
-  btnCardView.classList.remove('active');
-  renderDashboard(false);
-});
-
-btnCardView.addEventListener('click', () => {
-  currentView = 'card';
-  pagination.currentPage = 1;
-  btnCardView.classList.add('active');
-  btnTableView.classList.remove('active');
-  renderDashboard(false);
-});
-
-            const tableAction = e.target.closest('[data-table-action]');
-            if (tableAction) {
-                e.stopPropagation();
-
-                const action = tableAction.getAttribute('data-table-action');
-                const vacancyId = tableAction.getAttribute('data-id');
-
-                if (action === 'watchlist') {
-                    const wasSaved = watchlist.has(safe(vacancyId));
-                    toggleWatchlist(vacancyId);
-                    renderDashboard(false);
-                    if (!wasSaved) animateBookmarkButton(vacancyId);
-                }
-                return;
-            }
-
-            const detailsTrigger = e.target.closest('[data-open-details]');
-            if (detailsTrigger) {
-                openVacancyModal(detailsTrigger.getAttribute('data-open-details'));
-            }
-        });
+  dataContainer.addEventListener('click', (e) => {
+    const sortBtn = e.target.closest('[data-sort]');
+    if (sortBtn) {
+      toggleSort(sortBtn.getAttribute('data-sort'));
+      return;
     }
+
+    const pageBtn = e.target.closest('[data-page]');
+    if (pageBtn) {
+      const page = Number(pageBtn.getAttribute('data-page'));
+      if (!Number.isNaN(page)) {
+        pagination.currentPage = page;
+        renderDashboard(false);
+      }
+      return;
+    }
+
+    const pageNavBtn = e.target.closest('[data-page-nav]');
+    if (pageNavBtn) {
+      const action = pageNavBtn.getAttribute('data-page-nav');
+      const totalPages = Number(pageNavBtn.getAttribute('data-total-pages')) || 1;
+
+      if (action === 'prev' && pagination.currentPage > 1) {
+        pagination.currentPage--;
+      } else if (action === 'next' && pagination.currentPage < totalPages) {
+        pagination.currentPage++;
+      }
+
+      renderDashboard(false);
+      return;
+    }
+
+    const cardAction = e.target.closest('[data-card-action]');
+    if (cardAction) {
+      e.stopPropagation();
+      const action = cardAction.getAttribute('data-card-action');
+      const vacancyId = cardAction.getAttribute('data-id');
+
+      if (action === 'watchlist') {
+        const wasSaved = watchlist.has(safe(vacancyId));
+        toggleWatchlist(vacancyId);
+        renderDashboard(false);
+        if (!wasSaved) animateBookmarkButton(vacancyId);
+      }
+      return;
+    }
+
+    const tableAction = e.target.closest('[data-table-action]');
+    if (tableAction) {
+      e.stopPropagation();
+      const action = tableAction.getAttribute('data-table-action');
+      const vacancyId = tableAction.getAttribute('data-id');
+
+      if (action === 'watchlist') {
+        const wasSaved = watchlist.has(safe(vacancyId));
+        toggleWatchlist(vacancyId);
+        renderDashboard(false);
+        if (!wasSaved) animateBookmarkButton(vacancyId);
+      }
+      return;
+    }
+
+    const detailsTrigger = e.target.closest('[data-open-details]');
+    if (detailsTrigger) {
+      openVacancyModal(detailsTrigger.getAttribute('data-open-details'));
+    }
+  });
+}
 
     function onFilterChange() {
         pagination.currentPage = 1;
@@ -1597,15 +1586,17 @@ function applyTheme(theme) {
         return Math.round(diffMs / (1000 * 60 * 60 * 24));
     }
 
-    function getApplicationModeClass(mode) {
-        const text = safe(mode).toLowerCase();
+   function getApplicationModeClass(mode) {
+  const text = safe(mode).toLowerCase();
 
-        if (text.includes('both')) return 'mode-both';
-        if (text.includes('online')) return 'mode-online';
-        if (text.includes('physical') || text.includes('offline') || text.includes('post')) return 'mode-physical';
+  if (text.includes('both')) return 'mode-both';
+  if (text.includes('online')) return 'mode-online';
+  if (text.includes('physical') || text.includes('offline') || text.includes('post')) {
+    return 'mode-physical';
+  }
 
-        return 'mode-default';
-    }
+  return 'mode-default';
+}
 
     function renderModeBadge(mode) {
         const safeMode = safe(mode) || 'Not specified';
