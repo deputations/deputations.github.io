@@ -289,9 +289,11 @@ function renderTable(data) {
           ${escapeHtml(formatLocation(item) || '—')}
         </td>
 
-        <td class="days-col days-left ${closingSoon ? 'closing' : ''}" data-label="Days Left">
-          ${escapeHtml(formatDaysLeft(daysLeft))}
-        </td>
+       <td class="days-col" data-label="Days Left">
+  <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}">
+    ${escapeHtml(formatDaysLeft(daysLeft))}
+  </span>
+</td>
 
         <td class="status-col" data-label="Status">
           <span class="badge ${safe(item.Status) === 'Active' ? 'badge-active' : ''}">
@@ -1017,9 +1019,11 @@ function applyTheme(theme) {
                     <div class="job-highlight-row">
                         <div class="highlight-box ${expired ? 'highlight-expired' : closingSoon ? 'highlight-closing' : 'highlight-normal'}">
                             <div class="highlight-label">Days Left</div>
-                            <div class="highlight-value ${closingSoon ? 'days-left closing' : ''}">
-                                ${escapeHtml(formatDaysLeft(daysLeft))}
-                            </div>
+                           <div class="highlight-value">
+  <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}">
+    ${escapeHtml(formatDaysLeft(daysLeft))}
+  </span>
+</div>
                         </div>
 
                         <div class="highlight-box">
@@ -1545,6 +1549,13 @@ function applyTheme(theme) {
         if (daysLeft === 0) return 'Closes today';
         return `${daysLeft} days`;
     }
+
+    function getDaysLeftTone(daysLeft) {
+  if (Number.isNaN(daysLeft)) return 'muted';
+  if (daysLeft < 0) return 'expired';
+  if (daysLeft <= 15) return 'closing';
+  return 'safe';
+}
 
     function formatRichText(value) {
         return escapeHtml(safe(value)).replace(/\n/g, '<br>');
