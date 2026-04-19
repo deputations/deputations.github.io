@@ -544,18 +544,32 @@ kpiGrid.addEventListener('click', (e) => {
     return;
   }
 
- if (nextFilter === 'all') {
-  kpiFilter = 'all';
-  sortState.key = 'Notification_Date';
-  sortState.direction = 'desc';
-  pagination.currentPage = 1;
-  renderDashboard();
-  return;
-}
+  if (nextFilter === 'closingSoon') {
+    kpiFilter = 'closingSoon';
+    sortState.key = 'Days_Left';
+    sortState.direction = 'asc';
+    pagination.currentPage = 1;
+    renderDashboard();
+    return;
+  }
 
-  kpiFilter = nextFilter;
-  pagination.currentPage = 1;
-  renderDashboard();
+  if (nextFilter === 'active') {
+    kpiFilter = 'active';
+    sortState.key = 'Notification_Date';
+    sortState.direction = 'desc';
+    pagination.currentPage = 1;
+    renderDashboard();
+    return;
+  }
+
+  if (nextFilter === 'all') {
+    kpiFilter = 'all';
+    sortState.key = 'Notification_Date';
+    sortState.direction = 'desc';
+    pagination.currentPage = 1;
+    renderDashboard();
+    return;
+  }
 });
 
   dataContainer.addEventListener('click', (e) => {
