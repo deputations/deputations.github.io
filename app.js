@@ -529,15 +529,34 @@ function renderTable(data) {
     renderDashboard();
   });
 
-  kpiGrid.addEventListener('click', (e) => {
-    const card = e.target.closest('[data-kpi-filter]');
-    if (!card) return;
+kpiGrid.addEventListener('click', (e) => {
+  const card = e.target.closest('[data-kpi-filter]');
+  if (!card) return;
 
-    const nextFilter = card.getAttribute('data-kpi-filter') || 'all';
-    kpiFilter = nextFilter;
+  const nextFilter = card.getAttribute('data-kpi-filter') || 'all';
+
+  if (nextFilter === 'ministries') {
+    kpiFilter = 'all';
+    sortState.key = 'Ministry';
+    sortState.direction = 'asc';
     pagination.currentPage = 1;
     renderDashboard();
-  });
+    return;
+  }
+
+ if (nextFilter === 'all') {
+  kpiFilter = 'all';
+  sortState.key = 'Notification_Date';
+  sortState.direction = 'desc';
+  pagination.currentPage = 1;
+  renderDashboard();
+  return;
+}
+
+  kpiFilter = nextFilter;
+  pagination.currentPage = 1;
+  renderDashboard();
+});
 
   dataContainer.addEventListener('click', (e) => {
     const sortBtn = e.target.closest('[data-sort]');
@@ -844,7 +863,7 @@ function renderTable(data) {
     ${buildKpiCard('Total Vacancies', current.total, 'briefcase', 'cyan', totalDelta, 'all')}
     ${buildKpiCard('Active', current.active, 'check-circle-2', 'green', activeDelta, 'active')}
     ${buildKpiCard('Closing Soon', current.closingSoon, 'clock-3', 'red', closingSoonDelta, 'closingSoon')}
-    ${buildKpiCard('Ministries', current.ministries, 'building-2', 'purple', ministriesDelta, 'all')}
+   ${buildKpiCard('Ministries', current.ministries, 'building-2', 'purple', ministriesDelta, 'ministries')}
   `;
 
   animateKpiCounters();
