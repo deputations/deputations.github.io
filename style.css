@@ -276,10 +276,22 @@ body {
 }
 
 .gradient-text {
-  background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+  /* A smooth transition from blue to teal to lime green */
+  background: linear-gradient(to right, #7b96ff, #5cb8a4, #49ff5e);
+  
+  /* Clips the background to the shape of the letters */
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
+  
+  /* Makes the original text color clear so the gradient shows through */
+  color: transparent;
+  
+  /* Optional: Ensures the gradient behaves well with line breaks */
+  display: inline-block;
+  
+  /* Matches the clean look of the image */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  text-transform: lowercase; 
 }
 
 /* HEADER BUTTONS */
