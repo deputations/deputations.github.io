@@ -1,9 +1,9 @@
 {
-  "generated_at_utc": "2026-05-05T10:21:08Z",
+  "generated_at_utc": "2026-05-06T11:22:46Z",
   "record_count": 53,
   "active_count": 36,
   "inactive_count": 17,
-  "closing_soon_count": 2,
+  "closing_soon_count": 7,
   "source": "private_google_sheet_via_sheets_api",
   "filter_counts": {
     "levels": 14,
