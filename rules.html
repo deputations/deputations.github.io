@@ -1347,6 +1347,101 @@
     }
     .section:target { outline: none; }
 
+
+    /* V5 single-view navigation model */
+    .sidebar-search-card {
+      margin: .15rem .05rem 1rem;
+      padding: .9rem;
+      border-radius: 22px;
+      border: 1px solid rgba(84,240,255,.18);
+      background: linear-gradient(135deg, rgba(84,240,255,.10), rgba(139,92,246,.08));
+    }
+    .sidebar-search-label {
+      display: block;
+      margin: 0 0 .5rem;
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 900;
+      color: var(--text-soft);
+    }
+    .sidebar-search-wrap {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      padding: .72rem .78rem;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+    }
+    .sidebar-search-wrap input {
+      width: 100%;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-weight: 800;
+      font-size: .86rem;
+    }
+    .sidebar-search-card p {
+      margin: .62rem .1rem 0;
+      color: var(--text-muted);
+      font-size: .76rem;
+      line-height: 1.45;
+    }
+    .content.single-view > .section {
+      display: none !important;
+    }
+    .content.single-view > .section.is-visible {
+      display: block !important;
+      animation: viewReveal .24s ease both;
+    }
+    .content.single-view > .section.hero.is-visible {
+      display: grid !important;
+    }
+    @keyframes viewReveal {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .search-mode-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 1.2rem;
+    }
+    .search-mode-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: .65rem;
+      min-width: min(100%, 440px);
+    }
+    .view-only-note {
+      margin: 0 0 1rem;
+      color: var(--text-soft);
+      font-size: .9rem;
+    }
+    @media (max-width: 980px) {
+      .sidebar-search-card {
+        min-width: min(84vw, 320px);
+        margin: 0 .6rem .1rem 0;
+        padding: .65rem;
+      }
+      .sidebar-search-card p,
+      .sidebar-search-label { display: none; }
+      .sidebar {
+        display: flex;
+        gap: .6rem;
+        align-items: center;
+      }
+      .nav-list { flex: 1 1 auto; }
+      .search-mode-header { flex-direction: column; }
+      .search-mode-actions { justify-content: flex-start; min-width: 0; }
+    }
+
   </style>
 </head>
 
@@ -1367,7 +1462,7 @@
 
   <div class="site-shell">
     <header class="app-header">
-      <a href="#hero" data-scroll-target="hero" onclick="return window.rulesScrollTo ? window.rulesScrollTo('hero') : true" class="brand-lockup" aria-label="Deputation Rules Hub">
+      <a href="#search" data-scroll-target="search" class="brand-lockup" aria-label="Deputation Rules Hub">
         <span class="brand-mark">⚖</span>
         <span>
           <p class="brand-kicker">Central Government</p>
@@ -1389,18 +1484,25 @@
           <span>Navigate</span>
           <span aria-hidden="true">⌘</span>
         </div>
+        <div class="sidebar-search-card" aria-label="Search rules from navigation">
+          <label for="sidebarSearch" class="sidebar-search-label">Search rules</label>
+          <div class="sidebar-search-wrap">
+            <span aria-hidden="true">⌕</span>
+            <input id="sidebarSearch" type="search" placeholder="OM number, lien, 7 years..." autocomplete="off" />
+          </div>
+          <p>Search opens the rule database and scans summaries plus extracted PDF text.</p>
+        </div>
         <ul class="nav-list">
-          <li><a href="#hero" data-scroll-target="hero" onclick="return window.rulesScrollTo ? window.rulesScrollTo('hero') : true" class="nav-link active"><span class="nav-icon">01</span>Overview</a></li>
-          <li><a href="#topics" data-scroll-target="topics" onclick="return window.rulesScrollTo ? window.rulesScrollTo('topics') : true" class="nav-link"><span class="nav-icon">02</span>Topic Summary</a></li>
-          <li><a href="#essentials" data-scroll-target="essentials" onclick="return window.rulesScrollTo ? window.rulesScrollTo('essentials') : true" class="nav-link"><span class="nav-icon">03</span>Essential Rules</a></li>
-          <li><a href="#search" data-scroll-target="search" onclick="return window.rulesScrollTo ? window.rulesScrollTo('search') : true" class="nav-link"><span class="nav-icon">04</span>Search</a></li>
-          <li><a href="#timeline" data-scroll-target="timeline" onclick="return window.rulesScrollTo ? window.rulesScrollTo('timeline') : true" class="nav-link"><span class="nav-icon">05</span>Chronology</a></li>
-          <li><a href="#map" data-scroll-target="map" onclick="return window.rulesScrollTo ? window.rulesScrollTo('map') : true" class="nav-link"><span class="nav-icon">06</span>Relationship Map</a></li>
-          <li><a href="#library" data-scroll-target="library" onclick="return window.rulesScrollTo ? window.rulesScrollTo('library') : true" class="nav-link"><span class="nav-icon">07</span>PDF Library</a></li>
-          <li><a href="#faq" data-scroll-target="faq" onclick="return window.rulesScrollTo ? window.rulesScrollTo('faq') : true" class="nav-link"><span class="nav-icon">08</span>FAQ</a></li>
+          <li><a href="#search" data-view-target="search" data-scroll-target="search" class="nav-link active"><span class="nav-icon">01</span>Search</a></li>
+          <li><a href="#topics" data-view-target="topics" data-scroll-target="topics" class="nav-link"><span class="nav-icon">02</span>Topic Summary</a></li>
+          <li><a href="#essentials" data-view-target="essentials" data-scroll-target="essentials" class="nav-link"><span class="nav-icon">03</span>Essential Rules</a></li>
+          <li><a href="#timeline" data-view-target="timeline" data-scroll-target="timeline" class="nav-link"><span class="nav-icon">04</span>Chronology</a></li>
+          <li><a href="#map" data-view-target="map" data-scroll-target="map" class="nav-link"><span class="nav-icon">05</span>Relationship Map</a></li>
+          <li><a href="#library" data-view-target="library" data-scroll-target="library" class="nav-link"><span class="nav-icon">06</span>PDF Library</a></li>
+          <li><a href="#faq" data-view-target="faq" data-scroll-target="faq" class="nav-link"><span class="nav-icon">07</span>FAQ</a></li>
         </ul>
         <p class="sidebar-note">
-          Tip: use the search box for OM numbers, dates, “cooling-off”, “lien”, “allowance”, “7 years”, “foreign service”, or “absorption”.
+          Navigation now works in single-section mode: one click hides the rest of the page and shows only the selected panel.
         </p>
       </aside>
 
@@ -1417,9 +1519,9 @@
                 A premium knowledge hub for Fundamental Rules, Supplementary Rules, DoPT Office Memorandums, tenure limits, cooling-off, deputation duty allowance, lien, absorption, and related establishment circulars.
               </p>
               <div class="hero-actions">
-                <a href="#timeline" data-scroll-target="timeline" onclick="return window.rulesScrollTo ? window.rulesScrollTo('timeline') : true" class="btn primary"><span>↳</span><span>View Chronological Rules</span></a>
-                <a href="#search" data-scroll-target="search" onclick="return window.rulesScrollTo ? window.rulesScrollTo('search') : true" class="btn"><span>⌕</span><span>Search by Topic</span></a>
-                <a href="#library" data-scroll-target="library" onclick="return window.rulesScrollTo ? window.rulesScrollTo('library') : true" class="btn"><span>▣</span><span>Official PDF Library</span></a>
+                <a href="#timeline" data-view-target="timeline" data-scroll-target="timeline" class="btn primary"><span>↳</span><span>View Chronological Rules</span></a>
+                <a href="#search" data-view-target="search" data-scroll-target="search" class="btn"><span>⌕</span><span>Search by Topic</span></a>
+                <a href="#library" data-view-target="library" data-scroll-target="library" class="btn"><span>▣</span><span>Official PDF Library</span></a>
               </div>
             </div>
 
@@ -1464,6 +1566,18 @@
         </section>
 
         <section id="search" tabindex="-1" class="section search-panel glass">
+          <div class="search-mode-header">
+            <div>
+              <span class="section-eyebrow">⌕ Rule search</span>
+              <h2 class="section-title">Search rules, summaries and extracted PDF text</h2>
+              <p class="section-description">This is now the main default view. Search terms are matched against visible rule metadata and any full PDF text saved inside each rule object.</p>
+            </div>
+            <div class="search-mode-actions">
+              <a href="#timeline" data-view-target="timeline" data-scroll-target="timeline" class="btn primary"><span>↳</span><span>View Chronological Rules</span></a>
+              <a href="#search" data-view-target="search" data-scroll-target="search" class="btn"><span>⌕</span><span>Search by Topic</span></a>
+              <a href="#library" data-view-target="library" data-scroll-target="library" class="btn"><span>▣</span><span>Official PDF Library</span></a>
+            </div>
+          </div>
           <div class="search-bar">
             <div class="search-input-wrap">
               <label for="searchRules" class="sr-only" style="position:absolute;left:-9999px;">Search rules</label>
@@ -2577,5 +2691,118 @@
 
     document.addEventListener("DOMContentLoaded", init);
   </script>
+
+  <script>
+    /* V5: Single-section navigation. This intentionally replaces scroll-based
+       navigation because the old anchor/scroll model was unstable in the
+       sticky sidebar grid. */
+    (function () {
+      const validSections = ["search", "topics", "essentials", "timeline", "map", "library", "faq"];
+
+      function $(selector, root = document) { return root.querySelector(selector); }
+      function $$(selector, root = document) { return Array.from(root.querySelectorAll(selector)); }
+
+      function normalizeTarget(value) {
+        const id = String(value || "").replace(/^#/, "").trim();
+        if (id === "hero" || !id) return "search";
+        return validSections.includes(id) ? id : "search";
+      }
+
+      function setActiveNav(id) {
+        $$(".nav-link").forEach(link => {
+          const target = normalizeTarget(link.dataset.viewTarget || link.dataset.scrollTarget || link.getAttribute("href"));
+          link.classList.toggle("active", target === id);
+        });
+      }
+
+      function showOnly(id, options = {}) {
+        const targetId = normalizeTarget(id);
+        const target = document.getElementById(targetId);
+        const content = $(".content");
+        if (!target || !content) return false;
+
+        content.classList.add("single-view");
+        $$(".content > .section").forEach(section => {
+          const visible = section.id === targetId;
+          section.classList.toggle("is-visible", visible);
+          section.setAttribute("aria-hidden", visible ? "false" : "true");
+        });
+
+        setActiveNav(targetId);
+
+        if (options.updateHash !== false) {
+          try { history.replaceState(null, "", `#${targetId}`); }
+          catch (error) { window.location.hash = targetId; }
+        }
+
+        document.documentElement.scrollLeft = 0;
+        document.body.scrollLeft = 0;
+        window.scrollTo({ top: 0, left: 0, behavior: options.instant ? "auto" : "smooth" });
+
+        if (targetId === "search") {
+          setTimeout(() => {
+            const search = $("#searchRules");
+            if (search && options.focus !== false) search.focus({ preventScroll: true });
+          }, 80);
+        }
+        return false;
+      }
+
+      function syncSearchInputs(value, source) {
+        const main = $("#searchRules");
+        const side = $("#sidebarSearch");
+        if (main && source !== main) {
+          main.value = value;
+          main.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        if (side && source !== side) side.value = value;
+      }
+
+      function setupSingleViewNavigation() {
+        // Override old inline/on-page API.
+        window.rulesScrollTo = function (id) { return showOnly(id); };
+        window.rulesShowOnly = showOnly;
+
+        // Capture phase prevents older scroll handlers from running.
+        document.addEventListener("click", function (event) {
+          const link = event.target.closest("[data-view-target], [data-scroll-target], a[href^='#']");
+          if (!link) return;
+
+          const href = link.getAttribute("href") || "";
+          const rawTarget = link.dataset.viewTarget || link.dataset.scrollTarget || href;
+          const targetId = normalizeTarget(rawTarget);
+          if (!validSections.includes(targetId)) return;
+
+          event.preventDefault();
+          event.stopPropagation();
+          if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+          showOnly(targetId);
+        }, true);
+
+        const side = $("#sidebarSearch");
+        if (side) {
+          side.addEventListener("focus", () => showOnly("search", { focus: false }));
+          side.addEventListener("input", () => {
+            showOnly("search", { focus: false, instant: true });
+            syncSearchInputs(side.value, side);
+          });
+        }
+
+        const main = $("#searchRules");
+        if (main) {
+          main.addEventListener("input", () => syncSearchInputs(main.value, main));
+        }
+
+        const initial = normalizeTarget(window.location.hash || "search");
+        showOnly(initial, { updateHash: false, instant: true, focus: false });
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // Let the original renderer build dynamic cards first, then switch mode.
+        setTimeout(setupSingleViewNavigation, 0);
+      });
+    })();
+  </script>
+
 </body>
 </html>
