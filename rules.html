@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="auto">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -1442,7 +1442,123 @@
       .search-mode-actions { justify-content: flex-start; min-width: 0; }
     }
 
+
+    /* V6 premium upgrade: 2026 legal-tech aesthetic */
+    :root {
+      --bg: #071827;
+      --bg-2: #0a2540;
+      --panel: rgba(255,255,255,.072);
+      --panel-strong: rgba(255,255,255,.12);
+      --panel-solid: #0f2b44;
+      --text: #f5fbff;
+      --text-soft: #c7d5e6;
+      --muted: #8aa0b8;
+      --line: rgba(255,255,255,.13);
+      --line-strong: rgba(255,255,255,.24);
+      --brand: #00d4c8;
+      --brand-2: #14b8a6;
+      --brand-3: #7dd3fc;
+      --shadow: 0 24px 80px rgba(0,0,0,.34);
+      --radius: 30px;
+    }
+    @media (prefers-color-scheme: light) {
+      html:not([data-theme="dark"]), html[data-theme="auto"] {
+        --bg: #f6f9fc;
+        --bg-2: #eaf3f7;
+        --panel: rgba(255,255,255,.78);
+        --panel-strong: rgba(255,255,255,.94);
+        --panel-solid: #ffffff;
+        --text: #0a2540;
+        --text-soft: #41546b;
+        --muted: #66788f;
+        --line: rgba(10,37,64,.12);
+        --line-strong: rgba(10,37,64,.2);
+        --shadow: 0 24px 80px rgba(10,37,64,.12);
+      }
+    }
+    body { line-height: 1.7; }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .045;
+      background-image: linear-gradient(30deg, currentColor 1px, transparent 1px), linear-gradient(150deg, currentColor 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(circle at 35% 10%, #000, transparent 65%);
+      z-index: -1;
+    }
+    .top-nav { justify-content: center; gap: .25rem; backdrop-filter: blur(22px) saturate(160%); }
+    .top-nav a { border-radius: 999px; padding: .72rem 1rem; transition: transform .25s ease, background .25s ease, color .25s ease; }
+    .top-nav a:hover { transform: translateY(-1px); background: rgba(0,212,200,.12); color: var(--brand); }
+    .brand-mark svg, .nav-icon svg, .btn svg, .icon-btn svg, .sidebar-title svg, .hero-global-search svg, .badge svg { width: 22px; height: 22px; stroke-width: 2.2; }
+    .brand-mark { display: grid; place-items: center; background: linear-gradient(135deg, rgba(0,212,200,.24), rgba(125,211,252,.14)); color: var(--brand); }
+    .brand-title, .section-title, .modal-title { letter-spacing: -.045em; }
+    .app-header { position: sticky; top: calc(var(--nav-h) + .6rem); z-index: 45; }
+    .header-tools { gap: .55rem; }
+    .live-count { display: inline-grid; min-width: 1.65rem; height: 1.65rem; place-items: center; border-radius: 999px; background: rgba(0,212,200,.16); color: var(--brand); font: 800 .78rem/1 Inter; }
+    .layout { align-items: start; }
+    .sidebar { border-radius: 32px; }
+    .sidebar-search-card { background: linear-gradient(135deg, rgba(0,212,200,.12), rgba(255,255,255,.04)); }
+    .nav-link { min-height: 48px; border-radius: 18px; }
+    .nav-link:hover { transform: translateX(3px); }
+    .section { animation: premiumFade .48s ease both; }
+    @keyframes premiumFade { from { opacity: 0; transform: translateY(10px) scale(.995); } to { opacity: 1; transform: none; } }
+    .search-hero-banner {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(2rem, 5vw, 4.25rem);
+      border-radius: 34px;
+      margin-bottom: 2rem;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(circle at 18% 12%, rgba(0,212,200,.24), transparent 26rem),
+        radial-gradient(circle at 92% 22%, rgba(125,211,252,.22), transparent 30rem),
+        linear-gradient(135deg, rgba(10,37,64,.86), rgba(10,37,64,.35));
+      box-shadow: var(--shadow);
+    }
+    html[data-theme="light"] .search-hero-banner,
+    html[data-theme="auto"] .search-hero-banner { background: radial-gradient(circle at 18% 12%, rgba(0,212,200,.18), transparent 26rem), radial-gradient(circle at 92% 22%, rgba(125,211,252,.2), transparent 30rem), linear-gradient(135deg, rgba(255,255,255,.95), rgba(236,248,250,.72)); }
+    .search-hero-banner::before {
+      content: "";
+      position: absolute; inset: 0;
+      background-image: radial-gradient(rgba(255,255,255,.28) 1px, transparent 1px);
+      background-size: 18px 18px;
+      opacity: .18;
+      pointer-events: none;
+    }
+    .search-hero-banner > * { position: relative; z-index: 1; }
+    .search-hero-banner h1 { max-width: 980px; margin: 1rem 0 .9rem; font-size: clamp(2.8rem, 6vw, 5.6rem); line-height: .96; letter-spacing: -.075em; }
+    .search-hero-banner p { max-width: 850px; margin: 0 0 1.6rem; color: var(--text-soft); font-size: clamp(1rem, 1.55vw, 1.2rem); }
+    .hero-global-search { display: grid; grid-template-columns: 28px 1fr 44px; align-items: center; gap: .7rem; width: min(880px, 100%); padding: .72rem .8rem .72rem 1.05rem; border: 1px solid var(--line-strong); border-radius: 24px; background: rgba(255,255,255,.09); box-shadow: 0 18px 54px rgba(0,0,0,.18); backdrop-filter: blur(18px); }
+    .hero-global-search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--text); font: 700 1.02rem Inter; }
+    .hero-global-search button { border: 0; background: rgba(255,255,255,.1); color: var(--text); width: 42px; height: 42px; border-radius: 14px; cursor: pointer; }
+    .quick-stats { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1.1rem; }
+    .quick-stats span { border: 1px solid var(--line); border-radius: 999px; padding: .62rem .9rem; background: rgba(255,255,255,.075); color: var(--text-soft); font-weight: 800; }
+    .quick-stats strong { color: var(--brand); }
+    .topic-card, .essential-card, .rule-card, .search-preview-card, .flow-node { border-radius: 30px; transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease; }
+    .topic-card:hover, .essential-card:hover, .rule-card:hover, .search-preview-card:hover, .flow-node:hover { transform: translateY(-4px) scale(1.01); box-shadow: 0 28px 70px rgba(0,0,0,.22); border-color: rgba(0,212,200,.36); }
+    .cards-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .chip { transition: transform .22s ease, background .22s ease; }
+    .chip:hover { transform: translateY(-1px); }
+    mark { background: rgba(0,212,200,.23); color: inherit; border-radius: .35em; padding: .05em .22em; }
+    .rule-actions { gap: .55rem; }
+    .bookmark-btn.active { background: rgba(0,212,200,.16); color: var(--brand); border-color: rgba(0,212,200,.4); }
+    .table-tools { gap: .7rem; flex-wrap: wrap; }
+    table th { cursor: pointer; user-select: none; }
+    table th:hover { color: var(--brand); }
+    .pdf-preview-frame { margin-top: 1rem; border: 1px solid var(--line); border-radius: 24px; overflow: hidden; min-height: 64vh; background: var(--panel-solid); }
+    .pdf-preview-frame iframe { width: 100%; height: 70vh; border: 0; display: block; }
+    .site-footer { max-width: var(--max); margin: 2rem auto; padding: 1.3rem 1.6rem; border-radius: 26px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--text-soft); }
+    .site-footer p { margin: .25rem 0 0; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: .65rem; }
+    .footer-links a { color: var(--text-soft); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: .45rem .75rem; }
+    .footer-links a:hover { color: var(--brand); border-color: rgba(0,212,200,.42); }
+    @media print { .top-nav, .app-header, .sidebar, .hero-global-search, .hero-actions, .rule-actions, .back-to-top, .toast { display:none !important; } body { background:#fff !important; color:#000 !important; } .content > .section { display:block !important; } .glass, .panel, .rule-card { box-shadow:none !important; border:1px solid #ddd !important; } }
+    @media (max-width: 760px) { .search-hero-banner { padding: 1.5rem; border-radius: 26px; } .search-hero-banner h1 { font-size: 2.6rem; } .hero-global-search { grid-template-columns: 24px 1fr 38px; border-radius: 20px; } .site-footer { flex-direction: column; align-items: flex-start; } }
+
   </style>
+  <script src="https://unpkg.com/lucide@latest" defer></script>
 </head>
 
 <body>
@@ -1463,7 +1579,7 @@
   <div class="site-shell">
     <header class="app-header">
       <a href="#search" data-scroll-target="search" class="brand-lockup" aria-label="Deputation Rules Hub">
-        <span class="brand-mark">⚖</span>
+        <span class="brand-mark"><i data-lucide="scale" aria-hidden="true"></i></span>
         <span>
           <p class="brand-kicker">Central Government</p>
           <h2 class="brand-title">Deputation Rules Hub</h2>
@@ -1472,9 +1588,9 @@
 
       <div class="header-tools">
         <button class="btn secondary keep-label" id="copyVisibleBtn" type="button">
-          <span>⧉</span><span class="label">Copy Visible Rules</span>
+          <i data-lucide="copy" aria-hidden="true"></i><span class="label">Copy Visible</span><span class="live-count" id="copyLiveCount">0</span>
         </button>
-        <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle light or dark theme">☾</button>
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle light or dark theme"><i data-lucide="moon" aria-hidden="true"></i></button>
       </div>
     </header>
 
@@ -1482,27 +1598,27 @@
       <aside class="sidebar glass" aria-label="Page navigation">
         <div class="sidebar-title">
           <span>Navigate</span>
-          <span aria-hidden="true">⌘</span>
+          <i data-lucide="panel-left" aria-hidden="true"></i>
         </div>
         <div class="sidebar-search-card" aria-label="Search rules from navigation">
           <label for="sidebarSearch" class="sidebar-search-label">Search rules</label>
           <div class="sidebar-search-wrap">
-            <span aria-hidden="true">⌕</span>
+            <i data-lucide="search" aria-hidden="true"></i>
             <input id="sidebarSearch" type="search" placeholder="OM number, lien, 7 years..." autocomplete="off" />
           </div>
           <p>Search opens the rule database and scans summaries plus extracted PDF text.</p>
         </div>
         <ul class="nav-list">
-          <li><a href="#search" data-view-target="search" data-scroll-target="search" class="nav-link active"><span class="nav-icon">01</span>Search</a></li>
-          <li><a href="#topics" data-view-target="topics" data-scroll-target="topics" class="nav-link"><span class="nav-icon">02</span>Topic Summary</a></li>
-          <li><a href="#essentials" data-view-target="essentials" data-scroll-target="essentials" class="nav-link"><span class="nav-icon">03</span>Essential Rules</a></li>
-          <li><a href="#timeline" data-view-target="timeline" data-scroll-target="timeline" class="nav-link"><span class="nav-icon">04</span>Chronology</a></li>
-          <li><a href="#map" data-view-target="map" data-scroll-target="map" class="nav-link"><span class="nav-icon">05</span>Relationship Map</a></li>
-          <li><a href="#library" data-view-target="library" data-scroll-target="library" class="nav-link"><span class="nav-icon">06</span>PDF Library</a></li>
-          <li><a href="#faq" data-view-target="faq" data-scroll-target="faq" class="nav-link"><span class="nav-icon">07</span>FAQ</a></li>
+          <li><a href="#search" data-view-target="search" data-scroll-target="search" class="nav-link active"><span class="nav-icon"><i data-lucide="search" aria-hidden="true"></i></span>Search</a></li>
+          <li><a href="#topics" data-view-target="topics" data-scroll-target="topics" class="nav-link"><span class="nav-icon"><i data-lucide="layout-grid" aria-hidden="true"></i></span>Topic Summary</a></li>
+          <li><a href="#essentials" data-view-target="essentials" data-scroll-target="essentials" class="nav-link"><span class="nav-icon"><i data-lucide="star" aria-hidden="true"></i></span>Essential Rules</a></li>
+          <li><a href="#timeline" data-view-target="timeline" data-scroll-target="timeline" class="nav-link"><span class="nav-icon"><i data-lucide="clock-3" aria-hidden="true"></i></span>Chronology</a></li>
+          <li><a href="#map" data-view-target="map" data-scroll-target="map" class="nav-link"><span class="nav-icon"><i data-lucide="git-branch" aria-hidden="true"></i></span>Relationship Map</a></li>
+          <li><a href="#library" data-view-target="library" data-scroll-target="library" class="nav-link"><span class="nav-icon"><i data-lucide="folder-open" aria-hidden="true"></i></span>PDF Library</a></li>
+          <li><a href="#faq" data-view-target="faq" data-scroll-target="faq" class="nav-link"><span class="nav-icon"><i data-lucide="circle-help" aria-hidden="true"></i></span>FAQ</a></li>
         </ul>
         <p class="sidebar-note">
-          Navigation now works in single-section mode: one click hides the rest of the page and shows only the selected panel.
+          Single-view navigation: choose a workspace, search across extracted PDF text, and export visible results.
         </p>
       </aside>
 
@@ -1514,14 +1630,14 @@
                 <span class="badge accent">Chronological DoPT Rules & OMs</span>
                 <span class="badge">Searchable legal-tech layout</span>
               </div>
-              <h1><span class="gradient-text">Rules & Regulations on Central Government Deputation</span></h1>
+              <h1><span class="gradient-text">Central Government Deputation Rules Hub</span></h1>
               <p class="hero-copy">
-                A premium knowledge hub for Fundamental Rules, Supplementary Rules, DoPT Office Memorandums, tenure limits, cooling-off, deputation duty allowance, lien, absorption, and related establishment circulars.
+                A premium legal-tech knowledge system for DoPT OMs, FR/SR provisions, foreign service, tenure limits, cooling-off, allowance, lien, absorption and State/UT deputation references.
               </p>
               <div class="hero-actions">
-                <a href="#timeline" data-view-target="timeline" data-scroll-target="timeline" class="btn primary"><span>↳</span><span>View Chronological Rules</span></a>
-                <a href="#search" data-view-target="search" data-scroll-target="search" class="btn"><span>⌕</span><span>Search by Topic</span></a>
-                <a href="#library" data-view-target="library" data-scroll-target="library" class="btn"><span>▣</span><span>Official PDF Library</span></a>
+                <a href="#timeline" data-view-target="timeline" data-scroll-target="timeline" class="btn primary"><i data-lucide="clock-3" aria-hidden="true"></i><span>Browse by Year</span></a>
+                <a href="#search" data-view-target="search" data-scroll-target="search" class="btn"><i data-lucide="search" aria-hidden="true"></i><span>Start Here</span></a>
+                <a href="#library" data-view-target="library" data-scroll-target="library" class="btn"><i data-lucide="folder-open" aria-hidden="true"></i><span>Official PDF Library</span></a>
               </div>
             </div>
 
@@ -1566,6 +1682,22 @@
         </section>
 
         <section id="search" tabindex="-1" class="section search-panel glass">
+          <div class="search-hero-banner">
+            <span class="badge accent"><i data-lucide="sparkles" aria-hidden="true"></i> Legal-tech rules intelligence</span>
+            <h1>Central Government Deputation Rules Hub</h1>
+            <p>Search the complete deputation rule database, extracted PDF text, OM numbers, years, topics, and practical office-use summaries from one premium workspace.</p>
+            <div class="hero-global-search">
+              <i data-lucide="search" aria-hidden="true"></i>
+              <input id="heroSearch" type="search" placeholder="Search tenure, 7 years, lien, allowance, 17.06.2010, MACP..." autocomplete="off" />
+              <button id="heroSearchClear" type="button" aria-label="Clear hero search"><i data-lucide="x" aria-hidden="true"></i></button>
+            </div>
+            <div class="quick-stats">
+              <span><strong id="heroRuleCount">20</strong> Rules</span>
+              <span><strong>15+</strong> Topics</span>
+              <span><strong>2010</strong> Master OM</span>
+              <span><strong>PDF</strong> Preview Ready</span>
+            </div>
+          </div>
           <div class="search-mode-header">
             <div>
               <span class="section-eyebrow">⌕ Rule search</span>
@@ -1573,9 +1705,9 @@
               <p class="section-description">This is now the main default view. Search terms are matched against visible rule metadata and any full PDF text saved inside each rule object.</p>
             </div>
             <div class="search-mode-actions">
-              <a href="#timeline" data-view-target="timeline" data-scroll-target="timeline" class="btn primary"><span>↳</span><span>View Chronological Rules</span></a>
-              <a href="#search" data-view-target="search" data-scroll-target="search" class="btn"><span>⌕</span><span>Search by Topic</span></a>
-              <a href="#library" data-view-target="library" data-scroll-target="library" class="btn"><span>▣</span><span>Official PDF Library</span></a>
+              <a href="#timeline" data-view-target="timeline" data-scroll-target="timeline" class="btn primary"><i data-lucide="clock-3" aria-hidden="true"></i><span>Browse by Year</span></a>
+              <a href="#search" data-view-target="search" data-scroll-target="search" class="btn"><i data-lucide="search" aria-hidden="true"></i><span>Start Here</span></a>
+              <a href="#library" data-view-target="library" data-scroll-target="library" class="btn"><i data-lucide="folder-open" aria-hidden="true"></i><span>Official PDF Library</span></a>
             </div>
           </div>
           <div class="search-bar">
@@ -1650,7 +1782,7 @@
           </div>
           <div class="table-tools">
             <span id="libraryCount" style="color:var(--text-soft);font-weight:800;"></span>
-            <button class="btn" id="downloadCsv" type="button"><span>⇩</span><span class="label">Download CSV</span></button>
+            <button class="btn" id="downloadJson" type="button"><i data-lucide="braces" aria-hidden="true"></i><span class="label">JSON</span></button><button class="btn" id="downloadCsv" type="button"><i data-lucide="download" aria-hidden="true"></i><span class="label">CSV</span></button>
           </div>
           <div class="table-wrap">
             <table>
@@ -1686,6 +1818,18 @@
         </section>
       </section>
     </main>
+    <footer class="site-footer glass">
+      <div>
+        <strong>Central Government Deputation Rules Hub</strong>
+        <p>Last updated: May 2026 · Verify official PDFs before administrative or legal action.</p>
+      </div>
+      <div class="footer-links">
+        <a href="/index.html">Home</a>
+        <a href="/rules.html">Rules</a>
+        <a href="/dex.html">DEX</a>
+        <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </footer>
   </div>
 
   <button class="icon-btn back-to-top" id="backToTop" type="button" aria-label="Back to top">↑</button>
@@ -2465,7 +2609,8 @@
         <h4>Related references</h4>
         <p>${esc((rule.related || []).join(", ") || "None listed")}</p>
         <h4>Official source</h4>
-        <p>${rule.pdfUrl ? `<a class="btn primary" href="${esc(rule.pdfUrl)}" target="_blank" rel="noopener">Open official PDF/source ↗</a>` : "PDF to be added."}</p>
+        <p>${rule.pdfUrl ? `<a class="btn primary" href="${esc(rule.pdfUrl)}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i> Open official PDF/source</a> <button class="btn" type="button" data-preview-pdf="${esc(rule.id)}"><i data-lucide="eye" aria-hidden="true"></i> Preview PDF</button>` : "PDF to be added."}</p>
+        ${rule.pdfUrl ? `<div class="pdf-preview-frame" id="modalPdfPreview" hidden><iframe title="PDF preview for ${esc(rule.title)}" src="${esc(rule.pdfUrl)}"></iframe></div>` : ""}
       `;
       $("#ruleModal").classList.add("open");
       $("#closeModal").focus();
@@ -2800,6 +2945,199 @@
       document.addEventListener("DOMContentLoaded", function () {
         // Let the original renderer build dynamic cards first, then switch mode.
         setTimeout(setupSingleViewNavigation, 0);
+      });
+    })();
+  </script>
+
+
+  <script>
+    /* V6 premium behaviour: system-aware theme, synced hero search, bookmarks,
+       JSON export, PDF preview, sortable library and Lucide icon hydration. */
+    (function () {
+      const $ = (selector, root = document) => root.querySelector(selector);
+      const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+      function hydrateIcons() {
+        if (window.lucide && typeof window.lucide.createIcons === "function") window.lucide.createIcons();
+      }
+
+      function setThemeIcon() {
+        const btn = $("#themeToggle");
+        if (!btn) return;
+        const theme = document.documentElement.dataset.theme || "auto";
+        const icon = theme === "dark" ? "moon" : theme === "light" ? "sun" : "monitor";
+        btn.innerHTML = `<i data-lucide="${icon}" aria-hidden="true"></i>`;
+        btn.title = `Theme: ${theme}`;
+        hydrateIcons();
+      }
+
+      function setupSystemAwareTheme() {
+        const saved = localStorage.getItem("rules-theme") || "auto";
+        document.documentElement.dataset.theme = saved;
+        setThemeIcon();
+        const btn = $("#themeToggle");
+        if (!btn) return;
+        btn.addEventListener("click", function (event) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          const current = document.documentElement.dataset.theme || "auto";
+          const next = current === "auto" ? "dark" : current === "dark" ? "light" : "auto";
+          document.documentElement.dataset.theme = next;
+          localStorage.setItem("rules-theme", next);
+          if (typeof showToast === "function") showToast(`Theme: ${next}`);
+          setThemeIcon();
+        }, true);
+      }
+
+      function updateLiveCounts() {
+        const visible = window.state?.visible || window.rules || [];
+        const total = window.rules?.length || visible.length || 0;
+        const count = visible.length || total;
+        const copyCount = $("#copyLiveCount");
+        const heroCount = $("#heroRuleCount");
+        if (copyCount) copyCount.textContent = count;
+        if (heroCount) heroCount.textContent = total;
+      }
+
+      function setupHeroSearchSync() {
+        const hero = $("#heroSearch"), main = $("#searchRules"), side = $("#sidebarSearch"), clear = $("#heroSearchClear");
+        if (!hero || !main) return;
+        let busy = false;
+        const sync = (value, source) => {
+          if (busy) return;
+          busy = true;
+          [hero, main, side].filter(Boolean).forEach(input => {
+            if (input !== source) input.value = value;
+          });
+          if (source !== main) main.dispatchEvent(new Event("input", { bubbles: true }));
+          busy = false;
+        };
+        hero.addEventListener("input", () => sync(hero.value, hero));
+        main.addEventListener("input", () => sync(main.value, main));
+        side?.addEventListener("input", () => sync(side.value, side));
+        clear?.addEventListener("click", () => { hero.value = ""; sync("", hero); hero.focus(); });
+      }
+
+      function setupBookmarks() {
+        const key = "deputation-rule-bookmarks";
+        const get = () => new Set(JSON.parse(localStorage.getItem(key) || "[]"));
+        const save = set => localStorage.setItem(key, JSON.stringify([...set]));
+        document.addEventListener("click", function (event) {
+          const btn = event.target.closest("[data-bookmark-rule]");
+          if (!btn) return;
+          const id = btn.dataset.bookmarkRule;
+          const set = get();
+          if (set.has(id)) set.delete(id); else set.add(id);
+          save(set);
+          btn.classList.toggle("active", set.has(id));
+          if (typeof showToast === "function") showToast(set.has(id) ? "Rule bookmarked" : "Bookmark removed");
+        });
+        window.rulesIsBookmarked = id => get().has(id);
+      }
+
+      function patchRenderedCards() {
+        const set = new Set(JSON.parse(localStorage.getItem("deputation-rule-bookmarks") || "[]"));
+        $$(".rule-card").forEach(card => {
+          const id = card.dataset.ruleId;
+          const actions = $(".rule-actions", card);
+          if (!id || !actions || actions.querySelector("[data-bookmark-rule]")) return;
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "mini-btn bookmark-btn" + (set.has(id) ? " active" : "");
+          btn.dataset.bookmarkRule = id;
+          btn.innerHTML = '<i data-lucide="bookmark" aria-hidden="true"></i> Save';
+          actions.prepend(btn);
+        });
+        $$("#libraryTableBody tr").forEach(row => {
+          const pdfLink = row.querySelector('a[href]');
+          const last = row.lastElementChild;
+          if (!pdfLink || !last || last.querySelector("[data-preview-url]")) return;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "mini-btn";
+          button.dataset.previewUrl = pdfLink.href;
+          button.innerHTML = '<i data-lucide="eye" aria-hidden="true"></i> Preview';
+          last.append(" ", button);
+        });
+        hydrateIcons();
+        updateLiveCounts();
+      }
+
+      function setupMutationEnhancements() {
+        const target = $("#timelineContainer");
+        const table = $("#libraryTableBody");
+        const observer = new MutationObserver(() => patchRenderedCards());
+        if (target) observer.observe(target, { childList: true, subtree: true });
+        if (table) observer.observe(table, { childList: true, subtree: true });
+        setTimeout(patchRenderedCards, 100);
+      }
+
+      function setupPreviewButtons() {
+        document.addEventListener("click", function (event) {
+          const modalBtn = event.target.closest("[data-preview-pdf]");
+          const urlBtn = event.target.closest("[data-preview-url]");
+          if (modalBtn) {
+            const frame = $("#modalPdfPreview");
+            if (frame) {
+              frame.hidden = !frame.hidden;
+              if (typeof showToast === "function") showToast(frame.hidden ? "PDF preview hidden" : "PDF preview opened");
+            }
+          }
+          if (urlBtn) {
+            event.preventDefault();
+            const url = urlBtn.dataset.previewUrl;
+            const title = "PDF preview";
+            $("#modalKicker").textContent = "Official source preview";
+            $("#modalTitle").textContent = title;
+            $("#modalBody").innerHTML = `<div class="pdf-preview-frame"><iframe title="${title}" src="${url}"></iframe></div><p style="margin-top:1rem"><a class="btn primary" href="${url}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i> Open in new tab</a></p>`;
+            $("#ruleModal").classList.add("open");
+            hydrateIcons();
+          }
+        });
+      }
+
+      function setupJsonExport() {
+        const btn = $("#downloadJson");
+        if (!btn) return;
+        btn.addEventListener("click", () => {
+          const data = JSON.stringify(window.state?.visible || window.rules || [], null, 2);
+          const blob = new Blob([data], { type: "application/json;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "deputation-rules-visible.json";
+          document.body.appendChild(a);
+          a.click(); a.remove(); URL.revokeObjectURL(url);
+          if (typeof showToast === "function") showToast("JSON exported");
+        });
+      }
+
+      function setupSortableTable() {
+        document.addEventListener("click", function (event) {
+          const th = event.target.closest("#library th");
+          if (!th || !window.state?.visible) return;
+          const index = Array.from(th.parentElement.children).indexOf(th);
+          const keys = ["date", "omNo", "title", "categories", "pdfUrl"];
+          const key = keys[index];
+          if (!key) return;
+          const asc = th.dataset.sort !== "asc";
+          th.parentElement.querySelectorAll("th").forEach(h => delete h.dataset.sort);
+          th.dataset.sort = asc ? "asc" : "desc";
+          window.state.visible.sort((a,b) => String(a[key] || "").localeCompare(String(b[key] || "")) * (asc ? 1 : -1));
+          if (typeof renderLibrary === "function") renderLibrary(window.state.visible);
+          setTimeout(patchRenderedCards, 0);
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        setupSystemAwareTheme();
+        setupHeroSearchSync();
+        setupBookmarks();
+        setupPreviewButtons();
+        setupJsonExport();
+        setupSortableTable();
+        setupMutationEnhancements();
+        setTimeout(hydrateIcons, 200);
       });
     })();
   </script>
