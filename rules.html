@@ -1,538 +1,2533 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rules & Regulations on Central Government Deputation | Deputations Portal</title>
-  <meta name="description" content="Legal-tech knowledge hub of Central Government deputation rules, DoPT OMs, foreign service guidelines, tenure limits, cooling-off, and related circulars.">
-  
-  <!-- Tailwind CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-  
-  <script src="https://unpkg.com/lucide@latest"></script>
-  
-  <!-- LENIS Smooth Scrolling -->
-  <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+  <meta name="description" content="A modern searchable knowledge hub for Central Government deputation rules, DoPT OMs, tenure limits, cooling-off, deputation allowance, lien, absorption, and related circulars." />
+  <meta name="theme-color" content="#07111f" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
-    
     :root {
-      --primary: #6366f1;
-      --accent: #c026d3;
+      --bg: #07111f;
+      --bg-2: #0b1628;
+      --panel: rgba(255,255,255,.075);
+      --panel-strong: rgba(255,255,255,.118);
+      --panel-solid: #101c31;
+      --text: #eef6ff;
+      --text-soft: #b7c5d8;
+      --muted: #7e8da3;
+      --line: rgba(255,255,255,.13);
+      --line-strong: rgba(255,255,255,.22);
+      --brand: #54f0ff;
+      --brand-2: #8b5cf6;
+      --brand-3: #f59e0b;
+      --success: #34d399;
+      --danger: #fb7185;
+      --warning: #fbbf24;
+      --shadow: 0 24px 80px rgba(0,0,0,.38);
+      --shadow-soft: 0 18px 55px rgba(0,0,0,.23);
+      --radius: 28px;
+      --radius-lg: 36px;
+      --radius-sm: 16px;
+      --max: 1440px;
+      --nav-h: 74px;
+      --blur: blur(22px) saturate(155%);
     }
-    
-    * {
-      transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, transform, opacity;
-      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-      transition-duration: 200ms;
+
+    html[data-theme="light"] {
+      --bg: #f5f8fc;
+      --bg-2: #eaf0f8;
+      --panel: rgba(255,255,255,.72);
+      --panel-strong: rgba(255,255,255,.9);
+      --panel-solid: #ffffff;
+      --text: #0b1628;
+      --text-soft: #42526a;
+      --muted: #6b7280;
+      --line: rgba(15,23,42,.12);
+      --line-strong: rgba(15,23,42,.2);
+      --shadow: 0 24px 80px rgba(23,31,56,.14);
+      --shadow-soft: 0 18px 55px rgba(23,31,56,.1);
     }
-    
-    .tail-container * {
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+    * { box-sizing: border-box; }
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: calc(var(--nav-h) + 1.4rem);
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100vw;
     }
-    
-    .sora { font-family: 'Sora', sans-serif; }
-    
-    /* Glassmorphism */
-    .glass {
-      background: rgba(15, 23, 42, 0.78);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255,255,255,0.12);
-      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+    body {
+      min-height: 100vh;
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 8% 2%, rgba(84,240,255,.22), transparent 27rem),
+        radial-gradient(circle at 95% 12%, rgba(139,92,246,.24), transparent 30rem),
+        radial-gradient(circle at 45% 105%, rgba(245,158,11,.13), transparent 30rem),
+        linear-gradient(135deg, var(--bg), var(--bg-2) 55%, var(--bg));
+      overflow-x: hidden;
     }
-    
-    /* Animated blobs */
-    .bg-shapes {
+
+    body::before {
+      content: "";
       position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: -1;
-      overflow: hidden;
+      inset: 0;
       pointer-events: none;
+      z-index: -2;
+      opacity: .33;
+      background-image:
+        linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(circle at 50% 22%, black, transparent 68%);
     }
-    .shape {
-      position: absolute;
+
+    a { color: inherit; text-decoration: none; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    :focus-visible { outline: 3px solid rgba(84,240,255,.68); outline-offset: 3px; }
+    .site-shell, .layout, .content, .section, .hero, .hero-grid, .hero-mini, .command-card, .panel, .rule-card, .table-shell { min-width: 0; }
+    .site-shell { overflow-x: clip; }
+
+    .noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      opacity: .13;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E");
+    }
+
+    .orb {
+      position: fixed;
+      width: 26rem;
+      height: 26rem;
       border-radius: 50%;
-      filter: blur(90px);
-      opacity: 0.18;
-      animation: floatBlob 28s infinite ease-in-out;
+      filter: blur(44px);
+      opacity: .22;
+      pointer-events: none;
+      z-index: -1;
+      animation: float 16s ease-in-out infinite;
     }
-    .shape-1 { width: 620px; height: 620px; background: #6366f1; top: -12%; left: -8%; animation-delay: 0s; }
-    .shape-2 { width: 820px; height: 820px; background: #c026d3; bottom: -25%; right: -18%; animation-delay: 9s; }
-    .shape-3 { width: 520px; height: 520px; background: #22d3ee; top: 35%; right: 8%; animation-delay: 16s; }
-    @keyframes floatBlob {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      50% { transform: translate(90px, 90px) rotate(18deg); }
+    .orb.one { top: 8rem; left: -9rem; background: var(--brand); }
+    .orb.two { top: 15rem; right: -11rem; background: var(--brand-2); animation-delay: -5s; }
+    .orb.three { bottom: -11rem; left: 40%; background: var(--brand-3); animation-delay: -9s; }
+    @keyframes float {
+      0%, 100% { transform: translate3d(0,0,0) scale(1); }
+      50% { transform: translate3d(22px,-28px,0) scale(1.08); }
     }
-    
-    /* Top nav */
+
     .top-nav {
       position: sticky;
       top: 0;
-      z-index: 50;
-      background: rgba(15, 23, 42, 0.96);
-      backdrop-filter: blur(24px);
+      z-index: 80;
+      min-height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .35rem;
+      padding: .75rem 1rem;
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: var(--blur);
+      background: linear-gradient(180deg, rgba(7,17,31,.78), rgba(7,17,31,.45));
     }
-    
-    /* Scroll fade-in animation */
-    .animate-on-scroll {
-      opacity: 0;
-      transform: translateY(40px);
+
+    html[data-theme="light"] .top-nav {
+      background: linear-gradient(180deg, rgba(255,255,255,.82), rgba(255,255,255,.62));
     }
-    .animate-on-scroll.in-view {
-      opacity: 1;
-      transform: translateY(0);
+
+    .top-nav a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: .72rem 1rem;
+      border-radius: 999px;
+      color: var(--text-soft);
+      font-weight: 700;
+      font-size: .92rem;
+      transition: transform .22s ease, color .22s ease, background .22s ease;
+      white-space: nowrap;
     }
-    
-    /* Card hover glow */
-    .glass-card:hover {
-      transform: translateY(-6px) scale(1.03);
-      box-shadow: 0 35px 60px -15px rgb(99 102 241 / 0.4);
+    .top-nav a:hover { transform: translateY(-1px); color: var(--text); background: var(--panel); }
+    .top-nav a.active {
+      color: #05111d;
+      background: linear-gradient(135deg, var(--brand), #a7f3d0);
+      box-shadow: 0 14px 35px rgba(84,240,255,.22);
     }
-    
-    /* Vertical Responsive Map */
-    .map-connector {
-      height: 48px;
-      width: 3px;
-      background: linear-gradient(to bottom, #6366f1, #c026d3);
+
+    .site-shell {
+      width: min(var(--max), calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 1.3rem 0 5rem;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin: 1.1rem 0 1.25rem;
+    }
+
+    .brand-lockup {
+      display: inline-flex;
+      align-items: center;
+      gap: .9rem;
+    }
+    .brand-mark {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      color: #04111f;
+      background: linear-gradient(135deg, var(--brand), #a7f3d0 48%, #fef3c7);
+      box-shadow: 0 16px 44px rgba(84,240,255,.2);
+      font-size: 1.45rem;
+      font-weight: 900;
+    }
+    .brand-kicker {
+      margin: 0 0 .1rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .13em;
+      font-size: .72rem;
+      font-weight: 900;
+    }
+    .brand-title {
+      margin: 0;
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      font-size: clamp(1.15rem, 2vw, 1.55rem);
+      font-weight: 900;
+      letter-spacing: -.035em;
+    }
+
+    .header-tools {
+      display: flex;
+      gap: .7rem;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn, .icon-btn {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 999px;
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: var(--blur);
+      transition: transform .22s ease, border-color .22s ease, background .22s ease, box-shadow .22s ease;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .55rem;
+      min-height: 46px;
+      padding: .78rem 1.05rem;
+      font-weight: 850;
+      font-size: .92rem;
+    }
+    .btn:hover, .icon-btn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(84,240,255,.44);
+      background: var(--panel-strong);
+    }
+    .btn.primary {
+      color: #03111f;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--brand), #a7f3d0);
+      box-shadow: 0 18px 46px rgba(84,240,255,.22);
+    }
+    .btn.secondary {
+      background: linear-gradient(135deg, rgba(139,92,246,.2), rgba(84,240,255,.08));
+    }
+    .icon-btn {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      font-size: 1.05rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: clamp(238px, 19vw, 292px) minmax(0, 1fr);
+      gap: 1.35rem;
+      align-items: start;
+      max-width: 100%;
+    }
+
+    .glass {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--panel-strong), var(--panel));
+      box-shadow: var(--shadow);
+      backdrop-filter: var(--blur);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: calc(var(--nav-h) + 1rem);
+      border-radius: var(--radius);
+      padding: 1.05rem;
+      max-height: calc(100vh - var(--nav-h) - 2rem);
+      overflow: auto;
+    }
+    .sidebar-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .6rem;
+      margin: .2rem .35rem 1rem;
+      color: var(--text);
+      font-weight: 900;
+      letter-spacing: -.02em;
+    }
+    .nav-list {
+      display: grid;
+      gap: .35rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .82rem .85rem;
+      border-radius: 17px;
+      color: var(--text-soft);
+      border: 1px solid transparent;
+      font-weight: 800;
+      font-size: .92rem;
+      transition: background .2s ease, color .2s ease, transform .2s ease, border-color .2s ease;
+    }
+    .nav-link:hover {
+      color: var(--text);
+      transform: translateX(2px);
+      background: rgba(255,255,255,.075);
+    }
+    .nav-link.active {
+      color: var(--text);
+      border-color: rgba(84,240,255,.28);
+      background:
+        linear-gradient(135deg, rgba(84,240,255,.18), rgba(139,92,246,.12));
+    }
+    .nav-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      color: #061323;
+      background: linear-gradient(135deg, var(--brand), rgba(255,255,255,.75));
+      font-size: .86rem;
+      flex: 0 0 auto;
+    }
+    .sidebar-note {
+      margin: 1rem .25rem .2rem;
+      padding: .9rem;
+      border-radius: 20px;
+      color: var(--text-soft);
+      background: rgba(84,240,255,.07);
+      border: 1px solid rgba(84,240,255,.14);
+      font-size: .82rem;
+      line-height: 1.55;
+    }
+
+    .content {
+      display: grid;
+      gap: 1.35rem;
+      min-width: 0;
+    }
+
+    .section {
+      scroll-margin-top: calc(var(--nav-h) + 1.2rem);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-lg);
+      padding: clamp(1.35rem, 4vw, 3.2rem);
+      min-height: 520px;
+      display: grid;
+      align-items: center;
+      background:
+        linear-gradient(135deg, rgba(84,240,255,.16), transparent 35%),
+        radial-gradient(circle at 100% 0%, rgba(139,92,246,.24), transparent 28rem),
+        linear-gradient(135deg, rgba(255,255,255,.11), rgba(255,255,255,.05));
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      right: -8rem;
+      top: -8rem;
+      width: 30rem;
+      height: 30rem;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.18);
+      background: radial-gradient(circle, rgba(84,240,255,.14), transparent 62%);
+    }
+    .hero::after {
+      content: "OM";
+      position: absolute;
+      right: 2rem;
+      bottom: -2.6rem;
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      font-size: clamp(7rem, 15vw, 16rem);
+      font-weight: 900;
+      letter-spacing: -.09em;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(255,255,255,.12);
+      opacity: .7;
+      pointer-events: none;
+    }
+    .hero-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(280px, 420px);
+      gap: clamp(1.2rem, 3vw, 2.5rem);
+      align-items: center;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: .65rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1.15rem;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .48rem;
+      min-height: 34px;
+      padding: .45rem .72rem;
+      border-radius: 999px;
+      color: var(--text);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.075);
+      backdrop-filter: blur(14px);
+      font-weight: 900;
+      font-size: .76rem;
+      letter-spacing: .015em;
+    }
+    .badge.accent {
+      color: #05111d;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--brand), #a7f3d0);
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 860px;
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      font-size: clamp(2.55rem, 6.2vw, 6.3rem);
+      line-height: .94;
+      letter-spacing: -.075em;
+      font-weight: 900;
+    }
+    .gradient-text {
+      background: linear-gradient(120deg, #fff 5%, #b9fbff 32%, #c4b5fd 66%, #fde68a 94%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    html[data-theme="light"] .gradient-text {
+      background: linear-gradient(120deg, #0b1628 10%, #0891b2 40%, #6d28d9 72%, #b45309 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .hero-copy {
+      margin: 1.25rem 0 0;
+      max-width: 760px;
+      color: var(--text-soft);
+      font-size: clamp(1rem, 1.5vw, 1.2rem);
+      line-height: 1.75;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .75rem;
+      margin-top: 1.8rem;
+    }
+    .hero-mini {
+      display: grid;
+      gap: .85rem;
+      width: 100%;
+      max-width: 420px;
+      justify-self: end;
+    }
+    .command-card {
+      border-radius: 30px;
+      padding: 1rem;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+      background: rgba(2,6,23,.35);
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: var(--blur);
+    }
+    html[data-theme="light"] .command-card { background: rgba(255,255,255,.72); }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: .75rem;
+      margin-top: .85rem;
+    }
+    .metric {
+      min-height: 110px;
+      min-width: 0;
+      overflow: hidden;
+      border-radius: 24px;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.065);
+    }
+    .metric strong {
+      display: block;
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      font-size: 2rem;
+      line-height: 1;
+      letter-spacing: -.06em;
+    }
+    .metric span {
+      display: block;
+      color: var(--text-soft);
+      margin-top: .35rem;
+      font-weight: 800;
+      font-size: .82rem;
+      line-height: 1.35;
+    }
+
+    .panel {
+      border-radius: var(--radius);
+      padding: clamp(1.15rem, 2.4vw, 2rem);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .section-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+      color: var(--brand);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-size: .76rem;
+      font-weight: 950;
+    }
+    .section-title {
+      margin: .35rem 0 0;
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      font-size: clamp(1.55rem, 2.6vw, 2.35rem);
+      line-height: 1.1;
+      letter-spacing: -.055em;
+      font-weight: 900;
+    }
+    .section-description {
+      max-width: 780px;
+      margin: .55rem 0 0;
+      color: var(--text-soft);
+      line-height: 1.7;
+      font-size: .98rem;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+    .topic-card {
+      position: relative;
+      min-height: 220px;
+      padding: 1.2rem;
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(circle at 90% 0%, rgba(84,240,255,.14), transparent 9rem),
+        rgba(255,255,255,.07);
+      overflow: hidden;
+      transition: transform .24s ease, border-color .24s ease, background .24s ease, box-shadow .24s ease;
+    }
+    .topic-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(84,240,255,.34);
+      box-shadow: 0 24px 62px rgba(0,0,0,.18);
+      background:
+        radial-gradient(circle at 90% 0%, rgba(84,240,255,.2), transparent 10rem),
+        rgba(255,255,255,.09);
+    }
+    .topic-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, rgba(84,240,255,.95), rgba(139,92,246,.8));
+      box-shadow: 0 15px 40px rgba(84,240,255,.16);
+      font-size: 1.35rem;
+      margin-bottom: 1rem;
+    }
+    .topic-card h3 {
+      margin: 0;
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      font-size: 1.12rem;
+      letter-spacing: -.03em;
+    }
+    .topic-card p {
+      margin: .65rem 0 1rem;
+      color: var(--text-soft);
+      line-height: 1.62;
+      font-size: .94rem;
+    }
+    .topic-card button {
+      margin-top: auto;
+      border: 0;
+      background: transparent;
+      color: var(--brand);
+      font-weight: 900;
+      padding: 0;
+    }
+
+    .essential-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+    .essential-card {
+      position: relative;
+      border-radius: 28px;
+      padding: 1.15rem;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.055));
+      overflow: hidden;
+    }
+    .essential-card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: linear-gradient(var(--brand), var(--brand-2));
+    }
+    .essential-date {
+      display: inline-flex;
+      padding: .38rem .58rem;
+      border-radius: 999px;
+      background: rgba(84,240,255,.11);
+      color: var(--brand);
+      border: 1px solid rgba(84,240,255,.18);
+      font-family: "JetBrains Mono", monospace;
+      font-size: .76rem;
+      font-weight: 800;
+    }
+    .essential-card h3 {
+      margin: .85rem 0 .45rem;
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      letter-spacing: -.035em;
+      font-size: 1.08rem;
+    }
+    .essential-card p {
+      margin: 0;
+      color: var(--text-soft);
+      line-height: 1.58;
+      font-size: .92rem;
+    }
+
+    .search-panel {
+      position: sticky;
+      top: calc(var(--nav-h) + .75rem);
+      z-index: 30;
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .search-bar {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: .75rem;
+      align-items: center;
+    }
+    .search-input-wrap {
       position: relative;
     }
-    .map-connector::after {
-      content: '';
+    .search-input-wrap::before {
+      content: "⌕";
       position: absolute;
+      left: 1.1rem;
       top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 14px;
-      height: 14px;
-      background: #1e2937;
-      border: 3px solid #6366f1;
+      transform: translateY(-50%);
+      color: var(--brand);
+      font-size: 1.3rem;
+      font-weight: 900;
+    }
+    #searchRules {
+      width: 100%;
+      min-height: 58px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      padding: .9rem 1rem .9rem 3.05rem;
+      color: var(--text);
+      background: rgba(255,255,255,.075);
+      outline: 0;
+      transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+    }
+    #searchRules:focus {
+      border-color: rgba(84,240,255,.54);
+      background: rgba(255,255,255,.1);
+      box-shadow: 0 0 0 4px rgba(84,240,255,.11);
+    }
+    #searchRules::placeholder { color: var(--muted); }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .55rem;
+      margin-top: .9rem;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: .58rem .82rem;
+      color: var(--text-soft);
+      background: rgba(255,255,255,.055);
+      font-weight: 850;
+      font-size: .84rem;
+      transition: transform .2s ease, color .2s ease, background .2s ease, border-color .2s ease;
+    }
+    .chip:hover {
+      transform: translateY(-1px);
+      color: var(--text);
+      border-color: rgba(84,240,255,.26);
+    }
+    .chip.active {
+      color: #05111d;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--brand), #a7f3d0);
+    }
+    .filter-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .8rem;
+      margin-top: .9rem;
+      color: var(--text-soft);
+      font-size: .86rem;
+      font-weight: 750;
+    }
+
+
+
+    .search-intelligence {
+      margin-top: 1rem;
+      display: none;
+      border-radius: 24px;
+      border: 1px solid rgba(84,240,255,.2);
+      background: linear-gradient(135deg, rgba(84,240,255,.08), rgba(139,92,246,.07));
+      overflow: hidden;
+    }
+    .search-intelligence.visible { display: block; }
+    .search-intelligence-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 1.1rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .search-intelligence-head strong {
+      display: block;
+      font-size: .96rem;
+      letter-spacing: -.02em;
+    }
+    .search-intelligence-head span {
+      color: var(--text-soft);
+      font-size: .82rem;
+      font-weight: 800;
+    }
+    .search-preview-list {
+      display: grid;
+      gap: .7rem;
+      padding: 1rem;
+    }
+    .search-preview-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 1rem;
+      align-items: start;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.07);
+      border-radius: 18px;
+      padding: .95rem;
+    }
+    html[data-theme="light"] .search-preview-card { background: rgba(255,255,255,.72); }
+    .search-preview-card h4 {
+      margin: 0 0 .32rem;
+      font-size: .95rem;
+      line-height: 1.35;
+    }
+    .search-preview-card p {
+      margin: 0;
+      color: var(--text-soft);
+      line-height: 1.55;
+      font-size: .86rem;
+    }
+    mark {
+      color: #04111f;
+      background: linear-gradient(135deg, rgba(84,240,255,.9), rgba(167,243,208,.9));
+      border-radius: 6px;
+      padding: .03rem .22rem;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+    .pdf-hit-preview {
+      margin-top: .9rem;
+      border-radius: 18px;
+      border: 1px solid rgba(84,240,255,.16);
+      background: rgba(84,240,255,.06);
+      padding: .85rem;
+    }
+    .pdf-hit-preview strong {
+      display: block;
+      margin-bottom: .35rem;
+      color: var(--text);
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .pdf-hit-preview p {
+      margin: 0;
+      color: var(--text-soft);
+      line-height: 1.58;
+      font-size: .88rem;
+    }
+
+    .timeline-wrap {
+      position: relative;
+      padding-left: 1.35rem;
+    }
+    .timeline-wrap::before {
+      content: "";
+      position: absolute;
+      left: .48rem;
+      top: .55rem;
+      bottom: .55rem;
+      width: 2px;
+      background: linear-gradient(180deg, var(--brand), rgba(139,92,246,.55), transparent);
+    }
+    .rule-card {
+      position: relative;
+      margin-bottom: 1rem;
+      border-radius: var(--radius);
+      padding: 1.1rem;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.052));
+      transition: transform .22s ease, border-color .22s ease, background .22s ease;
+    }
+    .rule-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(84,240,255,.25);
+      background: linear-gradient(135deg, rgba(255,255,255,.13), rgba(255,255,255,.066));
+    }
+    .rule-card::before {
+      content: "";
+      position: absolute;
+      left: -1.1rem;
+      top: 1.55rem;
+      width: .72rem;
+      height: .72rem;
+      border-radius: 999px;
+      border: 3px solid var(--bg);
+      background: var(--brand);
+      box-shadow: 0 0 0 4px rgba(84,240,255,.16), 0 0 28px rgba(84,240,255,.55);
+    }
+    .rule-head {
+      display: grid;
+      grid-template-columns: 145px minmax(0, 1fr) auto;
+      gap: 1rem;
+      align-items: start;
+    }
+    .rule-date {
+      display: inline-grid;
+      gap: .25rem;
+      align-content: start;
+      justify-items: start;
+      color: var(--brand);
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 900;
+      font-size: .86rem;
+    }
+    .rule-date span {
+      color: var(--muted);
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+    .rule-title h3 {
+      margin: 0 0 .5rem;
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      font-size: clamp(1.05rem, 1.5vw, 1.35rem);
+      letter-spacing: -.038em;
+      line-height: 1.25;
+    }
+    .om {
+      display: inline-flex;
+      margin: 0 0 .7rem;
+      color: var(--text-soft);
+      font-family: "JetBrains Mono", monospace;
+      font-size: .8rem;
+      line-height: 1.45;
+    }
+    .rule-summary {
+      margin: 0;
+      color: var(--text-soft);
+      line-height: 1.68;
+      font-size: .94rem;
+    }
+    .rule-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .45rem;
+      margin-top: .8rem;
+    }
+    .tag {
+      padding: .35rem .55rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--text-soft);
+      background: rgba(255,255,255,.055);
+      font-weight: 800;
+      font-size: .72rem;
+    }
+    .status-tag {
+      border-color: rgba(52,211,153,.3);
+      color: var(--success);
+      background: rgba(52,211,153,.08);
+    }
+    .status-tag.review {
+      border-color: rgba(251,191,36,.35);
+      color: var(--warning);
+      background: rgba(251,191,36,.08);
+    }
+    .status-tag.old {
+      border-color: rgba(251,113,133,.25);
+      color: var(--danger);
+      background: rgba(251,113,133,.08);
+    }
+    .rule-actions {
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .mini-btn {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      min-height: 40px;
+      padding: .62rem .78rem;
+      color: var(--text);
+      background: rgba(255,255,255,.075);
+      font-weight: 900;
+      font-size: .82rem;
+      transition: transform .2s ease, background .2s ease, border-color .2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .4rem;
+    }
+    .mini-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(84,240,255,.34);
+      background: rgba(255,255,255,.12);
+    }
+    .mini-btn.primary {
+      color: #05111d;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--brand), #a7f3d0);
+    }
+    .rule-details {
+      display: none;
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.12);
+    }
+    html[data-theme="light"] .rule-details { background: rgba(2,6,23,.035); }
+    .rule-card.expanded .rule-details { display: grid; gap: 1rem; }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+    .detail-box h4 {
+      margin: 0 0 .55rem;
+      color: var(--text);
+      font-size: .88rem;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+    .detail-box ul {
+      margin: 0;
+      padding-left: 1.2rem;
+      color: var(--text-soft);
+      line-height: 1.65;
+      font-size: .9rem;
+    }
+    .detail-box p {
+      margin: 0;
+      color: var(--text-soft);
+      line-height: 1.65;
+      font-size: .9rem;
+    }
+
+    .empty-state {
+      padding: 2.5rem;
+      text-align: center;
+      border-radius: var(--radius);
+      border: 1px dashed var(--line-strong);
+      color: var(--text-soft);
+      background: rgba(255,255,255,.04);
+    }
+    .empty-state strong {
+      display: block;
+      color: var(--text);
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      font-size: 1.2rem;
+      margin-bottom: .35rem;
+    }
+
+    .map-flow {
+      display: flex;
+      align-items: stretch;
+      gap: .7rem;
+      overflow-x: auto;
+      padding: .4rem .15rem 1rem;
+      scrollbar-width: thin;
+    }
+    .flow-node {
+      min-width: 185px;
+      border-radius: 24px;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.065);
+    }
+    .flow-node.active {
+      border-color: rgba(84,240,255,.38);
+      background: linear-gradient(135deg, rgba(84,240,255,.18), rgba(139,92,246,.1));
+    }
+    .flow-node strong {
+      display: block;
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      letter-spacing: -.03em;
+    }
+    .flow-node span {
+      display: block;
+      margin-top: .45rem;
+      color: var(--text-soft);
+      font-size: .82rem;
+      line-height: 1.35;
+    }
+    .flow-arrow {
+      min-width: 42px;
+      display: grid;
+      place-items: center;
+      color: var(--brand);
+      font-weight: 900;
+      font-size: 1.25rem;
+    }
+
+    .table-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .8rem;
+      margin-bottom: .85rem;
+      flex-wrap: wrap;
+    }
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(255,255,255,.05);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 820px;
+    }
+    th, td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--panel-solid);
+      color: var(--text);
+      font-size: .76rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    td {
+      color: var(--text-soft);
+      font-size: .9rem;
+      line-height: 1.45;
+    }
+    tr:last-child td { border-bottom: 0; }
+    td strong { color: var(--text); }
+    .mono { font-family: "JetBrains Mono", monospace; }
+
+    .faq-list {
+      display: grid;
+      gap: .75rem;
+    }
+    details.faq {
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.058);
+      overflow: hidden;
+    }
+    details.faq summary {
+      list-style: none;
+      padding: 1rem 1.1rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    details.faq summary::-webkit-details-marker { display: none; }
+    details.faq summary::after {
+      content: "+";
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(84,240,255,.11);
+      color: var(--brand);
+      flex: 0 0 auto;
     }
-    
-    /* Interactive SVG (desktop only) */
-    .map-node {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    details.faq[open] summary::after { content: "−"; }
+    details.faq p {
+      margin: 0;
+      padding: 0 1.1rem 1.1rem;
+      color: var(--text-soft);
+      line-height: 1.65;
     }
-    .map-node:hover {
-      transform: scale(1.08);
-      filter: drop-shadow(0 0 25px rgb(99 102 241));
+
+    .disclaimer {
+      border-left: 5px solid var(--warning);
+      background: linear-gradient(135deg, rgba(251,191,36,.1), rgba(255,255,255,.045));
+    }
+    .disclaimer h3 {
+      margin: 0 0 .55rem;
+      color: var(--warning);
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      letter-spacing: -.02em;
+    }
+    .disclaimer p {
+      margin: 0;
+      color: var(--text-soft);
+      line-height: 1.65;
+      font-size: .92rem;
+    }
+
+    .back-to-top {
+      position: fixed;
+      right: 1.2rem;
+      bottom: 1.2rem;
+      z-index: 75;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .back-to-top.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(0,0,0,.56);
+      backdrop-filter: blur(10px);
+    }
+    .modal.open { display: flex; }
+    .modal-dialog {
+      width: min(900px, 100%);
+      max-height: 86vh;
+      overflow: hidden;
+      border-radius: 30px;
+      border: 1px solid var(--line);
+      background: var(--panel-solid);
+      box-shadow: var(--shadow);
+    }
+    .modal-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.25rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .modal-title {
+      margin: 0;
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      font-size: 1.35rem;
+      letter-spacing: -.035em;
+    }
+    .modal-body {
+      padding: 1.25rem;
+      overflow: auto;
+      max-height: calc(86vh - 91px);
+      color: var(--text-soft);
+      line-height: 1.7;
+    }
+    .modal-body h4 {
+      color: var(--text);
+      margin: 1.25rem 0 .45rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: .8rem;
+    }
+    .modal-body ul { padding-left: 1.2rem; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 1.25rem;
+      transform: translateX(-50%) translateY(12px);
+      z-index: 120;
+      opacity: 0;
+      pointer-events: none;
+      border-radius: 999px;
+      padding: .8rem 1rem;
+      color: #05111d;
+      background: linear-gradient(135deg, var(--brand), #a7f3d0);
+      box-shadow: 0 20px 50px rgba(0,0,0,.22);
+      font-weight: 900;
+      transition: opacity .22s ease, transform .22s ease;
+    }
+    .toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 1320px) {
+      .layout { grid-template-columns: 248px minmax(0, 1fr); }
+      .hero-grid { grid-template-columns: 1fr; }
+      .hero-mini {
+        max-width: 760px;
+        justify-self: stretch;
+      }
+      h1 { font-size: clamp(2.5rem, 6vw, 5.4rem); }
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar {
+        position: sticky;
+        top: var(--nav-h);
+        z-index: 55;
+        max-height: none;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-radius: 0 0 26px 26px;
+        padding: .75rem;
+        margin: 0;
+        width: 100%;
+        max-width: 100%;
+      }
+      .sidebar-title, .sidebar-note { display: none; }
+      .nav-list {
+        display: flex;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        padding-bottom: .2rem;
+        max-width: 100%;
+      }
+      .nav-link { white-space: nowrap; }
+      .nav-link:hover { transform: translateY(-1px); }
+    }
+
+    @media (max-width: 860px) {
+      .top-nav {
+        justify-content: start;
+        overflow-x: auto;
+      }
+      .app-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .header-tools { width: 100%; justify-content: space-between; }
+      .cards-grid, .essential-grid { grid-template-columns: 1fr; }
+      .search-bar { grid-template-columns: 1fr; }
+      .rule-head { grid-template-columns: 1fr; }
+      .rule-actions { justify-content: flex-start; }
+      .detail-grid { grid-template-columns: 1fr; }
+      .metric-grid { grid-template-columns: 1fr 1fr; }
+      .hero { min-height: auto; }
+      .hero-mini { max-width: none; }
+      h1 { letter-spacing: -.06em; }
+    }
+
+    @media (max-width: 560px) {
+      .site-shell { width: min(100% - 1rem, var(--max)); }
+      .brand-mark { width: 44px; height: 44px; border-radius: 15px; }
+      .btn:not(.keep-label) .label { display: none; }
+      .hero, .panel, .rule-card { border-radius: 22px; }
+      .hero-actions .btn { width: 100%; }
+      .metric-grid { grid-template-columns: 1fr; }
+      .filter-meta { align-items: flex-start; flex-direction: column; }
+      .chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: .2rem; }
+      .chip { white-space: nowrap; }
+      .search-preview-card { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
     }
   </style>
 </head>
-<body class="tail-container bg-slate-950 text-slate-200 min-h-screen overflow-x-hidden">
-  <!-- Background Blobs -->
-  <div class="bg-shapes">
-    <div class="shape shape-1"></div>
-    <div class="shape shape-2"></div>
-    <div class="shape shape-3"></div>
-  </div>
 
-  <!-- Top Navigation -->
-  <nav class="top-nav px-6 py-5 flex items-center justify-between border-b border-white/10">
-    <div class="flex items-center gap-x-3">
-      <div class="w-9 h-9 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-inner">
-        <i data-lucide="scale" class="w-5 h-5 text-white"></i>
-      </div>
-      <h1 class="sora text-2xl font-bold tracking-[-1px] bg-gradient-to-r from-white via-slate-200 to-white bg-clip-text text-transparent">DEPUTATION<span class="text-indigo-400">.</span></h1>
-    </div>
-    
-    <div class="hidden md:flex items-center gap-x-8 text-sm font-medium">
-      <a href="/index.html" class="hover:text-indigo-400">Home</a>
-      <a href="/rules.html" class="text-indigo-400 font-semibold">Rules</a>
-      <a href="/dex.html" class="hover:text-indigo-400">DEX</a>
-      <a href="/report-vacancy.html" class="hover:text-indigo-400">Report Vacancy</a>
-      <a href="/contact.html" class="hover:text-indigo-400">Contact</a>
-      <a href="/my-deputation.html" class="hover:text-indigo-400">My Deputation</a>
-    </div>
-    
-    <div class="flex items-center gap-x-4">
-      <button id="themeToggle" class="w-10 h-10 rounded-2xl glass flex items-center justify-center hover:scale-110" aria-label="Toggle Theme">
-        <i data-lucide="moon" class="w-5 h-5"></i>
-      </button>
-      <button id="mobileMenuBtn" class="md:hidden w-10 h-10 rounded-2xl glass flex items-center justify-center">
-        <i data-lucide="menu" class="w-6 h-6" id="menuIcon"></i>
-      </button>
-    </div>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="orb one" aria-hidden="true"></div>
+  <div class="orb two" aria-hidden="true"></div>
+  <div class="orb three" aria-hidden="true"></div>
+
+  <nav class="top-nav" aria-label="Primary site navigation">
+    <a href="/index.html">Home</a>
+    <a href="/rules.html" class="active">Rules</a>
+    <a href="/dex.html">DEX</a>
+    <a href="/report-vacancy.html">Report Vacancy</a>
+    <a href="/contact.html">Contact</a>
+    <a href="/my-deputation.html">My Deputation</a>
   </nav>
 
-  <!-- Mobile Drawer -->
-  <div id="mobileDrawer" class="fixed inset-0 bg-black/70 hidden z-[9999] md:hidden">
-    <div class="glass absolute top-0 right-0 h-full w-72 p-6 shadow-2xl transform translate-x-full transition-transform duration-300">
-      <div class="flex justify-end mb-8">
-        <button id="closeDrawer" class="text-slate-400 hover:text-white">
-          <i data-lucide="x" class="w-8 h-8"></i>
-        </button>
-      </div>
-      <ul class="space-y-6 text-lg font-medium">
-        <li><a href="#hero-section" class="page-nav-link flex items-center gap-x-3">Overview</a></li>
-        <li><a href="#summary-section" class="page-nav-link flex items-center gap-x-3">Topic Summary</a></li>
-        <li><a href="#essential-section" class="page-nav-link flex items-center gap-x-3">Essential Rules</a></li>
-        <li><a href="#search-section" class="page-nav-link flex items-center gap-x-3">Rules Search</a></li>
-        <li><a href="#timeline-section" class="page-nav-link flex items-center gap-x-3">Chronology</a></li>
-        <li><a href="#map-section" class="page-nav-link flex items-center gap-x-3">Relationship Map</a></li>
-        <li><a href="#library-section" class="page-nav-link flex items-center gap-x-3">PDF Library</a></li>
-      </ul>
-    </div>
-  </div>
+  <div class="site-shell">
+    <header class="app-header">
+      <a href="#hero" class="brand-lockup" aria-label="Deputation Rules Hub">
+        <span class="brand-mark">⚖</span>
+        <span>
+          <p class="brand-kicker">Central Government</p>
+          <h2 class="brand-title">Deputation Rules Hub</h2>
+        </span>
+      </a>
 
-  <div class="max-w-screen-2xl mx-auto px-6 pt-8 pb-24">
-    <div class="flex gap-8">
-      
-      <!-- Sticky Sidebar -->
-      <aside class="hidden lg:block w-72 shrink-0">
-        <div class="glass rounded-3xl p-6 sticky top-8">
-          <h2 class="sora text-xl font-bold flex items-center gap-x-2 mb-6">
-            <i data-lucide="compass" class="w-5 h-5 text-indigo-400"></i>
-            Navigation
-          </h2>
-          <ul id="sidebarNav" class="page-nav-list space-y-1 text-sm">
-            <li><a href="#hero-section" class="page-nav-link active flex items-center gap-x-3 px-5 py-3.5 rounded-2xl hover:bg-white/10">Overview</a></li>
-            <li><a href="#summary-section" class="page-nav-link flex items-center gap-x-3 px-5 py-3.5 rounded-2xl hover:bg-white/10">Topic Summary</a></li>
-            <li><a href="#essential-section" class="page-nav-link flex items-center gap-x-3 px-5 py-3.5 rounded-2xl hover:bg-white/10">Essential Rules</a></li>
-            <li><a href="#search-section" class="page-nav-link flex items-center gap-x-3 px-5 py-3.5 rounded-2xl hover:bg-white/10">Rules Search</a></li>
-            <li><a href="#timeline-section" class="page-nav-link flex items-center gap-x-3 px-5 py-3.5 rounded-2xl hover:bg-white/10">Chronology</a></li>
-            <li><a href="#map-section" class="page-nav-link flex items-center gap-x-3 px-5 py-3.5 rounded-2xl hover:bg-white/10">Relationship Map</a></li>
-            <li><a href="#library-section" class="page-nav-link flex items-center gap-x-3 px-5 py-3.5 rounded-2xl hover:bg-white/10">PDF Library</a></li>
-          </ul>
+      <div class="header-tools">
+        <button class="btn secondary keep-label" id="copyVisibleBtn" type="button">
+          <span>⧉</span><span class="label">Copy Visible Rules</span>
+        </button>
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle light or dark theme">☾</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar glass" aria-label="Page navigation">
+        <div class="sidebar-title">
+          <span>Navigate</span>
+          <span aria-hidden="true">⌘</span>
         </div>
+        <ul class="nav-list">
+          <li><a href="#hero" class="nav-link active"><span class="nav-icon">01</span>Overview</a></li>
+          <li><a href="#topics" class="nav-link"><span class="nav-icon">02</span>Topic Summary</a></li>
+          <li><a href="#essentials" class="nav-link"><span class="nav-icon">03</span>Essential Rules</a></li>
+          <li><a href="#search" class="nav-link"><span class="nav-icon">04</span>Search</a></li>
+          <li><a href="#timeline" class="nav-link"><span class="nav-icon">05</span>Chronology</a></li>
+          <li><a href="#map" class="nav-link"><span class="nav-icon">06</span>Relationship Map</a></li>
+          <li><a href="#library" class="nav-link"><span class="nav-icon">07</span>PDF Library</a></li>
+          <li><a href="#faq" class="nav-link"><span class="nav-icon">08</span>FAQ</a></li>
+        </ul>
+        <p class="sidebar-note">
+          Tip: use the search box for OM numbers, dates, “cooling-off”, “lien”, “allowance”, “7 years”, “foreign service”, or “absorption”.
+        </p>
       </aside>
 
-      <!-- Main Content -->
-      <main class="flex-1 space-y-16">
-        
-        <!-- HERO -->
-        <div id="hero-section" class="glass rounded-3xl p-10 lg:p-14 relative overflow-hidden animate-on-scroll">
-          <div class="absolute -right-12 -top-12 text-[18rem] font-black text-indigo-500/5 pointer-events-none select-none sora leading-none">OM</div>
-          <div class="inline-flex items-center gap-x-2 bg-white/10 text-white text-sm font-medium px-6 h-9 rounded-3xl mb-6 backdrop-blur-md">
-            <i data-lucide="award" class="w-4 h-4"></i>
-            Chronological DoPT Rules & OMs
-          </div>
-          <h1 class="sora text-5xl lg:text-6xl font-bold leading-none tracking-[-1.5px] max-w-2xl mb-6">Central Government<br>Deputation Rules Hub</h1>
-          <p class="text-slate-400 text-xl max-w-lg mb-10">Your complete legal-tech knowledge base for tenure, cooling-off, allowances, lien, and every DoPT OM that matters.</p>
-          <div class="flex flex-wrap gap-4">
-            <a href="#timeline-section" class="flex items-center justify-center gap-x-3 bg-white text-slate-950 font-semibold px-8 h-14 rounded-3xl hover:scale-105">View Chronology <i data-lucide="clock"></i></a>
-            <a href="#search-section" class="flex items-center justify-center gap-x-3 border border-white/30 font-medium px-8 h-14 rounded-3xl hover:bg-white/10">Search Rules <i data-lucide="search"></i></a>
-            <a href="#library-section" class="flex items-center justify-center gap-x-3 border border-white/30 font-medium px-8 h-14 rounded-3xl hover:bg-white/10">Official PDFs <i data-lucide="file-text"></i></a>
-          </div>
-        </div>
+      <section class="content">
+        <section id="hero" class="section hero glass">
+          <div class="hero-grid">
+            <div>
+              <div class="badge-row">
+                <span class="badge accent">Chronological DoPT Rules & OMs</span>
+                <span class="badge">Searchable legal-tech layout</span>
+              </div>
+              <h1><span class="gradient-text">Rules & Regulations on Central Government Deputation</span></h1>
+              <p class="hero-copy">
+                A premium knowledge hub for Fundamental Rules, Supplementary Rules, DoPT Office Memorandums, tenure limits, cooling-off, deputation duty allowance, lien, absorption, and related establishment circulars.
+              </p>
+              <div class="hero-actions">
+                <a href="#timeline" class="btn primary"><span>↳</span><span>View Chronological Rules</span></a>
+                <a href="#search" class="btn"><span>⌕</span><span>Search by Topic</span></a>
+                <a href="#library" class="btn"><span>▣</span><span>Official PDF Library</span></a>
+              </div>
+            </div>
 
-        <!-- SUMMARY CARDS -->
-        <div id="summary-section" class="animate-on-scroll">
-          <h3 class="sora text-3xl font-bold mb-8 flex items-center gap-x-3">
-            <i data-lucide="layout-grid" class="text-indigo-400"></i>
-            Topic Overview
-          </h3>
-          <div class="summary-cards-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Your JS will populate these – they will now fade in beautifully -->
-          </div>
-        </div>
-
-        <!-- ESSENTIAL RULES -->
-        <div id="essential-section" class="animate-on-scroll">
-          <h3 class="sora text-3xl font-bold mb-8 flex items-center gap-x-3">
-            <i data-lucide="star" class="text-indigo-400"></i>
-            Essential Rules Spotlight
-          </h3>
-          <div class="spotlight-grid grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- JS populated – will animate -->
-          </div>
-        </div>
-
-        <!-- SEARCH -->
-        <div id="search-section" class="glass rounded-3xl p-8 animate-on-scroll">
-          <h3 class="sora text-3xl font-bold mb-6 flex items-center gap-x-3">
-            <i data-lucide="search" class="text-indigo-400"></i>
-            Rules Search &amp; Filters
-          </h3>
-          <div class="relative mb-8">
-            <i data-lucide="search" class="absolute left-6 top-1/2 -translate-y-1/2 text-indigo-400"></i>
-            <input type="text" id="searchRules" 
-                   class="w-full bg-white/10 border border-white/20 focus:border-indigo-400 rounded-3xl py-6 pl-14 pr-8 text-lg placeholder:text-slate-400 focus:outline-none"
-                   placeholder="Search by keyword, OM number, date, topic...">
-          </div>
-          <div class="filter-chips-container flex flex-wrap gap-3" id="filterChips"></div>
-        </div>
-
-        <!-- TIMELINE -->
-        <div id="timeline-section" class="animate-on-scroll">
-          <h3 class="sora text-3xl font-bold mb-8 flex items-center gap-x-3">
-            <i data-lucide="clock" class="text-indigo-400"></i>
-            Chronological Timeline
-          </h3>
-          <div id="timelineContainer" class="rules-timeline-container custom-scroll"></div>
-        </div>
-
-        <!-- RELATIONSHIP MAP – NOW FULLY RESPONSIVE -->
-        <div id="map-section" class="animate-on-scroll scroll-mt-20">
-          <h3 class="sora text-3xl font-bold mb-6 flex items-center gap-x-3">
-            <i data-lucide="git-branch" class="text-indigo-400"></i>
-            Rule Relationship Map
-          </h3>
-          <p class="text-slate-400 mb-6">Hover or tap any node to explore the evolution of deputation rules.</p>
-          
-          <!-- Desktop: Horizontal SVG -->
-          <div class="hidden lg:block glass rounded-3xl p-8 overflow-hidden">
-            <svg id="relationshipSVG" width="100%" height="380" viewBox="0 0 1450 380" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full max-w-[1450px] mx-auto">
-              <!-- Paths and Nodes (same as before) -->
-              <path class="map-path" d="M160 190 Q280 190 320 190" stroke="#6366f1" stroke-width="6" stroke-opacity="0.4"/>
-              <path class="map-path" d="M460 190 Q580 190 620 190" stroke="#c026d3" stroke-width="6" stroke-opacity="0.4"/>
-              <path class="map-path" d="M760 190 Q880 190 920 190" stroke="#22d3ee" stroke-width="6" stroke-opacity="0.4"/>
-              <path class="map-path" d="M1060 190 Q1180 190 1220 190" stroke="#6366f1" stroke-width="6" stroke-opacity="0.4"/>
-              <path class="map-path" d="M1360 190 Q1480 190 1520 190" stroke="#c026d3" stroke-width="6" stroke-opacity="0.4"/>
-              <!-- Nodes (same interactive groups as previous version) -->
-              <g id="node1" class="map-node cursor-pointer" data-title="FR/SR" data-subtitle="Statutory Baseline" data-desc="Foundational rules that govern all Central Government deputations.">
-                <rect x="60" y="130" width="200" height="120" rx="24" ry="24" fill="#1e2937" stroke="#6366f1" stroke-width="6"/>
-                <text x="160" y="175" text-anchor="middle" fill="#e0f2fe" font-size="18" font-weight="700">FR/SR</text>
-                <text x="160" y="200" text-anchor="middle" fill="#94a3b8" font-size="13">Statutory Baseline</text>
-                <rect x="110" y="215" width="100" height="24" rx="12" fill="#22d3ee" fill-opacity="0.2"/>
-                <text x="160" y="232" text-anchor="middle" fill="#22d3ee" font-size="11" font-weight="600">FOUNDATIONAL</text>
-              </g>
-              <!-- (All other nodes remain exactly the same as previous version) -->
-              <g id="node2" class="map-node cursor-pointer" data-title="1994 Consolidated OM" data-subtitle="First General Code" data-desc="First comprehensive code consolidating deputation guidelines.">
-                <rect x="360" y="130" width="200" height="120" rx="24" ry="24" fill="#1e2937" stroke="#c026d3" stroke-width="6"/>
-                <text x="460" y="175" text-anchor="middle" fill="#e0f2fe" font-size="18" font-weight="700">1994 OM</text>
-                <text x="460" y="200" text-anchor="middle" fill="#94a3b8" font-size="13">First General Code</text>
-                <rect x="410" y="215" width="100" height="24" rx="12" fill="#f43f5e" fill-opacity="0.2"/>
-                <text x="460" y="232" text-anchor="middle" fill="#f43f5e" font-size="11" font-weight="600">SUPERSEDED</text>
-              </g>
-              <g id="node3" class="map-node cursor-pointer" data-title="2008 Guidelines" data-subtitle="Group A & B Review" data-desc="Major review for Group A and B officers.">
-                <rect x="660" y="130" width="200" height="120" rx="24" ry="24" fill="#1e2937" stroke="#22d3ee" stroke-width="6"/>
-                <text x="760" y="175" text-anchor="middle" fill="#e0f2fe" font-size="18" font-weight="700">2008 Guidelines</text>
-                <text x="760" y="200" text-anchor="middle" fill="#94a3b8" font-size="13">Group A & B Review</text>
-                <rect x="710" y="215" width="100" height="24" rx="12" fill="#eab308" fill-opacity="0.2"/>
-                <text x="760" y="232" text-anchor="middle" fill="#eab308" font-size="11" font-weight="600">AMENDED</text>
-              </g>
-              <g id="node4" class="map-node cursor-pointer" data-title="2010 Master OM" data-subtitle="The Core Standard" data-desc="The current foundational Master Office Memorandum still in force.">
-                <rect x="960" y="130" width="200" height="120" rx="24" ry="24" fill="#1e2937" stroke="#6366f1" stroke-width="8"/>
-                <text x="1060" y="175" text-anchor="middle" fill="#e0f2fe" font-size="18" font-weight="700">2010 Master OM</text>
-                <text x="1060" y="200" text-anchor="middle" fill="#94a3b8" font-size="13">The Core Standard</text>
-                <rect x="1010" y="215" width="100" height="24" rx="12" fill="#22d3ee" fill-opacity="0.3"/>
-                <text x="1060" y="232" text-anchor="middle" fill="#22d3ee" font-size="11" font-weight="700">CURRENT BASE</text>
-              </g>
-              <g id="node5" class="map-node cursor-pointer" data-title="2016–2024 Updates" data-subtitle="Tenure &amp; Allowance Evolution" data-desc="7-year delegation, 7th CPC allowances, and 2024 State/UT changes.">
-                <rect x="1260" y="130" width="200" height="120" rx="24" ry="24" fill="#1e2937" stroke="#c026d3" stroke-width="6"/>
-                <text x="1360" y="175" text-anchor="middle" fill="#e0f2fe" font-size="18" font-weight="700">2016–2024</text>
-                <text x="1360" y="200" text-anchor="middle" fill="#94a3b8" font-size="13">Tenure & Allowance Evolution</text>
-                <rect x="1310" y="215" width="100" height="24" rx="12" fill="#22d3ee" fill-opacity="0.2"/>
-                <text x="1360" y="232" text-anchor="middle" fill="#22d3ee" font-size="11" font-weight="600">LATEST</text>
-              </g>
-            </svg>
-          </div>
-
-          <!-- Mobile: Vertical Beautiful Timeline Map -->
-          <div class="lg:hidden glass rounded-3xl p-8">
-            <div class="flex flex-col gap-8 relative">
-              <!-- Node 1 -->
-              <div class="flex gap-6">
-                <div class="flex flex-col items-center">
-                  <div class="w-10 h-10 bg-indigo-500 rounded-2xl flex items-center justify-center text-white text-xl font-bold">1</div>
-                  <div class="map-connector flex-1"></div>
-                </div>
-                <div class="flex-1 glass-card rounded-3xl p-6 cursor-pointer" onclick="showMapDetail(1)">
-                  <div class="font-semibold text-lg">FR/SR</div>
-                  <div class="text-slate-400 text-sm">Statutory Baseline • Foundational</div>
-                  <p class="mt-3 text-sm text-slate-300">Core rules that govern every Central Government deputation.</p>
+            <div class="hero-mini">
+              <div class="command-card">
+                <span class="badge">Page intelligence</span>
+                <div class="metric-grid">
+                  <div class="metric"><strong id="metricRules">20</strong><span>rules and circular references</span></div>
+                  <div class="metric"><strong>15+</strong><span>topic filters for faster lookup</span></div>
+                  <div class="metric"><strong>2010</strong><span>master OM highlighted first</span></div>
+                  <div class="metric"><strong>PDF</strong><span>source links attached per entry</span></div>
                 </div>
               </div>
-              
-              <!-- Node 2 -->
-              <div class="flex gap-6">
-                <div class="flex flex-col items-center">
-                  <div class="w-10 h-10 bg-purple-500 rounded-2xl flex items-center justify-center text-white text-xl font-bold">2</div>
-                  <div class="map-connector flex-1"></div>
-                </div>
-                <div class="flex-1 glass-card rounded-3xl p-6 cursor-pointer" onclick="showMapDetail(2)">
-                  <div class="font-semibold text-lg">1994 Consolidated OM</div>
-                  <div class="text-slate-400 text-sm">First General Code • Superseded</div>
-                  <p class="mt-3 text-sm text-slate-300">First comprehensive consolidation of deputation guidelines.</p>
-                </div>
-              </div>
-              
-              <!-- Node 3 -->
-              <div class="flex gap-6">
-                <div class="flex flex-col items-center">
-                  <div class="w-10 h-10 bg-cyan-500 rounded-2xl flex items-center justify-center text-white text-xl font-bold">3</div>
-                  <div class="map-connector flex-1"></div>
-                </div>
-                <div class="flex-1 glass-card rounded-3xl p-6 cursor-pointer" onclick="showMapDetail(3)">
-                  <div class="font-semibold text-lg">2008 Guidelines</div>
-                  <div class="text-slate-400 text-sm">Group A &amp; B Review • Amended</div>
-                  <p class="mt-3 text-sm text-slate-300">Major review for Group A and B officers.</p>
-                </div>
-              </div>
-              
-              <!-- Node 4 (Highlighted) -->
-              <div class="flex gap-6">
-                <div class="flex flex-col items-center">
-                  <div class="w-10 h-10 bg-indigo-500 rounded-2xl flex items-center justify-center text-white text-xl font-bold ring-4 ring-indigo-400/30">4</div>
-                  <div class="map-connector flex-1"></div>
-                </div>
-                <div class="flex-1 glass-card rounded-3xl p-6 cursor-pointer ring-2 ring-indigo-400" onclick="showMapDetail(4)">
-                  <div class="font-semibold text-lg">2010 Master OM</div>
-                  <div class="text-slate-400 text-sm">The Core Standard • Current Base</div>
-                  <p class="mt-3 text-sm text-slate-300">The foundational Master OM still in force today.</p>
-                </div>
-              </div>
-              
-              <!-- Node 5 -->
-              <div class="flex gap-6">
-                <div class="flex flex-col items-center">
-                  <div class="w-10 h-10 bg-purple-500 rounded-2xl flex items-center justify-center text-white text-xl font-bold">5</div>
-                </div>
-                <div class="flex-1 glass-card rounded-3xl p-6 cursor-pointer" onclick="showMapDetail(5)">
-                  <div class="font-semibold text-lg">2016–2024 Updates</div>
-                  <div class="text-slate-400 text-sm">Tenure &amp; Allowance Evolution • Latest</div>
-                  <p class="mt-3 text-sm text-slate-300">7-year delegation, 7th CPC, and recent State/UT changes.</p>
-                </div>
+              <div class="command-card">
+                <strong style="display:block;margin-bottom:.45rem;">Built for practical office use</strong>
+                <span style="color:var(--text-soft);line-height:1.6;font-size:.92rem;">Each card explains what the rule does, when it is used, and where to verify the original PDF.</span>
               </div>
             </div>
           </div>
+        </section>
+
+        <section id="topics" class="section panel glass">
+          <div class="section-head">
+            <div>
+              <span class="section-eyebrow">◇ Topic overview</span>
+              <h2 class="section-title">Fast paths into the rule universe</h2>
+              <p class="section-description">These cards behave like shortcuts. Click any topic to apply the relevant filter and jump to the timeline.</p>
+            </div>
+          </div>
+          <div class="cards-grid" id="topicCards"></div>
+        </section>
+
+        <section id="essentials" class="section panel glass">
+          <div class="section-head">
+            <div>
+              <span class="section-eyebrow">★ Essential rules</span>
+              <h2 class="section-title">Read these first</h2>
+              <p class="section-description">The most important rule references are surfaced separately so users do not have to scan the entire archive.</p>
+            </div>
+          </div>
+          <div class="essential-grid" id="essentialGrid"></div>
+        </section>
+
+        <section id="search" class="section search-panel glass">
+          <div class="search-bar">
+            <div class="search-input-wrap">
+              <label for="searchRules" class="sr-only" style="position:absolute;left:-9999px;">Search rules</label>
+              <input id="searchRules" type="search" placeholder="Search rules and extracted PDF text by keyword, OM number, date, topic..." autocomplete="off" />
+            </div>
+            <button class="btn" id="clearFilters" type="button"><span>×</span><span class="label">Clear</span></button>
+          </div>
+          <div class="chips" id="filterChips" aria-label="Rule topic filters"></div>
+          <div class="filter-meta">
+            <span id="resultsCount">Loading rule database...</span>
+            <span id="activeFilterLabel">Filter: All</span>
+          </div>
+          <div class="search-intelligence" id="searchIntelligence" aria-live="polite">
+            <div class="search-intelligence-head">
+              <div>
+                <strong>PDF text matches</strong>
+                <span>Search also scans extracted PDF text stored in each rule object.</span>
+              </div>
+              <span id="pdfHitCount">0 matches</span>
+            </div>
+            <div class="search-preview-list" id="searchPreviewList"></div>
+          </div>
+        </section>
+
+        <section id="timeline" class="section panel glass">
+          <div class="section-head">
+            <div>
+              <span class="section-eyebrow">◷ Chronological timeline</span>
+              <h2 class="section-title">Rules arranged by date</h2>
+              <p class="section-description">Each entry provides a summary, key provisions, practical office use, and a PDF source link.</p>
+            </div>
+          </div>
+          <div class="timeline-wrap" id="timelineContainer"></div>
+        </section>
+
+        <section id="map" class="section panel glass">
+          <div class="section-head">
+            <div>
+              <span class="section-eyebrow">⟲ Relationship map</span>
+              <h2 class="section-title">How the deputation framework evolved</h2>
+              <p class="section-description">A compact visual route from foundational FR/SR provisions to later DoPT clarifications and State/UT deputation changes.</p>
+            </div>
+          </div>
+          <div class="map-flow" aria-label="Rule relationship flow">
+            <div class="flow-node"><strong>FR/SR</strong><span>Foreign service, lien, contributions and service conditions baseline.</span></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node"><strong>1994 OM</strong><span>Early consolidated terms and conditions on deputation and foreign service.</span></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node"><strong>2008 Review</strong><span>Group A/B deputation and foreign service review instructions.</span></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node active"><strong>2010 Master OM</strong><span>Core reference for most deputation and foreign service questions.</span></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node"><strong>2016 Extension</strong><span>Delegated extension framework up to seven years in specified cases.</span></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node"><strong>2017 Allowance</strong><span>7th CPC deputation duty allowance rate revision.</span></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node"><strong>2018 Clarification</strong><span>Further clarity on normal tenure and extension approvals.</span></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node"><strong>2024 State/UT</strong><span>Recent modification for deputation to States and Union Territories.</span></div>
+          </div>
+        </section>
+
+        <section id="library" class="section panel glass">
+          <div class="section-head">
+            <div>
+              <span class="section-eyebrow">▣ PDF library</span>
+              <h2 class="section-title">Official source archive</h2>
+              <p class="section-description">A direct reference table for users who need to verify the original OM, circular, handbook or rule PDF.</p>
+            </div>
+          </div>
+          <div class="table-tools">
+            <span id="libraryCount" style="color:var(--text-soft);font-weight:800;"></span>
+            <button class="btn" id="downloadCsv" type="button"><span>⇩</span><span class="label">Download CSV</span></button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>OM / Circular No.</th>
+                  <th>Subject</th>
+                  <th>Category</th>
+                  <th>PDF</th>
+                </tr>
+              </thead>
+              <tbody id="libraryTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="faq" class="section panel glass">
+          <div class="section-head">
+            <div>
+              <span class="section-eyebrow">? FAQ</span>
+              <h2 class="section-title">Common deputation questions</h2>
+            </div>
+          </div>
+          <div class="faq-list" id="faqList"></div>
+        </section>
+
+        <section class="panel glass disclaimer">
+          <h3>Legal disclaimer</h3>
+          <p>
+            This page is an informational compilation of publicly available Government of India / DoPT rules, OMs and circulars related to deputation. Users should verify the original official PDF before taking administrative, establishment, financial or legal action.
+          </p>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <button class="icon-btn back-to-top" id="backToTop" type="button" aria-label="Back to top">↑</button>
+
+  <div class="modal" id="ruleModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-dialog">
+      <div class="modal-head">
+        <div>
+          <p class="brand-kicker" id="modalKicker" style="margin:0 0 .35rem;">Rule details</p>
+          <h3 class="modal-title" id="modalTitle">Rule title</h3>
         </div>
-
-        <!-- PDF LIBRARY & DISCLAIMER -->
-        <div id="library-section" class="animate-on-scroll"> <!-- your original table content --> </div>
-        <div class="glass rounded-3xl p-8 border-l-4 border-amber-400 animate-on-scroll"> <!-- disclaimer --> </div>
-      </main>
+        <button class="icon-btn" id="closeModal" type="button" aria-label="Close rule details">×</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
     </div>
   </div>
 
-  <!-- Floating Back-to-Top -->
-  <button id="backToTop" class="fixed bottom-8 right-8 w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-indigo-500/50 text-white z-50 hover:scale-110">
-    <i data-lucide="chevron-up" class="w-7 h-7"></i>
-  </button>
-
-  <!-- Modal -->
-  <div id="modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[99999]">
-    <div class="modal-content glass rounded-3xl max-w-4xl w-[95%] max-h-[90vh] flex flex-col">
-      <button id="closeModal" class="absolute top-6 right-6 w-10 h-10 rounded-2xl glass flex items-center justify-center text-slate-400 hover:text-white z-10">
-        <i data-lucide="x" class="w-6 h-6"></i>
-      </button>
-      <div id="modalBody" class="flex-1 overflow-auto p-8 custom-scroll"></div>
-    </div>
-  </div>
-
-  <script src="rules_app.js"></script>
+  <div class="toast" id="toast" role="status" aria-live="polite">Copied</div>
 
   <script>
-    // LENIS Smooth Scrolling
-    const lenis = new Lenis({
-      duration: 1.4,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-      smoothTouch: false,
-    })
-    function raf(time) {
-      lenis.raf(time)
-      requestAnimationFrame(raf)
+    const rules = [
+      {
+        id: "fr-sr",
+        date: "Foundational",
+        year: "—",
+        omNo: "FR 9(7), FR 9(13), FR 110-127",
+        title: "Fundamental Rules and Supplementary Rules",
+        authority: "Government of India",
+        categories: ["Master Rules", "Foreign Service", "Lien", "Pay Fixation"],
+        status: "Foundational",
+        essential: true,
+        summary: "The legal baseline for foreign service, lien, leave salary contribution, pension contribution and pay-related service conditions during deputation or foreign service.",
+        keyPoints: [
+          "Defines foreign service and lien concepts.",
+          "Provides the foundation for contribution liability and service conditions.",
+          "Used as the statutory base behind later DoPT OMs."
+        ],
+        practicalUse: "Use this when checking the original rule basis for lien, foreign service contribution, pension contribution, and pay treatment.",
+        pdfUrl: "https://dopt.gov.in/sites/default/files/Compilation_FR_SR_English_2.pdf",
+        related: ["1994 Deputation/Foreign Service OM", "2010 Master OM"]
+      },
+      {
+        id: "1994-01-05",
+        date: "05 Jan 1994",
+        year: "1994",
+        omNo: "2/29/91-Estt.(Pay-II)",
+        title: "Deputation / Foreign Service - Terms and Conditions",
+        authority: "DoPT",
+        categories: ["Foreign Service", "Pay Fixation", "Tenure", "Allowance"],
+        status: "Foundational / check latest amendments",
+        essential: false,
+        summary: "An early comprehensive framework on deputation and foreign service terms, including pay fixation, tenure and deputation allowance principles.",
+        keyPoints: [
+          "Set broad terms for deputation and foreign service.",
+          "Covered pay fixation and allowance treatment.",
+          "Later circulars amended or consolidated many areas."
+        ],
+        practicalUse: "Useful for historical tracing and cases where older OMs are referenced in later consolidated guidelines.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02est/2_29_91_Estt_Pay_II.pdf",
+        related: ["2008 Consolidation", "2010 Master OM"]
+      },
+      {
+        id: "2008-02-29",
+        date: "29 Feb 2008",
+        year: "2008",
+        omNo: "AB.14017/2/2007-Estt.(RR)",
+        title: "Consolidated Deputation / Foreign Service Guidelines",
+        authority: "DoPT",
+        categories: ["Master Rules", "Recruitment Rules", "Tenure", "Foreign Service"],
+        status: "Important historical reference",
+        essential: false,
+        summary: "Pre-2010 consolidation dealing with deputation and foreign service instructions, especially for Group A and Group B services and recruitment-rule linked appointments.",
+        keyPoints: [
+          "Covered tenure, extension and absorption issues.",
+          "Linked deputation to recruitment rules and eligibility conditions.",
+          "Served as an important base before the 2010 master OM."
+        ],
+        practicalUse: "Useful where recruitment rules or older deputation advertisements cite the 2008 framework.",
+        pdfUrl: "https://www.documents.doptcirculars.nic.in/D2/D02est/AB_14017_2_07_Estt%28RR%29.pdf",
+        related: ["24 Apr 2008 Review", "2010 Master OM"]
+      },
+      {
+        id: "2008-04-24",
+        date: "24 Apr 2008",
+        year: "2008",
+        omNo: "AB-14017/2/2007-Estt.(RR)",
+        title: "Review / Clarification of 2008 Deputation Guidelines",
+        authority: "DoPT",
+        categories: ["Recruitment Rules", "Tenure", "Foreign Service"],
+        status: "Important historical reference",
+        essential: false,
+        summary: "Follow-up clarification to the 2008 deputation and foreign service instructions, relevant for recruitment-rule based deputation cases.",
+        keyPoints: [
+          "Clarified certain aspects of the 2008 instructions.",
+          "Relevant to Group A and Group B deputation eligibility.",
+          "Should be read with later consolidated instructions."
+        ],
+        practicalUse: "Use when older vacancy circulars or recruitment rules reference the 2008 review framework.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02est/AB-14017_2_2007-Estt.%28RR%290001.pdf",
+        related: ["29 Feb 2008 Guidelines", "2010 Master OM"]
+      },
+      {
+        id: "2010-06-17",
+        date: "17 Jun 2010",
+        year: "2010",
+        omNo: "6/8/2009-Estt.(Pay-II)",
+        title: "Consolidated Guidelines on Deputation / Foreign Service",
+        authority: "DoPT",
+        categories: ["Master Rules", "Foreign Service", "Tenure", "Cooling-off", "Allowance", "Pay Fixation", "Absorption"],
+        status: "Core reference",
+        essential: true,
+        summary: "The principal DoPT OM for deputation and foreign service matters, covering definitions, eligibility, tenure, cooling-off, deputation duty allowance, pay fixation, leave, pension contribution, absorption and joining time.",
+        keyPoints: [
+          "Defines deputation and foreign service treatment.",
+          "Covers normal tenure, extension and cooling-off.",
+          "Explains pay fixation, deputation duty allowance and contributions.",
+          "Addresses leave, absorption and joining time issues."
+        ],
+        practicalUse: "Use this first for most deputation queries. It is the central reference for establishment sections and dealing hands.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02est/6_8_2009-Estt.Pay-II-B-17062010.pdf",
+        related: ["2016 Extension OMs", "2017 DDA OM", "2018 Tenure Clarification"]
+      },
+      {
+        id: "2012-11-30",
+        date: "30 Nov 2012",
+        year: "2012",
+        omNo: "6/5/2012-Estt.(Pay-II)",
+        title: "Proforma Promotion / Deputation Para 8.6 Modification",
+        authority: "DoPT",
+        categories: ["Promotion", "Pay Fixation", "Tenure"],
+        status: "Reference",
+        essential: false,
+        summary: "Clarifies treatment linked to proforma promotion while an employee is on deputation or foreign service.",
+        keyPoints: [
+          "Deals with proforma promotion scenarios.",
+          "Connects deputation service with pay and promotion treatment.",
+          "Should be read with the 2010 master OM."
+        ],
+        practicalUse: "Use when the officer gets proforma promotion while serving outside the cadre.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02est/6_5_2012-Estt.Pay-II-30112012.pdf",
+        related: ["2010 Master OM", "2021 DDA Clarification"]
+      },
+      {
+        id: "2016-02-17",
+        date: "17 Feb 2016",
+        year: "2016",
+        omNo: "2/6/2016-Estt.(Pay-II)",
+        title: "Delegation Regarding Extension of Deputation Tenure",
+        authority: "DoPT",
+        categories: ["Tenure", "Extension"],
+        status: "Read with 22 Apr 2016 OM",
+        essential: false,
+        summary: "A tenure-extension related order preceding the later 2016 clarification that enabled extension of deputation up to seven years under specified approval conditions.",
+        keyPoints: [
+          "Concerns delegation for extension of deputation tenure.",
+          "Important for cases beyond normal deputation tenure.",
+          "Should be read with later 2016 and 2018 clarifications."
+        ],
+        practicalUse: "Use when processing extension proposals or checking competent authority approval routes.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02est/2_6_2016-Estt.Pay-II-17022016B.pdf",
+        related: ["22 Apr 2016 Extension OM", "18 May 2018 Clarification"]
+      },
+      {
+        id: "2016-04-22",
+        date: "22 Apr 2016",
+        year: "2016",
+        omNo: "2/6/2016-Estt.(Pay-II)",
+        title: "Extension of Deputation Tenure up to Seven Years",
+        authority: "DoPT",
+        categories: ["Tenure", "Extension"],
+        status: "Important current reference",
+        essential: true,
+        summary: "Important DoPT order on extension of deputation tenure up to seven years, subject to prescribed conditions and approval routes.",
+        keyPoints: [
+          "Delegates powers for extension in specified circumstances.",
+          "Deals with deputation beyond normal tenure.",
+          "Relevant where extension beyond five years is proposed."
+        ],
+        practicalUse: "Use this when a borrowing organisation proposes to continue an officer beyond normal deputation tenure.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02est/2_6_2016-Estt.Pay-II-22042016.pdf",
+        related: ["17 Feb 2016 OM", "18 May 2018 Clarification"]
+      },
+      {
+        id: "2016-08-17",
+        date: "17 Aug 2016",
+        year: "2016",
+        omNo: "28020/1/2010-Estt.(C)",
+        title: "Technical Resignation and Lien - Consolidated Guidelines",
+        authority: "DoPT",
+        categories: ["Lien", "Technical Resignation", "Absorption"],
+        status: "Important current reference",
+        essential: true,
+        summary: "Consolidated guidelines relevant when an employee moves to another post, seeks absorption, or retains lien in the parent cadre.",
+        keyPoints: [
+          "Explains technical resignation treatment.",
+          "Important for lien retention and benefits.",
+          "Relevant to permanent absorption after deputation."
+        ],
+        practicalUse: "Use when an officer is selected elsewhere, tenders technical resignation, or is considered for absorption in the borrowing organisation.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02est/28020_1_2010-Estt.C-17082016B.pdf",
+        related: ["2010 Master OM", "Lien and Absorption Rules"]
+      },
+      {
+        id: "2017-02-23",
+        date: "23 Feb 2017",
+        year: "2017",
+        omNo: "2/6/2016-Estt.(Pay-II)",
+        title: "Deputation Allowance During Extended Tenure",
+        authority: "DoPT",
+        categories: ["Allowance", "Extension", "Tenure"],
+        status: "Reference",
+        essential: false,
+        summary: "Clarifies issues connected with deputation allowance where an officer continues on deputation during an extended tenure.",
+        keyPoints: [
+          "Deals with allowance during extended deputation.",
+          "Should be read with 2016 tenure extension and 2017 DDA revision.",
+          "Relevant for financial concurrence in extension cases."
+        ],
+        practicalUse: "Use when determining whether deputation duty allowance continues during approved extended tenure.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02est/2_6_2016-Estt.Pay-II-23022017.pdf",
+        related: ["22 Apr 2016 Extension OM", "24 Nov 2017 DDA OM"]
+      },
+      {
+        id: "2017-11-24",
+        date: "24 Nov 2017",
+        year: "2017",
+        omNo: "2/11/2017-Estt.(Pay-II)",
+        title: "Revision of Deputation Duty Allowance after 7th CPC",
+        authority: "DoPT",
+        categories: ["Allowance", "Pay Fixation"],
+        status: "Important current reference",
+        essential: true,
+        summary: "Revises deputation duty allowance rates after the 7th Central Pay Commission, commonly applied as same-station and different-station allowance rates subject to ceiling.",
+        keyPoints: [
+          "Prescribes revised deputation duty allowance after 7th CPC.",
+          "Distinguishes same station and different station cases.",
+          "Subject to ceilings and conditions in the OM."
+        ],
+        practicalUse: "Use when preparing pay fixation or allowance calculation for an officer appointed on deputation.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02est/2_11_2017_Estt_Pay_II.pdf",
+        related: ["2010 Master OM", "2021 DDA Clarification"]
+      },
+      {
+        id: "2018-05-18",
+        date: "18 May 2018",
+        year: "2018",
+        omNo: "2/6/2018-Estt.(Pay-II)",
+        title: "Amendment to Para 8.1 and 8.2 - Tenure and Extension",
+        authority: "DoPT",
+        categories: ["Tenure", "Extension"],
+        status: "Important current reference",
+        essential: true,
+        summary: "Clarifies normal deputation tenure, extension beyond normal tenure, and competent authority requirements through amendment to key paragraphs.",
+        keyPoints: [
+          "Clarifies normal tenure and extension beyond normal tenure.",
+          "Important for competent authority approval.",
+          "Read with the 2010 master OM and 2016 extension OMs."
+        ],
+        practicalUse: "Use in file notes where extension beyond standard tenure is being proposed or examined.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02est/2-6-2018-Estt-PayIIoDmz8.pdf",
+        related: ["2010 Master OM", "22 Apr 2016 Extension OM"]
+      },
+      {
+        id: "2021-dda",
+        date: "2021",
+        year: "2021",
+        omNo: "Clarification note",
+        title: "Deputation Duty Allowance with NFU / MACP / NFSG / Proforma Promotion",
+        authority: "DoPT",
+        categories: ["Allowance", "Pay Fixation", "Promotion"],
+        status: "Reference",
+        essential: false,
+        summary: "Clarification on deputation duty allowance where the officer receives pay-related upgrades such as NFU, MACP, NFSG or proforma promotion.",
+        keyPoints: [
+          "Addresses allowance treatment with upgraded pay situations.",
+          "Relevant to MACP, NFU, NFSG and proforma promotion scenarios.",
+          "Should be read with the 2017 DDA revision."
+        ],
+        practicalUse: "Use when pay level changes during deputation and the office must determine continued DDA entitlement.",
+        pdfUrl: "https://www.documents.doptcirculars.nic.in/D2/D02est/Note%202%20and%203%20clarificationhKgUq.PDF",
+        related: ["24 Nov 2017 DDA OM", "30 Nov 2012 Proforma Promotion"]
+      },
+      {
+        id: "2021-css",
+        date: "09 Feb 2021",
+        year: "2021",
+        omNo: "Central Staffing Scheme reference",
+        title: "Deputation under Central Staffing Scheme",
+        authority: "DoPT",
+        categories: ["CSS", "Tenure", "Cooling-off"],
+        status: "Scheme reference",
+        essential: false,
+        summary: "Central Staffing Scheme references are relevant for Deputy Secretary, Director, Joint Secretary and equivalent central deputation appointments.",
+        keyPoints: [
+          "Applies to central staffing appointments.",
+          "Involves empanelment, tenure and cooling-off principles.",
+          "Separate from ordinary post-specific deputation under recruitment rules."
+        ],
+        practicalUse: "Use when the deputation case falls under Central Staffing Scheme rather than ordinary recruitment-rule deputation.",
+        pdfUrl: "https://dopt.gov.in/central-staffing-scheme",
+        related: ["2010 Master OM", "Cooling-off rules"]
+      },
+      {
+        id: "2022-compendium",
+        date: "2022",
+        year: "2022",
+        omNo: "Updated Compendium",
+        title: "Updated Compendium on Deputation / Foreign Service Terms",
+        authority: "DoPT",
+        categories: ["Master Rules", "Foreign Service", "Tenure", "Allowance", "Lien"],
+        status: "Updated compilation",
+        essential: true,
+        summary: "An updated compendium consolidating deputation and foreign service terms for easier reference across multiple DoPT circulars.",
+        keyPoints: [
+          "Provides a consolidated reference view.",
+          "Useful for checking amended positions across multiple OMs.",
+          "Should still be verified against the specific underlying OM when needed."
+        ],
+        practicalUse: "Use as a quick reference compendium before citing the exact OM in official correspondence.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02est/updated%20compendiumCG0L0.pdf",
+        related: ["2010 Master OM", "2016 Extension OMs", "2017 DDA OM"]
+      },
+      {
+        id: "2024-group-a",
+        date: "15 Mar 2024",
+        year: "2024",
+        omNo: "Group A State/UT Deputation Guidelines",
+        title: "Group A Officers to State Governments / Union Territories",
+        authority: "DoPT",
+        categories: ["State/UT", "Tenure", "Group A"],
+        status: "Recent policy",
+        essential: false,
+        summary: "Recent modification concerning deputation of Group A officers of Central Government to State Governments and Union Territories.",
+        keyPoints: [
+          "Addresses inter-government deputation for Group A officers.",
+          "Relevant for tenure norms and cadre-management checks.",
+          "Should be read with service-specific rules where applicable."
+        ],
+        practicalUse: "Use for central Group A officer deputation proposals to State Governments or Union Territories.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02est/Deputation%20Guidelines%20modificationiXORa.pdf",
+        related: ["2024 Group B State/UT Guidelines"]
+      },
+      {
+        id: "2024-group-b",
+        date: "30 Aug 2024",
+        year: "2024",
+        omNo: "Group B State/UT Deputation Guidelines",
+        title: "Group B Officers to State Governments / Union Territories",
+        authority: "DoPT",
+        categories: ["State/UT", "Tenure", "Group B"],
+        status: "Recent policy",
+        essential: false,
+        summary: "Recent deputation guideline modification for Group B officers of Central Government to State Governments and Union Territories.",
+        keyPoints: [
+          "Applies to Group B officers in State/UT deputation cases.",
+          "Complements the Group A State/UT deputation framework.",
+          "Relevant to eligibility, tenure and administrative processing."
+        ],
+        practicalUse: "Use for Group B inter-government deputation files and vacancy circular scrutiny.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02est/Deputation%20Guidelines%20for%20group%20B%20OfficersyohgK.pdf",
+        related: ["2024 Group A State/UT Guidelines"]
+      },
+      {
+        id: "ais-cdg",
+        date: "AIS",
+        year: "Special",
+        omNo: "Consolidated Deputation Guidelines",
+        title: "All India Services Deputation Guidelines",
+        authority: "DoPT / Cadre controlling authorities",
+        categories: ["AIS", "Special Deputations", "Tenure"],
+        status: "Special category",
+        essential: false,
+        summary: "A separate framework for IAS, IPS and IFoS officers, including inter-cadre and central deputation situations subject to AIS-specific rules.",
+        keyPoints: [
+          "Applies to All India Services officers.",
+          "Distinct from ordinary central civil post deputation rules.",
+          "May include inter-cadre, central deputation and special grounds."
+        ],
+        practicalUse: "Use when the officer belongs to IAS, IPS or IFoS and service-specific deputation guidelines apply.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02ser/CDG%20Final_compressedokUN4.pdf",
+        related: ["Central Staffing Scheme", "State/UT Deputation"]
+      },
+      {
+        id: "foreign-assignment",
+        date: "Foreign Assignment",
+        year: "Special",
+        omNo: "ACC Foreign Assignment Handbook",
+        title: "Foreign Assignment Rules and ACC Handbook",
+        authority: "DoPT / ACC",
+        categories: ["Foreign Assignment", "Special Deputations", "Foreign Service"],
+        status: "Special category",
+        essential: false,
+        summary: "Guidance for assignments with international organisations such as UN bodies, World Bank, ADB and other foreign or multilateral assignments.",
+        keyPoints: [
+          "Deals with foreign assignment approvals.",
+          "Relevant to ACC norms and international organisation postings.",
+          "Separate scrutiny may apply beyond ordinary deputation rules."
+        ],
+        practicalUse: "Use when the posting is outside India or with an international organisation rather than a domestic borrowing organisation.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02eod/Handbook_ACC_ForeignAssignment.pdf",
+        related: ["Foreign Service rules", "2010 Master OM"]
+      },
+      {
+        id: "vigilance-apar",
+        date: "Supporting Rules",
+        year: "Support",
+        omNo: "Vigilance / APAR / RR documents",
+        title: "Vigilance Clearance, APAR Benchmark and Recruitment Rules",
+        authority: "DoPT / CVC / Cadre authorities",
+        categories: ["Vigilance", "APAR", "Recruitment Rules"],
+        status: "Practical requirement",
+        essential: false,
+        summary: "Supporting requirements commonly needed before forwarding, relieving, selecting or absorbing officers on deputation.",
+        keyPoints: [
+          "Vigilance clearance and integrity certification are commonly required.",
+          "APAR benchmarks are often examined for selection.",
+          "Recruitment rules define feeder grade, eligibility, age limit and tenure."
+        ],
+        practicalUse: "Use when preparing a complete application bundle, eligibility check or administrative file for deputation.",
+        pdfUrl: "https://documents.doptcirculars.nic.in/D2/D02ser/BROCHURE-CR.pdf",
+        related: ["Recruitment Rules", "Vacancy circular requirements"]
+      }
+    ];
+
+    const topics = [
+      { title: "Master Rules", icon: "▦", filter: "Master Rules", text: "Core consolidated instructions, foundational FR/SR provisions and updated compendiums." },
+      { title: "Tenure & Extension", icon: "◷", filter: "Tenure", text: "Normal tenure, extension approvals, and longer deputation periods up to seven years." },
+      { title: "Cooling-off", icon: "↻", filter: "Cooling-off", text: "Return-to-cadre restrictions and repeat deputation checks." },
+      { title: "Deputation Allowance", icon: "₹", filter: "Allowance", text: "Same-station and different-station DDA, pay upgrades and allowance eligibility." },
+      { title: "Lien & Absorption", icon: "⌁", filter: "Lien", text: "Parent cadre rights, technical resignation and permanent absorption scenarios." },
+      { title: "Special Deputations", icon: "◎", filter: "Special Deputations", text: "Central Staffing Scheme, AIS, State/UT and foreign assignment categories." }
+    ];
+
+    const filters = [
+      "All", "Master Rules", "Tenure", "Extension", "Cooling-off", "Allowance", "Pay Fixation", "Foreign Service", "Lien", "Absorption", "Technical Resignation", "CSS", "AIS", "State/UT", "Vigilance", "APAR", "Recruitment Rules", "Foreign Assignment"
+    ];
+
+    const faqs = [
+      ["What is deputation in Central Government service?", "Deputation generally refers to temporary appointment of a government employee to another post, organisation or cadre, while service conditions are regulated by the applicable DoPT OM, recruitment rules and related service rules."],
+      ["Which OM is the master rule on deputation?", "The DoPT OM dated 17.06.2010, OM No. 6/8/2009-Estt.(Pay-II), is treated as the core consolidated reference for deputation and foreign service terms."],
+      ["What is the normal tenure of deputation?", "The normal tenure depends on the recruitment rules, vacancy circular and applicable DoPT instructions. Extension beyond normal tenure must be checked against the relevant 2016 and 2018 instructions."],
+      ["Can deputation be extended up to seven years?", "Yes, in specified cases and subject to competent authority approval. The 2016 and 2018 instructions are especially relevant for this question."],
+      ["What is cooling-off?", "Cooling-off is the period an officer is generally expected to serve back in the parent cadre before taking another deputation, subject to the applicable service instructions."],
+      ["What is deputation duty allowance?", "It is an allowance admissible in eligible deputation cases, subject to DoPT conditions, station classification and monetary ceiling. The 24.11.2017 OM is a key reference after 7th CPC."],
+      ["What happens to lien during deputation?", "Lien generally concerns the right of an employee to hold or return to a post in the parent cadre. Technical resignation, absorption and lien questions should be checked against the relevant DoPT lien instructions."],
+      ["Can a deputationist be permanently absorbed?", "Absorption may be possible only where rules allow it and required consents, NOC, vigilance clearance and competent authority approvals are obtained."],
+      ["Why should the original PDF be checked?", "Because older OMs may be amended, clarified or superseded. The summary is for guidance; the official PDF remains the source to cite in formal action."]
+    ];
+
+
+
+    // The search engine scans summary fields plus any full extracted PDF text.
+    // When you extract full text from PDFs, paste it into rule.pdfText, rule.extractedText,
+    // rule.sourceText, rule.fullText, or rule.documentText. The UI will automatically search it.
+    rules.forEach(rule => {
+      if (!getPdfText(rule)) {
+        rule.pdfText = [
+          rule.title,
+          rule.omNo,
+          rule.authority,
+          rule.summary,
+          ...(rule.keyPoints || []),
+          rule.practicalUse,
+          ...(rule.related || []),
+          ...(rule.categories || [])
+        ].filter(Boolean).join("\n");
+      }
+    });
+
+    const state = {
+      query: "",
+      filter: "All",
+      visible: [...rules]
+    };
+
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+    function esc(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      })[char]);
     }
-    requestAnimationFrame(raf)
 
-    // ====================== SCROLL FADE-IN ANIMATIONS ======================
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('in-view')
-        }
-      })
-    }, {
-      threshold: 0.15,
-      rootMargin: "0px 0px -50px 0px"
-    })
+    function statusClass(status) {
+      const s = status.toLowerCase();
+      if (s.includes("historical") || s.includes("check")) return "old";
+      if (s.includes("read with") || s.includes("reference") || s.includes("compilation")) return "review";
+      return "";
+    }
 
-    // Apply to all animate-on-scroll elements
-    document.querySelectorAll('.animate-on-scroll').forEach(el => {
-      observer.observe(el)
-    })
+    function normalizeText(value) {
+      return String(value ?? "")
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+    }
 
-    // Also animate individual summary cards & spotlight items after JS populates them
-    function animateCardsAfterLoad() {
-      setTimeout(() => {
-        document.querySelectorAll('.summary-card, .spotlight-grid > div, .glass-card').forEach(card => {
-          card.classList.add('animate-on-scroll')
-          observer.observe(card)
+    function getTerms(query = state.query) {
+      return normalizeText(query)
+        .split(/\s+/)
+        .map(term => term.trim())
+        .filter(term => term.length >= 2);
+    }
+
+    function getPdfText(rule) {
+      return [
+        rule.pdfText,
+        rule.extractedText,
+        rule.sourceText,
+        rule.fullText,
+        rule.documentText
+      ].filter(Boolean).join("\n");
+    }
+
+    function getSearchCorpus(rule) {
+      return [
+        rule.date, rule.year, rule.omNo, rule.title, rule.authority, rule.status,
+        rule.summary, rule.practicalUse,
+        ...(rule.categories || []), ...(rule.keyPoints || []), ...(rule.related || []),
+        getPdfText(rule)
+      ].filter(Boolean).join(" \n");
+    }
+
+    function matchesRule(rule) {
+      const corpus = normalizeText(getSearchCorpus(rule));
+      const terms = getTerms();
+      const queryOk = !terms.length || terms.every(term => corpus.includes(term));
+      const filterOk = state.filter === "All" || (rule.categories || []).includes(state.filter) || rule.title.includes(state.filter);
+      return queryOk && filterOk;
+    }
+
+    function getFilteredRules() {
+      return rules.filter(matchesRule);
+    }
+
+    function highlightText(text, query = state.query) {
+      const terms = getTerms(query).slice(0, 8);
+      let safe = esc(text);
+      terms.forEach(term => {
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const rx = new RegExp(`(${escaped})`, "ig");
+        safe = safe.replace(rx, "<mark>$1</mark>");
+      });
+      return safe;
+    }
+
+    function makePreview(rule, query = state.query, size = 260) {
+      const terms = getTerms(query);
+      const source = getPdfText(rule) || getSearchCorpus(rule);
+      const compact = String(source).replace(/\s+/g, " ").trim();
+      if (!compact) return "";
+      if (!terms.length) return esc(compact.slice(0, size));
+      const normalized = normalizeText(compact);
+      let index = -1;
+      for (const term of terms) {
+        index = normalized.indexOf(term);
+        if (index >= 0) break;
+      }
+      if (index < 0) return esc(compact.slice(0, size));
+      const start = Math.max(0, index - 95);
+      const end = Math.min(compact.length, index + size);
+      const prefix = start > 0 ? "…" : "";
+      const suffix = end < compact.length ? "…" : "";
+      return prefix + highlightText(compact.slice(start, end), query) + suffix;
+    }
+
+    function getPdfHitList() {
+      const terms = getTerms();
+      if (!terms.length) return [];
+      return rules
+        .map(rule => {
+          const corpus = normalizeText(getSearchCorpus(rule));
+          const score = terms.reduce((sum, term) => sum + (corpus.includes(term) ? 1 : 0), 0);
+          return { rule, score };
         })
-      }, 800)
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score || String(a.rule.year).localeCompare(String(b.rule.year)))
+        .map(item => item.rule);
     }
 
-    // ====================== INTERACTIVE MAP (Desktop SVG + Mobile Vertical) ======================
-    const tooltip = document.createElement('div')
-    tooltip.className = 'map-tooltip fixed hidden bg-slate-900 text-white text-sm rounded-2xl px-4 py-3 shadow-2xl border border-white/10 pointer-events-none z-[99999] max-w-[260px]'
-    document.body.appendChild(tooltip)
+    function renderSearchIntelligence() {
+      const panel = $("#searchIntelligence");
+      const list = $("#searchPreviewList");
+      const count = $("#pdfHitCount");
+      const hits = getPdfHitList();
 
-    // Desktop SVG nodes
-    document.querySelectorAll('#relationshipSVG .map-node').forEach(node => {
-      node.addEventListener('mouseenter', (e) => {
-        const title = node.getAttribute('data-title')
-        const subtitle = node.getAttribute('data-subtitle')
-        const desc = node.getAttribute('data-desc')
-        tooltip.innerHTML = `<div class="font-semibold text-indigo-300">${title}</div><div class="text-xs text-slate-400 mb-1">${subtitle}</div><div class="text-sm">${desc}</div>`
-        tooltip.style.left = `${e.pageX + 20}px`
-        tooltip.style.top = `${e.pageY - 30}px`
-        tooltip.classList.remove('hidden')
-      })
-      node.addEventListener('mousemove', (e) => {
-        tooltip.style.left = `${e.pageX + 20}px`
-        tooltip.style.top = `${e.pageY - 30}px`
-      })
-      node.addEventListener('mouseleave', () => tooltip.classList.add('hidden'))
-      node.addEventListener('click', () => showMapDetail(node.id.replace('node','')))
-    })
+      if (!state.query || !getTerms().length) {
+        panel.classList.remove("visible");
+        list.innerHTML = "";
+        count.textContent = "0 matches";
+        return;
+      }
 
-    // Mobile vertical map detail function
-    window.showMapDetail = function(id) {
-      let content = ''
-      if (id === 1) content = `<h2 class="sora text-3xl font-bold mb-4">FR/SR – Statutory Baseline</h2><p class="text-slate-300">Foundational rules that govern every Central Government deputation.</p>`
-      else if (id === 2) content = `<h2 class="sora text-3xl font-bold mb-4">1994 Consolidated OM</h2><p class="text-slate-300">First comprehensive code consolidating deputation guidelines.</p>`
-      else if (id === 3) content = `<h2 class="sora text-3xl font-bold mb-4">2008 Guidelines</h2><p class="text-slate-300">Major review for Group A and B officers.</p>`
-      else if (id === 4) content = `<h2 class="sora text-3xl font-bold mb-4">2010 Master OM</h2><p class="text-slate-300">The core standard still in force today.</p>`
-      else if (id === 5) content = `<h2 class="sora text-3xl font-bold mb-4">2016–2024 Updates</h2><p class="text-slate-300">Tenure expansion, 7th CPC allowances, and recent policy changes.</p>`
-      
-      document.getElementById('modalBody').innerHTML = content + `<div class="mt-8 text-xs uppercase tracking-widest text-slate-400">Tap anywhere to close</div>`
-      const modal = document.getElementById('modal')
-      modal.classList.remove('hidden')
-      modal.classList.add('flex')
+      panel.classList.add("visible");
+      count.textContent = `${hits.length} ${hits.length === 1 ? "match" : "matches"}`;
+      list.innerHTML = hits.slice(0, 5).map(rule => `
+        <article class="search-preview-card">
+          <div>
+            <h4>${esc(rule.title)}</h4>
+            <p class="mono" style="margin-bottom:.4rem;">${esc(rule.date)} · ${esc(rule.omNo)}</p>
+            <p>${makePreview(rule)}</p>
+          </div>
+          <a class="mini-btn primary" href="#rule-${esc(rule.id)}" data-jump-rule="${esc(rule.id)}">Open result</a>
+        </article>
+      `).join("");
     }
 
-    // ====================== MOBILE DRAWER + BACK TO TOP + LUCIDE ======================
-    const mobileBtn = document.getElementById('mobileMenuBtn')
-    const drawer = document.getElementById('mobileDrawer')
-    const closeDrawerBtn = document.getElementById('closeDrawer')
-    const backToTop = document.getElementById('backToTop')
+    function renderTopicCards() {
+      $("#topicCards").innerHTML = topics.map(topic => `
+        <article class="topic-card">
+          <div class="topic-icon" aria-hidden="true">${esc(topic.icon)}</div>
+          <h3>${esc(topic.title)}</h3>
+          <p>${esc(topic.text)}</p>
+          <button type="button" data-topic-filter="${esc(topic.filter)}">Explore ${esc(topic.title)} →</button>
+        </article>
+      `).join("");
 
-    mobileBtn.addEventListener('click', () => {
-      drawer.classList.toggle('hidden')
-      setTimeout(() => drawer.querySelector('div').classList.toggle('translate-x-full'), 10)
-    })
-    closeDrawerBtn.addEventListener('click', () => {
-      drawer.querySelector('div').classList.add('translate-x-full')
-      setTimeout(() => drawer.classList.add('hidden'), 300)
-    })
+      $$("[data-topic-filter]").forEach(button => {
+        button.addEventListener("click", () => {
+          setFilter(button.dataset.topicFilter);
+          scrollToSection("timeline");
+        });
+      });
+    }
 
-    window.addEventListener('scroll', () => {
-      backToTop.style.opacity = window.scrollY > 600 ? '1' : '0'
-    })
-    backToTop.addEventListener('click', () => lenis.scrollTo(0))
+    function renderChips() {
+      $("#filterChips").innerHTML = filters.map(filter => `
+        <button class="chip ${filter === state.filter ? "active" : ""}" type="button" data-filter="${esc(filter)}">
+          ${esc(filter)}
+        </button>
+      `).join("");
 
-    document.getElementById('closeModal').addEventListener('click', () => {
-      const modal = document.getElementById('modal')
-      modal.classList.add('hidden')
-      modal.classList.remove('flex')
-    })
+      $$(".chip").forEach(chip => {
+        chip.addEventListener("click", () => setFilter(chip.dataset.filter));
+      });
+    }
 
-    lucide.createIcons()
+    function renderEssentials() {
+      const essentials = rules.filter(rule => rule.essential).slice(0, 6);
+      $("#essentialGrid").innerHTML = essentials.map(rule => `
+        <article class="essential-card">
+          <span class="essential-date">${esc(rule.date)}</span>
+          <h3>${esc(rule.title)}</h3>
+          <p>${esc(rule.summary)}</p>
+          <div class="rule-tags">
+            ${rule.categories.slice(0, 3).map(cat => `<span class="tag">${esc(cat)}</span>`).join("")}
+          </div>
+        </article>
+      `).join("");
+    }
 
-    // Trigger card animations after your rules_app.js populates content
-    window.addEventListener('load', () => {
-      animateCardsAfterLoad()
-      console.log('%c✅ Ultra-modern + Lenis + Scroll fade-ins + Responsive Map activated!', 'color:#6366f1; font-size:14px; font-weight:700')
-    })
+    function renderTimeline() {
+      state.visible = getFilteredRules();
+      const list = state.visible;
+      $("#resultsCount").textContent = `${list.length} of ${rules.length} rules shown`;
+      $("#activeFilterLabel").textContent = `Filter: ${state.filter}${state.query ? " · Search: " + state.query : ""}`;
+
+      if (!list.length) {
+        $("#timelineContainer").innerHTML = `
+          <div class="empty-state">
+            <strong>No matching rules found</strong>
+            Try a broader keyword such as "tenure", "allowance", "lien", "2010", "foreign service", or clear filters.
+          </div>
+        `;
+        renderLibrary([]);
+        renderSearchIntelligence();
+        return;
+      }
+
+      $("#timelineContainer").innerHTML = list.map(rule => `
+        <article class="rule-card" id="rule-${esc(rule.id)}" data-rule-id="${esc(rule.id)}">
+          <div class="rule-head">
+            <div class="rule-date"><span>Date</span>${esc(rule.date)}</div>
+            <div class="rule-title">
+              <p class="om">${esc(rule.omNo)}</p>
+              <h3>${esc(rule.title)}</h3>
+              <p class="rule-summary">${esc(rule.summary)}</p>
+              <div class="rule-tags">
+                <span class="tag status-tag ${statusClass(rule.status)}">${esc(rule.status)}</span>
+                ${rule.categories.map(cat => `<span class="tag">${esc(cat)}</span>`).join("")}
+              </div>
+              ${state.query ? `<div class="pdf-hit-preview"><strong>Matched preview from PDF / extracted text</strong><p>${makePreview(rule)}</p></div>` : ""}
+            </div>
+            <div class="rule-actions">
+              <button class="mini-btn" type="button" data-expand="${esc(rule.id)}">Details</button>
+              <button class="mini-btn" type="button" data-modal="${esc(rule.id)}">Full view</button>
+              ${rule.pdfUrl ? `<a class="mini-btn primary" href="${esc(rule.pdfUrl)}" target="_blank" rel="noopener">PDF ↗</a>` : `<span class="mini-btn">PDF to add</span>`}
+            </div>
+          </div>
+
+          <div class="rule-details" aria-hidden="true">
+            <div class="detail-grid">
+              <div class="detail-box">
+                <h4>Key provisions</h4>
+                <ul>${rule.keyPoints.map(point => `<li>${esc(point)}</li>`).join("")}</ul>
+              </div>
+              <div class="detail-box">
+                <h4>Practical office use</h4>
+                <p>${esc(rule.practicalUse)}</p>
+                <h4 style="margin-top:1rem;">Related references</h4>
+                <p>${esc((rule.related || []).join(", ") || "None listed")}</p>
+              </div>
+            </div>
+          </div>
+        </article>
+      `).join("");
+
+      $$("[data-expand]").forEach(button => {
+        button.addEventListener("click", () => {
+          const card = $$(".rule-card").find(item => item.dataset.ruleId === button.dataset.expand);
+          if (!card) return;
+          const open = card.classList.toggle("expanded");
+          button.textContent = open ? "Hide details" : "Details";
+          $(".rule-details", card).setAttribute("aria-hidden", String(!open));
+        });
+      });
+
+      $$("[data-modal]").forEach(button => {
+        button.addEventListener("click", () => openModal(button.dataset.modal));
+      });
+
+      renderLibrary(list);
+      renderSearchIntelligence();
+    }
+
+    function renderLibrary(list = state.visible) {
+      $("#libraryCount").textContent = `${list.length} PDF references displayed`;
+      $("#libraryTableBody").innerHTML = list.map(rule => `
+        <tr>
+          <td class="mono">${esc(rule.date)}</td>
+          <td class="mono">${esc(rule.omNo)}</td>
+          <td><strong>${esc(rule.title)}</strong><br><span>${esc(rule.authority)}</span></td>
+          <td>${rule.categories.slice(0, 4).map(cat => `<span class="tag">${esc(cat)}</span>`).join(" ")}</td>
+          <td>${rule.pdfUrl ? `<a class="mini-btn primary" href="${esc(rule.pdfUrl)}" target="_blank" rel="noopener">Open PDF</a>` : `<span class="mini-btn">To add</span>`}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderFAQ() {
+      $("#faqList").innerHTML = faqs.map(([q, a], i) => `
+        <details class="faq" ${i === 0 ? "open" : ""}>
+          <summary>${esc(q)}</summary>
+          <p>${esc(a)}</p>
+        </details>
+      `).join("");
+    }
+
+    function setFilter(filter) {
+      state.filter = filter;
+      renderChips();
+      renderTimeline();
+    }
+
+    function openModal(id) {
+      const rule = rules.find(item => item.id === id);
+      if (!rule) return;
+
+      $("#modalKicker").textContent = `${rule.date} · ${rule.omNo}`;
+      $("#modalTitle").textContent = rule.title;
+      $("#modalBody").innerHTML = `
+        <p>${esc(rule.summary)}</p>
+        <h4>Status</h4>
+        <p>${esc(rule.status)}</p>
+        <h4>Authority</h4>
+        <p>${esc(rule.authority)}</p>
+        <h4>Categories</h4>
+        <p>${rule.categories.map(cat => `<span class="tag">${esc(cat)}</span>`).join(" ")}</p>
+        <h4>Key provisions</h4>
+        <ul>${rule.keyPoints.map(point => `<li>${esc(point)}</li>`).join("")}</ul>
+        <h4>Practical office use</h4>
+        <p>${esc(rule.practicalUse)}</p>
+        <h4>Related references</h4>
+        <p>${esc((rule.related || []).join(", ") || "None listed")}</p>
+        <h4>Official source</h4>
+        <p>${rule.pdfUrl ? `<a class="btn primary" href="${esc(rule.pdfUrl)}" target="_blank" rel="noopener">Open official PDF/source ↗</a>` : "PDF to be added."}</p>
+      `;
+      $("#ruleModal").classList.add("open");
+      $("#closeModal").focus();
+    }
+
+    function closeModal() {
+      $("#ruleModal").classList.remove("open");
+    }
+
+    function showToast(message) {
+      const toast = $("#toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      window.setTimeout(() => toast.classList.remove("visible"), 1800);
+    }
+
+    function copyVisibleRules() {
+      const text = state.visible.map(rule => `${rule.date} | ${rule.omNo} | ${rule.title} | ${rule.pdfUrl || "PDF to add"}`).join("\n");
+      navigator.clipboard?.writeText(text).then(() => {
+        showToast("Visible rule list copied");
+      }).catch(() => {
+        showToast("Copy unavailable in this browser");
+      });
+    }
+
+    function downloadCSV() {
+      const rows = [
+        ["Date", "OM/Circular No.", "Subject", "Authority", "Categories", "PDF"],
+        ...state.visible.map(rule => [
+          rule.date,
+          rule.omNo,
+          rule.title,
+          rule.authority,
+          rule.categories.join("; "),
+          rule.pdfUrl || "PDF to add"
+        ])
+      ];
+      const csv = rows.map(row => row.map(cell => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "deputation-rules-library.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast("CSV downloaded");
+    }
+
+    function setupTheme() {
+      const saved = localStorage.getItem("rules-theme");
+      if (saved) document.documentElement.dataset.theme = saved;
+      $("#themeToggle").textContent = document.documentElement.dataset.theme === "dark" ? "☾" : "☀";
+
+      $("#themeToggle").addEventListener("click", () => {
+        const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem("rules-theme", next);
+        $("#themeToggle").textContent = next === "dark" ? "☾" : "☀";
+      });
+    }
+
+    function getScrollOffset() {
+      const navHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--nav-h"), 10) || 74;
+      const compactSidebar = window.matchMedia("(max-width: 980px)").matches ? 64 : 0;
+      return navHeight + compactSidebar + 16;
+    }
+
+    function resetHorizontalScroll() {
+      document.documentElement.scrollLeft = 0;
+      document.body.scrollLeft = 0;
+      if (window.scrollX) {
+        try { window.scrollTo({ left: 0, top: window.scrollY, behavior: "auto" }); }
+        catch { window.scrollTo(0, window.scrollY); }
+      }
+    }
+
+    function scrollToSection(idOrHash, updateHash = true) {
+      const id = String(idOrHash || "").replace(/^#/, "");
+      const target = document.getElementById(id);
+      if (!target) return false;
+
+      const top = Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - getScrollOffset());
+      resetHorizontalScroll();
+      try {
+        window.scrollTo({ top, left: 0, behavior: "smooth" });
+      } catch {
+        window.scrollTo(0, top);
+      }
+
+      if (updateHash) {
+        try { history.replaceState(null, "", `#${id}`); }
+        catch { window.location.hash = id; }
+      }
+
+      $$(".nav-link").forEach(link => link.classList.toggle("active", link.getAttribute("href") === `#${id}`));
+      window.setTimeout(resetHorizontalScroll, 40);
+      window.setTimeout(resetHorizontalScroll, 360);
+      return true;
+    }
+
+    function setupAnchorNavigation() {
+      document.addEventListener("click", event => {
+        const link = event.target.closest('a[href^="#"]');
+        if (!link) return;
+        const href = link.getAttribute("href");
+        if (!href || href === "#" || href.length < 2) return;
+        const id = decodeURIComponent(href.slice(1));
+        if (!document.getElementById(id)) return;
+        event.preventDefault();
+        scrollToSection(id);
+      }, true);
+
+      if (window.location.hash && document.getElementById(window.location.hash.slice(1))) {
+        window.setTimeout(() => scrollToSection(window.location.hash, false), 120);
+      }
+
+      window.addEventListener("resize", resetHorizontalScroll);
+    }
+
+    function setupNavObserver() {
+      const links = $$(".nav-link");
+      const sections = links.map(link => $(link.getAttribute("href"))).filter(Boolean);
+
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          links.forEach(link => link.classList.toggle("active", link.getAttribute("href") === `#${entry.target.id}`));
+        });
+      }, { rootMargin: "-38% 0px -52% 0px", threshold: 0.01 });
+
+      sections.forEach(section => observer.observe(section));
+    }
+
+    function setupBackToTop() {
+      const button = $("#backToTop");
+      const toggle = () => button.classList.toggle("visible", window.scrollY > 720);
+      window.addEventListener("scroll", toggle, { passive: true });
+      button.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+      toggle();
+    }
+
+    function setupSearch() {
+      const input = $("#searchRules");
+      let t;
+      input.addEventListener("input", () => {
+        window.clearTimeout(t);
+        t = window.setTimeout(() => {
+          state.query = input.value.trim();
+          renderTimeline();
+        }, 80);
+      });
+
+      $("#clearFilters").addEventListener("click", () => {
+        state.query = "";
+        state.filter = "All";
+        input.value = "";
+        renderChips();
+        renderTimeline();
+      });
+    }
+
+    function init() {
+      $("#metricRules").textContent = rules.length;
+      renderTopicCards();
+      renderChips();
+      renderEssentials();
+      renderFAQ();
+      renderTimeline();
+      setupTheme();
+      setupSearch();
+      setupAnchorNavigation();
+      setupNavObserver();
+      setupBackToTop();
+
+      $("#copyVisibleBtn").addEventListener("click", copyVisibleRules);
+      $("#downloadCsv").addEventListener("click", downloadCSV);
+      $("#closeModal").addEventListener("click", closeModal);
+      $("#ruleModal").addEventListener("click", event => {
+        if (event.target.id === "ruleModal") closeModal();
+      });
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape") closeModal();
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+          event.preventDefault();
+          $("#searchRules").focus();
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
   </script>
 </body>
 </html>
