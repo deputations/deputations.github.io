@@ -1331,6 +1331,22 @@
         transition-duration: .01ms !important;
       }
     }
+
+    /* Hard navigation fix: keep all internal navigation clickable above decorative layers */
+    .sidebar, .nav-list, .nav-link, .hero-actions, .hero-actions .btn, .brand-lockup {
+      pointer-events: auto;
+    }
+    .sidebar { z-index: 95; }
+    .nav-link, .hero-actions .btn, .brand-lockup {
+      position: relative;
+      z-index: 120;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .section:target { outline: none; }
+
   </style>
 </head>
 
@@ -1351,7 +1367,7 @@
 
   <div class="site-shell">
     <header class="app-header">
-      <a href="#hero" class="brand-lockup" aria-label="Deputation Rules Hub">
+      <a href="#hero" data-scroll-target="hero" onclick="return window.rulesScrollTo ? window.rulesScrollTo('hero') : true" class="brand-lockup" aria-label="Deputation Rules Hub">
         <span class="brand-mark">⚖</span>
         <span>
           <p class="brand-kicker">Central Government</p>
@@ -1374,14 +1390,14 @@
           <span aria-hidden="true">⌘</span>
         </div>
         <ul class="nav-list">
-          <li><a href="#hero" class="nav-link active"><span class="nav-icon">01</span>Overview</a></li>
-          <li><a href="#topics" class="nav-link"><span class="nav-icon">02</span>Topic Summary</a></li>
-          <li><a href="#essentials" class="nav-link"><span class="nav-icon">03</span>Essential Rules</a></li>
-          <li><a href="#search" class="nav-link"><span class="nav-icon">04</span>Search</a></li>
-          <li><a href="#timeline" class="nav-link"><span class="nav-icon">05</span>Chronology</a></li>
-          <li><a href="#map" class="nav-link"><span class="nav-icon">06</span>Relationship Map</a></li>
-          <li><a href="#library" class="nav-link"><span class="nav-icon">07</span>PDF Library</a></li>
-          <li><a href="#faq" class="nav-link"><span class="nav-icon">08</span>FAQ</a></li>
+          <li><a href="#hero" data-scroll-target="hero" onclick="return window.rulesScrollTo ? window.rulesScrollTo('hero') : true" class="nav-link active"><span class="nav-icon">01</span>Overview</a></li>
+          <li><a href="#topics" data-scroll-target="topics" onclick="return window.rulesScrollTo ? window.rulesScrollTo('topics') : true" class="nav-link"><span class="nav-icon">02</span>Topic Summary</a></li>
+          <li><a href="#essentials" data-scroll-target="essentials" onclick="return window.rulesScrollTo ? window.rulesScrollTo('essentials') : true" class="nav-link"><span class="nav-icon">03</span>Essential Rules</a></li>
+          <li><a href="#search" data-scroll-target="search" onclick="return window.rulesScrollTo ? window.rulesScrollTo('search') : true" class="nav-link"><span class="nav-icon">04</span>Search</a></li>
+          <li><a href="#timeline" data-scroll-target="timeline" onclick="return window.rulesScrollTo ? window.rulesScrollTo('timeline') : true" class="nav-link"><span class="nav-icon">05</span>Chronology</a></li>
+          <li><a href="#map" data-scroll-target="map" onclick="return window.rulesScrollTo ? window.rulesScrollTo('map') : true" class="nav-link"><span class="nav-icon">06</span>Relationship Map</a></li>
+          <li><a href="#library" data-scroll-target="library" onclick="return window.rulesScrollTo ? window.rulesScrollTo('library') : true" class="nav-link"><span class="nav-icon">07</span>PDF Library</a></li>
+          <li><a href="#faq" data-scroll-target="faq" onclick="return window.rulesScrollTo ? window.rulesScrollTo('faq') : true" class="nav-link"><span class="nav-icon">08</span>FAQ</a></li>
         </ul>
         <p class="sidebar-note">
           Tip: use the search box for OM numbers, dates, “cooling-off”, “lien”, “allowance”, “7 years”, “foreign service”, or “absorption”.
@@ -1389,7 +1405,7 @@
       </aside>
 
       <section class="content">
-        <section id="hero" class="section hero glass">
+        <section id="hero" tabindex="-1" class="section hero glass">
           <div class="hero-grid">
             <div>
               <div class="badge-row">
@@ -1401,9 +1417,9 @@
                 A premium knowledge hub for Fundamental Rules, Supplementary Rules, DoPT Office Memorandums, tenure limits, cooling-off, deputation duty allowance, lien, absorption, and related establishment circulars.
               </p>
               <div class="hero-actions">
-                <a href="#timeline" class="btn primary"><span>↳</span><span>View Chronological Rules</span></a>
-                <a href="#search" class="btn"><span>⌕</span><span>Search by Topic</span></a>
-                <a href="#library" class="btn"><span>▣</span><span>Official PDF Library</span></a>
+                <a href="#timeline" data-scroll-target="timeline" onclick="return window.rulesScrollTo ? window.rulesScrollTo('timeline') : true" class="btn primary"><span>↳</span><span>View Chronological Rules</span></a>
+                <a href="#search" data-scroll-target="search" onclick="return window.rulesScrollTo ? window.rulesScrollTo('search') : true" class="btn"><span>⌕</span><span>Search by Topic</span></a>
+                <a href="#library" data-scroll-target="library" onclick="return window.rulesScrollTo ? window.rulesScrollTo('library') : true" class="btn"><span>▣</span><span>Official PDF Library</span></a>
               </div>
             </div>
 
@@ -1425,7 +1441,7 @@
           </div>
         </section>
 
-        <section id="topics" class="section panel glass">
+        <section id="topics" tabindex="-1" class="section panel glass">
           <div class="section-head">
             <div>
               <span class="section-eyebrow">◇ Topic overview</span>
@@ -1436,7 +1452,7 @@
           <div class="cards-grid" id="topicCards"></div>
         </section>
 
-        <section id="essentials" class="section panel glass">
+        <section id="essentials" tabindex="-1" class="section panel glass">
           <div class="section-head">
             <div>
               <span class="section-eyebrow">★ Essential rules</span>
@@ -1447,7 +1463,7 @@
           <div class="essential-grid" id="essentialGrid"></div>
         </section>
 
-        <section id="search" class="section search-panel glass">
+        <section id="search" tabindex="-1" class="section search-panel glass">
           <div class="search-bar">
             <div class="search-input-wrap">
               <label for="searchRules" class="sr-only" style="position:absolute;left:-9999px;">Search rules</label>
@@ -1472,7 +1488,7 @@
           </div>
         </section>
 
-        <section id="timeline" class="section panel glass">
+        <section id="timeline" tabindex="-1" class="section panel glass">
           <div class="section-head">
             <div>
               <span class="section-eyebrow">◷ Chronological timeline</span>
@@ -1483,7 +1499,7 @@
           <div class="timeline-wrap" id="timelineContainer"></div>
         </section>
 
-        <section id="map" class="section panel glass">
+        <section id="map" tabindex="-1" class="section panel glass">
           <div class="section-head">
             <div>
               <span class="section-eyebrow">⟲ Relationship map</span>
@@ -1510,7 +1526,7 @@
           </div>
         </section>
 
-        <section id="library" class="section panel glass">
+        <section id="library" tabindex="-1" class="section panel glass">
           <div class="section-head">
             <div>
               <span class="section-eyebrow">▣ PDF library</span>
@@ -1538,7 +1554,7 @@
           </div>
         </section>
 
-        <section id="faq" class="section panel glass">
+        <section id="faq" tabindex="-1" class="section panel glass">
           <div class="section-head">
             <div>
               <span class="section-eyebrow">? FAQ</span>
@@ -2402,56 +2418,86 @@
     function getScrollOffset() {
       const navHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--nav-h"), 10) || 74;
       const compactSidebar = window.matchMedia("(max-width: 980px)").matches ? 64 : 0;
-      return navHeight + compactSidebar + 16;
+      return navHeight + compactSidebar + 18;
     }
 
     function resetHorizontalScroll() {
-      document.documentElement.scrollLeft = 0;
-      document.body.scrollLeft = 0;
-      if (window.scrollX) {
-        try { window.scrollTo({ left: 0, top: window.scrollY, behavior: "auto" }); }
-        catch { window.scrollTo(0, window.scrollY); }
+      const root = document.documentElement;
+      const body = document.body;
+      root.scrollLeft = 0;
+      body.scrollLeft = 0;
+      if (window.scrollX !== 0) {
+        window.scrollTo(0, window.scrollY);
       }
+    }
+
+    function setActiveNav(id) {
+      $$(".nav-link").forEach(link => {
+        const target = link.dataset.scrollTarget || String(link.getAttribute("href") || "").replace(/^#/, "");
+        link.classList.toggle("active", target === id);
+      });
     }
 
     function scrollToSection(idOrHash, updateHash = true) {
       const id = String(idOrHash || "").replace(/^#/, "");
       const target = document.getElementById(id);
-      if (!target) return false;
+      if (!target) return true;
 
-      const top = Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - getScrollOffset());
+      const offset = getScrollOffset();
+      const y = Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - offset);
       resetHorizontalScroll();
+
       try {
-        window.scrollTo({ top, left: 0, behavior: "smooth" });
-      } catch {
-        window.scrollTo(0, top);
+        window.scrollTo({ top: y, left: 0, behavior: "smooth" });
+      } catch (error) {
+        window.scrollTo(0, y);
       }
+
+      /* Fallback for browsers/layouts where smooth scrolling is swallowed by a
+         parent grid, sticky sidebar, or third-party script. */
+      window.setTimeout(() => {
+        const distance = Math.abs(target.getBoundingClientRect().top - offset);
+        if (distance > 120) {
+          target.scrollIntoView({ block: "start", inline: "nearest" });
+          window.scrollBy(0, -offset);
+        }
+        resetHorizontalScroll();
+      }, 260);
 
       if (updateHash) {
         try { history.replaceState(null, "", `#${id}`); }
-        catch { window.location.hash = id; }
+        catch (error) { window.location.hash = id; }
       }
 
-      $$(".nav-link").forEach(link => link.classList.toggle("active", link.getAttribute("href") === `#${id}`));
-      window.setTimeout(resetHorizontalScroll, 40);
-      window.setTimeout(resetHorizontalScroll, 360);
-      return true;
+      setActiveNav(id);
+      return false;
     }
 
+    window.rulesScrollTo = scrollToSection;
+
     function setupAnchorNavigation() {
-      document.addEventListener("click", event => {
-        const link = event.target.closest('a[href^="#"]');
+      const handleNavigationClick = event => {
+        const link = event.target.closest('[data-scroll-target], a[href^="#"]');
         if (!link) return;
-        const href = link.getAttribute("href");
-        if (!href || href === "#" || href.length < 2) return;
-        const id = decodeURIComponent(href.slice(1));
-        if (!document.getElementById(id)) return;
+
+        const targetId = link.dataset.scrollTarget || String(link.getAttribute("href") || "").replace(/^#/, "");
+        if (!targetId || !document.getElementById(targetId)) return;
+
         event.preventDefault();
-        scrollToSection(id);
-      }, true);
+        event.stopPropagation();
+        scrollToSection(targetId);
+      };
+
+      /* Attach both direct and delegated handlers. This is intentional: direct
+         handlers handle ordinary clicks; the delegated handler catches elements
+         rendered later by JS, such as search-preview results. */
+      $$('[data-scroll-target], a[href^="#"]').forEach(link => {
+        link.addEventListener("click", handleNavigationClick, false);
+      });
+      document.addEventListener("click", handleNavigationClick, false);
 
       if (window.location.hash && document.getElementById(window.location.hash.slice(1))) {
-        window.setTimeout(() => scrollToSection(window.location.hash, false), 120);
+        window.setTimeout(() => scrollToSection(window.location.hash, false), 140);
       }
 
       window.addEventListener("resize", resetHorizontalScroll);
@@ -2459,12 +2505,14 @@
 
     function setupNavObserver() {
       const links = $$(".nav-link");
-      const sections = links.map(link => $(link.getAttribute("href"))).filter(Boolean);
+      const sections = links
+        .map(link => document.getElementById(link.dataset.scrollTarget || String(link.getAttribute("href") || "").replace(/^#/, "")))
+        .filter(Boolean);
 
       const observer = new IntersectionObserver(entries => {
         entries.forEach(entry => {
           if (!entry.isIntersecting) return;
-          links.forEach(link => link.classList.toggle("active", link.getAttribute("href") === `#${entry.target.id}`));
+          setActiveNav(entry.target.id);
         });
       }, { rootMargin: "-38% 0px -52% 0px", threshold: 0.01 });
 
