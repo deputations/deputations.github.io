@@ -55,7 +55,14 @@
     }
 
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    html {
+      scroll-behavior: smooth;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100vw;
+    }
     body {
       min-height: 100vh;
       margin: 0;
@@ -87,6 +94,8 @@
     button, input { font: inherit; }
     button { cursor: pointer; }
     :focus-visible { outline: 3px solid rgba(84,240,255,.68); outline-offset: 3px; }
+    .site-shell, .layout, .content, .section, .hero, .hero-grid, .hero-mini, .command-card, .panel, .rule-card, .table-shell { min-width: 0; }
+    .site-shell { overflow-x: clip; }
 
     .noise {
       position: fixed;
@@ -253,9 +262,10 @@
 
     .layout {
       display: grid;
-      grid-template-columns: 292px minmax(0, 1fr);
+      grid-template-columns: clamp(238px, 19vw, 292px) minmax(0, 1fr);
       gap: 1.35rem;
       align-items: start;
+      max-width: 100%;
     }
 
     .glass {
@@ -387,9 +397,12 @@
       position: relative;
       z-index: 1;
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(270px, .85fr);
-      gap: clamp(1.5rem, 4vw, 3.4rem);
+      grid-template-columns: minmax(0, 1.08fr) minmax(280px, 420px);
+      gap: clamp(1.2rem, 3vw, 2.5rem);
       align-items: center;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
     }
 
     .badge-row {
@@ -422,7 +435,7 @@
 
     h1 {
       margin: 0;
-      max-width: 960px;
+      max-width: 860px;
       font-family: "Plus Jakarta Sans", Inter, sans-serif;
       font-size: clamp(2.55rem, 6.2vw, 6.3rem);
       line-height: .94;
@@ -457,10 +470,16 @@
     .hero-mini {
       display: grid;
       gap: .85rem;
+      width: 100%;
+      max-width: 420px;
+      justify-self: end;
     }
     .command-card {
       border-radius: 30px;
       padding: 1rem;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
       background: rgba(2,6,23,.35);
       border: 1px solid rgba(255,255,255,.14);
       box-shadow: var(--shadow-soft);
@@ -476,6 +495,8 @@
     }
     .metric {
       min-height: 110px;
+      min-width: 0;
+      overflow: hidden;
       border-radius: 24px;
       padding: 1rem;
       border: 1px solid var(--line);
@@ -1144,28 +1165,41 @@
       transform: translateX(-50%) translateY(0);
     }
 
-    @media (max-width: 1180px) {
+    @media (max-width: 1320px) {
+      .layout { grid-template-columns: 248px minmax(0, 1fr); }
+      .hero-grid { grid-template-columns: 1fr; }
+      .hero-mini {
+        max-width: 760px;
+        justify-self: stretch;
+      }
+      h1 { font-size: clamp(2.5rem, 6vw, 5.4rem); }
+    }
+
+    @media (max-width: 980px) {
       .layout { grid-template-columns: 1fr; }
       .sidebar {
         position: sticky;
         top: var(--nav-h);
         z-index: 55;
         max-height: none;
-        overflow: auto;
+        overflow-x: auto;
+        overflow-y: hidden;
         border-radius: 0 0 26px 26px;
         padding: .75rem;
-        margin: 0 -.5rem;
+        margin: 0;
+        width: 100%;
+        max-width: 100%;
       }
       .sidebar-title, .sidebar-note { display: none; }
       .nav-list {
         display: flex;
         overflow-x: auto;
+        overscroll-behavior-x: contain;
         padding-bottom: .2rem;
+        max-width: 100%;
       }
       .nav-link { white-space: nowrap; }
       .nav-link:hover { transform: translateY(-1px); }
-      .hero-grid { grid-template-columns: 1fr; }
-      .hero-mini { max-width: 620px; }
     }
 
     @media (max-width: 860px) {
@@ -1185,6 +1219,7 @@
       .detail-grid { grid-template-columns: 1fr; }
       .metric-grid { grid-template-columns: 1fr 1fr; }
       .hero { min-height: auto; }
+      .hero-mini { max-width: none; }
       h1 { letter-spacing: -.06em; }
     }
 
@@ -2139,6 +2174,40 @@
       });
     }
 
+    function setupAnchorNavigation() {
+      const anchorLinks = $$('a[href^="#"]');
+      const getOffset = () => {
+        const navHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'), 10) || 74;
+        const compactSidebar = window.matchMedia('(max-width: 980px)').matches ? 58 : 0;
+        return navHeight + compactSidebar + 14;
+      };
+
+      const forceLeftEdge = () => {
+        if (window.scrollX !== 0) window.scrollTo({ left: 0, top: window.scrollY });
+        document.documentElement.scrollLeft = 0;
+        document.body.scrollLeft = 0;
+      };
+
+      anchorLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        if (!href || href === '#' || href.length < 2) return;
+        const target = $(href);
+        if (!target) return;
+
+        link.addEventListener('click', event => {
+          event.preventDefault();
+          const top = target.getBoundingClientRect().top + window.scrollY - getOffset();
+          history.pushState(null, '', href);
+          window.scrollTo({ top: Math.max(0, top), left: 0, behavior: 'smooth' });
+          window.setTimeout(forceLeftEdge, 0);
+          window.setTimeout(forceLeftEdge, 260);
+        });
+      });
+
+      window.addEventListener('hashchange', forceLeftEdge);
+      window.addEventListener('resize', forceLeftEdge);
+    }
+
     function setupNavObserver() {
       const links = $$(".nav-link");
       const sections = links.map(link => $(link.getAttribute("href"))).filter(Boolean);
@@ -2190,6 +2259,7 @@
       renderTimeline();
       setupTheme();
       setupSearch();
+      setupAnchorNavigation();
       setupNavObserver();
       setupBackToTop();
 
