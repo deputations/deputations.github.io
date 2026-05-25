@@ -1,0 +1,164 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DoPT OM No.2/11/2017-Estt.(Pay-II) dated 15 March 2021 - Clarification on Deputation (Duty) Allowance (NFU/MACP/NFSG in 7th CPC context)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Georgia:wght@400;700&amp;display=swap');
+        
+        body {
+            font-family: 'Georgia', serif;
+            line-height: 1.65;
+            margin: 0;
+            padding: 40px 60px;
+            background: #f8f8f8;
+            color: #222;
+            max-width: 1100px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px double #000;
+            padding-bottom: 20px;
+        }
+        
+        .om-number {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        
+        .date {
+            text-align: right;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 22px;
+            text-transform: uppercase;
+            margin: 25px 0;
+            letter-spacing: 1px;
+        }
+        
+        .subject {
+            font-weight: bold;
+            text-align: center;
+            margin: 25px 0;
+            font-size: 18px;
+        }
+        
+        .reference {
+            margin: 20px 0;
+            font-style: italic;
+        }
+        
+        .note-box {
+            background: #f0f0f0;
+            border-left: 5px solid #000;
+            padding: 15px;
+            margin: 25px 0;
+        }
+        
+        ol.clarification-list {
+            margin-left: 25px;
+        }
+        
+        ol.clarification-list li {
+            margin-bottom: 18px;
+        }
+        
+        .signature {
+            margin-top: 50px;
+            text-align: right;
+            line-height: 1.4;
+        }
+        
+        .distribution {
+            margin-top: 40px;
+            font-size: 15px;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .footer-note {
+            font-size: 14px;
+            text-align: center;
+            margin-top: 60px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>No. 2/11/2017-Estt.(Pay-II)</div>
+        <div>Government of India</div>
+        <div>Ministry of Personnel, Public Grievances &amp; Pensions</div>
+        <div>(Department of Personnel &amp; Training)</div>
+        <div class="date">North Block, New Delhi<br>Dated the 15<sup>th</sup> March, 2021</div>
+    </div>
+
+    <h1>OFFICE MEMORANDUM</h1>
+
+    <p class="subject">Subject: Grant of Deputation (Duty) Allowance in cases where the basic pay in parent cadre has been upgraded on account of NFU, MACP, NFSG, etc. in the 7th CPC context - clarification regarding.</p>
+
+    <div class="reference">
+        The undersigned is directed to refer to this Department's OM of even number dated 24th November, 2017 regarding grant of Deputation (Duty) Allowance in the 7th CPC context, and to say that this Department has been receiving references from various Ministries/Departments/Organizations for clarifications regarding admissibility of Deputation (Duty) Allowance in terms of Note 2 and Note 3 below para 4(d) of this Department's OM dated 24th November, 2017 in cases where the basic pay in parent cadre has been upgraded on account of NFU, MACP, NFSG, etc. in the 7th CPC context.
+    </div>
+
+    <p><strong>2.</strong> Note 2 and Note 3 of the para 4(d) of this Department's OM dated 24th November, 2017 are as follows:-</p>
+
+    <div class="note-box">
+        <strong>Note 2</strong> In cases where the basic pay in parent cadre has been upgraded on account of Non-functional upgradation (NFU), Modified Assured Career Progression Scheme (MACP), Non Functional Selection Grade (NFSG), etc., the upgraded basic pay under such upgradations shall not be taken into account for the purpose of Deputation (Duty) Allowance.<br><br>
+        <strong>Note 3</strong> In the case of a Proforma Promotion under Next Below Rule (NBR): If such a Proforma Promotion is in a Level of the Pay Matrix which is higher than that of the ex-cadre post, the basic pay under such Proforma Promotion shall not be taken into account for the purpose of Deputation (Duty) Allowance. However, if such a Proforma Promotion under NBR is in a Level of the pay matrix which is equal to or below that of the ex-cadre post, Deputation (Duty) Allowance shall be admissible on the basic pay of the parent cadre post allowed under the proforma promotion, if opted by the deputationist.
+    </div>
+
+    <p><strong>3.</strong> In view of the references received from different Ministries/Departments/Organisations, the following is clarified with regard to the admissibility of Deputation (Duty) Allowance in terms of Note 2 and Note 3 below para 4(d) of this Department's OM dated 24th November, 2017 in cases where the basic pay in parent cadre has been upgraded on account of NFU, MACP, NFSG, etc. in the 7th CPC context:-</p>
+
+    <ol class="clarification-list">
+        <li><strong>3.1</strong> In cases where the basic pay in parent cadre has been upgraded (upto Level 13 A) on account of Non-Functional Upgradation (NFU), Modified Assured Career Progression Scheme (MACP), Non Functional Selection Grade (NFSG), etc., and the officer has opted for such upgraded pay of the parent cadre, in that event, the upgraded basic pay under such upgradations shall not be taken into account for the purpose of Deputation (Duty) Allowance. In such cases, the Deputation (Duty) Allowance will be calculated taking the basic pay of the parent cadre which the officer was getting before such upgradation and the amount of the same would be further regulated every year on the basis of the pay arrived at by giving annual increments on the presumptive pay.</li>
+        
+        <li><strong>3.2</strong> However, if the upgradation is to Level 14 or above, he shall be given the option to draw the upgraded basic pay under such upgradations without Deputation (Duty) Allowance or the pay which he was drawing before such upgradation with Deputation (Duty) Allowance, whichever is more beneficial as per the option of the officer.</li>
+        
+        <li><strong>3.3</strong> In the case of Proforma Promotion under Next Below Rule (NBR), if such a Proforma Promotion (upto Level 13 A) is in a Level of the Pay Matrix which is higher than that of the ex-cadre post, and the officer has opted for the upgraded pay of the Proforma Promotion, the basic pay under such Proforma Promotion shall not be taken into account for the purpose of Deputation (Duty) Allowance. Deputation (Duty) Allowance will be calculated taking into account the basic pay which the officer was getting before such Proforma Promotion. The amount of Deputation (Duty) Allowance would be calculated on the basis of the pre-upgraded presumptive pay that the officer was drawing prior to Proforma Promotion and the amount of the same would be further regulated every year on the basis of the pay arrived at by giving annual increments on the presumptive pay.</li>
+        
+        <li><strong>3.4</strong> However, if such a Proforma Promotion under NBR is in a Level of the pay matrix which is equal to or below that of the ex-cadre post, Deputation (Duty) Allowance shall be admissible on the basic pay of the parent cadre post allowed under the Proforma Promotion, if opted by the deputationist.</li>
+        
+        <li><strong>3.5</strong> However, if the upgradation is to Level 14 or above of the Pay Matrix, he shall be given the option to draw the upgraded basic pay under such Proforma Promotion without Deputation (Duty) Allowance or the pay which he was drawing before grant of Proforma Promotion with Deputation (Duty) Allowance, whichever is more beneficial as per the option of the officer. The amount of Deputation (Duty) Allowance would be calculated on the basis of pre-upgraded presumptive pay that the officer was drawing prior to the grant of Proforma Promotion and the amount of the same would be further regulated every year on the basis of the pay arrived at by giving annual increments on the presumptive pay.</li>
+    </ol>
+
+    <p><strong>4.</strong> These orders shall take effect from 1<sup>st</sup> July, 2017.</p>
+
+    <p><strong>5.</strong> Insofar as the persons serving in the Indian Audit and Accounts Department are concerned, these orders issue in consultation with the office of the Comptroller and Auditor General of India.</p>
+
+    <p><strong>6.</strong> Hindi version will follow.</p>
+
+    <div class="signature">
+        (Shukdeo Sah)<br>
+        <strong>Under Secretary to the Government of India</strong><br>
+        Tele: 2304 0489
+    </div>
+
+    <div class="distribution">
+        <strong>To</strong><br>
+        Ministries / Departments of Government of India.
+    </div>
+
+    <div class="footer-note">
+        ***<br>
+        <small>End of Document • DoPT Office Memorandum No.2/11/2017-Estt.(Pay-II) dated 15 March 2021 • Clarification on Deputation (Duty) Allowance (NFU/MACP/NFSG) in 7th CPC context</small>
+    </div>
+
+</body>
+</html>
+```

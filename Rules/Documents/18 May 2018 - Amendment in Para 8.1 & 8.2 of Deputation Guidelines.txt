@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DoPT OM F.No.2/6/2018-Estt.(Pay-II) dated 18 May 2018 - Amendment in Para 8.1 & 8.2 of Deputation Guidelines</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Georgia:wght@400;700&amp;display=swap');
+        
+        body {
+            font-family: 'Georgia', serif;
+            line-height: 1.65;
+            margin: 0;
+            padding: 40px 60px;
+            background: #f8f8f8;
+            color: #222;
+            max-width: 1100px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px double #000;
+            padding-bottom: 20px;
+        }
+        
+        .om-number {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        
+        .date {
+            text-align: right;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 22px;
+            text-transform: uppercase;
+            margin: 25px 0;
+            letter-spacing: 1px;
+        }
+        
+        .subject {
+            font-weight: bold;
+            text-align: center;
+            margin: 25px 0;
+            font-size: 18px;
+        }
+        
+        .reference {
+            margin: 20px 0;
+        }
+        
+        .amendment {
+            margin: 30px 0;
+        }
+        
+        .modified-para {
+            background: #f9f9f9;
+            padding: 15px;
+            border-left: 5px solid #000;
+            margin: 20px 0;
+        }
+        
+        .signature {
+            margin-top: 50px;
+            text-align: right;
+            line-height: 1.4;
+        }
+        
+        .distribution {
+            margin-top: 40px;
+            font-size: 15px;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .footer-note {
+            font-size: 14px;
+            text-align: center;
+            margin-top: 60px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>F.No.2/6/2018-Estt.(Pay-II)</div>
+        <div>Government of India</div>
+        <div>Ministry of Personnel, Public Grievances and Pensions</div>
+        <div>Department of Personnel and Training</div>
+        <div class="date">North Block, New Delhi<br>Dated : 18.05.2018</div>
+    </div>
+
+    <h1>OFFICE MEMORANDUM</h1>
+
+    <p class="subject">Subject: Amendment in Para 8.1 and Para 8.2 of deputation guidelines issued vide OM No.6/8/2009-Estt.Pay-II dated 17th June, 2010 - regarding.</p>
+
+    <div class="reference">
+        This Department's OM No.6/8/2009-Estt.(Pay-II) dated 17th June 2010 regulates pay, Deputation (Duty) Allowance, Tenure of Deputation/Foreign Service and other terms and conditions on the subject of deputation/foreign service of Central Government employees. This Department's OM No.2/6/2016-Estt.Pay-II dated 17th February, 2016 further delegated powers to Ministries/Departments/ borrowing organization to extend deputation tenures up to a period not exceeding 7 years at a stretch, in respect of cases covered by OM dated 17th June, 2010.
+    </div>
+
+    <p>2. It has now been decided to amend the provisions relating to Tenure of deputation/foreign service and level of approval for the same as mentioned in Para 8.1 and Para 8.2 of Department's OM No.6/8/2009-Estt.(Pay-II) dated 17th June, 2010. Para 8.1 and 8.2 of the OM No.6/8/2009-Estt.(Pay-II) dated 17.06.2010 are modified as under:-</p>
+
+    <div class="modified-para">
+        <strong>8.1</strong> - The period of deputation/ foreign service shall be as per the Recruitment Rules of the ex-cadre post or 5 years in case no tenure regulations exist for the ex-cadre post.<br><br>
+        <strong>8.2</strong> - In case where the period of deputation/foreign service prescribed in the recruitment rules of the ex-cadre post is 5 years or less than 5 years, the Administrative Ministry/borrowing organization may grant extension up to the 6th year after obtaining orders of their Secretary (in the Central Government)/ Chief Secretary (in the State Government)/ equivalent officer (in respect of other cases) and for the 7th year with the approval of the Minister of the borrowing Ministry/Department and in respect of other organizations with the approval of the Minister of the borrowing Ministry/Department with which they are administratively concerned.
+    </div>
+
+    <p><strong>3.</strong> All other terms and conditions issued vide OM No.6/8/2009-Estt.(Pay-II) dated 17th June 2010, OMs No.2/6/2016-Estt.(Pay-II) dated 17th Feb, 2016 and 23rd Feb, 2017 will remain unchanged.</p>
+
+    <p><strong>4.</strong> These orders shall come into effect from the date of issue of this OM.</p>
+
+    <p><strong>5.</strong> In so far as persons serving in the Indian Audit and Accounts Department are concerned, these orders issue after consultation with Comptroller and Auditor General of India.</p>
+
+    <div class="signature">
+        (Rajeev Bahree)<br>
+        <strong>Under Secretary to the Government of India</strong>
+    </div>
+
+    <div class="distribution">
+        <strong>To</strong><br>
+        All Ministries/Departments of the Government of India<br>
+        (As per standard list)
+    </div>
+
+    <div class="footer-note">
+        ***<br>
+        <small>End of Document • DoPT Office Memorandum F.No.2/6/2018-Estt.(Pay-II) dated 18 May 2018 • Amendment to Deputation Tenure Guidelines (Paras 8.1 &amp; 8.2)</small>
+    </div>
+
+</body>
+</html>
+```
