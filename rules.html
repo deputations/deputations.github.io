@@ -491,6 +491,13 @@
       background-clip: text;
       color: transparent;
     }
+    .gradient-text-app {
+      background: linear-gradient(to right, #7b96ff, #5cb8a4, #49ff5e);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      display: inline-block;
+    }
     html[data-theme="light"] .gradient-text {
       background: linear-gradient(120deg, #0b1628 10%, #0891b2 40%, #6d28d9 72%, #b45309 100%);
       -webkit-background-clip: text;
@@ -1511,7 +1518,7 @@
         <span class="brand-mark">⚖</span>
         <span>
           <p class="brand-kicker">Central Government</p>
-          <h2 class="brand-title">Deputation Rules Hub</h2>
+          <h2 class="brand-title"><span class="gradient-text-app">Deputation Rules Hub</span></h2>
         </span>
       </a>
 
@@ -1599,7 +1606,7 @@
           <div class="search-mode-header">
             <div>
               <span class="section-eyebrow">⌕ Rule search</span>
-              <h2 class="section-title">Search rules, summaries and extracted PDF text</h2>
+              <h2 class="section-title"><span class="gradient-text-app">Search rules, summaries and extracted PDF text</span></h2>
               <p class="section-description">This is now the main default view. Search terms are matched against visible rule metadata and any full PDF text saved inside each rule object.</p>
             </div>
             <div class="search-mode-actions">
@@ -1619,16 +1626,6 @@
           <div class="filter-meta">
             <span id="resultsCount">Loading rule database...</span>
             <span id="activeFilterLabel">Filter: All</span>
-          </div>
-          <div class="search-intelligence" id="searchIntelligence" aria-live="polite">
-            <div class="search-intelligence-head">
-              <div>
-                <strong>PDF text matches</strong>
-                <span>Search also scans extracted PDF text stored in each rule object.</span>
-              </div>
-              <span id="pdfHitCount">0 matches</span>
-            </div>
-            <div class="search-preview-list" id="searchPreviewList"></div>
           </div>
           <div class="timeline-wrap" id="searchResultsContainer" style="margin-top:1.5rem;"></div>
         </section>
@@ -2300,33 +2297,6 @@
         .map(item => item.rule);
     }
 
-    function renderSearchIntelligence() {
-      const panel = $("#searchIntelligence");
-      const list = $("#searchPreviewList");
-      const count = $("#pdfHitCount");
-      const hits = getPdfHitList();
-
-      if (!state.query || !getTerms().length) {
-        panel.classList.remove("visible");
-        list.innerHTML = "";
-        count.textContent = "0 matches";
-        return;
-      }
-
-      panel.classList.add("visible");
-      count.textContent = `${hits.length} ${hits.length === 1 ? "match" : "matches"}`;
-      list.innerHTML = hits.slice(0, 5).map(rule => `
-        <article class="search-preview-card">
-          <div>
-            <h4>${esc(rule.title)}</h4>
-            <p class="mono" style="margin-bottom:.4rem;">${esc(rule.date)} · ${esc(rule.omNo)}</p>
-            <p>${makePreview(rule)}</p>
-          </div>
-          <a class="mini-btn primary" href="#rule-${esc(rule.id)}" data-jump-rule="${esc(rule.id)}">Open result</a>
-        </article>
-      `).join("");
-    }
-
     function renderTopicCards() {
       $("#topicCards").innerHTML = topics.map(topic => `
         <article class="topic-card">
@@ -2373,7 +2343,7 @@
 
     function ruleCardHTML(rule, scope) {
       return `
-        <article class="rule-card" data-rule-id="${esc(rule.id)}" data-scope="${scope}">
+        <article class="rule-card expanded" data-rule-id="${esc(rule.id)}" data-scope="${scope}">
           <div class="rule-head">
             <div class="rule-date"><span>Date</span>${esc(rule.date)}</div>
             <div class="rule-title">
@@ -2387,13 +2357,13 @@
               ${state.query ? `<div class="pdf-hit-preview"><strong>Matched preview from PDF / extracted text</strong><p>${makePreview(rule)}</p></div>` : ""}
             </div>
             <div class="rule-actions">
-              <button class="mini-btn" type="button" data-expand="${esc(rule.id)}">Details</button>
+              <button class="mini-btn" type="button" data-expand="${esc(rule.id)}">Hide details</button>
               <button class="mini-btn" type="button" data-modal="${esc(rule.id)}">Full view</button>
               ${rule.pdfUrl ? `<a class="mini-btn primary" href="${esc(rule.pdfUrl)}" target="_blank" rel="noopener">PDF ↗</a>` : `<span class="mini-btn">PDF to add</span>`}
             </div>
           </div>
 
-          <div class="rule-details" aria-hidden="true">
+          <div class="rule-details" aria-hidden="false">
             <div class="detail-grid">
               <div class="detail-box">
                 <h4>Key provisions</h4>
@@ -2430,7 +2400,6 @@
         if (searchContainer) searchContainer.innerHTML = emptyHTML;
         timelineContainer.innerHTML = emptyHTML;
         renderLibrary([]);
-        renderSearchIntelligence();
         return;
       }
 
@@ -2442,7 +2411,6 @@
       timelineContainer.innerHTML = chronoList.map(rule => ruleCardHTML(rule, "timeline")).join("");
 
       renderLibrary(list);
-      renderSearchIntelligence();
     }
 
     function renderLibrary(list = state.visible) {
@@ -2601,6 +2569,15 @@
 
     window.rulesScrollTo = scrollToSection;
 
+    window.rulesResetFilters = function () {
+      state.query = "";
+      state.filter = "All";
+      const input = document.querySelector("#searchRules");
+      if (input) input.value = "";
+      renderChips();
+      renderTimeline();
+    };
+
     function setupAnchorNavigation() {
       const handleNavigationClick = event => {
         const link = event.target.closest('[data-scroll-target], a[href^="#"]');
@@ -2717,12 +2694,6 @@
         const modalBtn = event.target.closest("[data-modal]");
         if (modalBtn) {
           openModal(modalBtn.dataset.modal);
-          return;
-        }
-        const jumpBtn = event.target.closest("[data-jump-rule]");
-        if (jumpBtn) {
-          event.preventDefault();
-          openModal(jumpBtn.dataset.jumpRule);
         }
       });
     }
@@ -2846,6 +2817,13 @@
           event.preventDefault();
           event.stopPropagation();
           if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+
+          // Clear search input + filter when a sidebar nav link is clicked,
+          // so the target view (PDF Library, Chronology, etc.) shows the full unfiltered dataset.
+          if (link.closest(".nav-list") && typeof window.rulesResetFilters === "function") {
+            window.rulesResetFilters();
+          }
+
           showOnly(targetId);
         }, true);
 
