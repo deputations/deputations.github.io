@@ -168,6 +168,37 @@
     }
     .sort-toggle[data-order="asc"] .sort-arrow { transform: rotate(180deg); }
 
+    .timeline-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .global-detail-toggle {
+      width: 38px;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      color: var(--text);
+      font-weight: 800;
+      font-size: 1.25rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: transform .2s ease, background .2s ease, border-color .2s ease, color .2s ease;
+      backdrop-filter: var(--blur);
+    }
+    .global-detail-toggle:hover {
+      transform: translateY(-1px);
+      background: var(--panel-strong);
+      border-color: var(--brand);
+      color: var(--brand);
+    }
+
     .top-nav {
       position: sticky;
       top: 0;
@@ -1637,10 +1668,14 @@
               <h2 class="section-title">Rules arranged by date</h2>
               <p class="section-description">Each entry provides a summary, key provisions, practical office use, and a PDF source link.</p>
             </div>
-            <button class="sort-toggle" id="timelineSortToggle" type="button" aria-label="Toggle sort order" title="Toggle ascending / descending">
-              <span class="sort-label">Newest first</span>
-              <span class="sort-arrow" aria-hidden="true">↓</span>
-            </button>
+            <div class="timeline-controls">
+              <button class="global-detail-toggle" id="expandAllDetails" type="button" aria-label="Show details for all" title="Show details for all">+</button>
+              <button class="global-detail-toggle" id="collapseAllDetails" type="button" aria-label="Hide details for all" title="Hide details for all">−</button>
+              <button class="sort-toggle" id="timelineSortToggle" type="button" aria-label="Toggle sort order" title="Toggle ascending / descending">
+                <span class="sort-label">Newest first</span>
+                <span class="sort-arrow" aria-hidden="true">↓</span>
+              </button>
+            </div>
           </div>
           <div class="timeline-wrap" id="timelineContainer"></div>
         </section>
@@ -2801,6 +2836,25 @@ Keywords: deputation, foreign service, central government, DoPT, CSS, Central St
       if (arrow) arrow.textContent = order === "asc" ? "↑" : "↓";
     }
 
+    function setupTimelineDetailToggles() {
+      // Reuse the existing per-card data-expand handler by simulating
+      // a click on each card's "Hide details"/"Details" button only when
+      // its current state differs from the requested target state.
+      const setAll = (shouldExpand) => {
+        const cards = $$("#timelineContainer .rule-card");
+        cards.forEach(card => {
+          const isExpanded = card.classList.contains("expanded");
+          if (isExpanded === shouldExpand) return;
+          const btn = card.querySelector("[data-expand]");
+          if (btn) btn.click();
+        });
+      };
+      const expandBtn = $("#expandAllDetails");
+      if (expandBtn) expandBtn.addEventListener("click", () => setAll(true));
+      const collapseBtn = $("#collapseAllDetails");
+      if (collapseBtn) collapseBtn.addEventListener("click", () => setAll(false));
+    }
+
     function setupSortToggles() {
       const tBtn = $("#timelineSortToggle");
       if (tBtn) {
@@ -2866,6 +2920,7 @@ Keywords: deputation, foreign service, central government, DoPT, CSS, Central St
       setupNavObserver();
       setupBackToTop();
       setupSortToggles();
+      setupTimelineDetailToggles();
       setupRuleCardDelegation();
       setupScrollProgress();
 
