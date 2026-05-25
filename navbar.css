@@ -1,0 +1,80 @@
+/* =========================================================
+   Shared Top Navigation (standardised across all pages)
+   Visual reference: rules.html
+   ========================================================= */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  padding: .75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, .13);
+  backdrop-filter: blur(22px) saturate(155%);
+  -webkit-backdrop-filter: blur(22px) saturate(155%);
+  background: linear-gradient(180deg, rgba(7, 17, 31, .78), rgba(7, 17, 31, .45));
+  flex-wrap: nowrap;
+  font-family: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
+}
+
+.top-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: .72rem 1rem;
+  border-radius: 999px;
+  color: #b7c5d8;
+  font-weight: 700;
+  font-size: .92rem;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  transition: transform .22s ease, color .22s ease, background .22s ease;
+  white-space: nowrap;
+}
+
+.top-nav a:hover {
+  transform: translateY(-1px);
+  color: #eef6ff;
+  background: rgba(255, 255, 255, .075);
+}
+
+.top-nav a.active {
+  color: #05111d;
+  background: linear-gradient(135deg, #54f0ff, #a7f3d0);
+  box-shadow: 0 14px 35px rgba(84, 240, 255, .22);
+}
+
+html[data-theme="light"] .top-nav,
+[data-theme="light"] .top-nav {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .82), rgba(255, 255, 255, .62));
+  border-bottom-color: rgba(15, 23, 42, .12);
+}
+
+html[data-theme="light"] .top-nav a,
+[data-theme="light"] .top-nav a {
+  color: #42526a;
+}
+
+html[data-theme="light"] .top-nav a:hover,
+[data-theme="light"] .top-nav a:hover {
+  color: #0b1628;
+  background: rgba(15, 23, 42, .06);
+}
+
+html[data-theme="light"] .top-nav a.active,
+[data-theme="light"] .top-nav a.active {
+  color: #05111d;
+}
+
+@media (max-width: 860px) {
+  .top-nav {
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .top-nav::-webkit-scrollbar { display: none; }
+}
