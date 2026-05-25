@@ -928,7 +928,21 @@
       padding: 1.1rem;
       border: 1px solid var(--line);
       background: linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.052));
-      transition: transform .22s ease, border-color .22s ease, background .22s ease;
+      transition: transform .22s ease, border-color .22s ease, background .22s ease, box-shadow .35s ease;
+    }
+    @keyframes rule-card-focus-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(84,240,255,.0), 0 24px 70px rgba(84,240,255,.0); }
+      30%  { box-shadow: 0 0 0 3px rgba(84,240,255,.65), 0 24px 70px rgba(84,240,255,.28); }
+      100% { box-shadow: 0 0 0 0 rgba(84,240,255,.0), 0 24px 70px rgba(84,240,255,.0); }
+    }
+    .rule-card.focus-pulse {
+      animation: rule-card-focus-pulse 1.8s ease-out;
+      border-color: rgba(84,240,255,.65);
+    }
+    .topic-card[role="button"] { cursor: pointer; }
+    .topic-card[role="button"]:focus-visible {
+      outline: 3px solid rgba(84,240,255,.68);
+      outline-offset: 3px;
     }
     .rule-card:hover {
       transform: translateY(-2px);
@@ -2314,7 +2328,7 @@ Keywords: deputation, foreign service, central government, DoPT, CSS, Central St
     ];
 
     const topics = [
-      { title: "2024 Consolidated Master Guidelines", icon: "★", filter: "Master Rules", text: "Current DoPT consolidation covering applicability, scope, pay option, pay fixation, Deputation Duty Allowance, allowances, leave, pension/NPS contribution, tenure, extension, overstay, cooling-off, absorption and joining time." },
+      { title: "2024 Consolidated Master Guidelines", icon: "★", filter: "All", targetRuleId: "2024-03-28-consolidated-deputation", text: "Current DoPT consolidation covering applicability, scope, pay option, pay fixation, Deputation Duty Allowance, allowances, leave, pension/NPS contribution, tenure, extension, overstay, cooling-off, absorption and joining time." },
       { title: "Master Rules", icon: "▦", filter: "Master Rules", text: "Core consolidated instructions, foundational FR/SR provisions and updated compendiums." },
       { title: "Tenure & Extension", icon: "◷", filter: "Tenure", text: "Normal tenure, extension approvals, and longer deputation periods up to seven years." },
       { title: "Cooling-off", icon: "↻", filter: "Cooling-off", text: "Return-to-cadre restrictions and repeat deputation checks." },
@@ -2475,20 +2489,84 @@ Keywords: deputation, foreign service, central government, DoPT, CSS, Central St
         .map(item => item.rule);
     }
 
+    function activateTopic(topic) {
+      if (!topic) return;
+      // Apply filter (defaults to "All" when topic only targets a specific rule).
+      setFilter(topic.filter || "All");
+
+      // Switch to the Timeline view via the single-section navigation API so the
+      // section becomes visible; fall back to a plain scroll if unavailable.
+      if (typeof window.rulesShowOnly === "function") {
+        window.rulesShowOnly("timeline");
+      } else {
+        scrollToSection("timeline");
+      }
+
+      if (!topic.targetRuleId) return;
+
+      // After the timeline renders, find the target card, expand it, scroll to
+      // it and pulse-highlight it.
+      window.setTimeout(() => {
+        const card = document.querySelector(
+          `#timelineContainer .rule-card[data-rule-id="${topic.targetRuleId}"]`
+        );
+        if (!card) return;
+
+        if (!card.classList.contains("expanded")) {
+          const btn = card.querySelector("[data-expand]");
+          if (btn) btn.click();
+        }
+
+        try {
+          card.scrollIntoView({ behavior: "smooth", block: "start" });
+        } catch (e) {
+          card.scrollIntoView();
+        }
+
+        card.classList.remove("focus-pulse");
+        // Force reflow so the animation re-triggers on repeat clicks.
+        void card.offsetWidth;
+        card.classList.add("focus-pulse");
+        window.setTimeout(() => card.classList.remove("focus-pulse"), 1800);
+      }, 120);
+    }
+
     function renderTopicCards() {
-      $("#topicCards").innerHTML = topics.map(topic => `
-        <article class="topic-card">
+      $("#topicCards").innerHTML = topics.map((topic, i) => `
+        <article class="topic-card" data-topic-index="${i}" tabindex="0" role="button"
+                 aria-label="${esc("Explore " + topic.title)}">
           <div class="topic-icon" aria-hidden="true">${esc(topic.icon)}</div>
           <h3>${esc(topic.title)}</h3>
           <p>${esc(topic.text)}</p>
-          <button type="button" data-topic-filter="${esc(topic.filter)}">Explore ${esc(topic.title)} →</button>
+          <button type="button" data-topic-index="${i}"
+                  aria-label="${esc("Explore " + topic.title)}">Explore ${esc(topic.title)} →</button>
         </article>
       `).join("");
 
-      $$("[data-topic-filter]").forEach(button => {
-        button.addEventListener("click", () => {
-          setFilter(button.dataset.topicFilter);
-          scrollToSection("timeline");
+      const trigger = (idx) => {
+        const topic = topics[Number(idx)];
+        if (topic) activateTopic(topic);
+      };
+
+      $$("#topicCards .topic-card").forEach(card => {
+        card.addEventListener("click", event => {
+          // Don't double-fire when the inner Explore button is clicked — it has
+          // its own listener and event will bubble here.
+          if (event.target.closest("button")) return;
+          trigger(card.dataset.topicIndex);
+        });
+        card.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            trigger(card.dataset.topicIndex);
+          }
+        });
+      });
+
+      $$("#topicCards .topic-card > button[data-topic-index]").forEach(btn => {
+        btn.addEventListener("click", event => {
+          event.stopPropagation();
+          trigger(btn.dataset.topicIndex);
         });
       });
     }
