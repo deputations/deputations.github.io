@@ -18,6 +18,28 @@
 
   <link rel="stylesheet" href="style.css">
 
+//update vv
+<style>
+    .header-nav { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .header-nav a {
+        display: flex; align-items: center; gap: 7px;
+        padding: 9px 15px; border-radius: 999px;
+        color: var(--text-secondary); font-weight: 600; font-size: 0.92rem;
+        text-decoration: none; border: 1px solid transparent; transition: all 0.2s ease;
+    }
+    .header-nav a svg { width: 17px; height: 17px; }
+    .header-nav a:hover { color: var(--text-primary); background: var(--bg-surface); }
+    .header-nav a.active {
+        color: var(--primary-color); background: var(--bg-surface);
+        border-color: var(--border-highlight);
+    }
+    @media (max-width: 640px) {
+        .header-nav { order: 3; width: 100%; justify-content: flex-start; }
+    }
+</style>
+
+//end update vv
+
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
@@ -42,6 +64,15 @@
         <i data-lucide="building-2"></i>
         <h1><span class="gradient-text">DEPUTATION VACANCIES</h1></span> 
       </div>
+
+<nav class="header-nav">
+                <a href="index.html" class="active">
+                    <i data-lucide="layout-dashboard"></i> Vacancies
+                </a>
+                <a href="Rules%20-%20Regulations/faq.html">
+                    <i data-lucide="circle-help"></i> FAQs
+                </a>
+            </nav>
 
       <div class="header-actions">
         <button id="favBtn" class="icon-btn" title="My Watchlist" aria-label="My Watchlist">
