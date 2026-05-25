@@ -126,6 +126,48 @@
       50% { transform: translate3d(22px,-28px,0) scale(1.08); }
     }
 
+    .scroll-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      width: 0;
+      z-index: 200;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      transition: width .1s linear;
+      pointer-events: none;
+    }
+
+    .sort-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+      padding: .55rem .95rem;
+      border-radius: 999px;
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      color: var(--text);
+      font-weight: 700;
+      font-size: .85rem;
+      cursor: pointer;
+      transition: transform .2s ease, background .2s ease, border-color .2s ease;
+      backdrop-filter: var(--blur);
+      white-space: nowrap;
+    }
+    .sort-toggle:hover {
+      transform: translateY(-1px);
+      background: var(--panel-strong);
+      border-color: var(--brand);
+      color: var(--brand);
+    }
+    .sort-toggle .sort-arrow {
+      font-size: 1.05rem;
+      line-height: 1;
+      display: inline-block;
+      transition: transform .25s ease;
+    }
+    .sort-toggle[data-order="asc"] .sort-arrow { transform: rotate(180deg); }
+
     .top-nav {
       position: sticky;
       top: 0;
@@ -1451,6 +1493,8 @@
   <div class="orb two" aria-hidden="true"></div>
   <div class="orb three" aria-hidden="true"></div>
 
+  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
   <nav class="top-nav" aria-label="Primary site navigation">
     <a href="/index.html">Home</a>
     <a href="/rules.html" class="active">Rules</a>
@@ -1472,9 +1516,6 @@
       </a>
 
       <div class="header-tools">
-        <button class="btn secondary keep-label" id="copyVisibleBtn" type="button">
-          <span>⧉</span><span class="label">Copy Visible Rules</span>
-        </button>
         <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle light or dark theme">☾</button>
       </div>
     </header>
@@ -1485,14 +1526,6 @@
           <span>Navigate</span>
           <span aria-hidden="true">⌘</span>
         </div>
-        <div class="sidebar-search-card" aria-label="Search rules from navigation">
-          <label for="sidebarSearch" class="sidebar-search-label">Search rules</label>
-          <div class="sidebar-search-wrap">
-            <span aria-hidden="true">⌕</span>
-            <input id="sidebarSearch" type="search" placeholder="OM number, lien, 7 years..." autocomplete="off" />
-          </div>
-          <p>Search opens the rule database and scans summaries plus extracted PDF text.</p>
-        </div>
         <ul class="nav-list">
           <li><a href="#search" data-view-target="search" data-scroll-target="search" class="nav-link active"><span class="nav-icon">01</span>Search</a></li>
           <li><a href="#topics" data-view-target="topics" data-scroll-target="topics" class="nav-link"><span class="nav-icon">02</span>Topic Summary</a></li>
@@ -1500,11 +1533,7 @@
           <li><a href="#timeline" data-view-target="timeline" data-scroll-target="timeline" class="nav-link"><span class="nav-icon">04</span>Chronology</a></li>
           <li><a href="#map" data-view-target="map" data-scroll-target="map" class="nav-link"><span class="nav-icon">05</span>Relationship Map</a></li>
           <li><a href="#library" data-view-target="library" data-scroll-target="library" class="nav-link"><span class="nav-icon">06</span>PDF Library</a></li>
-          <li><a href="#faq" data-view-target="faq" data-scroll-target="faq" class="nav-link"><span class="nav-icon">07</span>FAQ</a></li>
         </ul>
-        <p class="sidebar-note">
-          Navigation now works in single-section mode: one click hides the rest of the page and shows only the selected panel.
-        </p>
       </aside>
 
       <section class="content">
@@ -1601,6 +1630,7 @@
             </div>
             <div class="search-preview-list" id="searchPreviewList"></div>
           </div>
+          <div class="timeline-wrap" id="searchResultsContainer" style="margin-top:1.5rem;"></div>
         </section>
 
         <section id="timeline" tabindex="-1" class="section panel glass">
@@ -1610,6 +1640,10 @@
               <h2 class="section-title">Rules arranged by date</h2>
               <p class="section-description">Each entry provides a summary, key provisions, practical office use, and a PDF source link.</p>
             </div>
+            <button class="sort-toggle" id="timelineSortToggle" type="button" aria-label="Toggle sort order" title="Toggle ascending / descending">
+              <span class="sort-label">Newest first</span>
+              <span class="sort-arrow" aria-hidden="true">↓</span>
+            </button>
           </div>
           <div class="timeline-wrap" id="timelineContainer"></div>
         </section>
@@ -1651,6 +1685,10 @@
           </div>
           <div class="table-tools">
             <span id="libraryCount" style="color:var(--text-soft);font-weight:800;"></span>
+            <button class="sort-toggle" id="librarySortToggle" type="button" aria-label="Toggle sort order" title="Toggle ascending / descending">
+              <span class="sort-label">Newest first</span>
+              <span class="sort-arrow" aria-hidden="true">↓</span>
+            </button>
             <button class="btn" id="downloadCsv" type="button"><span>⇩</span><span class="label">Download CSV</span></button>
           </div>
           <div class="table-wrap">
@@ -1667,16 +1705,6 @@
               <tbody id="libraryTableBody"></tbody>
             </table>
           </div>
-        </section>
-
-        <section id="faq" tabindex="-1" class="section panel glass">
-          <div class="section-head">
-            <div>
-              <span class="section-eyebrow">? FAQ</span>
-              <h2 class="section-title">Common deputation questions</h2>
-            </div>
-          </div>
-          <div class="faq-list" id="faqList"></div>
         </section>
 
         <section class="panel glass disclaimer">
@@ -2124,20 +2152,6 @@
       "All", "Master Rules", "Tenure", "Extension", "Cooling-off", "Allowance", "Pay Fixation", "Foreign Service", "Lien", "Absorption", "Technical Resignation", "CSS", "AIS", "State/UT", "Vigilance", "APAR", "Recruitment Rules", "Foreign Assignment"
     ];
 
-    const faqs = [
-      ["What is deputation in Central Government service?", "Deputation generally refers to temporary appointment of a government employee to another post, organisation or cadre, while service conditions are regulated by the applicable DoPT OM, recruitment rules and related service rules."],
-      ["Which OM is the master rule on deputation?", "The DoPT OM dated 17.06.2010, OM No. 6/8/2009-Estt.(Pay-II), is treated as the core consolidated reference for deputation and foreign service terms."],
-      ["What is the normal tenure of deputation?", "The normal tenure depends on the recruitment rules, vacancy circular and applicable DoPT instructions. Extension beyond normal tenure must be checked against the relevant 2016 and 2018 instructions."],
-      ["Can deputation be extended up to seven years?", "Yes, in specified cases and subject to competent authority approval. The 2016 and 2018 instructions are especially relevant for this question."],
-      ["What is cooling-off?", "Cooling-off is the period an officer is generally expected to serve back in the parent cadre before taking another deputation, subject to the applicable service instructions."],
-      ["What is deputation duty allowance?", "It is an allowance admissible in eligible deputation cases, subject to DoPT conditions, station classification and monetary ceiling. The 24.11.2017 OM is a key reference after 7th CPC."],
-      ["What happens to lien during deputation?", "Lien generally concerns the right of an employee to hold or return to a post in the parent cadre. Technical resignation, absorption and lien questions should be checked against the relevant DoPT lien instructions."],
-      ["Can a deputationist be permanently absorbed?", "Absorption may be possible only where rules allow it and required consents, NOC, vigilance clearance and competent authority approvals are obtained."],
-      ["Why should the original PDF be checked?", "Because older OMs may be amended, clarified or superseded. The summary is for guidance; the official PDF remains the source to cite in formal action."]
-    ];
-
-
-
     // The search engine scans summary fields plus any full extracted PDF text.
     // When you extract full text from PDFs, paste it into rule.pdfText, rule.extractedText,
     // rule.sourceText, rule.fullText, or rule.documentText. The UI will automatically search it.
@@ -2159,8 +2173,22 @@
     const state = {
       query: "",
       filter: "All",
-      visible: [...rules]
+      visible: [...rules],
+      timelineOrder: "desc",
+      libraryOrder: "desc"
     };
+
+    function ruleSortValue(rule) {
+      const parsed = Date.parse(rule.date);
+      if (!isNaN(parsed)) return parsed;
+      const y = parseInt(rule.year, 10);
+      if (!isNaN(y)) return Date.UTC(y, 0, 1);
+      return -Infinity;
+    }
+    function sortByDate(list, order) {
+      const dir = order === "asc" ? 1 : -1;
+      return [...list].sort((a, b) => (ruleSortValue(a) - ruleSortValue(b)) * dir);
+    }
 
     const $ = (selector, root = document) => root.querySelector(selector);
     const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -2343,26 +2371,9 @@
       `).join("");
     }
 
-    function renderTimeline() {
-      state.visible = getFilteredRules();
-      const list = state.visible;
-      $("#resultsCount").textContent = `${list.length} of ${rules.length} rules shown`;
-      $("#activeFilterLabel").textContent = `Filter: ${state.filter}${state.query ? " · Search: " + state.query : ""}`;
-
-      if (!list.length) {
-        $("#timelineContainer").innerHTML = `
-          <div class="empty-state">
-            <strong>No matching rules found</strong>
-            Try a broader keyword such as "tenure", "allowance", "lien", "2010", "foreign service", or clear filters.
-          </div>
-        `;
-        renderLibrary([]);
-        renderSearchIntelligence();
-        return;
-      }
-
-      $("#timelineContainer").innerHTML = list.map(rule => `
-        <article class="rule-card" id="rule-${esc(rule.id)}" data-rule-id="${esc(rule.id)}">
+    function ruleCardHTML(rule, scope) {
+      return `
+        <article class="rule-card" data-rule-id="${esc(rule.id)}" data-scope="${scope}">
           <div class="rule-head">
             <div class="rule-date"><span>Date</span>${esc(rule.date)}</div>
             <div class="rule-title">
@@ -2397,29 +2408,47 @@
             </div>
           </div>
         </article>
-      `).join("");
+      `;
+    }
 
-      $$("[data-expand]").forEach(button => {
-        button.addEventListener("click", () => {
-          const card = $$(".rule-card").find(item => item.dataset.ruleId === button.dataset.expand);
-          if (!card) return;
-          const open = card.classList.toggle("expanded");
-          button.textContent = open ? "Hide details" : "Details";
-          $(".rule-details", card).setAttribute("aria-hidden", String(!open));
-        });
-      });
+    function renderTimeline() {
+      state.visible = getFilteredRules();
+      const list = state.visible;
+      $("#resultsCount").textContent = `${list.length} of ${rules.length} rules shown`;
+      $("#activeFilterLabel").textContent = `Filter: ${state.filter}${state.query ? " · Search: " + state.query : ""}`;
 
-      $$("[data-modal]").forEach(button => {
-        button.addEventListener("click", () => openModal(button.dataset.modal));
-      });
+      const searchContainer = $("#searchResultsContainer");
+      const timelineContainer = $("#timelineContainer");
+
+      if (!list.length) {
+        const emptyHTML = `
+          <div class="empty-state">
+            <strong>No matching rules found</strong>
+            Try a broader keyword such as "tenure", "allowance", "lien", "2010", "foreign service", or clear filters.
+          </div>
+        `;
+        if (searchContainer) searchContainer.innerHTML = emptyHTML;
+        timelineContainer.innerHTML = emptyHTML;
+        renderLibrary([]);
+        renderSearchIntelligence();
+        return;
+      }
+
+      const chronoList = sortByDate(list, state.timelineOrder);
+
+      if (searchContainer) {
+        searchContainer.innerHTML = list.map(rule => ruleCardHTML(rule, "search")).join("");
+      }
+      timelineContainer.innerHTML = chronoList.map(rule => ruleCardHTML(rule, "timeline")).join("");
 
       renderLibrary(list);
       renderSearchIntelligence();
     }
 
     function renderLibrary(list = state.visible) {
-      $("#libraryCount").textContent = `${list.length} PDF references displayed`;
-      $("#libraryTableBody").innerHTML = list.map(rule => `
+      const sorted = sortByDate(list, state.libraryOrder);
+      $("#libraryCount").textContent = `${sorted.length} PDF references displayed`;
+      $("#libraryTableBody").innerHTML = sorted.map(rule => `
         <tr>
           <td class="mono">${esc(rule.date)}</td>
           <td class="mono">${esc(rule.omNo)}</td>
@@ -2427,15 +2456,6 @@
           <td>${rule.categories.slice(0, 4).map(cat => `<span class="tag">${esc(cat)}</span>`).join(" ")}</td>
           <td>${rule.pdfUrl ? `<a class="mini-btn primary" href="${esc(rule.pdfUrl)}" target="_blank" rel="noopener">Open PDF</a>` : `<span class="mini-btn">To add</span>`}</td>
         </tr>
-      `).join("");
-    }
-
-    function renderFAQ() {
-      $("#faqList").innerHTML = faqs.map(([q, a], i) => `
-        <details class="faq" ${i === 0 ? "open" : ""}>
-          <summary>${esc(q)}</summary>
-          <p>${esc(a)}</p>
-        </details>
       `).join("");
     }
 
@@ -2481,15 +2501,6 @@
       toast.textContent = message;
       toast.classList.add("visible");
       window.setTimeout(() => toast.classList.remove("visible"), 1800);
-    }
-
-    function copyVisibleRules() {
-      const text = state.visible.map(rule => `${rule.date} | ${rule.omNo} | ${rule.title} | ${rule.pdfUrl || "PDF to add"}`).join("\n");
-      navigator.clipboard?.writeText(text).then(() => {
-        showToast("Visible rule list copied");
-      }).catch(() => {
-        showToast("Copy unavailable in this browser");
-      });
     }
 
     function downloadCSV() {
@@ -2662,20 +2673,88 @@
       });
     }
 
+    function updateSortToggleUI(button, order) {
+      button.dataset.order = order;
+      const label = button.querySelector(".sort-label");
+      const arrow = button.querySelector(".sort-arrow");
+      if (label) label.textContent = order === "asc" ? "Oldest first" : "Newest first";
+      if (arrow) arrow.textContent = order === "asc" ? "↑" : "↓";
+    }
+
+    function setupSortToggles() {
+      const tBtn = $("#timelineSortToggle");
+      if (tBtn) {
+        updateSortToggleUI(tBtn, state.timelineOrder);
+        tBtn.addEventListener("click", () => {
+          state.timelineOrder = state.timelineOrder === "desc" ? "asc" : "desc";
+          updateSortToggleUI(tBtn, state.timelineOrder);
+          renderTimeline();
+        });
+      }
+      const lBtn = $("#librarySortToggle");
+      if (lBtn) {
+        updateSortToggleUI(lBtn, state.libraryOrder);
+        lBtn.addEventListener("click", () => {
+          state.libraryOrder = state.libraryOrder === "desc" ? "asc" : "desc";
+          updateSortToggleUI(lBtn, state.libraryOrder);
+          renderLibrary();
+        });
+      }
+    }
+
+    function setupRuleCardDelegation() {
+      document.addEventListener("click", event => {
+        const expandBtn = event.target.closest("[data-expand]");
+        if (expandBtn) {
+          const card = expandBtn.closest(".rule-card");
+          if (!card) return;
+          const open = card.classList.toggle("expanded");
+          expandBtn.textContent = open ? "Hide details" : "Details";
+          const details = card.querySelector(".rule-details");
+          if (details) details.setAttribute("aria-hidden", String(!open));
+          return;
+        }
+        const modalBtn = event.target.closest("[data-modal]");
+        if (modalBtn) {
+          openModal(modalBtn.dataset.modal);
+          return;
+        }
+        const jumpBtn = event.target.closest("[data-jump-rule]");
+        if (jumpBtn) {
+          event.preventDefault();
+          openModal(jumpBtn.dataset.jumpRule);
+        }
+      });
+    }
+
+    function setupScrollProgress() {
+      const bar = $("#scrollProgress");
+      if (!bar) return;
+      const update = () => {
+        const h = document.documentElement;
+        const max = (h.scrollHeight - h.clientHeight) || 1;
+        bar.style.width = ((h.scrollTop / max) * 100) + "%";
+      };
+      window.addEventListener("scroll", update, { passive: true });
+      window.addEventListener("resize", update);
+      update();
+    }
+
     function init() {
       $("#metricRules").textContent = rules.length;
       renderTopicCards();
       renderChips();
       renderEssentials();
-      renderFAQ();
       renderTimeline();
       setupTheme();
       setupSearch();
       setupAnchorNavigation();
       setupNavObserver();
       setupBackToTop();
+      setupSortToggles();
+      setupRuleCardDelegation();
+      setupScrollProgress();
 
-      $("#copyVisibleBtn").addEventListener("click", copyVisibleRules);
       $("#downloadCsv").addEventListener("click", downloadCSV);
       $("#closeModal").addEventListener("click", closeModal);
       $("#ruleModal").addEventListener("click", event => {
@@ -2698,7 +2777,7 @@
        navigation because the old anchor/scroll model was unstable in the
        sticky sidebar grid. */
     (function () {
-      const validSections = ["search", "topics", "essentials", "timeline", "map", "library", "faq"];
+      const validSections = ["search", "topics", "essentials", "timeline", "map", "library"];
 
       function $(selector, root = document) { return root.querySelector(selector); }
       function $$(selector, root = document) { return Array.from(root.querySelectorAll(selector)); }
@@ -2749,16 +2828,6 @@
         return false;
       }
 
-      function syncSearchInputs(value, source) {
-        const main = $("#searchRules");
-        const side = $("#sidebarSearch");
-        if (main && source !== main) {
-          main.value = value;
-          main.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-        if (side && source !== side) side.value = value;
-      }
-
       function setupSingleViewNavigation() {
         // Override old inline/on-page API.
         window.rulesScrollTo = function (id) { return showOnly(id); };
@@ -2779,20 +2848,6 @@
           if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
           showOnly(targetId);
         }, true);
-
-        const side = $("#sidebarSearch");
-        if (side) {
-          side.addEventListener("focus", () => showOnly("search", { focus: false }));
-          side.addEventListener("input", () => {
-            showOnly("search", { focus: false, instant: true });
-            syncSearchInputs(side.value, side);
-          });
-        }
-
-        const main = $("#searchRules");
-        if (main) {
-          main.addEventListener("input", () => syncSearchInputs(main.value, main));
-        }
 
         const initial = normalizeTarget(window.location.hash || "search");
         showOnly(initial, { updateHash: false, instant: true, focus: false });
