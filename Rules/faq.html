@@ -168,6 +168,22 @@ main{padding-bottom:20px}
 .section-ic svg{width:21px;height:21px}
 .section-head h3{font-size:1.2rem;font-weight:700;letter-spacing:-.01em}
 .section-head .sn{margin-left:auto;font-size:.76rem;color:var(--text-muted);font-weight:600}
+.section-toggle{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;
+  font:600 .82rem/1 inherit;color:var(--text-secondary);background:var(--bg-surface);
+  border:1px solid var(--border-color);cursor:pointer;transition:color .2s,border-color .2s,background .2s,transform .2s;
+  flex-shrink:0;white-space:nowrap}
+.section-toggle:hover{color:var(--sc,var(--primary-color));border-color:color-mix(in srgb,var(--sc,var(--primary-color)) 45%,var(--border-color));background:var(--bg-surface-solid);transform:translateY(-1px)}
+.section-toggle:focus-visible{outline:2px solid var(--sc,var(--primary-color));outline-offset:2px}
+.section-toggle[aria-expanded="true"]{color:var(--sc,var(--primary-color));border-color:color-mix(in srgb,var(--sc,var(--primary-color)) 55%,var(--border-color));background:color-mix(in srgb,var(--sc,var(--primary-color)) 10%,var(--bg-surface))}
+.section-toggle:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.section-toggle .section-toggle-chev{display:inline-grid;place-items:center;transition:transform .25s cubic-bezier(.4,0,.2,1)}
+.section-toggle .section-toggle-chev svg{width:14px;height:14px}
+.section-toggle[aria-expanded="true"] .section-toggle-chev{transform:rotate(180deg)}
+@media (max-width:520px){
+  .section-head{flex-wrap:wrap}
+  .section-head .sn{margin-left:auto}
+  .section-toggle{margin-left:auto}
+}
 
 /* faq item */
 .faq-item{background:var(--bg-surface);border:1px solid var(--border-color);
@@ -1192,29 +1208,90 @@ var DISCREPANCY_API = "https://script.google.com/macros/s/AKfycbyltPrnuwL3oS0HUi
   if(_statTotal)_statTotal.textContent=items.length;
   var _noResTotal=document.getElementById("noResultsTotal");
   if(_noResTotal)_noResTotal.textContent=items.length;
-  items.forEach(function(item){
-    var btn=item.querySelector(".faq-q");
-    btn.addEventListener("click",function(){
-      var open=item.classList.toggle("open");
-      btn.setAttribute("aria-expanded",open?"true":"false");
-    });
-  });
-  function openItem(item){
-    if(!item)return;
+  /* ---------- accordion helpers ---------- */
+  function isVisible(el){return el && el.dataset.hidden!=="1";}
+  function getVisibleFaqItems(){return items.filter(isVisible);}
+  function getVisibleFaqItemsInSection(sec){
+    return Array.prototype.slice.call(sec.querySelectorAll(".faq-item")).filter(isVisible);
+  }
+  function openFaq(item){
+    if(!item||item.classList.contains("open"))return;
     item.classList.add("open");
     item.querySelector(".faq-q").setAttribute("aria-expanded","true");
   }
+  function closeFaq(item){
+    if(!item||!item.classList.contains("open"))return;
+    item.classList.remove("open");
+    item.querySelector(".faq-q").setAttribute("aria-expanded","false");
+  }
+  function toggleFaq(item){
+    if(item.classList.contains("open"))closeFaq(item); else openFaq(item);
+  }
+  /* keep alias for any older callers */
+  function openItem(item){openFaq(item);}
 
-  /* expand / collapse all */
-  var expandBtn=document.getElementById("expandBtn"),expandLabel=document.getElementById("expandLabel");
-  expandBtn.addEventListener("click",function(){
-    var visible=items.filter(function(i){return i.dataset.hidden!=="1";});
-    var anyClosed=visible.some(function(i){return !i.classList.contains("open");});
-    visible.forEach(function(i){
-      i.classList.toggle("open",anyClosed);
-      i.querySelector(".faq-q").setAttribute("aria-expanded",anyClosed?"true":"false");
+  items.forEach(function(item){
+    var btn=item.querySelector(".faq-q");
+    btn.addEventListener("click",function(){
+      toggleFaq(item);
+      var sec=item.closest(".section");
+      if(sec)updateSectionToggleState(sec);
+      updateGlobalExpandState();
     });
-    expandLabel.textContent=anyClosed?"Collapse all":"Expand all";
+  });
+
+  /* expand / collapse all (operates on currently visible FAQs only) */
+  var expandBtn=document.getElementById("expandBtn"),expandLabel=document.getElementById("expandLabel");
+  function updateGlobalExpandState(){
+    var vis=getVisibleFaqItems();
+    var allOpen=vis.length>0 && vis.every(function(i){return i.classList.contains("open");});
+    expandLabel.textContent=allOpen?"Collapse all":"Expand all";
+    expandBtn.setAttribute("aria-expanded",allOpen?"true":"false");
+  }
+  expandBtn.setAttribute("type","button");
+  expandBtn.addEventListener("click",function(){
+    var vis=getVisibleFaqItems();
+    if(!vis.length)return;
+    var anyClosed=vis.some(function(i){return !i.classList.contains("open");});
+    vis.forEach(anyClosed?openFaq:closeFaq);
+    updateAllSectionToggleStates();
+    updateGlobalExpandState();
+  });
+
+  /* per-section expand/collapse — injected dynamically into each .section-head */
+  function updateSectionToggleState(sec){
+    var btn=sec.querySelector(".section-toggle");
+    if(!btn)return;
+    var vis=getVisibleFaqItemsInSection(sec);
+    var anyOpen=vis.some(function(i){return i.classList.contains("open");});
+    btn.setAttribute("aria-expanded",anyOpen?"true":"false");
+    var lbl=btn.querySelector(".section-toggle-label");
+    if(lbl)lbl.textContent=anyOpen?"Collapse topic":"Expand topic";
+    btn.disabled=vis.length===0;
+  }
+  function updateAllSectionToggleStates(){
+    Array.prototype.slice.call(document.querySelectorAll("#faqRoot .section"))
+      .forEach(updateSectionToggleState);
+  }
+  Array.prototype.slice.call(document.querySelectorAll("#faqRoot .section")).forEach(function(sec){
+    var head=sec.querySelector(".section-head");
+    if(!head||head.querySelector(".section-toggle"))return;
+    var btn=document.createElement("button");
+    btn.type="button";
+    btn.className="section-toggle";
+    btn.setAttribute("aria-expanded","false");
+    btn.innerHTML='<span class="section-toggle-label">Expand topic</span>'+
+      '<span class="section-toggle-chev" aria-hidden="true">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>';
+    btn.addEventListener("click",function(){
+      var vis=getVisibleFaqItemsInSection(sec);
+      if(!vis.length)return;
+      var anyClosed=vis.some(function(i){return !i.classList.contains("open");});
+      vis.forEach(anyClosed?openFaq:closeFaq);
+      updateSectionToggleState(sec);
+      updateGlobalExpandState();
+    });
+    head.appendChild(btn);
   });
 
   /* filters */
@@ -1278,7 +1355,8 @@ var DISCREPANCY_API = "https://script.google.com/macros/s/AKfycbyltPrnuwL3oS0HUi
     resultLine.innerHTML=(q||activeCat!=="all")
       ? "Showing <b>"+shown+"</b> of "+items.length+" questions"
       : "<b>"+items.length+"</b> questions across 8 topics — search or pick a topic to narrow down";
-    expandLabel.textContent="Expand all";
+    updateAllSectionToggleStates();
+    updateGlobalExpandState();
   }
   var tmr;
   searchInput.addEventListener("input",function(){clearTimeout(tmr);tmr=setTimeout(applyFilters,110);});
