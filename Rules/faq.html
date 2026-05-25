@@ -375,7 +375,7 @@ footer{margin-top:54px;border-top:1px solid var(--border-color);background:var(-
     <h2>Frequently Asked <span class="gradient-text">Questions</span></h2>
     <p class="sub">A plain-language guide to the rules on deputation and foreign service of Central Government employees — for officers and establishment staff alike.</p>
     <div class="stats">
-      <div class="stat"><b>52</b><span>Questions<br>answered</span></div>
+      <div class="stat"><b id="statQuestionsAnswered">59</b><span>Questions<br>answered</span></div>
       <div class="stat"><b>8</b><span>Topics<br>covered</span></div>
       <div class="stat"><b>2026</b><span>Rules updated<br>through</span></div>
     </div>
@@ -1067,7 +1067,7 @@ footer{margin-top:54px;border-top:1px solid var(--border-color);background:var(-
   <div class="no-results" id="noResults">
     <div class="nr-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M8 11h6"/></svg></div>
     <h3>No matching questions</h3>
-    <p>Try a different keyword, or clear the search to see all 52 questions.</p>
+    <p>Try a different keyword, or clear the search to see all <span id="noResultsTotal">59</span> questions.</p>
   </div>
 
   <section class="community" id="community">
@@ -1187,6 +1187,11 @@ var DISCREPANCY_API = "https://script.google.com/macros/s/AKfycbyltPrnuwL3oS0HUi
 
   /* accordion */
   var items=Array.prototype.slice.call(document.querySelectorAll(".faq-item"));
+  /* Keep static count badges in sync with the actual number of FAQ cards. */
+  var _statTotal=document.getElementById("statQuestionsAnswered");
+  if(_statTotal)_statTotal.textContent=items.length;
+  var _noResTotal=document.getElementById("noResultsTotal");
+  if(_noResTotal)_noResTotal.textContent=items.length;
   items.forEach(function(item){
     var btn=item.querySelector(".faq-q");
     btn.addEventListener("click",function(){
@@ -1272,7 +1277,7 @@ var DISCREPANCY_API = "https://script.google.com/macros/s/AKfycbyltPrnuwL3oS0HUi
     noResults.classList.toggle("show",shown===0);
     resultLine.innerHTML=(q||activeCat!=="all")
       ? "Showing <b>"+shown+"</b> of "+items.length+" questions"
-      : "<b>52</b> questions across 8 topics — search or pick a topic to narrow down";
+      : "<b>"+items.length+"</b> questions across 8 topics — search or pick a topic to narrow down";
     expandLabel.textContent="Expand all";
   }
   var tmr;
