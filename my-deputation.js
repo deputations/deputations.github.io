@@ -626,6 +626,20 @@
     panel.querySelector('#mdAddTracker')?.addEventListener('click', openAddFromBookmarksModal);
     panel.querySelectorAll('[data-edit-card]').forEach(c => c.addEventListener('click', () => openTrackerModal(c.dataset.editCard, false)));
     panel.querySelectorAll('.md-stage-select').forEach(sel => sel.addEventListener('change', e => moveTrackerStage(sel.dataset.vid, e.target.value)));
+    panel.querySelectorAll('[data-remove-card]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      removeFromTracker(b.dataset.removeCard);
+    }));
+  }
+
+  function removeFromTracker(vacancyId) {
+    const v = vacancyById.get(String(vacancyId));
+    const label = v?.Post_Name || vacancyId;
+    if (!confirm(`Remove "${label}" from the tracker?\n\nYour bookmark stays. Any auto-generated reminders for this application will also be cleared.`)) return;
+    store.setTracker(store.tracker().filter(t => String(t.vacancyId) !== String(vacancyId)));
+    syncRemindersFromTracker();
+    renderActive(); renderWelcome(); updateTabBadges();
+    toast('Removed from tracker');
   }
 
   function trackerCardHtml(t) {
@@ -635,6 +649,9 @@
     const days = U.getDaysUntilDate(t.internalDeadline || t.officialDeadline);
     return `
       <div class="md-kanban-card" draggable="true" data-vid="${U.escapeHtml(t.vacancyId)}" data-edit-card="${U.escapeHtml(t.vacancyId)}">
+        <button type="button" class="md-kanban-remove" data-remove-card="${U.escapeHtml(t.vacancyId)}" title="Remove from tracker" aria-label="Remove from tracker">
+          <i data-lucide="x"></i>
+        </button>
         <div class="md-kanban-title">${U.escapeHtml(title)}</div>
         <div class="md-kanban-meta">${U.escapeHtml(ministry)}${t.nextAction ? ' · ' + U.escapeHtml(t.nextAction) : ''}</div>
         <div class="md-kanban-foot">
@@ -1468,6 +1485,7 @@
   }
   function showModal(html) {
     const modal = document.getElementById('modal');
+    modal.querySelector('.modal-content')?.classList.remove('md-manual-modal');
     document.getElementById('modalBody').innerHTML = html;
     modal.style.display = 'flex';
     if (window.lucide) lucide.createIcons();
