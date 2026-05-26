@@ -127,8 +127,19 @@
             <p class="rv-err" id="rvTitleErr"></p>
           </div>
           <div class="rv-field">
-            <label for="rvOrg">Organization / Ministry / Department <span class="rv-req">*</span></label>
-            <input type="text" id="rvOrg" name="organization" placeholder="Ministry of Personnel, DoPT" autocomplete="off">
+            <label for="rvMinistry">Ministry <span class="rv-req">*</span></label>
+            <select id="rvMinistry" name="ministry" autocomplete="off">
+              <option value="">Loading ministries…</option>
+            </select>
+            <input type="text" id="rvMinistryOther" class="rv-other-input" placeholder="Type the ministry name" autocomplete="off" hidden>
+            <p class="rv-err" id="rvMinistryErr"></p>
+          </div>
+          <div class="rv-field">
+            <label for="rvOrg">Organisation / Department <span class="rv-req">*</span></label>
+            <select id="rvOrg" name="organization" autocomplete="off" disabled>
+              <option value="">Select a ministry first</option>
+            </select>
+            <input type="text" id="rvOrgOther" class="rv-other-input" placeholder="Type the organisation / department name" autocomplete="off" hidden>
             <p class="rv-err" id="rvOrgErr"></p>
           </div>
           <div class="rv-field">

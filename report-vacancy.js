@@ -122,7 +122,8 @@
 
   /* ---------- Draft autosave ---------- */
   var DRAFT_FIELDS = [
-    "rvUrl", "rvTitle", "rvOrg", "rvDeadline", "rvDescription",
+    "rvUrl", "rvTitle", "rvMinistry", "rvMinistryOther", "rvOrg", "rvOrgOther",
+    "rvDeadline", "rvDescription",
     "rvManualSource", "rvSeenAt",
     "rvPosts", "rvPay", "rvEligibility", "rvLocation",
     "rvSubmitter", "rvEmail"
@@ -169,7 +170,18 @@
     try { var u = new URL(s); return u.protocol === "http:" || u.protocol === "https:"; }
     catch (e) { return false; }
   }
-  function val(id) { var el = document.getElementById(id); return (el && el.value || "").trim(); }
+  function val(id) {
+    var el = document.getElementById(id);
+    if (!el) return "";
+    var v = ((el.value == null ? "" : el.value) + "").trim();
+    // For cascading selects: when "__other__" sentinel is picked, fall back to the sibling text input
+    if (v === "__other__") {
+      var other = document.getElementById(id + "Other");
+      if (other) return (other.value || "").trim();
+      return "";
+    }
+    return v;
+  }
   function setFieldError(inputId, msg) {
     var input = document.getElementById(inputId);
     var err = document.getElementById(inputId + "Err");
@@ -177,14 +189,14 @@
     if (input) input.setAttribute("aria-invalid", msg ? "true" : "false");
   }
   function clearAllErrors() {
-    ["rvUrl","rvTitle","rvOrg","rvFile","rvManualSource","rvEmail","rvConfirm"].forEach(function (id) {
+    ["rvUrl","rvTitle","rvMinistry","rvOrg","rvFile","rvManualSource","rvEmail","rvConfirm"].forEach(function (id) {
       setFieldError(id, "");
     });
   }
 
   /* Required fields by mode (used for validation AND progress). */
   function requiredFieldIds() {
-    var base = ["rvTitle", "rvOrg", "rvConfirm"];
+    var base = ["rvTitle", "rvMinistry", "rvOrg", "rvConfirm"];
     if (mode === "link")   return ["rvUrl"].concat(base);
     if (mode === "manual") return ["rvManualSource"].concat(base);
     if (mode === "pdf")    return ["rvFile"].concat(base);
@@ -211,8 +223,9 @@
         ok = false;
       }
     }
-    if (!val("rvTitle")) { setFieldError("rvTitle", "Vacancy title is required."); ok = false; }
-    if (!val("rvOrg"))   { setFieldError("rvOrg",   "Organization / department is required."); ok = false; }
+    if (!val("rvTitle"))    { setFieldError("rvTitle",    "Vacancy title is required."); ok = false; }
+    if (!val("rvMinistry")) { setFieldError("rvMinistry", "Please select the ministry."); ok = false; }
+    if (!val("rvOrg"))      { setFieldError("rvOrg",      "Please select the organisation / department."); ok = false; }
 
     var email = val("rvEmail");
     if (email && !isEmail(email)) { setFieldError("rvEmail", "Enter a valid email or leave it blank."); ok = false; }
@@ -269,7 +282,8 @@
       if (val("rvSeenAt")) rows.push(["Seen at", val("rvSeenAt")]);
     }
     rows.push(["Vacancy title", val("rvTitle")]);
-    rows.push(["Organization / Dept", val("rvOrg")]);
+    rows.push(["Ministry", val("rvMinistry")]);
+    rows.push(["Organisation / Dept", val("rvOrg")]);
     if (val("rvDeadline"))    rows.push(["Last date", val("rvDeadline")]);
     if (val("rvDescription")) rows.push(["Description", val("rvDescription")]);
     if (val("rvPosts"))       rows.push(["Number of posts", val("rvPosts")]);
@@ -313,6 +327,7 @@
       action: "vacancy",
       sourceType: mode,
       title: val("rvTitle"),
+      ministry: val("rvMinistry"),
       organization: val("rvOrg"),
       deadline: val("rvDeadline"),
       description: val("rvDescription"),
@@ -425,9 +440,136 @@
     });
   }
 
+  /* ---------- Ministry / Organisation cascading dropdowns ---------- */
+  var MINISTRY_DATA = null; // { ministries: [{ name, organisations: [{name, type}] }] }
+
+  function escapeOpt(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  function setupOther(selectId) {
+    var sel = document.getElementById(selectId);
+    var other = document.getElementById(selectId + "Other");
+    if (!sel || !other) return;
+    function sync() {
+      var isOther = sel.value === "__other__";
+      other.hidden = !isOther;
+      if (isOther) { setTimeout(function(){ other.focus(); }, 30); }
+    }
+    sel.addEventListener("change", function () { sync(); saveDraftDebounced(); updateProgress(); });
+    other.addEventListener("input", function () { saveDraftDebounced(); updateProgress(); });
+    sync();
+  }
+
+  function populateMinistrySelect() {
+    var sel = document.getElementById("rvMinistry");
+    if (!sel || !MINISTRY_DATA) return;
+    var keep = sel.value;
+    var html = '<option value="">Select ministry…</option>';
+    MINISTRY_DATA.ministries.forEach(function (m) {
+      html += '<option value="' + escapeOpt(m.name) + '">' + escapeOpt(m.name) + '</option>';
+    });
+    html += '<option value="__other__">Other / not listed…</option>';
+    sel.innerHTML = html;
+    if (keep) sel.value = keep;
+  }
+
+  function populateOrgSelect(ministryName) {
+    var sel = document.getElementById("rvOrg");
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Select organisation / department…</option>';
+    if (!ministryName || ministryName === "__other__") {
+      sel.disabled = false;
+      sel.innerHTML += '<option value="__other__">Other / not listed…</option>';
+      return;
+    }
+    var m = MINISTRY_DATA && MINISTRY_DATA.ministries.find(function (x) { return x.name === ministryName; });
+    if (!m) { sel.disabled = false; sel.innerHTML += '<option value="__other__">Other / not listed…</option>'; return; }
+    // Group by Organisation Type using <optgroup>
+    var byType = {};
+    var order = [];
+    m.organisations.forEach(function (o) {
+      var t = o.type || "Other";
+      if (!byType[t]) { byType[t] = []; order.push(t); }
+      byType[t].push(o.name);
+    });
+    var html = '<option value="">Select organisation / department…</option>';
+    order.sort().forEach(function (t) {
+      html += '<optgroup label="' + escapeOpt(t) + '">';
+      byType[t].forEach(function (n) {
+        html += '<option value="' + escapeOpt(n) + '">' + escapeOpt(n) + '</option>';
+      });
+      html += '</optgroup>';
+    });
+    html += '<option value="__other__">Other / not listed…</option>';
+    sel.innerHTML = html;
+    sel.disabled = false;
+  }
+
+  function applyDraftCascade() {
+    try {
+      var raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      var d = JSON.parse(raw);
+      var msel = document.getElementById("rvMinistry");
+      var osel = document.getElementById("rvOrg");
+      if (msel && typeof d.rvMinistry === "string" && d.rvMinistry) {
+        msel.value = d.rvMinistry;
+        populateOrgSelect(d.rvMinistry === "__other__" ? "" : d.rvMinistry);
+        if (osel && typeof d.rvOrg === "string" && d.rvOrg) {
+          osel.value = d.rvOrg;
+        }
+      }
+      var mOther = document.getElementById("rvMinistryOther");
+      var oOther = document.getElementById("rvOrgOther");
+      if (mOther && typeof d.rvMinistryOther === "string") mOther.value = d.rvMinistryOther;
+      if (oOther && typeof d.rvOrgOther === "string") oOther.value = d.rvOrgOther;
+      // sync the "Other" text input visibility
+      if (msel && msel.value === "__other__" && mOther) mOther.hidden = false;
+      if (osel && osel.value === "__other__" && oOther) oOther.hidden = false;
+    } catch (e) {}
+  }
+
+  function bindMinistryCascade() {
+    var msel = document.getElementById("rvMinistry");
+    if (!msel) return;
+    msel.addEventListener("change", function () {
+      populateOrgSelect(msel.value === "__other__" ? "" : msel.value);
+      saveDraftDebounced();
+      updateProgress();
+    });
+    setupOther("rvMinistry");
+    setupOther("rvOrg");
+  }
+
+  function loadMinistries() {
+    fetch("data/ministries.json")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        MINISTRY_DATA = data;
+        populateMinistrySelect();
+        bindMinistryCascade();
+        applyDraftCascade();
+        updateProgress();
+      })
+      .catch(function (e) {
+        // Fallback: turn the selects into plain text inputs if the JSON fails to load
+        console.warn("ministries.json failed; falling back to text input", e);
+        var ms = document.getElementById("rvMinistry");
+        var os = document.getElementById("rvOrg");
+        if (ms) ms.outerHTML = '<input type="text" id="rvMinistry" name="ministry" placeholder="Ministry name" autocomplete="off">';
+        if (os) {
+          os.outerHTML = '<input type="text" id="rvOrg" name="organization" placeholder="Organisation / department" autocomplete="off">';
+        }
+      });
+  }
+
   /* ---------- Init ---------- */
   var restored = restoreDraft();
   setMode(mode);
+  loadMinistries();
   updateProgress();
   if (restored) toast("Draft restored");
 })();

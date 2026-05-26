@@ -147,6 +147,8 @@
 .rv-form { display: grid; gap: 1.2rem; }
 .rv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .rv-field { display: grid; gap: .35rem; min-width: 0; }
+.rv-field .rv-other-input { margin-top: .35rem; }
+.rv-field select[disabled] { opacity: .65; cursor: not-allowed; }
 .rv-field-wide { grid-column: 1 / -1; }
 .rv-field label { font-size: .85rem; font-weight: 600; color: var(--rv-soft); }
 .rv-req { color: var(--rv-primary); font-weight: 700; }

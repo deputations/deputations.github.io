@@ -1,0 +1,2501 @@
+{
+  "_generated": true,
+  "_source": "Master list - Ministries and Departments.xlsx",
+  "ministries": [
+    {
+      "name": "Ministry of Agriculture & Farmers Welfare",
+      "organisations": [
+        {
+          "name": "Central Fertiliser Quality Control & Training Institute",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Central Insecticides Board & Registration Committee",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Department of Agricultural Research & Education (DARE)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Agriculture & Farmers Welfare",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Animal Husbandry & Dairying",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Fisheries",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Indian Council of Agricultural Research (ICAR)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Institute of Agricultural Extension Management (MANAGE)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Rainfed Area Authority (NRAA)",
+          "type": "Autonomous Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of AYUSH",
+      "organisations": [
+        {
+          "name": "All India Institute of Ayurveda (AIIA)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Central Council for Research in Ayurvedic Sciences (CCRAS)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Central Council for Research in Homoeopathy (CCRH)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Central Council for Research in Siddha (CCRS)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Central Council for Research in Unani Medicine (CCRUM)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Central Council for Research in Yoga & Naturopathy (CCRYN)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Central Council of Homoeopathy (CCH)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Central Council of Indian Medicine (CCIM)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Department of AYUSH (Administration)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Institute of Ayurveda (NIA), Jaipur",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Institute of Homoeopathy (NIH), Kolkata",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Institute of Siddha (NIS), Chennai",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Institute of Unani Medicine (NIUM), Bengaluru",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Pharmacopoeia Commission for Indian Medicine & Homoeopathy (PCIM&H)",
+          "type": "Autonomous Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Chemicals & Fertilizers",
+      "organisations": [
+        {
+          "name": "Central Fertilizer Quality Control & Training Institute (CFQCTI)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Central Institute of Petrochemicals Engineering & Technology (CIPET)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Chemicals & Petrochemicals",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Fertilizers",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Pharmaceuticals",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Fertilizer Quality Control Laboratories (FQCLs)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "National Institute of Pharmaceutical Education & Research (NIPER) – Campuses",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Pharmaceutical Pricing Authority (NPPA)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Pharmacy Council of India (PCI)",
+          "type": "Statutory Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Civil Aviation",
+      "organisations": [
+        {
+          "name": "Aircraft Accident Investigation Bureau (AAIB)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Airports Authority of India (AAI)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Bureau of Civil Aviation Security (BCAS)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Directorate General of Civil Aviation (DGCA)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Indira Gandhi Rashtriya Uran Akademi (IGRUA)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of Civil Aviation (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Rajiv Gandhi National Aviation University (RGNAU)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Regional Airworthiness Offices (DGCA Field Units)",
+          "type": "Subordinate Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Coal",
+      "organisations": [
+        {
+          "name": "Coal Controller Organisation (CCO)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Coal Controller’s Field Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Coal India Limited (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Ministry of Coal (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Institute of Miners’ Health (NIMH)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Singareni Collieries Company Limited (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Commerce & Industry",
+      "organisations": [
+        {
+          "name": "Coffee Board",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Department for Promotion of Industry & Internal Trade (DPIIT)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Commerce",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Directorate General of Foreign Trade (DGFT)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Export Inspection Council Field Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Indian Institute of Foreign Trade (IIFT)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Rubber Board",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Special Economic Zones (SEZ) Commissionerates",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Spices Board",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Tea Board",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Tobacco Board",
+          "type": "Statutory Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Communications",
+      "organisations": [
+        {
+          "name": "Centre for Development of Telematics (C-DOT)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Department of Posts (India Post)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Telecommunications (DoT)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Postal Directorate Field Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Telecom Enforcement, Resource & Monitoring (TERM) Cells",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Telecom Engineering Centre (TEC)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Telecom Regulatory Authority of India (TRAI)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Wireless Planning & Coordination Wing (WPC)",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Consumer Affairs, Food & Public Distribution",
+      "organisations": [
+        {
+          "name": "Bureau of Indian Standards (BIS)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Central Consumer Protection Authority (CCPA)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Consumer Affairs Field Formations",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Department of Consumer Affairs",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Food & Public Distribution",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Directorate of Marketing & Inspection (DMI)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Food Corporation of India (FCI)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Institute of Consumer Affairs (NICA)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Weights & Measures Field Offices",
+          "type": "Subordinate Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Cooperation",
+      "organisations": [
+        {
+          "name": "Central Registrar of Cooperative Societies (CRCS)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Ministry of Cooperation (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Cooperative Development Corporation (NCDC)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Cooperative Union of India (NCUI)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Council for Cooperative Training (NCCT)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Office of the Central Registrar – Regional Offices",
+          "type": "Subordinate Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Corporate Affairs",
+      "organisations": [
+        {
+          "name": "Competition Commission of India (CCI)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Indian Institute of Corporate Affairs (IICA)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of Corporate Affairs (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Company Law Appellate Tribunal (NCLAT)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Company Law Tribunal (NCLT)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Official Liquidators",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Regional Director (RD) Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Registrar of Companies (RoCs)",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Culture",
+      "organisations": [
+        {
+          "name": "Allahabad Museum",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Anthropological Survey of India (AnSI)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Archaeological Survey of India (ASI)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Central Archaeological Circles (ASI Field Offices)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Central Reference Libraries & Field Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Indian Museum, Kolkata",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Indira Gandhi National Centre for the Arts (IGNCA)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Lalit Kala Akademi",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of Culture (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Archives of India (NAI)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Council of Archives",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Council of Science Museums (NCSM)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Museum",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National School of Drama (NSD)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Sahitya Akademi",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Sangeet Natak Akademi",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Victoria Memorial Hall",
+          "type": "Autonomous Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Defence",
+      "organisations": [
+        {
+          "name": "Air Headquarters",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Army Headquarters",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Bharat Dynamics Limited (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Bharat Electronics Limited (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Cantonment Boards",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Coast Guard Headquarters",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Defence Research & Development Organisation (DRDO)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Department of Defence",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Defence Production",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Ex-Servicemen Welfare",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Military Affairs",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Directorate General of Aeronautical Quality Assurance (DGAQA)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Directorate General of Armoured Vehicles (DGAV)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Directorate General of Quality Assurance (DGQA)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Directorate of Standardisation",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Ex-Servicemen Contributory Health Scheme (ECHS)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Garden Reach Shipbuilders & Engineers (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Hindustan Aeronautics Limited (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Institute for Defence Studies and Analyses (IDSA)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Integrated Defence Staff (IDS)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Mazagon Dock Shipbuilders Limited (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Navy Headquarters",
+          "type": "Subordinate Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Development of North Eastern Region (DoNER)",
+      "organisations": [
+        {
+          "name": "Ministry of DoNER (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "NEC Regional / Field Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "North Eastern Council (NEC)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "North Eastern Development Finance Corporation Ltd. (NEDFi)",
+          "type": "Autonomous Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Earth Sciences",
+      "organisations": [
+        {
+          "name": "Geological Survey of India (GSI)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "GSI Regional / State Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "IMD Regional / Field Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "India Meteorological Department (IMD)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Indian National Centre for Ocean Information Services (INCOIS)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of Earth Sciences (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Centre for Coastal Research (NCCR)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Centre for Polar & Ocean Research (NCPOR)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Institute of Ocean Technology (NIOT)",
+          "type": "Autonomous Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Education",
+      "organisations": [
+        {
+          "name": "All India Council for Technical Education (AICTE)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Central Tibetan Schools Administration (CTSA)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Central Universities",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Department of Higher Education",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of School Education & Literacy",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Indian Institutes of Management (IIMs)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Indian Institutes of Technology (IITs)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Kendriya Vidyalaya Sangathan (KVS)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Council for Teacher Education (NCTE)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Council of Educational Research & Training (NCERT)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Institute of Educational Planning & Administration (NIEPA)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Testing Agency (NTA)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Navodaya Vidyalaya Samiti (NVS)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Regional Offices of KVS / NVS",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "University Grants Commission (UGC)",
+          "type": "Statutory Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Electronics & Information Technology",
+      "organisations": [
+        {
+          "name": "Centre for Development of Advanced Computing (C-DAC)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Controller of Certifying Authorities (CCA)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Digital Personal Data Protection Board of India",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Indian Computer Emergency Response Team (CERT-In)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of Electronics & Information Technology (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National e-Governance Division (NeGD)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Informatics Centre (NIC)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "NIC State / District Informatics Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Society for Applied Microwave Electronics Engineering & Research (SAMEER)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Standardisation Testing & Quality Certification (STQC)",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Environment, Forest & Climate Change",
+      "organisations": [
+        {
+          "name": "Botanical Survey of India (BSI)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "BSI / ZSI Regional Centres",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Central Pollution Control Board (CPCB)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Climate Change Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Environment Impact Assessment (EIA) Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Forest Conservation Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Forest Survey of India (FSI)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Indian Council of Forestry Research & Education (ICFRE)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Indira Gandhi National Forest Academy (IGNFA)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Ministry of Environment, Forest & Climate Change (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Biodiversity Authority (NBA)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Coastal Zone Management Authority (NCZMA)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Environmental Engineering Research Institute (NEERI)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Tiger Conservation Authority (NTCA)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Regional Offices of MoEFCC",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Salim Ali Centre for Ornithology & Natural History (SACON)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Wildlife Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Wildlife Institute of India (WII)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Zoological Survey of India (ZSI)",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of External Affairs",
+      "organisations": [
+        {
+          "name": "Administration & Establishment Divisions",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Branch Secretariats / Regional Passport Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Consular, Passport & Visa (CPV) Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Indian Council for Cultural Relations (ICCR)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Indian Missions & Posts Abroad (Embassies / High Commissions / Consulates)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Ministry of External Affairs (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Passport Offices (CPV network)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Policy Planning & Research Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Research & Information System for Developing Countries (RIS)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Territorial Divisions",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Finance",
+      "organisations": [
+        {
+          "name": "Central Board of Direct Taxes (CBDT)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Central Board of Indirect Taxes & Customs (CBIC)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Controller General of Accounts (CGA) Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Department of Economic Affairs",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Expenditure",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Financial Services",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Investment & Public Asset Management (DIPAM)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Revenue",
+          "type": "Attached Office"
+        },
+        {
+          "name": "GST & Customs Field Formations",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Income Tax Department (Field Formations)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Indian Institute of Banking & Finance (IIBF)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Insolvency and Bankruptcy Board of India (IBBI)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Insurance Regulatory and Development Authority of India (IRDAI)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Institute of Financial Management (NIFM)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Institute of Public Finance and Policy (NIPFP)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Pension Fund Regulatory and Development Authority (PFRDA)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Principal Chief Controller of Accounts (Pr.CCA) Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Public Sector Banks (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Public Sector Insurance Companies (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Securities and Exchange Board of India (SEBI)",
+          "type": "Statutory Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Fisheries, Animal Husbandry & Dairying",
+      "organisations": [
+        {
+          "name": "Animal Husbandry Field Formations",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Central Inland Fisheries Research Institute (CIFRI)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Central Institute of Fisheries Nautical & Engineering Training (CIFNET)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Central Institute of Fisheries Technology (CIFT)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Central Marine Fisheries Research Institute (CMFRI)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Animal Husbandry & Dairying",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Fisheries",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Fisheries Development Field Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Food Safety and Standards Authority of India (FSSAI) – Animal Origin (Coord.)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Indian Council of Agricultural Research Institutes (Animal/Fisheries)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Bureau of Fish Genetic Resources (NBFGR)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Dairy Development Board (NDDB)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Institute of Animal Biotechnology (NIAB)",
+          "type": "Autonomous Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Food Processing Industries",
+      "organisations": [
+        {
+          "name": "Directorate of Sugar",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Directorate of Vanaspati, Vegetable Oils & Fats",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Food Processing Field / Regional Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Indian Institute of Food Processing Technology (IIFPT), Thanjavur",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of Food Processing Industries (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Institute of Food Technology, Entrepreneurship & Management (NIFTEM), Kundli",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Institute of Food Technology, Entrepreneurship & Management (NIFTEM), Thanjavur",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Sugar Commissionerate Field Offices",
+          "type": "Subordinate Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Health and Family Welfare",
+      "organisations": [
+        {
+          "name": "BCG Vaccine Laboratory, Chennai",
+          "type": "Attached / Subordinated Offices"
+        },
+        {
+          "name": "Central Drugs Laboratory, Kasauli",
+          "type": "Others"
+        },
+        {
+          "name": "Central Leprosy Teaching and Research Institute, Chengalpattu, Tamil Nadu",
+          "type": "Academies / Institutions"
+        },
+        {
+          "name": "Central Tuberculosis (TB) Division",
+          "type": "Others"
+        },
+        {
+          "name": "Department of Health and Family Welfare (DoHFW)",
+          "type": "Departments"
+        },
+        {
+          "name": "Department of Health Research (DHR)",
+          "type": "Departments"
+        },
+        {
+          "name": "Medical Stores Organisation, Ministry of Health and Family Welfare",
+          "type": "Attached / Subordinated Offices"
+        },
+        {
+          "name": "National Organ and Tissue Transplant Organization (NOTTO), New Delhi",
+          "type": "Others"
+        },
+        {
+          "name": "National Programme for Control of Blindness & Visual Impairment (NPCVI)",
+          "type": "Others"
+        },
+        {
+          "name": "Regional Institute of Pharmaceutical Science and Technology (RIPSAT), West Tripura",
+          "type": "Academies / Institutions"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Heavy Industries",
+      "organisations": [
+        {
+          "name": "Automotive Industry Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Automotive Research Association of India (ARAI)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Bharat Heavy Electricals Limited (BHEL) – Policy / Admin",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Central Manufacturing Technology Institute (CMTI)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Heavy Engineering Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "HMT Limited – Policy / Admin",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "International Centre for Automotive Technology (ICAT)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of Heavy Industries (Secretariat)",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Home Affairs",
+      "organisations": [
+        {
+          "name": "Border Management Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Bureau of Police Research & Development (BPR&D)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "CAPF Field Formations (BSF / CRPF / CISF / ITBP / SSB / Assam Rifles)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Census Field Directorates",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Central Armed Police Forces (CAPF) Headquarters",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Central Forensic Science Laboratory (CFSL – HQ)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "CFSL Regional Laboratories",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Disaster Management Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Intelligence Bureau (IB)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Inter-State Council Secretariat",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Internal Security Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Judicial Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Lal Bahadur Shastri National Academy of Administration (LBSNAA) – Coord.",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of Home Affairs (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Crime Records Bureau (NCRB)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Disaster Management Authority (NDMA)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Investigation Agency (NIA)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Police Academy (SVPNPA)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Police Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Registrar General & Census Commissioner of India (RGI)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Union Territories Division",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Housing & Urban Affairs",
+      "organisations": [
+        {
+          "name": "Central Public Works Department (CPWD)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "CPWD Field Units / Zones",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Delhi Development Authority (DDA)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Directorate of Estates",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Directorate of Estates Regional Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Housing and Urban Development Corporation (HUDCO) – Policy / Admin",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of Housing & Urban Affairs (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Buildings Organisation (NBO)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Institute of Urban Affairs (NIUA)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "New Town Kolkata Development Authority (NKDA)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Noida Authority (Policy / Admin)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Town & Country Planning Organisation (TCPO)",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Information & Broadcasting",
+      "organisations": [
+        {
+          "name": "Central Board of Film Certification (CBFC)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Central Bureau of Communication (CBC)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Central Bureau of Communication Field Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Children’s Film Society of India (CFSI – merged / legacy)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Film & Television Institute of India (FTII)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Film Certification Appellate Tribunal (FCAT – legacy cases)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Films Division",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of Information & Broadcasting (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Film Development Corporation (NFDC)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "New Media Wing",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Prasar Bharati (Doordarshan & All India Radio)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Press Information Bureau (PIB)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Press Information Bureau Regional / Field Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Satyajit Ray Film & Television Institute (SRFTI)",
+          "type": "Autonomous Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Jal Shakti",
+      "organisations": [
+        {
+          "name": "Betwa River Board (Inter-State)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Brahmaputra Board",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Central Ground Water Board (CGWB)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Central Water Commission (CWC)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "CGWB Regional / State Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "CWC Field / Basin Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Department of Drinking Water & Sanitation",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Water Resources, River Development & Ganga Rejuvenation",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Ganga Basin Field Directorates",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "National Institute of Hydrology (NIH)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Mission for Clean Ganga (NMCG)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Water Development Agency (NWDA)",
+          "type": "Autonomous Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Labour & Employment",
+      "organisations": [
+        {
+          "name": "Chief Labour Commissioner (Central)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Dattopant Thengadi National Board for Workers Education and Development",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Directorate General Factory Advice Service and Labour Institutes (DGFASLI)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Directorate General of Employment (DGE)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Directorate General of Mines Safety (DGMS)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Employees’ Provident Fund Organisation (EPFO)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Employees’ State Insurance Corporation (ESIC)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Labour Bureau",
+          "type": "Attached Office"
+        },
+        {
+          "name": "V. V. Giri National Labour Institute (VVGNLI)",
+          "type": "Autonomous Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Law & Justice",
+      "organisations": [
+        {
+          "name": "Central Agency Section (CAS)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Department of Justice",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Legal Affairs",
+          "type": "Attached Office"
+        },
+        {
+          "name": "High Court / Subordinate Court Coordination Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Indian Law Institute (ILI)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Law Commission of India (when constituted)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Legislative Department",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Legal Services Authority (NALSA)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "State Legal Services Authorities (Coord.)",
+          "type": "Statutory Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Micro, Small & Medium Enterprises",
+      "organisations": [
+        {
+          "name": "Coir Board",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Khadi & Village Industries Commission (KVIC)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Mahatma Gandhi Institute for Rural Industrialisation (MGIRI)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of MSME (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "MSME Development Institutes (MSME-DIs)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "MSME-DI Field / Branch Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "National Small Industries Corporation (NSIC)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Office of the Development Commissioner (MSME)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Testing & Training Centre Field Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Tool Rooms / Technology Centres (MSME)",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Mines",
+      "organisations": [
+        {
+          "name": "Geological Survey of India (GSI) – Coordination",
+          "type": "Attached Office"
+        },
+        {
+          "name": "IBM Regional / Field Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Indian Bureau of Mines (IBM)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Ministry of Mines (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "MOIL Limited – Policy / Admin",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "National Mineral Development Corporation (NMDC) – Coordination",
+          "type": "Statutory Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Minority Affairs",
+      "organisations": [
+        {
+          "name": "Aligarh Muslim University (AMU) – Coordination",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Education Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Jamia Millia Islamia (JMI) – Coordination",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Maulana Azad Education Foundation (MAEF)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of Minority Affairs (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Commission for Minorities (NCM)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Policy, Planning & Research Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Regional / Field Offices (Scholarship & Welfare Schemes)",
+          "type": "Subordinate Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of New & Renewable Energy",
+      "organisations": [
+        {
+          "name": "Bio-Energy Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Green Energy Corridor Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Indian Renewable Energy Development Agency (IREDA)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of New & Renewable Energy (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "MNRE Regional / Project Monitoring Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "National Institute of Solar Energy (NISE)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Institute of Wind Energy (NIWE)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Sardar Swaran Singh National Institute of Renewable Energy (SSS-NIRE)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Small Hydro Power Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Solar Energy Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Wind Energy Division",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Panchayati Raj",
+      "organisations": [
+        {
+          "name": "E-Governance & Capacity Building Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Ministry of Panchayati Raj (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Institute of Rural Development & Panchayati Raj (NIRDPR)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Panchayati Raj Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Regional / State Panchayati Raj Support Units",
+          "type": "Subordinate Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Parliamentary Affairs",
+      "organisations": [
+        {
+          "name": "Ministry of Parliamentary Affairs (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Parliamentary Coordination & Legislation Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Parliamentary Liaison Units (Coord.)",
+          "type": "Subordinate Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Personnel, Public Grievances & Pensions",
+      "organisations": [
+        {
+          "name": "Central Administrative Tribunal (CAT)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Central Information Commission (CIC) – Coordination",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Central Vigilance Commission (CVC) – Coordination",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Administrative Reforms & Public Grievances (DARPG)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Pensions & Pensioners’ Welfare",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Personnel & Training (DoPT)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "DoPT Cadre Units / Establishment Sections",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Lal Bahadur Shastri National Academy of Administration (LBSNAA)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Centre for Good Governance (NCGG)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Staff Selection Commission (SSC)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Union Public Service Commission (UPSC)",
+          "type": "Statutory Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Petroleum & Natural Gas",
+      "organisations": [
+        {
+          "name": "DGH Regional / Field Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Directorate General of Hydrocarbons (DGH)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Exploration Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Indian Oil / BPCL / HPCL (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Marketing Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Ministry of Petroleum & Natural Gas (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Natural Gas Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "ONGC / OIL / GAIL (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Petroleum & Natural Gas Regulatory Board (PNGRB)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Petroleum Planning & Analysis Cell (PPAC)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "PPAC Data & Monitoring Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Rajiv Gandhi Institute of Petroleum Technology (RGIPT)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Refineries Division",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Ports, Shipping & Waterways",
+      "organisations": [
+        {
+          "name": "DGS Regional / Field Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Directorate General of Shipping (DGS)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Indian Maritime University (IMU)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Inland Waterways Authority of India (IWAI)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Inland Waterways Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "IWAI Regional / Project Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Major Port Authorities (Port Trusts)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Ministry of Ports, Shipping & Waterways (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Shipping Board (NSB)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ports Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Shipping Division",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Power",
+      "organisations": [
+        {
+          "name": "Appellate Tribunal for Electricity (APTEL)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "BEE State / Regional Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Bureau of Energy Efficiency (BEE)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "CEA Regional / Field Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Central Electricity Authority (CEA)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Central Electricity Regulatory Commission (CERC)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Central Power Research Institute (CPRI)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Distribution Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Hydro Power Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Ministry of Power (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "NTPC Limited (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Power Finance Corporation (PFC) (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Power Grid Corporation of India Limited (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Power Sector Policy & Planning Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Rural Electrification Corporation (REC) (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Transmission Division",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Railways",
+      "organisations": [
+        {
+          "name": "CONCOR (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Divisional Railway Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Indian Railways Institute of Transport Management (IRITM)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "IRCON International Limited (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "IRCTC (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Ministry of Railways (Railway Board)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Rail and Transportation Institute (NRTI)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Production Units (Chittaranjan / ICF / DLW / RCF / MCF etc.)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Railway Board – Electrical Directorate",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Railway Board – Finance Directorate",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Railway Board – Infrastructure Directorate",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Railway Board – Mechanical Directorate",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Railway Board – Personnel Directorate",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Railway Board – Safety Directorate",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Railway Board – Traffic Directorate",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Railway Recruitment Boards (RRBs)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Railway Training Institutes / ZRTIs",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "RITES Limited (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "RVNL (Rail Vikas Nigam Limited) (Policy / Admin)",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Zonal Railways",
+          "type": "Subordinate Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Road Transport & Highways",
+      "organisations": [
+        {
+          "name": "Indian Academy of Highway Engineers (IAHE)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Ministry of Road Transport & Highways (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Highways Authority of India (NHAI)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Institute for Training of Highway Engineers (NITHE)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Road Safety Authority (NRSA)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Regional Offices of MoRTH",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Road Transport Offices (RTOs) – Central Coordination",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Roads Wing",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Standards, Research & Quality Control Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Transport Wing",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Science & Technology",
+      "organisations": [
+        {
+          "name": "BIRAC (Biotechnology Industry Research Assistance Council)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Council of Scientific & Industrial Research (CSIR)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Department of Biotechnology (DBT)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Science & Technology (DST)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Science & Technology – Autonomous Institutions (IISc / IISERs – Coord.)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Department of Scientific & Industrial Research (DSIR)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "DST / DBT Programme Management Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "National Science & Technology Entrepreneurship Development Board (NSTEDB)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Office of the Principal Scientific Adviser to the Government of India",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Technology Development Board (TDB)",
+          "type": "Subordinate Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Skill Development & Entrepreneurship",
+      "organisations": [
+        {
+          "name": "Apprenticeship & Training Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Central Apprenticeship Council (CAC)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Directorate General of Training (DGT)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "IndiaSkills Secretariat",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Industrial Training Institutes (ITIs) – Central Coordination",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Ministry of Skill Development & Entrepreneurship (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Council for Vocational Education & Training (NCVET)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Skill Development Agency (NSDA)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Skill Development Corporation (NSDC)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Skill Training Institutes (NSTIs)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Regional Directorates of Skill Development & Entrepreneurship (RDSDEs)",
+          "type": "Subordinate Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Social Justice & Empowerment",
+      "organisations": [
+        {
+          "name": "Chief Commissioner for Persons with Disabilities (CCPD)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Department of Empowerment of Persons with Disabilities (DEPwD)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Social Justice & Empowerment",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Dr. Ambedkar Foundation",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Backward Classes Finance & Development Corporation (NBCFDC)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Commission for Backward Classes (NCBC)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Commission for Scheduled Castes (NCSC)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Institute of Social Defence (NISD)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Institutes for Disabilities (Composite Regional Centres / National Institutes)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Safai Karamcharis Finance & Development Corporation (NSKFDC)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Scheduled Castes Finance & Development Corporation (NSFDC)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Regional / Field Offices (Scholarships, Welfare Schemes)",
+          "type": "Subordinate Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Statistics & Programme Implementation",
+      "organisations": [
+        {
+          "name": "Computer Centre & Data Processing Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Indian Statistical Institute (ISI) – Coordination",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Indian Statistical Service Training Institutes (Coord.)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of Statistics & Programme Implementation (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Statistical Office (NSO)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "NSO Field Operations Division (FOD)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Programme Implementation Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Project Monitoring Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Regional / Field Offices of NSO",
+          "type": "Subordinate Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Steel",
+      "organisations": [
+        {
+          "name": "Indian Institute of Metals (IIM – Coordination)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Joint Plant Committee (JPC)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "JPC Regional / Field Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Ministry of Steel (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "MOIL Limited – Policy / Admin",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "National Institute of Secondary Steel Technology (NISST)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Rashtriya Ispat Nigam Limited (RINL) – Policy / Admin",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Steel Authority of India Limited (SAIL) – Policy / Admin",
+          "type": "PSU / Board / Trust"
+        },
+        {
+          "name": "Steel Development Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Steel Policy & Planning Division",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Textiles",
+      "organisations": [
+        {
+          "name": "Central Silk Board",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "Central Silk Board (Coord.)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Development Commissioner (Handicrafts)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Development Commissioner (Handlooms)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Development Commissioner (Powerloom)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Handloom / Handicrafts Field Formations",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Indian Institute of Handloom Technology (IIHTs)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of Textiles (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Institute of Design (NID) – Coordination",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Institute of Fashion Technology (NIFT)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Jute Board",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Office of the Textile Commissioner",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Powerloom Service Centres (PSCs)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Textile Commissionerate Regional / Field Offices",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Textiles Committee",
+          "type": "Statutory Body"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Tourism",
+      "organisations": [
+        {
+          "name": "Domestic Promotion & Publicity Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "India Tourism Offices (Domestic & Overseas)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Indian Institute of Tourism & Travel Management (IITTM)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Institute of Hotel Managements (IHMs)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Ministry of Tourism (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Council for Hotel Management & Catering Technology (NCHMCT)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Overseas Marketing Division",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Tribal Affairs",
+      "organisations": [
+        {
+          "name": "Education & Empowerment Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Eklavya Model Residential Schools (EMRS) Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "EMRS Regional / Field Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Ministry of Tribal Affairs (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Commission for Scheduled Tribes (NCST) – Coordination",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Institute of Tribal Research & Training (NITRT)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Scheduled Tribes Finance & Development Corporation (NSTFDC)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Regional Offices for Tribal Welfare Schemes",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Tribal Cooperative Marketing Development Federation of India (TRIFED)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Tribal Development Division",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Women & Child Development",
+      "organisations": [
+        {
+          "name": "Anganwadi Services / ICDS Field Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Central Adoption Resource Authority (CARA)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Child Development Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Ministry of Women & Child Development (Secretariat)",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Mission POSHAN 2.0 Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Mission Shakti Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Mission Vatsalya Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Commission for Protection of Child Rights (NCPCR) – Coordination",
+          "type": "Attached Office"
+        },
+        {
+          "name": "National Commission for Women (NCW)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Institute of Public Cooperation & Child Development (NIPCCD)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "State & District Mission Directorates (Coord.)",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Women Empowerment & Gender Equity Division",
+          "type": "Attached Office"
+        }
+      ]
+    },
+    {
+      "name": "Ministry of Youth Affairs & Sports",
+      "organisations": [
+        {
+          "name": "Department of Sports",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Department of Youth Affairs",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Khelo India Division",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Lakshmibai National Institute of Physical Education (LNIPE), Gwalior",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "National Anti-Doping Agency (NADA)",
+          "type": "Statutory Body"
+        },
+        {
+          "name": "National Service Scheme (NSS) Directorate",
+          "type": "Attached Office"
+        },
+        {
+          "name": "Nehru Yuva Kendra Sangathan (NYKS) – Field Units",
+          "type": "Subordinate Office"
+        },
+        {
+          "name": "Netaji Subhas National Institute of Sports (NSNIS), Patiala",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Sports Authority of India (SAI)",
+          "type": "Autonomous Body"
+        },
+        {
+          "name": "Sports Authority of India (SAI) – Regional / Training Centres",
+          "type": "Subordinate Office"
+        }
+      ]
+    }
+  ]
+}
