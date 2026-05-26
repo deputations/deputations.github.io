@@ -1,0 +1,17 @@
+# Local-only tooling configs / scratch (not part of the public site)
+.claude/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+
+# Python virtualenv / caches (for /scripts utilities)
+__pycache__/
+*.pyc
+.venv/
+venv/
