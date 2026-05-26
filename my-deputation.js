@@ -1067,16 +1067,38 @@
   }
 
   // ---------- Cooling-off widget ----------
+  // DoPT consolidated guidelines on deputation:
+  //   Joint Secretary level (Level 14) and below -> 3 years cooling-off
+  //   Additional Secretary (Level 15)            -> 1 year cooling-off
+  //   Secretary level (Level 16) and above       -> Nil (no cooling-off)
+  function coolingRuleForLevel(payLevel) {
+    const lvl = Number(payLevel);
+    if (!Number.isFinite(lvl) || lvl <= 0) {
+      return { years: null, rank: '', note: 'Set your pay level in the form below to apply the DoPT rule.' };
+    }
+    if (lvl >= 16) return { years: 0, rank: `Secretary (Level ${lvl})`, note: 'Nil cooling-off required.' };
+    if (lvl === 15) return { years: 1, rank: 'Additional Secretary (Level 15)', note: '1-year cooling-off required.' };
+    return { years: 3, rank: `Joint Secretary level & below (Level ${lvl})`, note: '3-year cooling-off required.' };
+  }
+
   function renderCoolingWidget(profile) {
     const start = profile.lastDeputationStartDate ? new Date(profile.lastDeputationStartDate) : null;
     const end = profile.lastDeputationEndDate ? new Date(profile.lastDeputationEndDate) : null;
-    const years = Number(profile.coolingOffYears ?? 3);
+    const rule = coolingRuleForLevel(profile.payLevel);
+    const years = profile.coolingOffYears != null && profile.coolingOffYears !== ''
+      ? Number(profile.coolingOffYears)
+      : (rule.years != null ? rule.years : 3);
+    const matchesRule = rule.years != null && Number(years) === rule.years;
 
     let statBlock;
     if (!end || Number.isNaN(end.getTime())) {
       statBlock = `
         <div class="md-cooling-stat eligible">Eligible now</div>
         <div class="md-cooling-sub">No previous deputation on record. Add your last deputation's end date to compute cooling-off.</div>`;
+    } else if (years === 0) {
+      statBlock = `
+        <div class="md-cooling-stat eligible">Eligible now</div>
+        <div class="md-cooling-sub">No cooling-off required at this rank under DoPT rules.</div>`;
     } else {
       const eligibleFrom = new Date(end.getFullYear() + years, end.getMonth(), end.getDate());
       const days = Math.ceil((eligibleFrom - new Date()) / 86400000);
@@ -1094,6 +1116,14 @@
       }
     }
 
+    const ruleHint = rule.years == null
+      ? `<span class="md-cooling-rule muted">Set pay level in Profile to auto-apply the DoPT rule</span>`
+      : `<span class="md-cooling-rule ${matchesRule ? 'ok' : 'override'}">
+           <i data-lucide="${matchesRule ? 'check-circle-2' : 'alert-circle'}"></i>
+           DoPT rule for ${U.escapeHtml(rule.rank)}: <strong>${rule.years} year${rule.years === 1 ? '' : 's'}</strong>
+           ${matchesRule ? '' : `<button type="button" class="md-link-btn" id="mdCoolingApplyRule">Apply rule</button>`}
+         </span>`;
+
     return `
       <div class="md-cooling">
         <div>
@@ -1109,11 +1139,12 @@
             <label>Last deputation end</label>
             <input type="date" name="lastDeputationEndDate" value="${U.escapeHtml(profile.lastDeputationEndDate || '')}">
           </div>
-          <div>
+          <div class="md-field full">
             <label>Cooling-off (years)</label>
-            <input type="number" min="0" max="10" name="coolingOffYears" value="${U.escapeHtml(String(profile.coolingOffYears ?? 3))}">
+            <input type="number" min="0" max="10" step="1" name="coolingOffYears" value="${U.escapeHtml(String(years))}">
+            ${ruleHint}
           </div>
-          <div style="display:flex;align-items:flex-end;">
+          <div class="md-field full" style="display:flex;align-items:flex-end;">
             <button type="button" class="md-btn primary" id="mdCoolingSave" style="width:100%;justify-content:center;"><i data-lucide="save"></i>Save</button>
           </div>
         </div>
@@ -1136,6 +1167,17 @@
       toast('Cooling-off saved');
       renderActive();
     });
+    const applyBtn = document.getElementById('mdCoolingApplyRule');
+    if (applyBtn) {
+      applyBtn.addEventListener('click', () => {
+        const p = store.profile();
+        const rule = coolingRuleForLevel(p.payLevel);
+        if (rule.years == null) return;
+        const input = document.querySelector('#mdCoolingForm [name=coolingOffYears]');
+        if (input) input.value = String(rule.years);
+        toast(`Applied DoPT rule: ${rule.years} year${rule.years === 1 ? '' : 's'}`);
+      });
+    }
   }
 
   // ---------- Profile ----------
@@ -1359,10 +1401,14 @@
 
   function coolingOffPill(profile) {
     if (!profile.lastDeputationEndDate) return '';
-    const start = new Date(profile.lastDeputationEndDate);
-    if (Number.isNaN(start.getTime())) return '';
-    const yrs = Number(profile.coolingOffYears || 0);
-    const eligibleFrom = new Date(start.getFullYear() + yrs, start.getMonth(), start.getDate());
+    const end = new Date(profile.lastDeputationEndDate);
+    if (Number.isNaN(end.getTime())) return '';
+    const rule = coolingRuleForLevel(profile.payLevel);
+    const yrs = profile.coolingOffYears != null && profile.coolingOffYears !== ''
+      ? Number(profile.coolingOffYears)
+      : (rule.years != null ? rule.years : 0);
+    if (!yrs) return '';
+    const eligibleFrom = new Date(end.getFullYear() + yrs, end.getMonth(), end.getDate());
     const days = Math.round((eligibleFrom - new Date()) / 86400000);
     if (days <= 0) return '';
     return `<span class="md-pill critical"><i data-lucide="snowflake" style="width:12px;height:12px"></i> Cooling-off until ${U.formatDisplayDate(eligibleFrom.toISOString())}</span>`;

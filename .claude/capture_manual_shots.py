@@ -33,7 +33,7 @@ def seed_payload() -> dict:
             "experienceTags": ["procurement", "budget", "audit", "policy"],
             "lastDeputationStartDate": "2023-06-01",
             "lastDeputationEndDate": "2025-06-01",
-            "coolingOffYears": 3
+            "coolingOffYears": 3  # intentional override so the manual screenshot shows the "override" rule chip
         },
         "deputationWatchlist": [
             "CULT-2026-L11-001", "AGRI-2026-L10-003",
