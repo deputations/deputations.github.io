@@ -516,31 +516,41 @@
 
 /* --- Manual popup --- */
 .modal-content.md-manual-modal {
-  width: 96%;
-  max-width: 1080px;
-  height: 92vh;
-  max-height: 92vh;
-  padding: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  width: 96% !important;
+  max-width: 1080px !important;
+  height: 92vh !important;
+  max-height: 92vh !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 22px;
+  position: relative;
+}
+.modal-content.md-manual-modal > #modalBody {
+  width: 100%;
+  height: 100%;
 }
 .md-manual-frame {
-  flex: 1;
+  display: block;
   width: 100%;
+  height: 100%;
   border: 0;
   background: #f6f8fc;
   border-radius: 22px;
 }
 .modal-content.md-manual-modal .modal-close {
+  position: absolute;
   z-index: 5;
   background: rgba(15, 23, 42, 0.85);
   color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
   border-radius: 999px;
   width: 36px;
   height: 36px;
   top: 12px;
   right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .md-doc-row select, .md-doc-row input {
