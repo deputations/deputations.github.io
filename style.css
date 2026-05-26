@@ -1239,6 +1239,42 @@ select:focus {
   text-align: center;
 }
 
+/* Bookmark / heart column stays pinned to the right edge of the
+   horizontally-scrollable .table-wrapper so the heart icon is always
+   reachable without scrolling the table. Only active when the table
+   is rendered as an actual table (the ≤768 px media query reflows
+   rows into stacked cards). */
+@media (min-width: 769px) {
+  .data-table .save-col {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background: var(--bg-surface);
+    box-shadow: -10px 0 14px -10px rgba(0, 0, 0, 0.45);
+  }
+  /* Header cell is already position:sticky;top:0 — keep that and add
+     right pinning. Bump z-index so the corner stays above other
+     sticky cells. */
+  .data-table thead .save-col {
+    z-index: 4;
+    background: rgba(15, 23, 42, 0.95);
+  }
+  /* Match the row-hover tint on the sticky cell so it doesn't look
+     pasted on. */
+  .data-table tbody tr:hover .save-col {
+    background: color-mix(in srgb, #ffffff 3%, var(--bg-surface));
+  }
+  [data-theme="light"] .data-table .save-col {
+    box-shadow: -10px 0 14px -10px rgba(0, 0, 0, 0.10);
+  }
+  [data-theme="light"] .data-table thead .save-col {
+    background: rgba(255, 255, 255, 0.96);
+  }
+  [data-theme="light"] .data-table tbody tr:hover .save-col {
+    background: color-mix(in srgb, #0f172a 3%, var(--bg-surface));
+  }
+}
+
 .premium-card {
   position: relative;
 }
