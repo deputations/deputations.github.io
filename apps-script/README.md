@@ -1,20 +1,19 @@
-# Apps Script — vacancy submission backend
+# Apps Script — vacancy + feedback backend
 
-This folder holds the Google Apps Script that powers the **Report a Vacancy** page
-on https://deputations.github.io/. It is **additive** — it sits next to the
-existing FAQ "report a discrepancy" handler in the same Apps Script project and
-shares the same `/exec` URL.
+This folder holds the Google Apps Script that powers the **Report a Vacancy** and
+**Contact / Community** pages on https://deputations.github.io/. Everything is
+**additive** — it sits next to the existing FAQ "report a discrepancy" handler
+in the same Apps Script project and shares the same `/exec` URL.
 
 ```
 Frontend (GitHub Pages) ─POST JSON─▶ /exec (Apps Script)
                                        │
-                                       ├─ action:"report"  → existing discrepancy logic (untouched)
-                                       ├─ action:"vote"    → existing vote logic       (untouched)
-                                       └─ action:"vacancy" → new handler in Vacancies.gs
-                                                              │
-                                                              ├─ append row to "Vacancies" tab
-                                                              ├─ upload PDF to Drive folder
-                                                              └─ email admin + (optional) submitter
+                                       ├─ action:"report"   → existing discrepancy logic (untouched)
+                                       ├─ action:"vote"     → existing vote logic       (untouched)
+                                       ├─ action:"vacancy"  → Vacancies.gs
+                                       │                      → "Vacancies" tab, Drive upload, admin email
+                                       └─ action:"feedback" → Feedback.gs
+                                                              → "Feedback" tab, admin email + ack
 ```
 
 ## One-time setup
@@ -139,3 +138,81 @@ app trick; nothing exotic.
 - **Submitter phone is not collected** by design (privacy).
 - **No anonymous rate limit beyond the honeypot.** If you start seeing spam,
   add reCAPTCHA v3 / Cloudflare Turnstile as a phase-two enhancement.
+
+---
+
+# Contact / Feedback handler — `Feedback.gs`
+
+Powers `/contact.html`. Same project, same `/exec`, same install pattern.
+
+## One-time install
+
+1. In the same Apps Script project, **File → New → Script → name it `Feedback`**
+   and paste the contents of [`Feedback.gs`](Feedback.gs).
+2. Configure the constants at the top:
+
+   ```js
+   var FEEDBACK_CONFIG = {
+     SHEET_ID:        '',                                // empty = active spreadsheet (recommended)
+     FEEDBACK_TAB:    'Feedback',                        // auto-created on first POST
+     ADMIN_EMAIL:     'vivek.ajnifm@gmail.com',
+     RATE_LIMIT_PER_EMAIL:  5,
+     RATE_LIMIT_WINDOW_MIN: 10
+   };
+   ```
+
+3. Add **one line** inside the existing `doPost(e)` in `Code.gs`, alongside the
+   vacancy dispatcher line — before the other action branches:
+
+   ```js
+   function doPost(e) {
+     var data = {};
+     try { data = JSON.parse(e.postData.contents); } catch (err) {}
+
+     if (data && data.action === 'vacancy')  return handleVacancyPost_(data);   // already added
+     if (data && data.action === 'feedback') return handleFeedbackPost_(data);  // ← ADD THIS LINE
+
+     if (data.action === 'report') return handleReport(data);
+     if (data.action === 'vote')   return handleVote(data);
+     return json({ ok: false, error: 'Unknown action' });
+   }
+   ```
+
+4. **Deploy → Manage deployments → pencil → New version → Deploy.** Same `/exec`
+   URL stays valid.
+
+## The `Feedback` sheet/tab
+
+Auto-created on first POST. Columns:
+
+| # | Column | Purpose |
+|---|---|---|
+| 1 | Feedback ID | `FB-2026-000001` |
+| 2 | Submitted At | timestamp |
+| 3 | Status | default `New`; reviewer cycles through `In Review`, `Replied`, `Resolved`, `Ignored / Spam` |
+| 4 | Category | one of the seven categories the form offers |
+| 5 | Name | optional |
+| 6 | Email | optional |
+| 7 | Subject | required, ≤ 200 chars |
+| 8 | Message | required, ≤ 6000 chars |
+| 9 | Related Page | optional, free text |
+| 10 | Relevant Link | optional URL |
+| 11 | User Agent | captured for bug reports |
+| 12 | Page Context | document.referrer |
+| 13 | Admin Notes | empty — for moderator |
+| 14 | Resolved By | empty — set by moderator |
+| 15 | Resolved At | empty — set by moderator |
+
+## Emails
+
+- **Admin notification** to `ADMIN_EMAIL` on every submission. `Reply-To` is
+  set to the submitter's email when provided, so hitting "Reply" in Gmail
+  works directly.
+- **Submitter acknowledgement** only when an email is given. Includes the
+  reference ID and a link to the WhatsApp Group for urgent peer support.
+
+## Anti-spam
+
+Same pattern as Vacancies: hidden honeypot field (`website`), per-email rate
+limit via `PropertiesService` (script-property key prefix `fb_rl_`), length
+caps server-side (200 / 6000), category allow-list.
