@@ -168,21 +168,36 @@ main{padding-bottom:20px}
 .section-ic svg{width:21px;height:21px}
 .section-head h3{font-size:1.2rem;font-weight:700;letter-spacing:-.01em}
 .section-head .sn{margin-left:auto;font-size:.76rem;color:var(--text-muted);font-weight:600}
-.section-toggle{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;
-  font:600 .82rem/1 inherit;color:var(--text-secondary);background:var(--bg-surface);
+/* topic-section collapse / expand (controls visibility of question cards) */
+.section-collapse-toggle{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;
+  font:600 .82rem/1 inherit;color:var(--text-secondary);background:var(--bg-surface-solid);
   border:1px solid var(--border-color);cursor:pointer;transition:color .2s,border-color .2s,background .2s,transform .2s;
   flex-shrink:0;white-space:nowrap}
-.section-toggle:hover{color:var(--sc,var(--primary-color));border-color:color-mix(in srgb,var(--sc,var(--primary-color)) 45%,var(--border-color));background:var(--bg-surface-solid);transform:translateY(-1px)}
-.section-toggle:focus-visible{outline:2px solid var(--sc,var(--primary-color));outline-offset:2px}
-.section-toggle[aria-expanded="true"]{color:var(--sc,var(--primary-color));border-color:color-mix(in srgb,var(--sc,var(--primary-color)) 55%,var(--border-color));background:color-mix(in srgb,var(--sc,var(--primary-color)) 10%,var(--bg-surface))}
-.section-toggle:disabled{opacity:.45;cursor:not-allowed;transform:none}
-.section-toggle .section-toggle-chev{display:inline-grid;place-items:center;transition:transform .25s cubic-bezier(.4,0,.2,1)}
-.section-toggle .section-toggle-chev svg{width:14px;height:14px}
-.section-toggle[aria-expanded="true"] .section-toggle-chev{transform:rotate(180deg)}
+.section-collapse-toggle:hover{color:var(--sc,var(--primary-color));border-color:color-mix(in srgb,var(--sc,var(--primary-color)) 45%,var(--border-color));transform:translateY(-1px)}
+.section-collapse-toggle:focus-visible{outline:2px solid var(--sc,var(--primary-color));outline-offset:2px}
+.section-collapse-toggle[aria-expanded="true"]{color:var(--text-primary);
+  border-color:color-mix(in srgb,var(--sc,var(--primary-color)) 45%,var(--border-color));
+  background:color-mix(in srgb,var(--sc,var(--primary-color)) 12%,var(--bg-surface-solid))}
+.section-collapse-toggle:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.section-collapse-toggle .section-collapse-chev{display:inline-grid;place-items:center;transition:transform .25s cubic-bezier(.4,0,.2,1)}
+.section-collapse-toggle .section-collapse-chev svg{width:14px;height:14px}
+.section-collapse-toggle[aria-expanded="true"] .section-collapse-chev{transform:rotate(180deg)}
+
+.section-body{display:grid;grid-template-rows:0fr;
+  transition:grid-template-rows .32s cubic-bezier(.4,0,.2,1)}
+.section.expanded .section-body{grid-template-rows:1fr}
+.section-body-inner{overflow:hidden;min-height:0}
+/* Collapsed sections hide the inner FAQ cards but keep header spacing tidy. */
+.section:not(.expanded) .section-body-inner{visibility:hidden}
+.section.expanded .section-body-inner{visibility:visible}
+
+@media (prefers-reduced-motion: reduce){
+  .section-body{transition:none}
+}
 @media (max-width:520px){
   .section-head{flex-wrap:wrap}
   .section-head .sn{margin-left:auto}
-  .section-toggle{margin-left:auto}
+  .section-collapse-toggle{margin-left:auto}
 }
 
 /* faq item */
@@ -403,7 +418,11 @@ footer{margin-top:54px;border-top:1px solid var(--border-color);background:var(-
       <input type="search" id="searchInput" placeholder="Search questions — allowance, tenure, cooling-off…" aria-label="Search questions">
       <button class="clear" id="clearBtn" aria-label="Clear search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
-    <button class="tool-btn" id="expandBtn">
+    <button class="tool-btn" id="toggleSectionsBtn" type="button" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <span id="toggleSectionsLabel">Show all topics</span>
+    </button>
+    <button class="tool-btn" id="expandBtn" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10 12 5l5 5M7 14l5 5 5-5"/></svg>
       <span id="expandLabel">Expand all</span>
     </button>
@@ -1208,11 +1227,32 @@ var DISCREPANCY_API = "https://script.google.com/macros/s/AKfycbyltPrnuwL3oS0HUi
   if(_statTotal)_statTotal.textContent=items.length;
   var _noResTotal=document.getElementById("noResultsTotal");
   if(_noResTotal)_noResTotal.textContent=items.length;
-  /* ---------- accordion helpers ---------- */
-  function isVisible(el){return el && el.dataset.hidden!=="1";}
-  function getVisibleFaqItems(){return items.filter(isVisible);}
+  /* ---------- two-level accordion helpers ----------
+     Level 1: each .section can be collapsed/expanded (hides question cards).
+     Level 2: each .faq-item can be opened/closed (toggles its answer). */
+  function isElementVisible(el){return !!el && el.dataset.hidden!=="1";}
+  function isVisible(el){return isElementVisible(el);}                 /* alias */
+  function getVisibleSections(){
+    return Array.prototype.slice.call(document.querySelectorAll("#faqRoot .section"))
+      .filter(function(s){return s.style.display!=="none";});
+  }
+  function getExpandedSections(){
+    return getVisibleSections().filter(function(s){return s.classList.contains("expanded");});
+  }
+  function getFaqItemsInSection(sec){
+    return Array.prototype.slice.call(sec.querySelectorAll(".faq-item"));
+  }
   function getVisibleFaqItemsInSection(sec){
-    return Array.prototype.slice.call(sec.querySelectorAll(".faq-item")).filter(isVisible);
+    return getFaqItemsInSection(sec).filter(isElementVisible);
+  }
+  /* Items eligible for the answer-level global expand: section must be
+     expanded AND item not hidden by search/filter. */
+  function getVisibleFaqItemsForAnswerToggle(){
+    var out=[];
+    getExpandedSections().forEach(function(s){
+      getVisibleFaqItemsInSection(s).forEach(function(i){out.push(i);});
+    });
+    return out;
   }
   function openFaq(item){
     if(!item||item.classList.contains("open"))return;
@@ -1227,71 +1267,130 @@ var DISCREPANCY_API = "https://script.google.com/macros/s/AKfycbyltPrnuwL3oS0HUi
   function toggleFaq(item){
     if(item.classList.contains("open"))closeFaq(item); else openFaq(item);
   }
-  /* keep alias for any older callers */
-  function openItem(item){openFaq(item);}
+  function openItem(item){openFaq(item);} /* alias kept for older callers */
 
+  /* Wrap each section's FAQ articles in .section-body > .section-body-inner
+     so we can grid-animate visibility cleanly. */
+  var SECTION_BODY_IDS={basics:"basicsBody",eligibility:"eligibilityBody",tenure:"tenureBody",
+    pay:"payBody",allowance:"allowanceBody",benefits:"benefitsBody",
+    special:"specialBody",procedural:"proceduralBody"};
+  Array.prototype.slice.call(document.querySelectorAll("#faqRoot .section")).forEach(function(sec){
+    if(sec.querySelector(":scope > .section-body"))return;
+    var inner=document.createElement("div");
+    inner.className="section-body-inner";
+    var faqs=getFaqItemsInSection(sec);
+    faqs.forEach(function(f){inner.appendChild(f);});
+    var body=document.createElement("div");
+    body.className="section-body";
+    var key=sec.getAttribute("data-sec");
+    if(key && SECTION_BODY_IDS[key])body.id=SECTION_BODY_IDS[key];
+    body.appendChild(inner);
+    sec.appendChild(body);
+    /* Initial state: every section collapsed. */
+    sec.classList.remove("expanded");
+    sec.classList.add("collapsed");
+  });
+
+  /* Per-section collapse toggle in the header (Show/Hide questions). */
+  function updateSectionCollapseButton(sec){
+    var btn=sec.querySelector(".section-collapse-toggle");
+    if(!btn)return;
+    var expanded=sec.classList.contains("expanded");
+    btn.setAttribute("aria-expanded",expanded?"true":"false");
+    var lbl=btn.querySelector(".section-collapse-label");
+    if(lbl)lbl.textContent=expanded?"Hide questions":"Show questions";
+  }
+  function updateAllSectionCollapseButtons(){
+    Array.prototype.slice.call(document.querySelectorAll("#faqRoot .section"))
+      .forEach(updateSectionCollapseButton);
+  }
+  function expandSection(sec,opts){
+    if(!sec)return;
+    opts=opts||{closeAnswers:true};
+    sec.classList.add("expanded");
+    sec.classList.remove("collapsed");
+    if(opts.closeAnswers){
+      getFaqItemsInSection(sec).forEach(closeFaq);
+    }
+    updateSectionCollapseButton(sec);
+  }
+  function collapseSection(sec){
+    if(!sec)return;
+    sec.classList.remove("expanded");
+    sec.classList.add("collapsed");
+    /* When collapsing a topic, also close any open answers inside it. */
+    getFaqItemsInSection(sec).forEach(closeFaq);
+    updateSectionCollapseButton(sec);
+  }
+  function toggleSection(sec){
+    if(sec.classList.contains("expanded"))collapseSection(sec); else expandSection(sec);
+    updateGlobalSectionToggleState();
+    updateGlobalAnswerExpandState();
+  }
+  Array.prototype.slice.call(document.querySelectorAll("#faqRoot .section")).forEach(function(sec){
+    var head=sec.querySelector(".section-head");
+    if(!head||head.querySelector(".section-collapse-toggle"))return;
+    var btn=document.createElement("button");
+    btn.type="button";
+    btn.className="section-collapse-toggle";
+    btn.setAttribute("aria-expanded","false");
+    var bodyId=sec.querySelector(":scope > .section-body");
+    if(bodyId&&bodyId.id)btn.setAttribute("aria-controls",bodyId.id);
+    btn.innerHTML='<span class="section-collapse-label">Show questions</span>'+
+      '<span class="section-collapse-chev" aria-hidden="true">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>';
+    btn.addEventListener("click",function(){toggleSection(sec);});
+    head.appendChild(btn);
+  });
+
+  /* Per-FAQ answer click toggles only its own answer. */
   items.forEach(function(item){
     var btn=item.querySelector(".faq-q");
     btn.addEventListener("click",function(){
       toggleFaq(item);
-      var sec=item.closest(".section");
-      if(sec)updateSectionToggleState(sec);
-      updateGlobalExpandState();
+      updateGlobalAnswerExpandState();
     });
   });
 
-  /* expand / collapse all (operates on currently visible FAQs only) */
+  /* ---------- toolbar: answer-level Expand all / Collapse all ---------- */
   var expandBtn=document.getElementById("expandBtn"),expandLabel=document.getElementById("expandLabel");
-  function updateGlobalExpandState(){
-    var vis=getVisibleFaqItems();
+  function updateGlobalAnswerExpandState(){
+    var vis=getVisibleFaqItemsForAnswerToggle();
     var allOpen=vis.length>0 && vis.every(function(i){return i.classList.contains("open");});
     expandLabel.textContent=allOpen?"Collapse all":"Expand all";
     expandBtn.setAttribute("aria-expanded",allOpen?"true":"false");
+    expandBtn.disabled=vis.length===0;
   }
-  expandBtn.setAttribute("type","button");
+  /* Backwards-compat alias for any leftover callers. */
+  function updateGlobalExpandState(){updateGlobalAnswerExpandState();}
   expandBtn.addEventListener("click",function(){
-    var vis=getVisibleFaqItems();
-    if(!vis.length)return;
+    var vis=getVisibleFaqItemsForAnswerToggle();
+    if(!vis.length)return; /* no expanded topic with visible items */
     var anyClosed=vis.some(function(i){return !i.classList.contains("open");});
     vis.forEach(anyClosed?openFaq:closeFaq);
-    updateAllSectionToggleStates();
-    updateGlobalExpandState();
+    updateGlobalAnswerExpandState();
   });
 
-  /* per-section expand/collapse — injected dynamically into each .section-head */
-  function updateSectionToggleState(sec){
-    var btn=sec.querySelector(".section-toggle");
-    if(!btn)return;
-    var vis=getVisibleFaqItemsInSection(sec);
-    var anyOpen=vis.some(function(i){return i.classList.contains("open");});
-    btn.setAttribute("aria-expanded",anyOpen?"true":"false");
-    var lbl=btn.querySelector(".section-toggle-label");
-    if(lbl)lbl.textContent=anyOpen?"Collapse topic":"Expand topic";
-    btn.disabled=vis.length===0;
+  /* ---------- toolbar: topic-level Show all / Hide all ---------- */
+  var toggleSectionsBtn=document.getElementById("toggleSectionsBtn"),
+      toggleSectionsLabel=document.getElementById("toggleSectionsLabel");
+  function updateGlobalSectionToggleState(){
+    var vis=getVisibleSections();
+    var allExpanded=vis.length>0 && vis.every(function(s){return s.classList.contains("expanded");});
+    toggleSectionsLabel.textContent=allExpanded?"Hide all topics":"Show all topics";
+    toggleSectionsBtn.setAttribute("aria-expanded",allExpanded?"true":"false");
+    toggleSectionsBtn.disabled=vis.length===0;
   }
-  function updateAllSectionToggleStates(){
-    Array.prototype.slice.call(document.querySelectorAll("#faqRoot .section"))
-      .forEach(updateSectionToggleState);
-  }
-  Array.prototype.slice.call(document.querySelectorAll("#faqRoot .section")).forEach(function(sec){
-    var head=sec.querySelector(".section-head");
-    if(!head||head.querySelector(".section-toggle"))return;
-    var btn=document.createElement("button");
-    btn.type="button";
-    btn.className="section-toggle";
-    btn.setAttribute("aria-expanded","false");
-    btn.innerHTML='<span class="section-toggle-label">Expand topic</span>'+
-      '<span class="section-toggle-chev" aria-hidden="true">'+
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>';
-    btn.addEventListener("click",function(){
-      var vis=getVisibleFaqItemsInSection(sec);
-      if(!vis.length)return;
-      var anyClosed=vis.some(function(i){return !i.classList.contains("open");});
-      vis.forEach(anyClosed?openFaq:closeFaq);
-      updateSectionToggleState(sec);
-      updateGlobalExpandState();
+  toggleSectionsBtn.addEventListener("click",function(){
+    var vis=getVisibleSections();
+    if(!vis.length)return;
+    var anyCollapsed=vis.some(function(s){return !s.classList.contains("expanded");});
+    vis.forEach(function(s){
+      if(anyCollapsed)expandSection(s,{closeAnswers:true});
+      else collapseSection(s);
     });
-    head.appendChild(btn);
+    updateGlobalSectionToggleState();
+    updateGlobalAnswerExpandState();
   });
 
   /* filters */
@@ -1351,12 +1450,36 @@ var DISCREPANCY_API = "https://script.google.com/macros/s/AKfycbyltPrnuwL3oS0HUi
     sections.forEach(function(sec){
       sec.style.display=sec.querySelectorAll('.faq-item[data-hidden="0"]').length?"":"none";
     });
+    /* Section visibility logic for the topic-collapse layer:
+       - If a search query is active, auto-expand every section that still has
+         visible matching question cards so the user sees the matches.
+       - Otherwise (no search), collapse every section so the user is back to
+         the clean 8-headers view. Answers inside are also closed. */
+    if(q){
+      sections.forEach(function(sec){
+        var hasVisible=sec.querySelectorAll('.faq-item[data-hidden="0"]').length>0;
+        if(hasVisible){
+          sec.classList.add("expanded");
+          sec.classList.remove("collapsed");
+        } else {
+          sec.classList.remove("expanded");
+          sec.classList.add("collapsed");
+        }
+      });
+    } else {
+      sections.forEach(function(sec){
+        sec.classList.remove("expanded");
+        sec.classList.add("collapsed");
+        getFaqItemsInSection(sec).forEach(closeFaq);
+      });
+    }
     noResults.classList.toggle("show",shown===0);
     resultLine.innerHTML=(q||activeCat!=="all")
       ? "Showing <b>"+shown+"</b> of "+items.length+" questions"
       : "<b>"+items.length+"</b> questions across 8 topics — search or pick a topic to narrow down";
-    updateAllSectionToggleStates();
-    updateGlobalExpandState();
+    updateAllSectionCollapseButtons();
+    updateGlobalSectionToggleState();
+    updateGlobalAnswerExpandState();
   }
   var tmr;
   searchInput.addEventListener("input",function(){clearTimeout(tmr);tmr=setTimeout(applyFilters,110);});
