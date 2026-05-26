@@ -160,11 +160,25 @@ html[data-theme="light"] .icon-btn .sun{display:none}
 .result-line b{color:var(--text-secondary)}
 
 main{padding-bottom:20px}
-.section{margin-top:34px}
+.section{margin-top:34px;border-radius:var(--radius-lg);position:relative}
+/* Subtle topic accent: a thin left bar that strengthens when the section is expanded. */
+.section::before{content:"";position:absolute;left:-1px;top:14px;bottom:14px;width:3px;border-radius:3px;
+  background:color-mix(in srgb,var(--sc) 30%,transparent);opacity:.55;transition:opacity .25s,background .25s}
+.section.expanded::before{opacity:1;background:color-mix(in srgb,var(--sc) 65%,transparent)}
 .section-head{display:flex;align-items:center;gap:13px;margin-bottom:15px;
-  padding-bottom:13px;border-bottom:1px solid var(--border-color)}
+  padding:11px 14px 13px;border-radius:var(--radius-lg) var(--radius-lg) 12px 12px;
+  border-bottom:1px solid color-mix(in srgb,var(--sc) 22%,var(--border-color));
+  background:linear-gradient(90deg,color-mix(in srgb,var(--sc) 9%,transparent),transparent 62%);
+  transition:border-color .25s,background .25s,box-shadow .25s}
+.section.expanded .section-head{
+  border-bottom-color:color-mix(in srgb,var(--sc) 40%,var(--border-color));
+  background:linear-gradient(90deg,color-mix(in srgb,var(--sc) 14%,transparent),transparent 70%);
+  box-shadow:0 10px 30px -24px color-mix(in srgb,var(--sc) 80%,transparent)}
 .section-ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;
-  background:color-mix(in srgb,var(--sc) 16%,transparent);color:var(--sc)}
+  background:color-mix(in srgb,var(--sc) 16%,transparent);color:var(--sc);
+  transition:background .25s,box-shadow .25s}
+.section.expanded .section-ic{background:color-mix(in srgb,var(--sc) 26%,transparent);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--sc) 30%,transparent)}
 .section-ic svg{width:21px;height:21px}
 .section-head h3{font-size:1.2rem;font-weight:700;letter-spacing:-.01em}
 .section-head .sn{margin-left:auto;font-size:.76rem;color:var(--text-muted);font-weight:600}
@@ -179,7 +193,11 @@ main{padding-bottom:20px}
   border-color:color-mix(in srgb,var(--sc,var(--primary-color)) 45%,var(--border-color));
   background:color-mix(in srgb,var(--sc,var(--primary-color)) 12%,var(--bg-surface-solid))}
 .section-collapse-toggle:disabled{opacity:.45;cursor:not-allowed;transform:none}
-.section-collapse-toggle .section-collapse-chev{display:inline-grid;place-items:center;transition:transform .25s cubic-bezier(.4,0,.2,1)}
+.section-collapse-toggle .section-collapse-chev{display:inline-grid;place-items:center;
+  color:color-mix(in srgb,var(--sc,var(--primary-color)) 75%,var(--text-secondary));
+  transition:transform .25s cubic-bezier(.4,0,.2,1),color .2s}
+.section-collapse-toggle:hover .section-collapse-chev,
+.section-collapse-toggle[aria-expanded="true"] .section-collapse-chev{color:var(--sc,var(--primary-color))}
 .section-collapse-toggle .section-collapse-chev svg{width:14px;height:14px}
 .section-collapse-toggle[aria-expanded="true"] .section-collapse-chev{transform:rotate(180deg)}
 
