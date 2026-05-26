@@ -171,6 +171,8 @@
       font-family: "JetBrains Mono", monospace; font-size: 0.7rem; color: #67e8f9;
     }
     .mockup-body { padding: 1.2rem 1.4rem; color: #f8fafc; font-family: "Plus Jakarta Sans", sans-serif; }
+    .mockup.shot-mockup .mockup-body { padding: 0; }
+    .mockup.shot-mockup img { display: block; width: 100%; height: auto; }
 
     .mock-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; padding: 0.3rem; background: rgba(15, 23, 42, 0.78); border-radius: 999px; margin-bottom: 1rem; border: 1px solid rgba(148, 163, 184, 0.12); }
     .mock-tab { padding: 0.4rem 0.85rem; font-size: 0.78rem; font-weight: 600; color: #94a3b8; border-radius: 999px; }
@@ -349,17 +351,10 @@
     <h3 id="overview">Overview — the bento dashboard</h3>
     <p>Shows a welcome strip with live counts and a grid of cards covering the most useful aggregates.</p>
 
-    <div class="mockup">
+    <div class="mockup shot-mockup">
       <div class="mockup-chrome"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div><div class="mockup-url">deputations.github.io/my-deputation.html#overview</div></div>
-      <div class="mockup-body">
-        <div class="mock-tabs">
-          <div class="mock-tab active">Overview</div>
-          <div class="mock-tab">Bookmarks <span class="badge">5</span></div>
-          <div class="mock-tab">Searches <span class="badge">3</span></div>
-          <div class="mock-tab">Tracker</div>
-          <div class="mock-tab">Documents</div>
-          <div class="mock-tab">Profile</div>
-        </div>
+      <div class="mockup-body"><img src="assets/manual/overview.png" alt="Overview dashboard — welcome strip and bento cards" loading="lazy"></div>
+    </div>
         <div class="mock-welcome">Welcome back. You have <span class="num">3</span> active applications, <span class="num">5</span> bookmarks, and <span class="num">2</span> deadlines this week.</div>
         <div class="mock-bento">
           <div class="mock-card s3">
@@ -402,17 +397,10 @@
     <h3 id="bookmarks">Bookmarks — every vacancy you've hearted</h3>
     <p>Each card shows a <strong>match %</strong> (if you set pay level in Profile), the current tracker stage if added, deadline pill, and an optional cooling-off banner. Add to tracker, open notification, or remove.</p>
 
-    <div class="mockup">
+    <div class="mockup shot-mockup">
       <div class="mockup-chrome"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div><div class="mockup-url">deputations.github.io/my-deputation.html#bookmarks</div></div>
-      <div class="mockup-body">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;font-size:0.7rem;color:#94a3b8">5 bookmarked vacancies <span style="padding:0.3rem 0.7rem;border:1px solid rgba(148,163,184,0.18);border-radius:8px;color:#f8fafc">+ Find more</span></div>
-        <div class="mock-grid">
-          <div class="mock-vcard">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="mock-vtitle">Director (Coord), MHA</div><span class="pill hi">92%</span></div>
-            <div class="mock-vmeta">Home Affairs · New Delhi · Level 12–13</div>
-            <div class="mock-vpills"><span class="pill closing">3 days</span><span class="pill match">Awaiting Clearances</span></div>
-            <div class="mock-vbtns"><span class="mock-btn">Edit in tracker</span><span class="mock-btn">Notification</span></div>
-          </div>
+      <div class="mockup-body"><img src="assets/manual/bookmarks.png" alt="Bookmarks grid — match %, tracker stage, deadlines" loading="lazy"></div>
+    </div>
           <div class="mock-vcard">
             <div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="mock-vtitle">Joint Director (Plans), Defence</div><span class="pill hi">88%</span></div>
             <div class="mock-vmeta">Defence · New Delhi · Level 13</div>
@@ -439,15 +427,10 @@
     <h3 id="searches">Searches — saved filter combinations with new-match alerts</h3>
     <p>Click <strong>New search</strong> to save a filter combo. The <strong>"N new"</strong> badge counts vacancies that weren't there last time you ran it. <strong>Run</strong> opens the main vacancies page with the filters pre-applied via URL params.</p>
 
-    <div class="mockup">
+    <div class="mockup shot-mockup">
       <div class="mockup-chrome"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div><div class="mockup-url">deputations.github.io/my-deputation.html#searches</div></div>
-      <div class="mockup-body">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;font-size:0.7rem;color:#94a3b8">3 saved searches <span style="padding:0.3rem 0.7rem;background:linear-gradient(135deg,#22d3ee,#4ade80);color:#05111d;border-radius:8px;font-weight:700">+ New search</span></div>
-        <div class="mock-search">
-          <div>
-            <div class="mock-sname">Level 12–13 · Delhi · Defence <span class="pill hi" style="margin-left:0.3rem">4 new</span></div>
-            <div class="mock-sfilters">Level 12 · Defence · Delhi / NCR · Active</div>
-          </div>
+      <div class="mockup-body"><img src="assets/manual/searches.png" alt="Saved searches with new-match badges and run/edit/delete" loading="lazy"></div>
+    </div>
           <div style="display:flex;gap:0.3rem"><span class="mock-btn primary">Run</span><span class="mock-btn">Edit</span></div>
         </div>
         <div class="mock-search">
@@ -471,14 +454,10 @@
     <h3 id="tracker">Tracker — kanban for proper-channel applications</h3>
     <p>Ten stages reflecting how deputation files actually move. Drag cards between columns on desktop; on mobile use the dropdown at the bottom of each card. Click a card to edit deadlines, next action, contact, notes, and view stage history.</p>
 
-    <div class="mockup">
+    <div class="mockup shot-mockup">
       <div class="mockup-chrome"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div><div class="mockup-url">deputations.github.io/my-deputation.html#tracker</div></div>
-      <div class="mockup-body">
-        <div class="mock-kanban">
-          <div class="mock-col">
-            <div class="mock-col-head"><span>Saved</span><span>1</span></div>
-            <div class="mock-kcard"><div class="mock-ktitle">Deputy Secretary (Budget)</div><div class="mock-kmeta">Finance</div><span class="pill closing">6 days</span></div>
-          </div>
+      <div class="mockup-body"><img src="assets/manual/tracker.png" alt="Tracker kanban — drag cards across proper-channel stages" loading="lazy"></div>
+    </div>
           <div class="mock-col">
             <div class="mock-col-head"><span>Drafting</span><span>1</span></div>
             <div class="mock-kcard"><div class="mock-ktitle">Joint Director (Plans)</div><div class="mock-kmeta">Defence · Finalise bio-data</div><span class="pill critical">2 days</span></div>
@@ -499,10 +478,10 @@
     <h3 id="documents">Documents — readiness checklist (no file uploads)</h3>
     <p>Status &amp; dates only — files stay in your own folder. Six documents are marked <strong>Required</strong> and count toward the readiness %.</p>
 
-    <div class="mockup">
+    <div class="mockup shot-mockup">
       <div class="mockup-chrome"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div><div class="mockup-url">deputations.github.io/my-deputation.html#documents</div></div>
-      <div class="mockup-body">
-        <div class="mock-readiness"><span><strong style="color:#f8fafc">5</strong> of <strong style="color:#f8fafc">6</strong> required ready</span><div class="mock-bar"><div style="width:83%"></div></div><span style="color:#f8fafc">83%</span></div>
+      <div class="mockup-body"><img src="assets/manual/documents.png" alt="Document checklist with status pills, dates, and notes" loading="lazy"></div>
+    </div><span style="color:#f8fafc">83%</span></div>
         <div class="mock-doc"><div>Bio-data / Application Proforma</div><div class="status ready">Ready</div><div>—</div><div>—</div><div>Master in profile</div></div>
         <div class="mock-doc"><div>APAR / ACR (last 5 years)</div><div class="status ready">Ready</div><div>—</div><div>—</div><div>Bundled PDF</div></div>
         <div class="mock-doc"><div>Vigilance Clearance</div><div class="status expiring">Expiring</div><div>14 May 2025</div><div>14 May 2026</div><div>Renew before MHA push</div></div>
@@ -516,11 +495,10 @@
     <h3 id="profile">Profile — your service identity</h3>
     <p>Powers match score, cooling-off pill, and tracker prefills. Includes <strong>Export</strong>, <strong>Import</strong>, and <strong>Reset</strong> at the bottom.</p>
 
-    <div class="mockup">
+    <div class="mockup shot-mockup">
       <div class="mockup-chrome"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div><div class="mockup-url">deputations.github.io/my-deputation.html#profile</div></div>
-      <div class="mockup-body">
-        <div class="mock-profile-form">
-          <div class="mock-field"><label>Current pay level</label><div class="input">Level 12</div></div>
+      <div class="mockup-body"><img src="assets/manual/profile.png" alt="Profile form with export / import / reset controls" loading="lazy"></div>
+    </div>
           <div class="mock-field"><label>Service / Cadre</label><div class="input">CSS</div></div>
           <div class="mock-field"><label>Years of service</label><div class="input">14</div></div>
           <div class="mock-field"><label>Current ministry</label><div class="input">Finance</div></div>
