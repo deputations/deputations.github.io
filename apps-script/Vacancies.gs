@@ -6,16 +6,16 @@
  *  2. File > New > Script — name it "Vacancies".
  *  3. Paste the contents of this file.
  *  4. Edit the CONFIG block below — set DRIVE_FOLDER_ID and ADMIN_EMAIL.
- *  5. In your existing `Code.gs`, find the `doPost(e)` function and either:
- *      (a) Replace it with the DISPATCHER snippet at the bottom of this file,
- *          renaming your current body to handleDiscrepancyPost_(payload); OR
- *      (b) Add this one branch near the top of your doPost (before any other
- *          parsing/branching that assumes the discrepancy schema):
+ *  5. In your existing `Code.gs`, INSIDE the `doPost(e)` function, add ONE LINE
+ *     right after the existing JSON.parse / try-catch and before the other
+ *     `if (data.action === ...)` branches:
  *
- *            var __body = JSON.parse(e.postData.contents || "{}");
- *            if (__body && __body.action === "vacancy") {
- *              return handleVacancyPost_(__body);
- *            }
+ *            if (data && data.action === 'vacancy') return handleVacancyPost_(data);
+ *
+ *     IMPORTANT: this line must sit inside doPost. Pasting it at the top level
+ *     of Code.gs (between doGet and doPost) causes
+ *     "SyntaxError: Illegal return statement" because `return` is only legal
+ *     inside a function body.
  *
  *  6. Deploy > Manage deployments > pencil icon on the active deployment
  *     > "New version" > Deploy. Same /exec URL keeps working.

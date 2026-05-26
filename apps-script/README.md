@@ -38,21 +38,29 @@ Frontend (GitHub Pages) ─POST JSON─▶ /exec (Apps Script)
    };
    ```
 
-4. **Wire the dispatcher.** In your existing `Code.gs`, find `doPost(e)` and add
-   **one branch at the very top** so vacancy POSTs route to the new handler:
+4. **Wire the dispatcher.** Open the existing `Code.gs` and locate `doPost(e)`.
+   Add **one line inside that function**, right after the existing
+   `try { data = JSON.parse(...) } catch (err) {}` line — before the other
+   `if (data.action === ...)` branches:
 
    ```js
    function doPost(e) {
-     var __body;
-     try { __body = JSON.parse(e.postData.contents || '{}'); } catch (err) {}
-     if (__body && __body.action === 'vacancy') return handleVacancyPost_(__body);
+     var data = {};
+     try { data = JSON.parse(e.postData.contents); } catch (err) {}
 
-     // ↓↓↓  your existing discrepancy / vote / report logic stays exactly as it is  ↓↓↓
-     ...
+     if (data && data.action === 'vacancy') return handleVacancyPost_(data);   // ← ADD THIS LINE
+
+     if (data.action === 'report') return handleReport(data);   // existing
+     if (data.action === 'vote')   return handleVote(data);     // existing
+     return json({ ok: false, error: 'Unknown action' });
    }
    ```
 
-   No changes to your `action:"report"`, `action:"vote"`, or `GET /` logic.
+   ⚠️ The dispatcher line **must be inside** `doPost`. Pasting it between
+   `doGet` and `doPost` (at the top level of the file) will cause
+   `SyntaxError: Illegal return statement` because `return` is only legal
+   inside a function. No changes to your `action:"report"`, `action:"vote"`,
+   or `GET /` logic.
 
 5. **Redeploy.**
    *Deploy → Manage deployments → pencil icon on the active web-app deployment
