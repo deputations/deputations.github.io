@@ -29,7 +29,7 @@ var FEEDBACK_CONFIG = {
   // Tab name for feedback rows. Auto-created if missing.
   FEEDBACK_TAB:    'Feedback',
   // Admin notification email. Leave empty to skip.
-  ADMIN_EMAIL:     'vivek.ajnifm@gmail.com',
+  ADMIN_EMAIL:     'deputations.goi@gmail.com',
   // Rate limit: max feedback submissions per email in the trailing window (minutes).
   RATE_LIMIT_PER_EMAIL:  5,
   RATE_LIMIT_WINDOW_MIN: 10

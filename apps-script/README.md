@@ -155,7 +155,7 @@ Powers `/contact.html`. Same project, same `/exec`, same install pattern.
    var FEEDBACK_CONFIG = {
      SHEET_ID:        '',                                // empty = active spreadsheet (recommended)
      FEEDBACK_TAB:    'Feedback',                        // auto-created on first POST
-     ADMIN_EMAIL:     'vivek.ajnifm@gmail.com',
+     ADMIN_EMAIL:     'deputations.goi@gmail.com',
      RATE_LIMIT_PER_EMAIL:  5,
      RATE_LIMIT_WINDOW_MIN: 10
    };
