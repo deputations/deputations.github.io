@@ -863,9 +863,9 @@
               ${REQUIRED_DOC_KEYS.has(d.docKey) ? '<span class="md-pill" style="margin-left:0.4rem">Required</span>' : ''}
             </div>
             ${selectHtml('status', DOC_STATUSES.map(s => [s.value, s.label]), d.status, true)}
-            <input type="date" name="issuedOn" value="${U.escapeHtml(d.issuedOn || '')}" placeholder="Issued">
-            <input type="date" name="expiresOn" value="${U.escapeHtml(d.expiresOn || '')}" placeholder="Expires">
-            <input type="text" name="notes" value="${U.escapeHtml(d.notes || '')}" placeholder="Notes (e.g. with Section Officer)">
+            <input type="date" name="issuedOn"  value="${U.escapeHtml(d.issuedOn  || '')}" title="Issued on — the date this document was generated" aria-label="Issued on">
+            <input type="date" name="expiresOn" value="${U.escapeHtml(d.expiresOn || '')}" title="Expires on — leave blank for documents that don't expire (e.g. Bio-data, Education)" aria-label="Expires on">
+            <input type="text" name="notes" value="${U.escapeHtml(d.notes || '')}" placeholder="Notes (e.g. with Section Officer)" title="Free-text notes — where the file is, who's processing it, etc.">
             <button class="md-btn ghost sm" data-save-doc="${d.docKey}"><i data-lucide="save"></i></button>
           </div>`).join('')}
       </div>`;
