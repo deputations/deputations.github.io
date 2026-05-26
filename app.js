@@ -85,6 +85,7 @@ function loadDataFromJSON() {
 
             reconcileWatchlistWithData();
             populateFilters();
+            hydrateFiltersFromUrl();
             buildSearchSuggestions();
             bindEvents();
             updateQuickFiltersBar();
@@ -102,6 +103,35 @@ function loadDataFromJSON() {
                 </div>
             `;
         });
+}
+
+function hydrateFiltersFromUrl() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        if (![...params.keys()].length) return;
+
+        const setIfPresent = (param, el) => {
+            if (!el) return;
+            const val = params.get(param);
+            if (val == null) return;
+            el.value = val;
+        };
+        setIfPresent('search', searchPost);
+        setIfPresent('myPayLevel', filterMyPayLevel);
+        setIfPresent('level', filterLevel);
+        setIfPresent('ministry', filterMinistry);
+        setIfPresent('location', filterLocation);
+        if (params.has('status')) filterStatus.value = params.get('status');
+
+        const quick = (params.get('quick') || '').split(',').filter(Boolean);
+        if (quick.includes('closing7')) quickFilters.closing7 = true;
+        if (quick.includes('closingToday')) quickFilters.closingToday = true;
+        if (quick.includes('delhiNcr')) quickFilters.delhiNcr = true;
+
+        if (params.get('watchlist') === '1') showWatchlistOnly = true;
+    } catch (e) {
+        console.warn('URL param hydration skipped:', e);
+    }
 }
 
 function getDateSortValue(value) {
