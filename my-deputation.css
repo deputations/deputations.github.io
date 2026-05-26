@@ -514,6 +514,35 @@
   color: var(--text-primary);
 }
 
+/* --- Manual popup --- */
+.modal-content.md-manual-modal {
+  width: 96%;
+  max-width: 1080px;
+  height: 92vh;
+  max-height: 92vh;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.md-manual-frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #f6f8fc;
+  border-radius: 22px;
+}
+.modal-content.md-manual-modal .modal-close {
+  z-index: 5;
+  background: rgba(15, 23, 42, 0.85);
+  color: #fff;
+  border-radius: 999px;
+  width: 36px;
+  height: 36px;
+  top: 12px;
+  right: 12px;
+}
+
 .md-doc-row select, .md-doc-row input {
   padding: 0.4rem 0.55rem;
   font-size: 0.83rem;

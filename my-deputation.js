@@ -1183,6 +1183,12 @@
     if (close) close.addEventListener('click', closeModal);
     if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    const manualBtn = document.getElementById('mdManualBtn');
+    if (manualBtn && !manualBtn.dataset.bound) {
+      manualBtn.addEventListener('click', openManualModal);
+      manualBtn.dataset.bound = '1';
+    }
   }
   function showModal(html) {
     const modal = document.getElementById('modal');
@@ -1190,7 +1196,18 @@
     modal.style.display = 'flex';
     if (window.lucide) lucide.createIcons();
   }
-  function closeModal() { document.getElementById('modal').style.display = 'none'; }
+  function openManualModal() {
+    const modal = document.getElementById('modal');
+    modal.querySelector('.modal-content')?.classList.add('md-manual-modal');
+    document.getElementById('modalBody').innerHTML =
+      '<iframe class="md-manual-frame" src="my-deputation-manual.html" title="User Manual" loading="lazy"></iframe>';
+    modal.style.display = 'flex';
+  }
+  function closeModal() {
+    const modal = document.getElementById('modal');
+    modal.style.display = 'none';
+    modal.querySelector('.modal-content')?.classList.remove('md-manual-modal');
+  }
 
   // ---------- Misc UI helpers ----------
   function deadlinePill(date, daysLeft) {
