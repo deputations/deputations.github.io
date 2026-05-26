@@ -91,7 +91,7 @@
         payLevel: '', service: '', cadre: '',
         currentMinistry: '', currentPost: '', yearsOfService: '',
         preferredMinistries: [], preferredLocations: [], experienceTags: [],
-        lastDeputationEndDate: '', coolingOffYears: 3
+        lastDeputationStartDate: '', lastDeputationEndDate: '', coolingOffYears: 3
       });
     },
     setProfile(p) { this.write(KEYS.profile, p); },
@@ -125,7 +125,7 @@
       switchTab(STAGES_TAB_LIST.includes(initialTab) ? initialTab : 'overview', { skipPush: true });
     });
   }
-  const STAGES_TAB_LIST = ['overview', 'bookmarks', 'searches', 'tracker', 'documents', 'profile'];
+  const STAGES_TAB_LIST = ['overview', 'bookmarks', 'searches', 'tracker', 'documents', 'calendar', 'profile'];
 
   function loadVacancies() {
     return fetch('data/vacancies.json')
@@ -193,6 +193,7 @@
       case 'searches':  renderSearches(); break;
       case 'tracker':   renderTracker(); break;
       case 'documents': renderDocuments(); break;
+      case 'calendar':  renderCalendar(); break;
       case 'profile':   renderProfile(); break;
     }
     if (window.lucide) lucide.createIcons();
@@ -900,11 +901,249 @@
       <span style="font-variant-numeric:tabular-nums">${pct}%</span>`;
   }
 
+  // ---------- Calendar ----------
+  let calendarCursor = null; // {year, month} — month is 0-indexed
+
+  function renderCalendar() {
+    const panel = document.getElementById('panel-calendar');
+    if (!calendarCursor) {
+      const now = new Date();
+      calendarCursor = { year: now.getFullYear(), month: now.getMonth() };
+    }
+    const { year, month } = calendarCursor;
+    const monthName = new Date(year, month, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    const events = collectCalendarEvents();
+    const eventsByDate = groupBy(events, e => e.dateKey);
+
+    const first = new Date(year, month, 1);
+    const startOffset = first.getDay(); // 0 = Sun
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrev = new Date(year, month, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < startOffset; i++) {
+      const d = daysInPrev - startOffset + 1 + i;
+      cells.push({ date: new Date(year, month - 1, d), muted: true });
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      cells.push({ date: new Date(year, month, d), muted: false });
+    }
+    while (cells.length % 7) {
+      const d = cells.length - (startOffset + daysInMonth) + 1;
+      cells.push({ date: new Date(year, month + 1, d), muted: true });
+    }
+
+    const todayKey = dateKey(new Date());
+    const dayHeads = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    panel.innerHTML = `
+      <div class="md-cal-toolbar">
+        <div class="md-cal-title">${U.escapeHtml(monthName)}</div>
+        <div class="md-cal-nav">
+          <button class="md-btn" id="mdCalPrev" aria-label="Previous month"><i data-lucide="chevron-left"></i></button>
+          <button class="md-btn" id="mdCalToday">Today</button>
+          <button class="md-btn" id="mdCalNext" aria-label="Next month"><i data-lucide="chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="md-cal-legend">
+        <span><span class="md-cal-dot official"></span>Official deadline</span>
+        <span><span class="md-cal-dot internal"></span>Internal deadline</span>
+        <span><span class="md-cal-dot personal"></span>Personal / interview</span>
+        <span style="margin-left:auto">${events.length} item${events.length === 1 ? '' : 's'} this view</span>
+      </div>
+      <div class="md-cal-grid">
+        ${dayHeads.map(d => `<div class="md-cal-dayhead">${d}</div>`).join('')}
+        ${cells.map(c => {
+          const key = dateKey(c.date);
+          const dayEvents = eventsByDate[key] || [];
+          const classes = ['md-cal-cell'];
+          if (c.muted) classes.push('muted');
+          if (key === todayKey) classes.push('today');
+          const visible = dayEvents.slice(0, 2);
+          const extra = dayEvents.length - visible.length;
+          return `
+            <div class="${classes.join(' ')}" data-date="${key}">
+              <div class="md-cal-daynum">${c.date.getDate()}</div>
+              <div class="md-cal-events">
+                ${visible.map(e => `<div class="md-cal-evrow"><span class="md-cal-dot ${e.kind}"></span>${U.escapeHtml(e.shortTitle)}</div>`).join('')}
+                ${extra > 0 ? `<div class="md-cal-evmore">+${extra} more</div>` : ''}
+              </div>
+            </div>`;
+        }).join('')}
+      </div>`;
+
+    panel.querySelector('#mdCalPrev').addEventListener('click', () => { calendarCursor = stepMonth(calendarCursor, -1); renderActive(); });
+    panel.querySelector('#mdCalNext').addEventListener('click', () => { calendarCursor = stepMonth(calendarCursor, +1); renderActive(); });
+    panel.querySelector('#mdCalToday').addEventListener('click', () => { const n = new Date(); calendarCursor = { year: n.getFullYear(), month: n.getMonth() }; renderActive(); });
+    panel.querySelectorAll('.md-cal-cell:not(.muted)').forEach(cell => {
+      cell.addEventListener('click', () => openDayModal(cell.dataset.date, eventsByDate[cell.dataset.date] || []));
+    });
+  }
+
+  function stepMonth(cursor, delta) {
+    const d = new Date(cursor.year, cursor.month + delta, 1);
+    return { year: d.getFullYear(), month: d.getMonth() };
+  }
+
+  function dateKey(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function groupBy(arr, fn) {
+    const out = {};
+    arr.forEach(item => { const k = fn(item); (out[k] = out[k] || []).push(item); });
+    return out;
+  }
+
+  function collectCalendarEvents() {
+    const events = [];
+    store.tracker().forEach(t => {
+      if (CLOSED_STAGES.has(t.stage)) return;
+      const v = vacancyById.get(String(t.vacancyId));
+      const title = v?.Post_Name || t.vacancyId;
+      if (t.officialDeadline) events.push({
+        dateKey: t.officialDeadline.slice(0, 10),
+        kind: 'official',
+        title: `Official deadline · ${title}`,
+        shortTitle: title,
+        vacancyId: t.vacancyId
+      });
+      if (t.internalDeadline) events.push({
+        dateKey: t.internalDeadline.slice(0, 10),
+        kind: 'internal',
+        title: `Internal deadline · ${title}`,
+        shortTitle: title,
+        vacancyId: t.vacancyId
+      });
+    });
+    syncRemindersFromTracker();
+    store.reminders().forEach(r => {
+      if (r.done) return;
+      if (r._generated) return; // already covered by tracker deadlines above
+      if (!r.dueAt) return;
+      events.push({
+        dateKey: r.dueAt.slice(0, 10),
+        kind: 'personal',
+        title: r.title,
+        shortTitle: r.title,
+        reminderId: r.id
+      });
+    });
+    return events;
+  }
+
+  function openDayModal(dateKeyStr, events) {
+    const dt = new Date(dateKeyStr + 'T00:00');
+    const heading = dt.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    showModal(`
+      <h2 style="font-family:Sora,sans-serif;letter-spacing:-0.02em;margin:0 0 0.4rem;">${U.escapeHtml(heading)}</h2>
+      <div style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem;">${events.length} item${events.length === 1 ? '' : 's'}</div>
+      ${events.length ? `
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+          ${events.map(e => `
+            <div style="display:flex;gap:0.6rem;align-items:flex-start;padding:0.7rem 0.85rem;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:12px;">
+              <span class="md-cal-dot ${e.kind}" style="margin-top:0.4rem;"></span>
+              <div style="flex:1;">
+                <div style="font-weight:600;color:var(--text-primary);">${U.escapeHtml(e.title)}</div>
+                <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.15rem;text-transform:capitalize;">${e.kind}${e.vacancyId ? ' · in tracker' : ''}</div>
+              </div>
+              ${e.vacancyId ? `<button class="md-btn sm" data-open-tracker="${U.escapeHtml(e.vacancyId)}"><i data-lucide="kanban-square"></i>Open</button>` : ''}
+            </div>`).join('')}
+        </div>` : '<div class="md-card-empty">No events scheduled.</div>'}
+      <div style="display:flex;justify-content:flex-end;padding-top:1rem;gap:0.5rem;">
+        <button class="md-btn primary" id="mdCalAddReminder"><i data-lucide="bell-plus"></i>Add reminder for this day</button>
+        <button class="md-btn" data-cancel>Close</button>
+      </div>`);
+    document.querySelector('[data-cancel]')?.addEventListener('click', closeModal);
+    document.querySelectorAll('[data-open-tracker]').forEach(b => b.addEventListener('click', () => { closeModal(); switchTab('tracker'); setTimeout(() => openTrackerModal(b.dataset.openTracker, false), 80); }));
+    document.getElementById('mdCalAddReminder')?.addEventListener('click', () => {
+      closeModal();
+      openReminderModal();
+      setTimeout(() => { const el = document.querySelector('#mdReminderForm input[name=dueAt]'); if (el) el.value = dateKeyStr; }, 60);
+    });
+    if (window.lucide) lucide.createIcons();
+  }
+
+  // ---------- Cooling-off widget ----------
+  function renderCoolingWidget(profile) {
+    const start = profile.lastDeputationStartDate ? new Date(profile.lastDeputationStartDate) : null;
+    const end = profile.lastDeputationEndDate ? new Date(profile.lastDeputationEndDate) : null;
+    const years = Number(profile.coolingOffYears ?? 3);
+
+    let statBlock;
+    if (!end || Number.isNaN(end.getTime())) {
+      statBlock = `
+        <div class="md-cooling-stat eligible">Eligible now</div>
+        <div class="md-cooling-sub">No previous deputation on record. Add your last deputation's end date to compute cooling-off.</div>`;
+    } else {
+      const eligibleFrom = new Date(end.getFullYear() + years, end.getMonth(), end.getDate());
+      const days = Math.ceil((eligibleFrom - new Date()) / 86400000);
+      const tenureYears = start && !Number.isNaN(start.getTime())
+        ? ((end - start) / (365.25 * 86400000)).toFixed(1)
+        : null;
+      if (days <= 0) {
+        statBlock = `
+          <div class="md-cooling-stat eligible">Eligible now</div>
+          <div class="md-cooling-sub">Cooling-off ended on <strong>${U.formatDisplayDate(eligibleFrom.toISOString())}</strong>${tenureYears ? ` after a ${tenureYears}-year deputation` : ''}.</div>`;
+      } else {
+        statBlock = `
+          <div class="md-cooling-stat cooling">${days} day${days === 1 ? '' : 's'}</div>
+          <div class="md-cooling-sub">Cooling-off ends <strong>${U.formatDisplayDate(eligibleFrom.toISOString())}</strong>${tenureYears ? ` — after a ${tenureYears}-year deputation` : ''}. New deputation applications can be processed after that date.</div>`;
+      }
+    }
+
+    return `
+      <div class="md-cooling">
+        <div>
+          <div class="md-cooling-head"><i data-lucide="snowflake"></i>Cooling-off status</div>
+          ${statBlock}
+        </div>
+        <div class="md-cooling-form" id="mdCoolingForm">
+          <div>
+            <label>Last deputation start</label>
+            <input type="date" name="lastDeputationStartDate" value="${U.escapeHtml(profile.lastDeputationStartDate || '')}">
+          </div>
+          <div>
+            <label>Last deputation end</label>
+            <input type="date" name="lastDeputationEndDate" value="${U.escapeHtml(profile.lastDeputationEndDate || '')}">
+          </div>
+          <div>
+            <label>Cooling-off (years)</label>
+            <input type="number" min="0" max="10" name="coolingOffYears" value="${U.escapeHtml(String(profile.coolingOffYears ?? 3))}">
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button type="button" class="md-btn primary" id="mdCoolingSave" style="width:100%;justify-content:center;"><i data-lucide="save"></i>Save</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function bindCoolingWidget() {
+    const saveBtn = document.getElementById('mdCoolingSave');
+    if (!saveBtn) return;
+    saveBtn.addEventListener('click', () => {
+      const form = document.getElementById('mdCoolingForm');
+      const p = store.profile();
+      const next = {
+        ...p,
+        lastDeputationStartDate: form.querySelector('[name=lastDeputationStartDate]').value || '',
+        lastDeputationEndDate:   form.querySelector('[name=lastDeputationEndDate]').value || '',
+        coolingOffYears:         Number(form.querySelector('[name=coolingOffYears]').value || 0)
+      };
+      store.setProfile(next);
+      toast('Cooling-off saved');
+      renderActive();
+    });
+  }
+
   // ---------- Profile ----------
   function renderProfile() {
     const panel = document.getElementById('panel-profile');
     const p = store.profile();
     panel.innerHTML = `
+      ${renderCoolingWidget(p)}
       <form class="md-profile-form" id="mdProfileForm">
         <div class="md-field">
           <label>Current pay level</label>
@@ -947,14 +1186,6 @@
           <label>Experience tags (comma-separated keywords used in match score)</label>
           <input name="experienceTags" value="${U.escapeHtml((p.experienceTags || []).join(', '))}" placeholder="e.g. procurement, audit, infrastructure, IT, policy">
         </div>
-        <div class="md-field">
-          <label>Last deputation end date</label>
-          <input name="lastDeputationEndDate" type="date" value="${U.escapeHtml(p.lastDeputationEndDate || '')}">
-        </div>
-        <div class="md-field">
-          <label>Cooling-off years required</label>
-          <input name="coolingOffYears" type="number" min="0" max="10" value="${U.escapeHtml(String(p.coolingOffYears ?? 3))}">
-        </div>
         <div class="md-form-actions">
           <button type="submit" class="md-btn primary"><i data-lucide="save"></i>Save profile</button>
           <button type="button" class="md-btn" id="mdExport"><i data-lucide="download"></i>Export data (JSON)</button>
@@ -977,9 +1208,7 @@
         currentPost: fd.get('currentPost') || '',
         preferredMinistries: csvList(fd.get('preferredMinistries')),
         preferredLocations: csvList(fd.get('preferredLocations')),
-        experienceTags: csvList(fd.get('experienceTags')),
-        lastDeputationEndDate: fd.get('lastDeputationEndDate') || '',
-        coolingOffYears: Number(fd.get('coolingOffYears') || 0)
+        experienceTags: csvList(fd.get('experienceTags'))
       };
       store.setProfile(next);
       toast('Profile saved');
@@ -988,6 +1217,7 @@
     document.getElementById('mdImport').addEventListener('click', () => document.getElementById('mdImportFile').click());
     document.getElementById('mdImportFile').addEventListener('change', importData);
     document.getElementById('mdReset').addEventListener('click', resetAll);
+    bindCoolingWidget();
   }
 
   function csvList(value) {

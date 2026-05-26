@@ -20,7 +20,6 @@
       --line:       #e2e8f0;
       --line-soft:  #eef2f7;
       --accent:     #0e7490;
-      --accent-soft:#67e8f9;
       --green:      #15803d;
       --amber:      #b45309;
       --red:        #be123c;
@@ -29,29 +28,9 @@
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; background: var(--bg-alt); color: var(--ink); font-family: "Plus Jakarta Sans", system-ui, sans-serif; line-height: 1.55; -webkit-font-smoothing: antialiased; }
-    .toolbar {
-      position: sticky; top: 0; z-index: 50;
-      background: rgba(255,255,255,0.92);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--line);
-      padding: 0.65rem 1.5rem;
-      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-    }
-    .toolbar-title { font-weight: 700; font-size: 0.92rem; color: var(--ink-soft); letter-spacing: 0.02em; }
-    .toolbar-actions { display: flex; gap: 0.5rem; }
-    .btn {
-      display: inline-flex; align-items: center; gap: 0.4rem;
-      padding: 0.5rem 0.95rem; font-family: inherit; font-size: 0.85rem; font-weight: 600;
-      border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink);
-      cursor: pointer; text-decoration: none;
-      transition: all 0.15s ease;
-    }
-    .btn:hover { border-color: var(--accent); color: var(--accent); }
-    .btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
-    .btn.primary:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
 
     .page {
-      max-width: 820px;
+      max-width: 860px;
       margin: 2rem auto;
       background: #fff;
       border: 1px solid var(--line);
@@ -66,225 +45,57 @@
       border-bottom: 1px solid var(--line);
       margin-bottom: 2.5rem;
     }
-    .cover-eyebrow {
-      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.18em;
-      text-transform: uppercase; color: var(--accent);
-    }
-    .cover-title {
-      font-family: "Sora", sans-serif;
-      font-size: 3.2rem; font-weight: 800; letter-spacing: -0.04em;
-      margin: 0.5rem 0 0.4rem; line-height: 1;
-    }
-    .cover-title .accent {
-      background: linear-gradient(135deg, var(--accent), var(--purple));
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
+    .cover-eyebrow { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); }
+    .cover-title { font-family: "Sora", sans-serif; font-size: 3.2rem; font-weight: 800; letter-spacing: -0.04em; margin: 0.5rem 0 0.4rem; line-height: 1; }
+    .cover-title .accent { background: linear-gradient(135deg, var(--accent), var(--purple)); -webkit-background-clip: text; background-clip: text; color: transparent; }
     .cover-sub { color: var(--ink-muted); font-size: 1rem; max-width: 540px; margin: 0.5rem auto 0; }
-    .cover-meta {
-      display: flex; justify-content: center; gap: 1.5rem; margin-top: 1.25rem;
-      font-size: 0.78rem; color: var(--ink-muted); letter-spacing: 0.04em; text-transform: uppercase;
-    }
+    .cover-meta { display: flex; justify-content: center; gap: 1.5rem; margin-top: 1.25rem; font-size: 0.78rem; color: var(--ink-muted); letter-spacing: 0.04em; text-transform: uppercase; }
 
     h1 { font-family: "Sora", sans-serif; font-weight: 800; font-size: 2rem; letter-spacing: -0.03em; margin: 0 0 0.4rem; color: var(--ink); }
-    h2 {
-      font-family: "Sora", sans-serif; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.02em;
-      margin: 2.5rem 0 0.5rem; padding-top: 0.5rem;
-      border-top: 1px solid var(--line);
-      padding-top: 1.5rem;
-    }
-    h2 .num {
-      display: inline-block; width: 32px; height: 32px; line-height: 32px;
-      text-align: center; border-radius: 8px; font-size: 0.95rem;
-      background: var(--ink); color: #fff; margin-right: 0.65rem;
-      font-family: "Plus Jakarta Sans", sans-serif; font-weight: 800;
-    }
+    h2 { font-family: "Sora", sans-serif; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.02em; margin: 2.5rem 0 0.5rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
+    h2 .num { display: inline-block; width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 8px; font-size: 0.95rem; background: var(--ink); color: #fff; margin-right: 0.65rem; font-family: "Plus Jakarta Sans", sans-serif; font-weight: 800; }
     h3 { font-family: "Sora", sans-serif; font-weight: 700; font-size: 1.1rem; letter-spacing: -0.01em; margin: 1.6rem 0 0.4rem; color: var(--ink); }
     p { margin: 0.6rem 0; color: var(--ink-soft); }
     .lead { font-size: 1.05rem; color: var(--ink-soft); }
-    code, .kbd {
-      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 0.86em; background: var(--bg-alt); padding: 0.08em 0.4em; border-radius: 5px;
-      border: 1px solid var(--line); color: var(--ink);
-    }
+    code, .kbd { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.86em; background: var(--bg-alt); padding: 0.08em 0.4em; border-radius: 5px; border: 1px solid var(--line); color: var(--ink); }
     strong { color: var(--ink); }
 
     ul, ol { padding-left: 1.4rem; margin: 0.6rem 0; }
     li { margin: 0.3rem 0; color: var(--ink-soft); }
 
-    .toc {
-      background: var(--bg-alt);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 1.25rem 1.5rem;
-      margin: 1.5rem 0 2rem;
-    }
+    .toc { background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.25rem 1.5rem; margin: 1.5rem 0 2rem; }
     .toc h4 { margin: 0 0 0.6rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); }
     .toc ol { padding-left: 1.2rem; margin: 0; columns: 2; column-gap: 1.5rem; }
     .toc li { color: var(--ink); break-inside: avoid; }
     .toc a { color: var(--ink); text-decoration: none; font-weight: 500; }
     .toc a:hover { color: var(--accent); text-decoration: underline; }
 
-    table {
-      width: 100%; border-collapse: collapse; margin: 1rem 0;
-      font-size: 0.92rem;
-      border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
-    }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
     th, td { padding: 0.7rem 0.85rem; text-align: left; border-bottom: 1px solid var(--line-soft); }
     th { background: var(--bg-alt); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); }
     tr:last-child td { border-bottom: 0; }
 
-    .callout {
-      border-left: 3px solid var(--accent);
-      background: rgba(14, 116, 144, 0.05);
-      padding: 0.85rem 1.15rem;
-      border-radius: 0 var(--radius) var(--radius) 0;
-      margin: 1rem 0;
-      font-size: 0.92rem;
-    }
+    .callout { border-left: 3px solid var(--accent); background: rgba(14, 116, 144, 0.05); padding: 0.85rem 1.15rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0; font-size: 0.92rem; }
     .callout.warn { border-color: var(--amber); background: rgba(180, 83, 9, 0.05); }
     .callout.tip  { border-color: var(--green); background: rgba(21, 128, 61, 0.05); }
     .callout strong { display: block; margin-bottom: 0.25rem; }
 
-    /* ---- Mockup illustration: looks like a screenshot of the dark UI ---- */
-    .mockup {
-      margin: 1.25rem 0 1.5rem;
-      border-radius: 14px;
-      overflow: hidden;
-      border: 1px solid #1e293b;
-      background: #02040b;
-      box-shadow: 0 25px 50px -20px rgba(2, 6, 23, 0.4);
-      break-inside: avoid;
-    }
-    .mockup-chrome {
-      display: flex; align-items: center; gap: 0.4rem;
-      padding: 0.55rem 0.8rem;
-      background: linear-gradient(180deg, #0f172a, #050a14);
-      border-bottom: 1px solid #1e293b;
-    }
-    .mockup-dot { width: 11px; height: 11px; border-radius: 50%; background: #334155; }
-    .mockup-dot.r { background: #f43f5e; opacity: 0.7; }
-    .mockup-dot.y { background: #f59e0b; opacity: 0.7; }
-    .mockup-dot.g { background: #22c55e; opacity: 0.7; }
-    .mockup-url {
-      flex: 1; margin-left: 0.6rem; padding: 0.25rem 0.7rem;
-      background: rgba(15, 23, 42, 0.6); border-radius: 6px;
-      font-family: "JetBrains Mono", monospace; font-size: 0.7rem; color: #67e8f9;
-    }
-    .mockup-body { padding: 1.2rem 1.4rem; color: #f8fafc; font-family: "Plus Jakarta Sans", sans-serif; }
-    .mockup.shot-mockup .mockup-body { padding: 0; }
-    .mockup.shot-mockup img { display: block; width: 100%; height: auto; }
+    .shot { margin: 1.25rem 0 1.5rem; border-radius: 14px; overflow: hidden; border: 1px solid #1e293b; background: #02040b; box-shadow: 0 25px 50px -20px rgba(2, 6, 23, 0.4); }
+    .shot-chrome { display: flex; align-items: center; gap: 0.4rem; padding: 0.55rem 0.8rem; background: linear-gradient(180deg, #0f172a, #050a14); border-bottom: 1px solid #1e293b; }
+    .shot-dot { width: 11px; height: 11px; border-radius: 50%; background: #334155; }
+    .shot-dot.r { background: #f43f5e; opacity: 0.7; }
+    .shot-dot.y { background: #f59e0b; opacity: 0.7; }
+    .shot-dot.g { background: #22c55e; opacity: 0.7; }
+    .shot-url { flex: 1; margin-left: 0.6rem; padding: 0.25rem 0.7rem; background: rgba(15, 23, 42, 0.6); border-radius: 6px; font-family: "JetBrains Mono", monospace; font-size: 0.7rem; color: #67e8f9; }
+    .shot img { display: block; width: 100%; height: auto; }
+    .caption { text-align: center; font-size: 0.78rem; color: var(--ink-muted); margin: -0.5rem 0 1.5rem; font-style: italic; }
 
-    .mock-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; padding: 0.3rem; background: rgba(15, 23, 42, 0.78); border-radius: 999px; margin-bottom: 1rem; border: 1px solid rgba(148, 163, 184, 0.12); }
-    .mock-tab { padding: 0.4rem 0.85rem; font-size: 0.78rem; font-weight: 600; color: #94a3b8; border-radius: 999px; }
-    .mock-tab.active { background: linear-gradient(135deg, #22d3ee, #4ade80); color: #05111d; }
-    .mock-tab .badge { background: #f43f5e; color: #fff; padding: 0 6px; border-radius: 999px; font-size: 0.65rem; margin-left: 0.25rem; }
-
-    .mock-welcome {
-      padding: 0.85rem 1rem; background: linear-gradient(135deg, rgba(34, 211, 238, 0.08), rgba(167, 139, 250, 0.05));
-      border: 1px solid rgba(148, 163, 184, 0.12); border-radius: 14px; margin-bottom: 0.85rem; font-size: 0.82rem;
-    }
-    .mock-welcome .num { color: #22d3ee; font-weight: 800; }
-
-    .mock-bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.55rem; }
-    .mock-card {
-      background: rgba(15, 23, 42, 0.78); border: 1px solid rgba(148, 163, 184, 0.12);
-      border-radius: 12px; padding: 0.7rem 0.85rem; min-height: 84px;
-    }
-    .mock-card.s2 { grid-column: span 2; }
-    .mock-card.s3 { grid-column: span 3; }
-    .mock-card.s6 { grid-column: span 6; }
-    .mock-card-title { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; display: flex; align-items: center; gap: 0.3rem; margin-bottom: 0.45rem; }
-    .mock-card-title .dot { width: 5px; height: 5px; background: #22d3ee; border-radius: 50%; }
-    .mock-stat { font-family: "Sora", sans-serif; font-size: 1.6rem; font-weight: 800; color: #f8fafc; line-height: 1; letter-spacing: -0.04em; }
-    .mock-stat-sub { font-size: 0.7rem; color: #94a3b8; margin-top: 0.2rem; }
-    .mock-row { display: flex; justify-content: space-between; padding: 0.35rem 0; border-bottom: 1px dashed rgba(148, 163, 184, 0.18); font-size: 0.72rem; }
-    .mock-row:last-child { border-bottom: 0; }
-    .mock-row .t { color: #f8fafc; font-weight: 600; }
-    .mock-row .m { color: #94a3b8; font-size: 0.65rem; }
-
-    .pill { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 999px; font-size: 0.6rem; font-weight: 700; }
-    .pill.safe    { background: rgba(34, 197, 94, 0.18); color: #86efac; }
-    .pill.closing { background: rgba(245, 158, 11, 0.22); color: #fcd34d; }
-    .pill.critical{ background: rgba(244, 63, 94, 0.24); color: #fda4af; }
-    .pill.match   { background: rgba(34, 211, 238, 0.18); color: #67e8f9; }
-    .pill.hi      { background: rgba(34, 197, 94, 0.18); color: #86efac; }
-
-    .mock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
-    .mock-vcard {
-      background: rgba(15, 23, 42, 0.78); border: 1px solid rgba(148, 163, 184, 0.12);
-      border-radius: 12px; padding: 0.7rem 0.85rem;
-    }
-    .mock-vtitle { font-family: "Sora", sans-serif; font-weight: 700; font-size: 0.82rem; color: #f8fafc; letter-spacing: -0.01em; line-height: 1.25; }
-    .mock-vmeta { font-size: 0.66rem; color: #94a3b8; margin: 0.3rem 0 0.5rem; }
-    .mock-vpills { display: flex; gap: 0.25rem; flex-wrap: wrap; }
-    .mock-vbtns { display: flex; gap: 0.3rem; margin-top: 0.55rem; padding-top: 0.45rem; border-top: 1px solid rgba(148, 163, 184, 0.12); }
-    .mock-btn { padding: 0.22rem 0.55rem; font-size: 0.62rem; font-weight: 600; border-radius: 6px; border: 1px solid rgba(148, 163, 184, 0.2); color: #f8fafc; }
-    .mock-btn.primary { background: linear-gradient(135deg, #22d3ee, #4ade80); color: #05111d; border: 0; }
-
-    .mock-kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
-    .mock-col { background: rgba(15, 23, 42, 0.35); border: 1px solid rgba(148, 163, 184, 0.12); border-radius: 10px; padding: 0.55rem; min-height: 130px; }
-    .mock-col-head { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; font-weight: 700; padding-bottom: 0.35rem; margin-bottom: 0.4rem; border-bottom: 1px solid rgba(148, 163, 184, 0.12); display: flex; justify-content: space-between; }
-    .mock-kcard { background: rgba(15, 23, 42, 0.78); border: 1px solid rgba(148, 163, 184, 0.12); border-radius: 7px; padding: 0.4rem 0.5rem; margin-bottom: 0.4rem; }
-    .mock-ktitle { font-size: 0.7rem; font-weight: 700; color: #f8fafc; }
-    .mock-kmeta { font-size: 0.6rem; color: #94a3b8; margin-top: 0.15rem; margin-bottom: 0.3rem; }
-
-    .mock-search {
-      display: flex; justify-content: space-between; align-items: center; gap: 0.6rem;
-      padding: 0.55rem 0.85rem; background: rgba(15, 23, 42, 0.78);
-      border: 1px solid rgba(148, 163, 184, 0.12); border-radius: 10px;
-      margin-bottom: 0.4rem;
-    }
-    .mock-sname { font-size: 0.78rem; font-weight: 700; color: #f8fafc; }
-    .mock-sfilters { font-size: 0.65rem; color: #94a3b8; margin-top: 0.15rem; }
-
-    .mock-doc { display: grid; grid-template-columns: 1.5fr 0.7fr 0.7fr 0.7fr 1.2fr; gap: 0.4rem; align-items: center; padding: 0.5rem 0.75rem; background: rgba(15, 23, 42, 0.78); border: 1px solid rgba(148, 163, 184, 0.12); border-radius: 10px; margin-bottom: 0.35rem; font-size: 0.68rem; color: #f8fafc; }
-    .mock-doc .status { padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 700; text-align: center; }
-    .mock-doc .status.ready { background: rgba(34, 197, 94, 0.18); color: #86efac; }
-    .mock-doc .status.missing { background: rgba(148, 163, 184, 0.18); color: #94a3b8; }
-    .mock-doc .status.expiring { background: rgba(244, 63, 94, 0.24); color: #fda4af; }
-
-    .mock-readiness { display: flex; align-items: center; gap: 0.6rem; font-size: 0.72rem; color: #94a3b8; margin-bottom: 0.6rem; }
-    .mock-bar { flex: 1; height: 6px; background: rgba(148, 163, 184, 0.18); border-radius: 999px; overflow: hidden; }
-    .mock-bar > div { height: 100%; background: linear-gradient(90deg, #22d3ee, #4ade80); }
-
-    .mock-profile-form { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; background: rgba(15, 23, 42, 0.78); border: 1px solid rgba(148, 163, 184, 0.12); border-radius: 12px; padding: 0.9rem; }
-    .mock-field { display: flex; flex-direction: column; gap: 0.2rem; }
-    .mock-field.full { grid-column: span 2; }
-    .mock-field label { font-size: 0.6rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; }
-    .mock-field .input { background: #0f172a; border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 6px; padding: 0.35rem 0.5rem; font-size: 0.7rem; color: #f8fafc; }
-
-    .caption {
-      text-align: center; font-size: 0.78rem; color: var(--ink-muted);
-      margin: -0.5rem 0 1.5rem; font-style: italic;
-    }
-
-    .footer {
-      margin-top: 3rem; padding-top: 1.5rem;
-      border-top: 1px solid var(--line);
-      font-size: 0.8rem; color: var(--ink-muted);
-      display: flex; justify-content: space-between; align-items: center;
-    }
+    .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--ink-muted); display: flex; justify-content: space-between; align-items: center; }
 
     @media (max-width: 720px) {
       .page { margin: 1rem; padding: 2rem 1.5rem 3rem; }
       .cover-title { font-size: 2.2rem; }
       .toc ol { columns: 1; }
-      .mock-bento, .mock-grid, .mock-kanban { grid-template-columns: 1fr 1fr; }
-      .mock-card.s6 { grid-column: span 2; }
-      .mock-card.s3 { grid-column: span 1; }
-      .mock-card.s2 { grid-column: span 1; }
-    }
-
-    /* ---- Print stylesheet ---- */
-    @media print {
-      @page { size: A4; margin: 14mm 16mm; }
-      html, body { background: #fff !important; }
-      .toolbar { display: none !important; }
-      .page { box-shadow: none; border: 0; margin: 0; padding: 0; max-width: 100%; }
-      h2 { page-break-after: avoid; }
-      .mockup, .callout, table, .toc { page-break-inside: avoid; }
-      a { color: var(--ink); text-decoration: none; }
-      .footer { color: #888; }
     }
   </style>
 </head>
@@ -293,15 +104,11 @@
   <article class="page">
 
     <header class="cover">
-      <div class="cover-eyebrow">User Manual · v1</div>
+      <div class="cover-eyebrow">User Manual · v1.1</div>
       <h1 class="cover-title"><span class="accent">MY</span> DEPUTATION</h1>
-      <p class="cover-sub">Your private deputation cockpit — bookmarks, saved searches, application tracker, document checklist, and deadline reminders. Everything stays in your browser.</p>
+      <p class="cover-sub">Your private deputation cockpit — bookmarks, saved searches, application tracker, document checklist, calendar, and deadline reminders. Everything stays in your browser.</p>
       <div class="cover-meta">
-        <span>Local-First</span>
-        <span>·</span>
-        <span>No Backend</span>
-        <span>·</span>
-        <span>Export Anytime</span>
+        <span>Local-First</span><span>·</span><span>No Backend</span><span>·</span><span>Export Anytime</span>
       </div>
     </header>
 
@@ -309,13 +116,14 @@
       <h4>Contents</h4>
       <ol>
         <li><a href="#setup">First-time setup</a></li>
-        <li><a href="#tabs">The six tabs</a></li>
+        <li><a href="#tabs">The seven tabs</a></li>
         <li><a href="#overview">Overview tab</a></li>
         <li><a href="#bookmarks">Bookmarks tab</a></li>
         <li><a href="#searches">Searches tab</a></li>
         <li><a href="#tracker">Tracker tab</a></li>
         <li><a href="#documents">Documents tab</a></li>
-        <li><a href="#profile">Profile tab</a></li>
+        <li><a href="#calendar">Calendar tab</a></li>
+        <li><a href="#profile">Profile tab &amp; cooling-off</a></li>
         <li><a href="#match">How match score works</a></li>
         <li><a href="#reminders">How reminders work</a></li>
         <li><a href="#privacy">Privacy &amp; data</a></li>
@@ -342,176 +150,79 @@
     </ol>
     <div class="callout tip">
       <strong>That's enough to unlock</strong>
-      Match scores on bookmarks and best-match suggestions on the dashboard. Add experience tags and cooling-off info later for sharper ranking and an eligibility pill.
+      Match scores on bookmarks and best-match suggestions on the dashboard. Add experience tags, your last deputation dates, and cooling-off years for sharper ranking and an eligibility-from date.
     </div>
 
-    <h2 id="tabs"><span class="num">2</span>The six tabs</h2>
-    <p>The whole product is one page with six tabs. Hash-routed: <code>my-deputation.html#tracker</code> jumps straight to a tab and bookmarks correctly.</p>
+    <h2 id="tabs"><span class="num">2</span>The seven tabs</h2>
+    <p>The whole product is one page with seven tabs. Hash-routed: <code>my-deputation.html#tracker</code> jumps straight to a tab and bookmarks correctly.</p>
 
     <h3 id="overview">Overview — the bento dashboard</h3>
     <p>Shows a welcome strip with live counts and a grid of cards covering the most useful aggregates.</p>
-
-    <div class="mockup shot-mockup">
-      <div class="mockup-chrome"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div><div class="mockup-url">deputations.github.io/my-deputation.html#overview</div></div>
-      <div class="mockup-body"><img src="assets/manual/overview.png" alt="Overview dashboard — welcome strip and bento cards" loading="lazy"></div>
+    <div class="shot">
+      <div class="shot-chrome"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><div class="shot-url">deputations.github.io/my-deputation.html#overview</div></div>
+      <img src="assets/manual/overview.png" alt="Overview dashboard — welcome strip and bento cards" loading="lazy">
     </div>
-        <div class="mock-welcome">Welcome back. You have <span class="num">3</span> active applications, <span class="num">5</span> bookmarks, and <span class="num">2</span> deadlines this week.</div>
-        <div class="mock-bento">
-          <div class="mock-card s3">
-            <div class="mock-card-title"><span class="dot"></span>Next action</div>
-            <div style="font-weight:700;font-size:0.82rem;color:#f8fafc">Director (Coord), MHA</div>
-            <div style="color:#94a3b8;font-size:0.68rem;margin:0.2rem 0">Send vigilance clearance reminder</div>
-            <div style="display:flex;gap:0.25rem"><span class="pill match">Awaiting Clearances</span><span class="pill closing">3 days</span></div>
-          </div>
-          <div class="mock-card s3">
-            <div class="mock-card-title"><span class="dot"></span>Closing soon</div>
-            <div class="mock-row"><div><div class="t">Joint Director, Defence</div><div class="m">Defence · New Delhi</div></div><span class="pill critical">2 days</span></div>
-            <div class="mock-row"><div><div class="t">Deputy Secretary, Finance</div><div class="m">Finance · Mumbai</div></div><span class="pill closing">6 days</span></div>
-          </div>
-          <div class="mock-card s2">
-            <div class="mock-card-title"><span class="dot"></span>In transit</div>
-            <div class="mock-stat">3</div>
-            <div class="mock-stat-sub">applications moving through proper channel</div>
-          </div>
-          <div class="mock-card s2">
-            <div class="mock-card-title"><span class="dot"></span>Document readiness</div>
-            <div class="mock-stat">83%</div>
-            <div class="mock-bar" style="margin-top:0.2rem"><div style="width:83%"></div></div>
-            <div class="mock-stat-sub">1 required missing</div>
-          </div>
-          <div class="mock-card s2">
-            <div class="mock-card-title"><span class="dot"></span>Saved searches</div>
-            <div class="mock-stat">7</div>
-            <div class="mock-stat-sub">new matches across 3 saved searches</div>
-          </div>
-          <div class="mock-card s6">
-            <div class="mock-card-title"><span class="dot"></span>Upcoming reminders</div>
-            <div class="mock-row"><div><div class="t">Internal deadline: Director (Coord), MHA</div><div class="m">Internal · 02 Jun 2026</div></div><span class="pill closing">3 days</span></div>
-            <div class="mock-row"><div><div class="t">Follow up with vigilance section</div><div class="m">Personal · 05 Jun 2026</div></div><span class="pill safe">6 days</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <p class="caption">Overview dashboard with welcome strip and six bento cards</p>
+    <p class="caption">Overview dashboard with welcome strip and bento cards</p>
 
     <h3 id="bookmarks">Bookmarks — every vacancy you've hearted</h3>
     <p>Each card shows a <strong>match %</strong> (if you set pay level in Profile), the current tracker stage if added, deadline pill, and an optional cooling-off banner. Add to tracker, open notification, or remove.</p>
-
-    <div class="mockup shot-mockup">
-      <div class="mockup-chrome"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div><div class="mockup-url">deputations.github.io/my-deputation.html#bookmarks</div></div>
-      <div class="mockup-body"><img src="assets/manual/bookmarks.png" alt="Bookmarks grid — match %, tracker stage, deadlines" loading="lazy"></div>
-    </div>
-          <div class="mock-vcard">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="mock-vtitle">Joint Director (Plans), Defence</div><span class="pill hi">88%</span></div>
-            <div class="mock-vmeta">Defence · New Delhi · Level 13</div>
-            <div class="mock-vpills"><span class="pill critical">2 days</span></div>
-            <div class="mock-vbtns"><span class="mock-btn primary">+ Add to tracker</span><span class="mock-btn">Notification</span></div>
-          </div>
-          <div class="mock-vcard">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="mock-vtitle">Deputy Secretary (Budget)</div><span class="pill match">71%</span></div>
-            <div class="mock-vmeta">Finance · Mumbai · Level 12</div>
-            <div class="mock-vpills"><span class="pill closing">6 days</span></div>
-            <div class="mock-vbtns"><span class="mock-btn primary">+ Add to tracker</span><span class="mock-btn">Notification</span></div>
-          </div>
-          <div class="mock-vcard">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="mock-vtitle">Director (R&amp;A), DoPT</div><span class="pill match">65%</span></div>
-            <div class="mock-vmeta">DoPT · New Delhi · Level 13</div>
-            <div class="mock-vpills"><span class="pill safe">21 days</span><span class="pill critical">Cooling-off until 12 Oct 2026</span></div>
-            <div class="mock-vbtns"><span class="mock-btn primary">+ Add to tracker</span></div>
-          </div>
-        </div>
-      </div>
+    <div class="shot">
+      <div class="shot-chrome"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><div class="shot-url">deputations.github.io/my-deputation.html#bookmarks</div></div>
+      <img src="assets/manual/bookmarks.png" alt="Bookmarks grid — match %, tracker stage, deadlines" loading="lazy">
     </div>
     <p class="caption">Bookmarks grid — match %, tracker stage, deadlines, cooling-off pill</p>
 
     <h3 id="searches">Searches — saved filter combinations with new-match alerts</h3>
     <p>Click <strong>New search</strong> to save a filter combo. The <strong>"N new"</strong> badge counts vacancies that weren't there last time you ran it. <strong>Run</strong> opens the main vacancies page with the filters pre-applied via URL params.</p>
-
-    <div class="mockup shot-mockup">
-      <div class="mockup-chrome"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div><div class="mockup-url">deputations.github.io/my-deputation.html#searches</div></div>
-      <div class="mockup-body"><img src="assets/manual/searches.png" alt="Saved searches with new-match badges and run/edit/delete" loading="lazy"></div>
+    <div class="shot">
+      <div class="shot-chrome"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><div class="shot-url">deputations.github.io/my-deputation.html#searches</div></div>
+      <img src="assets/manual/searches.png" alt="Saved searches with new-match badges" loading="lazy">
     </div>
-          <div style="display:flex;gap:0.3rem"><span class="mock-btn primary">Run</span><span class="mock-btn">Edit</span></div>
-        </div>
-        <div class="mock-search">
-          <div>
-            <div class="mock-sname">Anywhere · Closing in 7 days <span class="pill hi" style="margin-left:0.3rem">2 new</span></div>
-            <div class="mock-sfilters">Closing in 7 days · Active</div>
-          </div>
-          <div style="display:flex;gap:0.3rem"><span class="mock-btn primary">Run</span><span class="mock-btn">Edit</span></div>
-        </div>
-        <div class="mock-search">
-          <div>
-            <div class="mock-sname">Finance / DoPT · Level 13+ <span class="pill hi" style="margin-left:0.3rem">1 new</span></div>
-            <div class="mock-sfilters">My Level 13 · Finance · Active</div>
-          </div>
-          <div style="display:flex;gap:0.3rem"><span class="mock-btn primary">Run</span><span class="mock-btn">Edit</span></div>
-        </div>
-      </div>
-    </div>
-    <p class="caption">Saved searches with new-match badges</p>
+    <p class="caption">Saved searches with new-match badges and run / edit / delete</p>
 
     <h3 id="tracker">Tracker — kanban for proper-channel applications</h3>
     <p>Ten stages reflecting how deputation files actually move. Drag cards between columns on desktop; on mobile use the dropdown at the bottom of each card. Click a card to edit deadlines, next action, contact, notes, and view stage history.</p>
-
-    <div class="mockup shot-mockup">
-      <div class="mockup-chrome"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div><div class="mockup-url">deputations.github.io/my-deputation.html#tracker</div></div>
-      <div class="mockup-body"><img src="assets/manual/tracker.png" alt="Tracker kanban — drag cards across proper-channel stages" loading="lazy"></div>
+    <div class="shot">
+      <div class="shot-chrome"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><div class="shot-url">deputations.github.io/my-deputation.html#tracker</div></div>
+      <img src="assets/manual/tracker.png" alt="Tracker kanban — drag cards across proper-channel stages" loading="lazy">
     </div>
-          <div class="mock-col">
-            <div class="mock-col-head"><span>Drafting</span><span>1</span></div>
-            <div class="mock-kcard"><div class="mock-ktitle">Joint Director (Plans)</div><div class="mock-kmeta">Defence · Finalise bio-data</div><span class="pill critical">2 days</span></div>
-          </div>
-          <div class="mock-col">
-            <div class="mock-col-head"><span>Awaiting Clearances</span><span>1</span></div>
-            <div class="mock-kcard"><div class="mock-ktitle">Director (Coord)</div><div class="mock-kmeta">MHA · Vigilance reminder</div><span class="pill closing">3 days</span></div>
-          </div>
-          <div class="mock-col">
-            <div class="mock-col-head"><span>Forwarded</span><span>1</span></div>
-            <div class="mock-kcard"><div class="mock-ktitle">Director (R&amp;A)</div><div class="mock-kmeta">DoPT · With borrower</div><span class="pill safe">21 days</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <p class="caption">Tracker kanban — drag cards between proper-channel stages</p>
+    <p class="caption">Tracker kanban — drag cards across proper-channel stages</p>
 
     <h3 id="documents">Documents — readiness checklist (no file uploads)</h3>
     <p>Status &amp; dates only — files stay in your own folder. Six documents are marked <strong>Required</strong> and count toward the readiness %.</p>
-
-    <div class="mockup shot-mockup">
-      <div class="mockup-chrome"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div><div class="mockup-url">deputations.github.io/my-deputation.html#documents</div></div>
-      <div class="mockup-body"><img src="assets/manual/documents.png" alt="Document checklist with status pills, dates, and notes" loading="lazy"></div>
-    </div><span style="color:#f8fafc">83%</span></div>
-        <div class="mock-doc"><div>Bio-data / Application Proforma</div><div class="status ready">Ready</div><div>—</div><div>—</div><div>Master in profile</div></div>
-        <div class="mock-doc"><div>APAR / ACR (last 5 years)</div><div class="status ready">Ready</div><div>—</div><div>—</div><div>Bundled PDF</div></div>
-        <div class="mock-doc"><div>Vigilance Clearance</div><div class="status expiring">Expiring</div><div>14 May 2025</div><div>14 May 2026</div><div>Renew before MHA push</div></div>
-        <div class="mock-doc"><div>Integrity Certificate</div><div class="status ready">Ready</div><div>02 Jan 2026</div><div>—</div><div></div></div>
-        <div class="mock-doc"><div>Cadre Clearance</div><div class="status missing">Missing</div><div>—</div><div>—</div><div>With SO (Estt)</div></div>
-        <div class="mock-doc"><div>NOC from Parent Department</div><div class="status ready">Ready</div><div>10 Apr 2026</div><div>—</div><div></div></div>
-      </div>
+    <div class="shot">
+      <div class="shot-chrome"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><div class="shot-url">deputations.github.io/my-deputation.html#documents</div></div>
+      <img src="assets/manual/documents.png" alt="Document checklist with status pills, dates, and notes" loading="lazy">
     </div>
     <p class="caption">Document checklist with status pills, dates, and notes</p>
 
-    <h3 id="profile">Profile — your service identity</h3>
-    <p>Powers match score, cooling-off pill, and tracker prefills. Includes <strong>Export</strong>, <strong>Import</strong>, and <strong>Reset</strong> at the bottom.</p>
+    <h3 id="calendar">Calendar — month grid of every deadline</h3>
+    <p>Sun–Sat month grid showing official deadlines, internal deadlines, and personal reminders. Today is highlighted in cyan. Click any day for the full list of items, with shortcuts to open the related tracker entry or add a new reminder for that date.</p>
+    <div class="shot">
+      <div class="shot-chrome"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><div class="shot-url">deputations.github.io/my-deputation.html#calendar</div></div>
+      <img src="assets/manual/calendar.png" alt="Calendar month grid with colour-coded deadline dots" loading="lazy">
+    </div>
+    <p class="caption">Calendar — red = official, amber = internal, cyan = personal / interview</p>
+    <ul>
+      <li><strong>Prev / Next / Today</strong> — top-right buttons navigate months.</li>
+      <li><strong>Dot colour</strong> — red = official deadline, amber = internal, cyan = personal reminder or interview.</li>
+      <li><strong>+N more</strong> — appears when a day has more than two items; click the cell to see the full list.</li>
+      <li><strong>Click a day</strong> — opens a modal with every item, plus a one-click "Add reminder for this day".</li>
+    </ul>
 
-    <div class="mockup shot-mockup">
-      <div class="mockup-chrome"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div><div class="mockup-url">deputations.github.io/my-deputation.html#profile</div></div>
-      <div class="mockup-body"><img src="assets/manual/profile.png" alt="Profile form with export / import / reset controls" loading="lazy"></div>
+    <h3 id="profile">Profile — your service identity (+ cooling-off widget)</h3>
+    <p>Powers match score, tracker prefills, and the new cooling-off calculator at the top of the tab. Includes <strong>Export</strong>, <strong>Import</strong>, and <strong>Reset</strong>.</p>
+    <div class="shot">
+      <div class="shot-chrome"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><div class="shot-url">deputations.github.io/my-deputation.html#profile</div></div>
+      <img src="assets/manual/profile.png" alt="Profile tab with cooling-off widget and service identity form" loading="lazy">
     </div>
-          <div class="mock-field"><label>Service / Cadre</label><div class="input">CSS</div></div>
-          <div class="mock-field"><label>Years of service</label><div class="input">14</div></div>
-          <div class="mock-field"><label>Current ministry</label><div class="input">Finance</div></div>
-          <div class="mock-field full"><label>Preferred ministries</label><div class="input">Defence, Finance, Home Affairs, DoPT</div></div>
-          <div class="mock-field full"><label>Preferred locations</label><div class="input">Delhi / NCR, Bengaluru, Mumbai</div></div>
-          <div class="mock-field full"><label>Experience tags</label><div class="input">procurement, budget, audit, policy</div></div>
-          <div class="mock-field"><label>Last deputation end</label><div class="input">—</div></div>
-          <div class="mock-field"><label>Cooling-off years</label><div class="input">3</div></div>
-        </div>
-        <div style="display:flex;gap:0.35rem;margin-top:0.7rem"><span class="mock-btn primary">Save profile</span><span class="mock-btn">Export data</span><span class="mock-btn">Import data</span><span class="mock-btn">Reset all</span></div>
-      </div>
-    </div>
-    <p class="caption">Profile form with export / import / reset controls</p>
+    <p class="caption">Profile tab — cooling-off widget at top, service identity form below</p>
+    <p>The <strong>cooling-off widget</strong> at the top is a quick standalone calculator:</p>
+    <ul>
+      <li>Enter <strong>last deputation start</strong> and <strong>end</strong> dates and your required <strong>cooling-off years</strong> (default 3).</li>
+      <li>The widget computes the exact <strong>eligible-from date</strong> and shows a live countdown ("736 days") or "Eligible now".</li>
+      <li>Click <strong>Save</strong> — the bookmark cards and tracker pill stay in sync with the same data.</li>
+    </ul>
 
     <h2 id="match"><span class="num">3</span>How match score works</h2>
     <p>A vacancy's match % (0–100) is the sum of these factors:</p>
@@ -531,17 +242,12 @@
     </div>
 
     <h2 id="reminders"><span class="num">4</span>How reminders work</h2>
-    <p>Reminders are <strong>auto-generated</strong> whenever you set an Official or Internal deadline on a tracker entry. They sort by urgency on the Overview dashboard.</p>
+    <p>Reminders are <strong>auto-generated</strong> whenever you set an Official or Internal deadline on a tracker entry. They sort by urgency on the Overview dashboard and appear as coloured dots on the Calendar.</p>
     <ul>
       <li><strong>Done</strong> marks one off; <strong>Undo</strong> brings it back.</li>
-      <li>Use <strong>+ Add reminder</strong> on Overview to add a personal one (e.g. "Follow up with vigilance section").</li>
+      <li>Use <strong>+ Add reminder</strong> on Overview (or click any Calendar day) to add a personal one (e.g. "Follow up with vigilance section").</li>
       <li>Auto-reminders disappear when their tracker entry is closed (Joined / Rejected / Withdrawn).</li>
     </ul>
-    <p style="margin-top:0.8rem"><strong>Pill colours:</strong>
-      <span class="pill critical" style="background:rgba(244,63,94,0.15);color:#be123c">Red — within 2 days</span>
-      <span class="pill closing" style="background:rgba(245,158,11,0.15);color:#b45309;margin-left:0.3rem">Amber — within 7 days</span>
-      <span class="pill safe" style="background:rgba(34,197,94,0.15);color:#15803d;margin-left:0.3rem">Green — safe</span>
-    </p>
 
     <h2 id="privacy"><span class="num">5</span>Privacy &amp; data</h2>
     <ul>
@@ -558,9 +264,10 @@
     <h2 id="tips"><span class="num">6</span>Tips &amp; tricks</h2>
     <ul>
       <li><strong>Theme toggle</strong> — moon/sun icon top-right. Persists across visits.</li>
-      <li><strong>Deep-link tabs</strong> — <code>my-deputation.html#tracker</code> jumps straight to a tab. Bookmark your favourite.</li>
-      <li><strong>Mobile</strong> — tabs scroll horizontally; kanban becomes vertical, one column per swipe.</li>
-      <li><strong>Quick triage</strong> — Overview → tap "Closing soon" item → Add to tracker → set internal deadline a few days before official → auto-reminder fires.</li>
+      <li><strong>Manual</strong> — book icon next to theme toggle opens this popup any time.</li>
+      <li><strong>Deep-link tabs</strong> — <code>my-deputation.html#calendar</code> jumps straight to a tab. Bookmark your favourite.</li>
+      <li><strong>Mobile</strong> — tabs scroll horizontally; kanban becomes vertical, one column per swipe; calendar cells shrink but stay clickable.</li>
+      <li><strong>Quick triage</strong> — Overview → tap "Closing soon" item → Add to tracker → set internal deadline a few days before official → auto-reminder fires, and the date lights up on the Calendar.</li>
       <li><strong>Empty-criteria searches</strong> — leave fields blank except a quick filter (e.g. "Closing in 7 days") to monitor any time-sensitive view.</li>
     </ul>
 
@@ -573,15 +280,17 @@
         <tr><td>Lost everything</td><td>Did you clear browser data? Profile → Import if you have a recent export</td></tr>
         <tr><td>Kanban won't drag on phone</td><td>Use the stage dropdown at the bottom of each card</td></tr>
         <tr><td>Saved search "N new" badge stuck</td><td>Click Run once — it resets the baseline</td></tr>
+        <tr><td>Calendar looks empty</td><td>Add tracker deadlines or personal reminders; closed tracker entries don't generate events</td></tr>
+        <tr><td>Cooling-off shows "Eligible now" wrongly</td><td>The widget needs <em>both</em> a last-deputation end date and a cooling-off years number to compute a countdown</td></tr>
         <tr><td>Different device shows different data</td><td>Export on the old device → Import on the new one</td></tr>
       </tbody>
     </table>
 
     <h2 id="roadmap"><span class="num">8</span>Roadmap (not yet built)</h2>
-    <p>Planned but not in v1: explainable match-score breakdown, vacancy comparison view, dedicated calendar tab, PWA install / offline mode, cooling-off calculator widget, proforma generator, document file storage, optional cloud sync. Feedback → <strong>Contact</strong> tab.</p>
+    <p>Planned but not in v1.1: explainable match-score breakdown, vacancy comparison view, PWA install / offline mode, proforma generator, document file storage, optional cloud sync. Feedback → <strong>Contact</strong> tab.</p>
 
     <div class="footer">
-      <span>My Deputation — v1 User Manual</span>
+      <span>My Deputation — v1.1 User Manual</span>
       <span>deputations.github.io</span>
     </div>
 

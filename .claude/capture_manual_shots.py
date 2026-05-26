@@ -31,7 +31,9 @@ def seed_payload() -> dict:
             "preferredMinistries": ["Defence", "Finance", "Home Affairs", "Personnel & Training (DoPT)"],
             "preferredLocations": ["Delhi / NCR", "Bengaluru", "Mumbai"],
             "experienceTags": ["procurement", "budget", "audit", "policy"],
-            "lastDeputationEndDate": "", "coolingOffYears": 3
+            "lastDeputationStartDate": "2023-06-01",
+            "lastDeputationEndDate": "2025-06-01",
+            "coolingOffYears": 3
         },
         "deputationWatchlist": [
             "CULT-2026-L11-001", "AGRI-2026-L10-003",
@@ -152,7 +154,7 @@ localStorage.setItem('deputation_theme_v1', 'dark');
 """
 
 
-TABS = ["overview", "bookmarks", "searches", "tracker", "documents", "profile"]
+TABS = ["overview", "bookmarks", "searches", "tracker", "documents", "calendar", "profile"]
 
 
 def main():
