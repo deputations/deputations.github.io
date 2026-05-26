@@ -26,6 +26,11 @@
     <a href="/my-deputation.html">My Deputation</a>
   </nav>
 
+  <button type="button" id="ctThemeToggle" class="ct-theme-btn" aria-label="Toggle light or dark theme" title="Toggle light / dark theme">
+    <svg class="ct-theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <svg class="ct-theme-sun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+  </button>
+
   <main class="ct-shell">
 
     <!-- ============ HERO ============ -->
@@ -214,14 +219,22 @@
             </div>
 
             <details class="ct-more">
-              <summary>Add context <span>— page / link you're referring to</span></summary>
+              <summary>Add context <span>— page / section / link you're referring to</span></summary>
               <div class="ct-grid">
                 <div class="ct-field">
                   <label for="ctRelatedPage">Related page</label>
-                  <input type="text" id="ctRelatedPage" name="relatedPage" placeholder="e.g. /rules.html · /report-vacancy.html" autocomplete="off">
+                  <select id="ctRelatedPage" name="relatedPage">
+                    <option value="">— select a page —</option>
+                  </select>
                 </div>
-                <div class="ct-field">
-                  <label for="ctRelatedLink">Relevant link</label>
+                <div class="ct-field" id="ctSectionField" hidden>
+                  <label for="ctRelatedSection">Section of that page</label>
+                  <select id="ctRelatedSection" name="relatedSection">
+                    <option value="">— select a section —</option>
+                  </select>
+                </div>
+                <div class="ct-field ct-field-wide">
+                  <label for="ctRelatedLink">Relevant link <span class="ct-opt">(absolute URL)</span></label>
                   <input type="url" id="ctRelatedLink" name="relatedLink" placeholder="https://…" autocomplete="off">
                 </div>
               </div>

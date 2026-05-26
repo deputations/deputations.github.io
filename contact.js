@@ -4,6 +4,26 @@
 (function () {
   "use strict";
 
+  /* ---------- Theme toggle (persisted) ---------- */
+  var THEME_KEY = "dep-theme";
+  function applyTheme(theme) {
+    if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
+    else document.documentElement.removeAttribute("data-theme");
+  }
+  try {
+    var savedTheme = localStorage.getItem(THEME_KEY);
+    if (savedTheme === "light" || savedTheme === "dark") applyTheme(savedTheme);
+  } catch (e) {}
+  document.addEventListener("DOMContentLoaded", function () {
+    var btn = document.getElementById("ctThemeToggle");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      var next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+      applyTheme(next);
+      try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+    });
+  });
+
   var API_URL = (typeof window !== "undefined" && window.DEPUTATIONS_API) || "";
 
   var $  = function (s, root) { return (root || document).querySelector(s); };
@@ -33,6 +53,82 @@
   }
   categoryEl.addEventListener("change", applyHint);
   applyHint();
+
+  /* ---------- Page / section cascading dropdowns (Add context) ---------- */
+  var PAGES = [
+    { value: "/index.html",            label: "Home",
+      sections: [] },
+    { value: "/rules.html",            label: "Rules — Deputation Rules Hub",
+      sections: [
+        "Search",
+        "Topic Summary",
+        "Essential Rules",
+        "Chronology / Timeline",
+        "Relationship Map",
+        "Official PDF Library"
+      ] },
+    { value: "/Rules/faq.html",        label: "FAQs",
+      sections: [
+        "Understanding deputation (Basics)",
+        "Eligibility & clearances",
+        "Tenure & repatriation",
+        "Pay & pay fixation",
+        "Deputation (duty) allowance",
+        "Leave, pension & benefits",
+        "Special categories",
+        "Procedural & miscellaneous",
+        "Community-reported discrepancies"
+      ] },
+    { value: "/dex.html",              label: "DEX — Deputation Index",
+      sections: [] },
+    { value: "/report-vacancy.html",   label: "Report a Vacancy",
+      sections: [
+        "Submit Link tab",
+        "Upload PDF tab",
+        "Manual Details tab",
+        "Additional details section",
+        "Preview / submission flow"
+      ] },
+    { value: "/contact.html",          label: "Contact / Community (this page)",
+      sections: [
+        "WhatsApp Channel card",
+        "WhatsApp Group card",
+        "Channel vs Group comparison",
+        "Community Guidelines",
+        "Feedback form",
+        "Quick-route tiles"
+      ] },
+    { value: "/my-deputation.html",    label: "My Deputation",
+      sections: [] }
+  ];
+  var pageSel    = $("#ctRelatedPage");
+  var sectionSel = $("#ctRelatedSection");
+  var sectionWrap = $("#ctSectionField");
+
+  // Build page dropdown
+  PAGES.forEach(function (p) {
+    var opt = document.createElement("option");
+    opt.value = p.value;
+    opt.textContent = p.label;
+    pageSel.appendChild(opt);
+  });
+
+  function rebuildSections() {
+    var pg = PAGES.find(function (p) { return p.value === pageSel.value; });
+    sectionSel.innerHTML = '<option value="">— select a section —</option>';
+    if (pg && pg.sections && pg.sections.length) {
+      pg.sections.forEach(function (s) {
+        var o = document.createElement("option");
+        o.value = s; o.textContent = s;
+        sectionSel.appendChild(o);
+      });
+      sectionWrap.hidden = false;
+    } else {
+      sectionWrap.hidden = true;
+    }
+  }
+  pageSel.addEventListener("change", rebuildSections);
+  rebuildSections();
 
   /* ---------- Validation ---------- */
   function isEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
@@ -92,7 +188,7 @@
       message:      val("ctMessage"),
       name:         val("ctName"),
       email:        val("ctEmail"),
-      relatedPage:  val("ctRelatedPage"),
+      relatedPage:  val("ctRelatedPage") + (val("ctRelatedSection") ? "  §  " + val("ctRelatedSection") : ""),
       relatedLink:  val("ctRelatedLink"),
       pageContext:  document.referrer || location.pathname,
       userAgent:    navigator.userAgent || "",
@@ -148,6 +244,14 @@
 
   function showSuccess(id) {
     $("#ctFeedbackId").textContent = id;
+    // Reset the submit button visuals BEFORE hiding the form, so the next
+    // time the form is shown the button isn't stuck in "Sending…" state.
+    var btn   = $("#ctSubmitBtn");
+    var label = $("#ctSubmitLabel");
+    var spin  = $("#ctSubmitSpin");
+    if (btn)   btn.disabled = false;
+    if (label) label.textContent = "Send feedback";
+    if (spin)  spin.hidden = true;
     form.hidden = true;
     success.hidden = false;
     // Hide the response-expect note + progress bar (they belong with the form)
