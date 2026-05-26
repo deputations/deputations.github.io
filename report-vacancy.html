@@ -3,9 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Report Vacancy | Deputations</title>
+  <title>Report a Deputation Vacancy | Deputations</title>
+  <meta name="description" content="Submit a Central Government deputation vacancy by link, PDF or manual source details. Every report is reviewed before publishing.">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="report-vacancy.css">
+  <script src="config.js"></script>
 </head>
 <body>
   <div class="bg-shapes">
@@ -22,16 +25,213 @@
     <a href="/contact.html">Contact</a>
     <a href="/my-deputation.html">My Deputation</a>
   </nav>
-  <div class="app-container">
-    <header class="app-header">
-      <div class="header-logo">
-        <h1><span class="gradient-text">REPORT</span> A VACANCY</h1>
+
+  <main class="rv-shell">
+    <section class="rv-hero">
+      <h1 class="rv-title"><span class="rv-grad">Report</span> a Deputation Vacancy</h1>
+      <p class="rv-sub">Submit an official vacancy link, a PDF notification, or source details. Every report is reviewed before publishing.</p>
+      <ul class="rv-badges" aria-label="What we accept">
+        <li><span class="rv-dot"></span>Official sources preferred</li>
+        <li><span class="rv-dot"></span>Reviewed before publishing</li>
+        <li><span class="rv-dot"></span>Link · PDF · Manual</li>
+        <li><span class="rv-dot"></span>Secure submission</li>
+      </ul>
+      <button type="button" id="rvClearDraft" class="rv-link-btn" hidden>Clear saved draft</button>
+    </section>
+
+    <!-- ============ FORM CARD ============ -->
+    <section class="rv-card" id="rvCard" aria-labelledby="rvCardTitle">
+      <div class="rv-progress" aria-hidden="true"><div class="rv-progress-fill" id="rvProgressFill"></div></div>
+
+      <header class="rv-card-head">
+        <h2 id="rvCardTitle">New vacancy report</h2>
+        <p>Pick a submission mode. Fields adjust to match the mode you choose.</p>
+      </header>
+
+      <div class="rv-tabs" role="tablist" aria-label="Submission mode">
+        <button type="button" class="rv-tab active" role="tab" aria-selected="true" data-mode="link" id="rvTabLink">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          Submit Link
+        </button>
+        <button type="button" class="rv-tab" role="tab" aria-selected="false" data-mode="pdf" id="rvTabPdf">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg>
+          Upload PDF
+        </button>
+        <button type="button" class="rv-tab" role="tab" aria-selected="false" data-mode="manual" id="rvTabManual">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Manual Details
+        </button>
       </div>
-    </header>
-    <main style="padding:2rem 0;">
-      <h2>Report a Deputation Vacancy</h2>
-      <p>This page will accept a vacancy link, PDF, or source details.</p>
-    </main>
+
+      <form id="rvForm" class="rv-form" novalidate>
+        <!-- honeypot -->
+        <div class="rv-hp" aria-hidden="true">
+          <label>Leave this field empty<input type="text" name="website" id="rvWebsite" tabindex="-1" autocomplete="off"></label>
+        </div>
+
+        <!-- Link mode -->
+        <div class="rv-pane" data-pane="link">
+          <div class="rv-field">
+            <label for="rvUrl">Official vacancy URL <span class="rv-req">*</span></label>
+            <input type="url" id="rvUrl" name="sourceUrl" placeholder="https://example.gov.in/vacancy.pdf" autocomplete="off">
+            <p class="rv-err" id="rvUrlErr"></p>
+          </div>
+        </div>
+
+        <!-- PDF mode -->
+        <div class="rv-pane" data-pane="pdf" hidden>
+          <div class="rv-field">
+            <label>Vacancy PDF <span class="rv-req">*</span></label>
+            <div class="rv-drop" id="rvDrop" tabindex="0" role="button" aria-label="Upload a PDF: drag and drop, or click to choose a file">
+              <input type="file" id="rvFile" accept="application/pdf" hidden>
+              <div class="rv-drop-inner" id="rvDropEmpty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+                <div>
+                  <strong>Drag &amp; drop a PDF here</strong><br>
+                  <span>or <u>click to choose</u> — single file, max 10&nbsp;MB</span>
+                </div>
+              </div>
+              <div class="rv-file" id="rvFileChip" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                <div class="rv-file-meta">
+                  <strong id="rvFileName"></strong>
+                  <span id="rvFileSize"></span>
+                </div>
+                <button type="button" id="rvFileRemove" aria-label="Remove file">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+            </div>
+            <p class="rv-err" id="rvFileErr"></p>
+          </div>
+        </div>
+
+        <!-- Manual mode -->
+        <div class="rv-pane" data-pane="manual" hidden>
+          <div class="rv-field">
+            <label for="rvManualSource">Source details <span class="rv-req">*</span></label>
+            <textarea id="rvManualSource" name="manualSourceDetails" rows="4" placeholder="Where did you find this vacancy? Newspaper, intranet circular, official notification number, etc."></textarea>
+            <p class="rv-err" id="rvManualSourceErr"></p>
+          </div>
+          <div class="rv-field">
+            <label for="rvSeenAt">Where was this seen? <span class="rv-opt">(optional)</span></label>
+            <input type="text" id="rvSeenAt" name="seenAt" placeholder="Notice board, intranet, ministry website, gazette, newspaper…" autocomplete="off">
+          </div>
+        </div>
+
+        <!-- Shared core fields -->
+        <div class="rv-grid">
+          <div class="rv-field">
+            <label for="rvTitle">Vacancy title <span class="rv-req">*</span></label>
+            <input type="text" id="rvTitle" name="title" placeholder="Deputy Director (Personnel)" autocomplete="off">
+            <p class="rv-err" id="rvTitleErr"></p>
+          </div>
+          <div class="rv-field">
+            <label for="rvOrg">Organization / Ministry / Department <span class="rv-req">*</span></label>
+            <input type="text" id="rvOrg" name="organization" placeholder="Ministry of Personnel, DoPT" autocomplete="off">
+            <p class="rv-err" id="rvOrgErr"></p>
+          </div>
+          <div class="rv-field">
+            <label for="rvDeadline">Last date to apply <span class="rv-opt">(recommended)</span></label>
+            <input type="date" id="rvDeadline" name="deadline">
+          </div>
+          <div class="rv-field">
+            <label for="rvDescription">Short description <span class="rv-opt">(optional)</span></label>
+            <input type="text" id="rvDescription" name="description" placeholder="One-line context" autocomplete="off">
+          </div>
+        </div>
+
+        <!-- Optional details (collapsible) -->
+        <details class="rv-more">
+          <summary>Additional details <span>— posts, pay level, eligibility, contact</span></summary>
+          <div class="rv-grid">
+            <div class="rv-field">
+              <label for="rvPosts">Number of posts</label>
+              <input type="text" inputmode="numeric" id="rvPosts" name="numberOfPosts" placeholder="e.g. 2" autocomplete="off">
+            </div>
+            <div class="rv-field">
+              <label for="rvPay">Pay level</label>
+              <input type="text" id="rvPay" name="payLevel" placeholder="Level 12 / Level 13 / PB-4" autocomplete="off">
+            </div>
+            <div class="rv-field rv-field-wide">
+              <label for="rvEligibility">Eligibility summary</label>
+              <textarea id="rvEligibility" name="eligibility" rows="2" placeholder="Grade, years of service, cadre…"></textarea>
+            </div>
+            <div class="rv-field">
+              <label for="rvLocation">Location / posting type</label>
+              <input type="text" id="rvLocation" name="location" placeholder="New Delhi / All India / Pan-India" autocomplete="off">
+            </div>
+            <div class="rv-field"></div>
+            <div class="rv-field">
+              <label for="rvSubmitter">Your name <span class="rv-opt">(optional)</span></label>
+              <input type="text" id="rvSubmitter" name="submitterName" autocomplete="name">
+            </div>
+            <div class="rv-field">
+              <label for="rvEmail">Your email <span class="rv-opt">(optional, for follow-up)</span></label>
+              <input type="email" id="rvEmail" name="submitterEmail" placeholder="you@example.com" autocomplete="email">
+              <p class="rv-err" id="rvEmailErr"></p>
+            </div>
+          </div>
+        </details>
+
+        <label class="rv-check">
+          <input type="checkbox" id="rvConfirm" required>
+          <span>I confirm that this vacancy information is from an <strong>official or reliable source</strong>.</span>
+        </label>
+        <p class="rv-err" id="rvConfirmErr"></p>
+
+        <div class="rv-actions">
+          <button type="button" class="rv-btn ghost" id="rvReset">Clear form</button>
+          <button type="submit" class="rv-btn primary" id="rvPreviewBtn">
+            Preview submission
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <p class="rv-trust">Your submission goes into a moderation queue. No data is published until a reviewer verifies it.</p>
+      </form>
+    </section>
+
+    <!-- ============ SUCCESS STATE ============ -->
+    <section class="rv-card rv-success" id="rvSuccess" hidden aria-live="polite">
+      <div class="rv-check"><svg viewBox="0 0 52 52" aria-hidden="true"><circle class="rv-check-c" cx="26" cy="26" r="24" fill="none"/><path class="rv-check-m" fill="none" d="M14 27 l8 8 16-18"/></svg></div>
+      <h2>Report submitted successfully</h2>
+      <p class="rv-success-id">Report ID: <strong id="rvReportId">RV-0000-000000</strong></p>
+      <p class="rv-success-status">Status: <span>Under Review</span></p>
+      <p class="rv-success-msg">Thank you for helping keep deputation vacancy information accurate.</p>
+      <div class="rv-actions center">
+        <button type="button" class="rv-btn ghost" id="rvAnother">Report another vacancy</button>
+        <a class="rv-btn primary" href="/index.html">Go to Home</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ PREVIEW MODAL ============ -->
+  <div class="rv-modal" id="rvModal" role="dialog" aria-modal="true" aria-labelledby="rvModalTitle" hidden>
+    <div class="rv-modal-card">
+      <header class="rv-modal-head">
+        <h3 id="rvModalTitle">Review your submission</h3>
+        <button type="button" class="rv-modal-close" id="rvModalClose" aria-label="Close preview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </header>
+      <div class="rv-modal-body">
+        <dl id="rvPreviewList"></dl>
+        <p class="rv-modal-note">Please confirm the details below. Once submitted, the report goes into the moderation queue.</p>
+        <p class="rv-err" id="rvSubmitErr"></p>
+      </div>
+      <footer class="rv-modal-foot">
+        <button type="button" class="rv-btn ghost" id="rvEditBtn">Edit</button>
+        <button type="button" class="rv-btn primary" id="rvSubmitBtn">
+          <span id="rvSubmitLabel">Confirm &amp; submit</span>
+          <svg id="rvSubmitSpin" class="rv-spin" viewBox="0 0 24 24" hidden aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="40 100"/></svg>
+        </button>
+      </footer>
+    </div>
   </div>
+
+  <div class="rv-toast" id="rvToast" role="status" aria-live="polite" hidden></div>
+
+  <script src="report-vacancy.js"></script>
 </body>
 </html>

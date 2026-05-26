@@ -391,6 +391,7 @@ footer{margin-top:54px;border-top:1px solid var(--border-color);background:var(-
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}html{scroll-behavior:auto}}
 </style>
 <link rel="stylesheet" href="../navbar.css">
+<script src="../config.js"></script>
 </head>
 <body>
 <nav class="top-nav">
@@ -1202,7 +1203,8 @@ footer{margin-top:54px;border-top:1px solid var(--border-color);background:var(-
    between the quotes below (see the setup guide). Until then, the
    flag button still opens, but reports cannot be saved.
    ============================================================ */
-var DISCREPANCY_API = "https://script.google.com/macros/s/AKfycbyltPrnuwL3oS0HUiw1IH9X_WEaBH3kHA5F8cBDcHWsmyc7o_ySNDQ0C-Cza9-1ilfx/exec";
+var DISCREPANCY_API = (window.DEPUTATIONS_API) ||
+  "https://script.google.com/macros/s/AKfycbyltPrnuwL3oS0HUiw1IH9X_WEaBH3kHA5F8cBDcHWsmyc7o_ySNDQ0C-Cza9-1ilfx/exec";
 
 (function(){
   "use strict";
