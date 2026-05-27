@@ -27,7 +27,7 @@ from openpyxl import load_workbook
 
 REPO = Path(__file__).resolve().parent.parent
 MINISTRIES_JSON = REPO / "data" / "ministries.json"
-OUT_DIR = REPO / "data" / "dex"
+OUT_DIR = REPO / "data" / "defex"
 
 # Source resolution order:
 #   1. $DEX_GOOGLE_SHEET_ID  → live Google Sheet via Workload Identity (used by CI)
@@ -439,7 +439,7 @@ def main():
         "version": METHODOLOGY_VERSION,
         "status": "beta",
         "formula": {
-            "expression": "DEX = clamp(0, 100,  B - sum(Pi) + E)",
+            "expression": "DeFeX = clamp(0, 100,  B - sum(Pi) + E)",
             "base_scores": BASE_SCORE,
             "penalties": {
                 "vacancy_based": PENALTY_VACANCY,
@@ -449,8 +449,8 @@ def main():
             },
             "evidence_bonus": {"with_om": 8, "with_personal": 2, "max": 8},
             "caps": [
-                "If any penalty applies, DEX is capped at 75.",
-                "Missing data does not lower DEX — it lowers confidence."
+                "If any penalty applies, DeFeX is capped at 75.",
+                "Missing data does not lower DeFeX — it lowers confidence."
             ],
         },
         "bands": [

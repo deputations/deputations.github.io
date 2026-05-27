@@ -2,7 +2,7 @@
   "version": "0.1.0-beta",
   "status": "beta",
   "formula": {
-    "expression": "DEX = clamp(0, 100,  B - sum(Pi) + E)",
+    "expression": "DeFeX = clamp(0, 100,  B - sum(Pi) + E)",
     "base_scores": {
       "Yes": 88,
       "Allow for some": 70,
@@ -21,8 +21,8 @@
       "max": 8
     },
     "caps": [
-      "If any penalty applies, DEX is capped at 75.",
-      "Missing data does not lower DEX — it lowers confidence."
+      "If any penalty applies, DeFeX is capped at 75.",
+      "Missing data does not lower DeFeX — it lowers confidence."
     ]
   },
   "bands": [

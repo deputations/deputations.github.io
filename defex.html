@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeFeX — Deputation Friendliness Index</title>
+  <meta name="description" content="DeFeX — a transparency index for how deputation-friendly Indian Ministries, Departments and Cadre Controlling Authorities are as parent organisations.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="defex.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+</head>
+<body>
+  <div class="bg-shapes" aria-hidden="true">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+
+  <nav class="top-nav" aria-label="Primary site navigation">
+    <a href="/index.html">Home</a>
+    <a href="/rules.html">Rules</a>
+    <a href="/Rules/faq.html">FAQs</a>
+    <a href="/defex.html" class="active">DeFeX</a>
+    <a href="/report-vacancy.html">Report Vacancy</a>
+    <a href="/contact.html">Contact</a>
+    <a href="/my-deputation.html">My Deputation</a>
+  </nav>
+
+  <div class="app-container dex-page">
+
+    <!-- ============ HERO ============ -->
+    <header class="dex-hero">
+      <div class="dex-hero-badge">
+        <span class="dot"></span>
+        <span>Public beta · Methodology v<span data-bind="methodology_version">0.1.0</span></span>
+      </div>
+
+      <h1 class="defex-wordmark" aria-label="DeFeX — Deputation Friendliness indEX">
+        <span class="defex-group defex-group--de"   aria-hidden="true">
+          <span class="defex-letters">De</span>
+          <span class="defex-word">Deputation</span>
+        </span>
+        <span class="defex-group defex-group--f"    aria-hidden="true">
+          <span class="defex-letters">F</span>
+          <span class="defex-word">Friendliness</span>
+        </span>
+        <span class="defex-group defex-group--ex"   aria-hidden="true">
+          <span class="defex-letters">eX</span>
+          <span class="defex-word">ind<em>EX</em></span>
+        </span>
+      </h1>
+
+      <p class="dex-hero-lede">
+        A transparency layer for India's deputation system. Search any parent Ministry,
+        Department or CCA and see what its <strong>rules</strong> say, what
+        <strong>reports</strong> show, and what you should <strong>do next</strong> —
+        with the signal strength always shown next to the signal.
+      </p>
+
+      <form class="dex-search-form" onsubmit="return false;" role="search">
+        <div class="dex-search-shell">
+          <svg class="dex-search-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 21l-4.3-4.3M11 19a8 8 0 110-16 8 8 0 010 16z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="dex-search-hero" class="dex-search-input"
+                 type="search" autocomplete="off" spellcheck="false"
+                 placeholder="Try “Ministry of Finance”, “CBIC”, “Railway Board”…"
+                 aria-label="Search ministries, departments and organisations">
+          <kbd class="dex-kbd">/</kbd>
+        </div>
+        <div class="dex-search-suggestions" id="dex-search-suggestions" hidden></div>
+      </form>
+
+      <div class="dex-hero-actions">
+        <a href="#leaderboard" class="dex-btn dex-btn-primary">Explore organisations</a>
+        <a href="#checklist"  class="dex-btn dex-btn-ghost">Check my readiness</a>
+        <a href="#contribute" class="dex-btn dex-btn-link">Report an experience →</a>
+      </div>
+    </header>
+
+    <!-- ============ COVERAGE STRIP ============ -->
+    <section class="dex-coverage" aria-label="Coverage statistics">
+      <div class="dex-coverage-tile">
+        <div class="dex-tile-value" data-counter="organisations_mapped">—</div>
+        <div class="dex-tile-label">Organisations mapped</div>
+      </div>
+      <div class="dex-coverage-tile">
+        <div class="dex-tile-value" data-counter="ministries_covered">—</div>
+        <div class="dex-tile-label">Ministries covered</div>
+      </div>
+      <div class="dex-coverage-tile">
+        <div class="dex-tile-value" data-counter="organisations_rated">—</div>
+        <div class="dex-tile-label">Organisations rated</div>
+      </div>
+      <div class="dex-coverage-tile">
+        <div class="dex-tile-value" data-counter="organisations_with_om">—</div>
+        <div class="dex-tile-label">With official source</div>
+      </div>
+      <div class="dex-coverage-tile dex-coverage-tile--meta">
+        <div class="dex-tile-value dex-tile-value--small" data-bind="generated_at_human">—</div>
+        <div class="dex-tile-label">Last refreshed</div>
+      </div>
+    </section>
+
+    <!-- ============ EXPLORER ============ -->
+    <section class="dex-section" id="explorer" aria-labelledby="explorer-h">
+      <div class="dex-section-head">
+        <div>
+          <h2 id="explorer-h">Explore organisations</h2>
+          <p class="dex-section-sub">Featured organisations across friendliness bands. Search above or open any card.</p>
+        </div>
+        <div class="dex-section-actions">
+          <button class="dex-chip dex-chip--active" data-explorer-band="all">All bands</button>
+          <button class="dex-chip" data-explorer-band="friendly">Friendly</button>
+          <button class="dex-chip" data-explorer-band="mixed">Mixed</button>
+          <button class="dex-chip" data-explorer-band="restrictive">Restrictive</button>
+          <button class="dex-chip" data-explorer-band="om">Has official OM</button>
+        </div>
+      </div>
+      <div class="dex-card-grid" id="dex-featured"></div>
+    </section>
+
+    <!-- ============ LEADERBOARD ============ -->
+    <section class="dex-section" id="leaderboard" aria-labelledby="leaderboard-h">
+      <div class="dex-section-head">
+        <div>
+          <h2 id="leaderboard-h">Leaderboard</h2>
+          <p class="dex-section-sub">
+            Three honest views. Rankings only appear once an organisation has enough evidence.
+          </p>
+        </div>
+      </div>
+
+      <div class="dex-tabs" role="tablist">
+        <button role="tab" class="dex-tab dex-tab--active" data-tab="mapped">Mapped <span class="dex-tab-count" data-tab-count="mapped">0</span></button>
+        <button role="tab" class="dex-tab" data-tab="ranked">Ranked <span class="dex-tab-count" data-tab-count="ranked">0</span></button>
+        <button role="tab" class="dex-tab" data-tab="needs">Needs reports <span class="dex-tab-count" data-tab-count="needs">0</span></button>
+      </div>
+
+      <div class="dex-filters">
+        <label class="dex-filter">
+          <span>Ministry</span>
+          <select id="filter-ministry"><option value="">All</option></select>
+        </label>
+        <label class="dex-filter">
+          <span>Organisation type</span>
+          <select id="filter-type"><option value="">All</option></select>
+        </label>
+        <label class="dex-filter">
+          <span>Band</span>
+          <select id="filter-band">
+            <option value="">All</option>
+            <option>Deputation-friendly</option>
+            <option>Generally supportive</option>
+            <option>Mixed</option>
+            <option>Restrictive</option>
+            <option>Very restrictive</option>
+            <option>Unrated</option>
+          </select>
+        </label>
+        <label class="dex-filter">
+          <span>Confidence</span>
+          <select id="filter-confidence">
+            <option value="">All</option>
+            <option>High</option>
+            <option>Medium</option>
+            <option>Low</option>
+            <option>Insufficient</option>
+          </select>
+        </label>
+        <label class="dex-filter dex-filter--check">
+          <input type="checkbox" id="filter-om"> <span>Has official OM</span>
+        </label>
+        <button class="dex-btn dex-btn-ghost dex-filter-reset" id="filter-reset">Reset</button>
+      </div>
+
+      <div class="dex-table-wrap">
+        <table class="dex-table" id="dex-table">
+          <thead>
+            <tr>
+              <th data-sort="rank">#</th>
+              <th data-sort="name">Organisation</th>
+              <th data-sort="ministry">Ministry</th>
+              <th data-sort="type">Type</th>
+              <th data-sort="dex" class="num">DeFeX</th>
+              <th data-sort="band">Band</th>
+              <th data-sort="confidence">Confidence</th>
+              <th data-sort="reports" class="num">Reports</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="dex-tbody"></tbody>
+        </table>
+        <div class="dex-empty" id="dex-empty" hidden>
+          <p>No organisations match these filters.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ READINESS CHECKLIST (MVP placeholder for Risk Scan) ============ -->
+    <section class="dex-section" id="checklist" aria-labelledby="checklist-h">
+      <div class="dex-section-head">
+        <div>
+          <h2 id="checklist-h">Readiness Checklist</h2>
+          <p class="dex-section-sub">
+            A rules-based pre-flight check for your application. No predictions, just
+            actionable steps derived from your parent organisation's profile.
+          </p>
+        </div>
+      </div>
+
+      <form class="dex-checklist" id="dex-checklist-form" onsubmit="return false;">
+        <label class="dex-filter">
+          <span>Parent ministry</span>
+          <select id="chk-ministry"><option value="">Select…</option></select>
+        </label>
+        <label class="dex-filter">
+          <span>Parent department / organisation</span>
+          <select id="chk-org" disabled><option value="">Select ministry first</option></select>
+        </label>
+        <label class="dex-filter">
+          <span>Your pay level</span>
+          <select id="chk-level">
+            <option value="">Select…</option>
+            <option>Level 6 / Group B</option>
+            <option>Level 7</option>
+            <option>Level 8</option>
+            <option>Level 9</option>
+            <option>Level 10 / Group A entry</option>
+            <option>Level 11</option>
+            <option>Level 12</option>
+            <option>Level 13</option>
+            <option>Level 14+</option>
+          </select>
+        </label>
+        <label class="dex-filter">
+          <span>Vacancy last date</span>
+          <input type="date" id="chk-deadline">
+        </label>
+        <label class="dex-filter dex-filter--check">
+          <input type="checkbox" id="chk-noc-needed" checked> <span>NOC required</span>
+        </label>
+        <label class="dex-filter dex-filter--check">
+          <input type="checkbox" id="chk-vig-needed" checked> <span>Vigilance clearance required</span>
+        </label>
+        <div class="dex-checklist-actions">
+          <button class="dex-btn dex-btn-primary" id="chk-run">Generate checklist</button>
+          <span class="dex-checklist-hint">Output stays on this page. Nothing is uploaded.</span>
+        </div>
+      </form>
+      <div class="dex-checklist-output" id="dex-checklist-output" hidden></div>
+    </section>
+
+    <!-- ============ CONTRIBUTE / SURVEY ============ -->
+    <section class="dex-section dex-contribute" id="contribute" aria-labelledby="contribute-h">
+      <div class="dex-contribute-card">
+        <div class="dex-contribute-text">
+          <span class="dex-pill dex-pill--mint">Keep DeFeX honest</span>
+          <h2 id="contribute-h">Report your deputation experience</h2>
+          <p>
+            DeFeX gets sharper every time someone shares a structured timeline — application,
+            forwarding, NOC, vigilance, relieving. Submissions are anonymous, scanned for
+            officer names (and rejected if found), and aggregated before display.
+          </p>
+          <ul class="dex-contribute-list">
+            <li>No login. No personal data stored beyond what you choose to share.</li>
+            <li>Free-text fields are character-capped and moderated.</li>
+            <li>Integrity allegations are <strong>never</strong> published publicly.</li>
+          </ul>
+          <div class="dex-hero-actions">
+            <a class="dex-btn dex-btn-primary" id="dex-survey-link" target="_blank" rel="noopener">
+              Open the survey →
+            </a>
+            <a class="dex-btn dex-btn-ghost" href="#methodology">How submissions are used</a>
+          </div>
+        </div>
+        <div class="dex-contribute-side">
+          <div class="dex-tile-value dex-tile-value--accent" data-counter="reports_total">—</div>
+          <div class="dex-tile-label">Reports analysed</div>
+          <div class="dex-divider"></div>
+          <div class="dex-tile-label">Coverage gap</div>
+          <p class="dex-side-note">
+            <span data-coverage-gap>—</span> organisations still have no reports.
+            Yours could be the first.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ METHODOLOGY ============ -->
+    <section class="dex-section" id="methodology" aria-labelledby="methodology-h">
+      <div class="dex-section-head">
+        <div>
+          <h2 id="methodology-h">Methodology</h2>
+          <p class="dex-section-sub">
+            Versioned, public, and revised with a changelog. DeFeX is meant to be auditable.
+          </p>
+        </div>
+      </div>
+      <div class="dex-method-grid">
+        <article class="dex-method-card">
+          <h3>The formula</h3>
+          <pre class="dex-formula" data-bind="formula_expression">DeFeX = clamp(0, 100,  B − Σ Pᵢ + E)</pre>
+          <p><strong>B</strong> — base score from <em>Deputation_Allowed</em>:
+            Yes 88 · Allow for some 70 · Allowed with conditions 58 · No 18.</p>
+          <p><strong>Pᵢ</strong> — friction penalties: Vacancy-based −18 · Senior-only −15 · FCFS −8.
+            “Highly beneficial to parent” is <em>not</em> a penalty — it's the standard
+            statutory phrasing. We show it as a condition instead.</p>
+          <p><strong>E</strong> — evidence bonus: +8 with an official OM, +2 with consistent
+            community reports (capped at +8).</p>
+          <p class="dex-method-note">
+            Missing data does not reduce DeFeX. It reduces <em>confidence</em>.
+          </p>
+        </article>
+
+        <article class="dex-method-card">
+          <h3>Confidence, not just score</h3>
+          <p>Every DeFeX score ships with a confidence band. Confidence rises with:
+            number of reports, presence of an official OM, recency, internal consistency,
+            and how many stages (forwarding, NOC, vigilance, relieving) are covered.</p>
+          <ul class="dex-method-list">
+            <li><strong>High</strong> ≥ 0.70 — multiple reports + OM</li>
+            <li><strong>Medium</strong> ≥ 0.45 — OM or several reports</li>
+            <li><strong>Low</strong> ≥ 0.20 — one report, no OM</li>
+            <li><strong>Insufficient</strong> — organisation appears as <em>Unrated</em></li>
+          </ul>
+        </article>
+
+        <article class="dex-method-card">
+          <h3>Bands</h3>
+          <ul class="dex-band-list">
+            <li><span class="dex-band-pill" data-band-pill="Deputation-friendly">80–100</span>Deputation-friendly</li>
+            <li><span class="dex-band-pill" data-band-pill="Generally supportive">65–79</span>Generally supportive</li>
+            <li><span class="dex-band-pill" data-band-pill="Mixed">50–64</span>Mixed</li>
+            <li><span class="dex-band-pill" data-band-pill="Restrictive">35–49</span>Restrictive</li>
+            <li><span class="dex-band-pill" data-band-pill="Very restrictive">0–34</span>Very restrictive</li>
+            <li><span class="dex-band-pill" data-band-pill="Unrated">—</span>Unrated (insufficient data)</li>
+          </ul>
+        </article>
+
+        <article class="dex-method-card">
+          <h3>What we never publish</h3>
+          <ul class="dex-method-list">
+            <li>Names of individual officers.</li>
+            <li>Allegations of integrity issues, in any aggregated form.</li>
+            <li>Raw narrative reports — only structured, aggregated signals.</li>
+          </ul>
+          <p class="dex-method-note">
+            See <a href="#disclaimer">disclaimer</a> and <a href="#correction">Right to Correction</a>.
+          </p>
+        </article>
+
+        <article class="dex-method-card dex-method-card--wide">
+          <h3>Changelog</h3>
+          <ol class="dex-changelog" id="dex-changelog"></ol>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ RIGHT TO CORRECTION ============ -->
+    <section class="dex-section dex-correction" id="correction" aria-labelledby="correction-h">
+      <div class="dex-correction-card">
+        <h2 id="correction-h">Right to Correction</h2>
+        <p>
+          Ministries, Departments, Cadre Controlling Authorities and Organisations are
+          welcome to submit official deputation policy documents, corrections or
+          clarifications. We commit to publishing acknowledged corrections within
+          <strong>14 days</strong>.
+        </p>
+        <div class="dex-hero-actions">
+          <a class="dex-btn dex-btn-primary" href="/contact.html">Submit a correction</a>
+          <a class="dex-btn dex-btn-ghost" href="#methodology">Read methodology</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DISCLAIMER ============ -->
+    <section class="dex-section dex-disclaimer" id="disclaimer" aria-labelledby="disclaimer-h">
+      <h2 id="disclaimer-h" class="dex-disclaimer-title">Disclaimer</h2>
+      <p>
+        DeFeX is a community- and document-based deputation friendliness index. It is
+        intended to help employees understand patterns, risks and timelines associated
+        with deputation from one government organisation to another. Scores are derived
+        from available reports, official documents where available, and moderated user
+        submissions. DeFeX does not make allegations against any individual officer and
+        should not be treated as an official government rating. Where data is
+        insufficient, organisations are shown as <em>Unrated</em>.
+      </p>
+    </section>
+
+  </div>
+
+  <!-- ============ ORG PROFILE DRAWER ============ -->
+  <aside class="dex-drawer" id="dex-drawer" aria-hidden="true" tabindex="-1">
+    <div class="dex-drawer-scrim" data-drawer-close></div>
+    <div class="dex-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+      <header class="dex-drawer-head">
+        <div>
+          <div class="dex-drawer-ministry" id="drawer-ministry">—</div>
+          <h3 class="dex-drawer-title" id="drawer-title">—</h3>
+          <div class="dex-drawer-meta">
+            <span class="dex-pill" id="drawer-type">—</span>
+            <span class="dex-pill dex-pill--ghost" id="drawer-reports">— reports</span>
+          </div>
+        </div>
+        <button class="dex-drawer-close" data-drawer-close aria-label="Close">×</button>
+      </header>
+
+      <div class="dex-drawer-score">
+        <div class="dex-ring" id="drawer-ring">
+          <div class="dex-ring-value" id="drawer-dex">—</div>
+          <div class="dex-ring-suffix">/ 100</div>
+        </div>
+        <div class="dex-drawer-score-side">
+          <div class="dex-band-pill" id="drawer-band">—</div>
+          <div class="dex-conf">
+            <div class="dex-conf-label">Confidence</div>
+            <div class="dex-conf-bar"><div class="dex-conf-fill" id="drawer-conf-fill"></div></div>
+            <div class="dex-conf-band" id="drawer-conf-band">—</div>
+          </div>
+          <button class="dex-why-btn" id="drawer-why">Why this score?</button>
+        </div>
+      </div>
+
+      <div class="dex-drawer-tabs" role="tablist">
+        <button class="dex-drawer-tab dex-drawer-tab--active" data-drawer-tab="rules">Rules</button>
+        <button class="dex-drawer-tab" data-drawer-tab="reports">Reports</button>
+        <button class="dex-drawer-tab" data-drawer-tab="actions">What to do</button>
+      </div>
+
+      <div class="dex-drawer-body">
+        <div class="dex-drawer-pane dex-drawer-pane--active" data-drawer-pane="rules" id="pane-rules"></div>
+        <div class="dex-drawer-pane" data-drawer-pane="reports" id="pane-reports"></div>
+        <div class="dex-drawer-pane" data-drawer-pane="actions" id="pane-actions"></div>
+      </div>
+
+      <footer class="dex-drawer-foot">
+        <a class="dex-btn dex-btn-ghost" id="drawer-share">Copy share link</a>
+        <a class="dex-btn dex-btn-ghost" id="drawer-survey" target="_blank" rel="noopener">Report experience</a>
+        <a class="dex-btn dex-btn-primary" href="/contact.html">Suggest correction</a>
+      </footer>
+    </div>
+  </aside>
+
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+  <script src="defex.js"></script>
+</body>
+</html>

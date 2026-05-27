@@ -1,5 +1,5 @@
 /* ============================================================
-   DEX — Deputation Friendliness Index (client)
+   DeFeX — Deputation Friendliness Index (client)
    Static data, deep-linkable, no backend.
    ============================================================ */
 (() => {
@@ -27,11 +27,11 @@
   // ---------- load ----------------------------------------------------------
   async function load() {
     const [orgs, scores, reports, method, upd] = await Promise.all([
-      fetch("data/dex/organisations.json").then(r => r.json()),
-      fetch("data/dex/scores.json").then(r => r.json()),
-      fetch("data/dex/reports.json").then(r => r.json()),
-      fetch("data/dex/methodology.json").then(r => r.json()),
-      fetch("data/dex/updates.json").then(r => r.json()),
+      fetch("data/defex/organisations.json").then(r => r.json()),
+      fetch("data/defex/scores.json").then(r => r.json()),
+      fetch("data/defex/reports.json").then(r => r.json()),
+      fetch("data/defex/methodology.json").then(r => r.json()),
+      fetch("data/defex/updates.json").then(r => r.json()),
     ]);
     state.organisations = orgs;
     state.scores = new Map(scores.map(s => [s.org_id, s]));
@@ -560,7 +560,7 @@
     const om = state.reports.get(org.id)?.[0]?.sources?.om;
     if (om) lines.push(`<strong>E</strong> Official OM on file <span class="delta-pos">+8</span>`);
     else if (personal) lines.push(`<strong>E</strong> Community source <span class="delta-pos">+2</span>`);
-    lines.push(`<strong>= DEX ${org.dex}</strong>`);
+    lines.push(`<strong>= DeFeX ${org.dex}</strong>`);
     box.hidden = false;
     box.innerHTML = lines.join("<br>");
   }
@@ -669,7 +669,7 @@
     try {
       await load();
     } catch (e) {
-      console.error("DEX data load failed", e);
+      console.error("DeFeX data load failed", e);
       return;
     }
     bindMeta();

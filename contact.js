@@ -79,7 +79,7 @@
         "Procedural & miscellaneous",
         "Community-reported discrepancies"
       ] },
-    { value: "/dex.html",              label: "DEX — Deputation Index",
+    { value: "/defex.html",            label: "DeFeX — Deputation Friendliness Index",
       sections: [] },
     { value: "/report-vacancy.html",   label: "Report a Vacancy",
       sections: [

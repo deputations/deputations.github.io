@@ -1,4 +1,4 @@
-name: Build DEX data
+name: Build DeFeX data
 
 on:
   workflow_dispatch:
@@ -7,18 +7,18 @@ on:
   push:
     branches: [main]
     paths:
-      - "scripts/build_dex.py"
+      - "scripts/build_defex.py"
       - "scripts/requirements.txt"
       - "data/raw/anonymised-deputation-data.xlsx"
       - "data/ministries.json"
-      - ".github/workflows/build-dex.yml"
+      - ".github/workflows/build-defex.yml"
 
 permissions:
   contents: write
   id-token: write
 
 jobs:
-  build-dex:
+  build-defex:
     runs-on: ubuntu-latest
 
     steps:
@@ -39,15 +39,15 @@ jobs:
       - name: Install dependencies
         run: pip install -r scripts/requirements.txt
 
-      - name: Build DEX data files
+      - name: Build DeFeX data files
         env:
           DEX_GOOGLE_SHEET_ID: ${{ secrets.DEX_GOOGLE_SHEET_ID }}
-        run: python scripts/build_dex.py
+        run: python scripts/build_defex.py
 
       - name: Safety check — no Suspect_Bribe leak in public files
         run: |
-          if grep -rIl -E 'suspect[_-]?bribe|Suspect_Bribe' data/dex/; then
-            echo "::error::Public DEX files leaked the Suspect_Bribe column. Failing build."
+          if grep -rIl -E 'suspect[_-]?bribe|Suspect_Bribe' data/defex/; then
+            echo "::error::Public DeFeX files leaked the Suspect_Bribe column. Failing build."
             exit 1
           fi
 
@@ -55,10 +55,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/dex/*.json
+          git add data/defex/*.json
           if git diff --cached --quiet; then
-            echo "No DEX data changes to commit"
+            echo "No DeFeX data changes to commit"
           else
-            git commit -m "chore: rebuild DEX data"
+            git commit -m "chore: rebuild DeFeX data"
             git push
           fi
