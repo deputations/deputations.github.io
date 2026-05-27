@@ -77,7 +77,7 @@
   "changelog": [
     {
       "version": "0.1.0-beta",
-      "date": "2026-05-26",
+      "date": "2026-05-27",
       "note": "Initial public beta. Formula derived from one-row-per-org policy snapshots; per-applicant timeline reports begin populating via the community survey."
     }
   ]
