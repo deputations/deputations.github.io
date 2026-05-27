@@ -389,6 +389,85 @@ body {
   letter-spacing: 0.04em;
 }
 
+/* ============== Multi-select widget ============== */
+.ms { position: relative; }
+.ms-trigger {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font: inherit; font-size: 0.95rem; cursor: pointer;
+  text-align: left;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+.ms-trigger:hover { border-color: var(--border-highlight); }
+.ms-trigger[aria-expanded="true"], .ms-trigger--active {
+  border-color: var(--primary-color);
+  background: var(--bg-surface-hover);
+}
+.ms-trigger-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-trigger--active .ms-trigger-label { color: var(--primary-color); font-weight: 600; }
+.ms-caret { width: 16px; height: 16px; color: var(--text-secondary); transition: transform 180ms ease; flex: none; }
+.ms-trigger[aria-expanded="true"] .ms-caret { transform: rotate(180deg); }
+
+.ms-panel {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+  z-index: 50;
+  background: var(--bg-surface-solid);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-glass);
+  padding: 0.6rem;
+  max-height: 360px; display: flex; flex-direction: column;
+  backdrop-filter: blur(14px);
+}
+.ms-search-wrap { padding: 0 0.1rem 0.5rem; }
+.ms-search {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  background: rgba(2, 4, 11, 0.55);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font: inherit; font-size: 0.9rem;
+  outline: none;
+}
+.ms-search:focus { border-color: var(--primary-color); }
+
+.ms-actions { display: flex; gap: 0.4rem; padding: 0.1rem 0.1rem 0.4rem; }
+.ms-action {
+  flex: 1; padding: 0.35rem 0.5rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font: inherit; font-size: 0.78rem; cursor: pointer;
+  transition: all 140ms ease;
+}
+.ms-action:hover { color: var(--primary-color); border-color: var(--border-highlight); }
+
+.ms-list {
+  list-style: none; padding: 0.1rem; margin: 0;
+  overflow: auto; flex: 1; min-height: 0;
+  scrollbar-width: thin; scrollbar-color: rgba(148,163,184,0.3) transparent;
+}
+.ms-opt {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.5rem 0.55rem; border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-primary); font-size: 0.92rem;
+  transition: background 100ms ease;
+}
+.ms-opt:hover { background: rgba(34, 211, 238, 0.08); }
+.ms-opt input[type="checkbox"] {
+  width: 16px; height: 16px; accent-color: var(--primary-color); cursor: pointer;
+}
+.ms-opt span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-empty { padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+
 .input-icon {
   position: relative;
 }

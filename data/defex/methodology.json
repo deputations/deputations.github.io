@@ -78,7 +78,7 @@
     {
       "version": "0.1.0-beta",
       "date": "2026-05-27",
-      "note": "Initial public beta. Formula derived from one-row-per-org policy snapshots; per-applicant timeline reports begin populating via the community survey."
+      "note": "Initial public beta. Community survey was floated in February 2025 and received 114 responses; this version derives the DeFeX formula from those one-row-per-org policy snapshots. Per-applicant timeline reports (forwarding, NOC, vigilance, relieving) will begin populating as the survey continues to receive submissions."
     }
   ]
 }

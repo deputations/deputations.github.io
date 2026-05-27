@@ -95,10 +95,28 @@
         </div>
 
         <div class="filter-group">
-          <label for="filterLocation">Location</label>
-          <select id="filterLocation">
-            <option value="">All Locations</option>
-          </select>
+          <label id="filterLocationLbl">Location</label>
+          <div class="ms" id="filterLocationMS">
+            <button type="button" class="ms-trigger" id="filterLocationBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterLocationLbl">
+              <span class="ms-trigger-label">All Locations</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true"
+                   fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m6 9 6 6 6-6"/>
+              </svg>
+            </button>
+            <div class="ms-panel" id="filterLocationPanel" hidden role="dialog" aria-label="Select locations">
+              <div class="ms-search-wrap">
+                <input type="search" class="ms-search" placeholder="Search locations…" aria-label="Search locations">
+              </div>
+              <div class="ms-actions">
+                <button type="button" class="ms-action" data-ms-all>Select all (filtered)</button>
+                <button type="button" class="ms-action" data-ms-none>Clear</button>
+              </div>
+              <ul class="ms-list" id="filterLocationList" role="listbox" aria-multiselectable="true"></ul>
+              <div class="ms-empty" hidden>No matches</div>
+            </div>
+          </div>
         </div>
 
         <div class="filter-group">
@@ -147,6 +165,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=ms1"></script>
 </body>
 </html>

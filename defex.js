@@ -18,9 +18,9 @@
     methodology: null,
     updates: null,
     fuse: null,
-    tab: "mapped",
+    tab: "ranked",
     explorerBand: "all",
-    sort: { key: "ministry", dir: "asc" },
+    sort: { key: "dex", dir: "desc" },
     filters: { ministry: "", type: "", band: "", confidence: "", om: false },
   };
 
@@ -261,7 +261,9 @@
       return state.organisations.filter(o =>
         !o.rated || o.confidence_band === "Low" || o.confidence_band === "Insufficient");
     }
-    return state.organisations;
+    // default — only rated
+    return state.organisations.filter(o =>
+      o.rated && o.reports >= RANKED_MIN_REPORTS && o.confidence >= RANKED_MIN_CONF);
   }
 
   function applyFilters(pool) {
@@ -310,10 +312,10 @@
     $$("#dex-tbody tr").forEach(tr => tr.addEventListener("click", () => openDrawer(tr.dataset.orgId)));
 
     // tab counts
-    $("[data-tab-count='mapped']").textContent = state.organisations.length;
     $("[data-tab-count='ranked']").textContent =
       state.organisations.filter(o => o.rated && o.reports >= RANKED_MIN_REPORTS && o.confidence >= RANKED_MIN_CONF).length;
-    $("[data-tab-count='needs']").textContent =
+    const needsEl = document.querySelector("[data-tab-count='needs']");
+    if (needsEl) needsEl.textContent =
       state.organisations.filter(o => !o.rated || o.confidence_band === "Low" || o.confidence_band === "Insufficient").length;
   }
 
@@ -339,9 +341,8 @@
       $$("[data-tab]").forEach(x => x.classList.remove("dex-tab--active"));
       t.classList.add("dex-tab--active");
       state.tab = t.dataset.tab;
-      if (state.tab === "ranked") state.sort = { key: "dex", dir: "desc" };
-      else if (state.tab === "needs") state.sort = { key: "ministry", dir: "asc" };
-      else state.sort = { key: "ministry", dir: "asc" };
+      if (state.tab === "needs") state.sort = { key: "ministry", dir: "asc" };
+      else state.sort = { key: "dex", dir: "desc" };
       renderTable();
     }));
 
@@ -664,6 +665,22 @@
     });
   }
 
+  // ---------- scroll progress + back to top --------------------------------
+  function bindScroll() {
+    const progress = document.getElementById("dex-progress");
+    const toTop = document.getElementById("dex-to-top");
+    if (!progress || !toTop) return;
+    function onScroll() {
+      const h = document.documentElement;
+      const max = (h.scrollHeight - h.clientHeight) || 1;
+      progress.style.width = ((h.scrollTop / max) * 100) + "%";
+      toTop.classList.toggle("show", h.scrollTop > 520);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    toTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  }
+
   // ---------- init ---------------------------------------------------------
   async function init() {
     try {
@@ -679,6 +696,7 @@
     bindLeaderboard();
     bindDrawer();
     bindChecklist();
+    bindScroll();
     renderFeatured();
     renderTable();
     handleHash();

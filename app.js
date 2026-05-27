@@ -1,3 +1,132 @@
+// ----- Multi-select widget (popover + checkbox list) ---------------------
+// Returns a controller that mirrors enough of a <select>'s surface area
+// (`.value`, `.value = ''`, `addEventListener('change', …)`) plus multi-value
+// helpers (`.values`, `.setValues(arr)`, `.populate(arr)`).
+function createMultiSelect(root, opts = {}) {
+  const trigger = root.querySelector('.ms-trigger');
+  const label   = root.querySelector('.ms-trigger-label');
+  const panel   = root.querySelector('.ms-panel');
+  const search  = root.querySelector('.ms-search');
+  const list    = root.querySelector('.ms-list');
+  const empty   = root.querySelector('.ms-empty');
+  const allBtn  = root.querySelector('[data-ms-all]');
+  const noneBtn = root.querySelector('[data-ms-none]');
+
+  const placeholder    = opts.placeholder || 'All';
+  const singularPattern = opts.singularPattern || ((v) => v);
+  const multiPattern    = opts.multiPattern    || ((n) => `${n} selected`);
+  const changeListeners = [];
+
+  let items = [];
+  let selected = new Set();
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g,
+      m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
+  }
+
+  function renderList(filter = '') {
+    const f = filter.trim().toLowerCase();
+    const visible = f ? items.filter(i => i.toLowerCase().includes(f)) : items;
+    if (!visible.length) {
+      list.innerHTML = '';
+      empty.hidden = false;
+      return;
+    }
+    empty.hidden = true;
+    list.innerHTML = visible.map(v => `
+      <li><label class="ms-opt">
+        <input type="checkbox" value="${esc(v)}" ${selected.has(v) ? 'checked' : ''}>
+        <span>${esc(v)}</span>
+      </label></li>`).join('');
+  }
+
+  function syncTrigger() {
+    if (!selected.size) {
+      label.textContent = placeholder;
+      trigger.classList.remove('ms-trigger--active');
+    } else if (selected.size === 1) {
+      label.textContent = singularPattern([...selected][0]);
+      trigger.classList.add('ms-trigger--active');
+    } else {
+      label.textContent = multiPattern(selected.size);
+      trigger.classList.add('ms-trigger--active');
+    }
+  }
+
+  function emitChange() {
+    changeListeners.forEach(fn => {
+      try { fn({ type: 'change', target: api }); } catch (e) { console.warn(e); }
+    });
+  }
+
+  function open() {
+    panel.hidden = false;
+    trigger.setAttribute('aria-expanded', 'true');
+    search.value = ''; renderList();
+    setTimeout(() => search.focus(), 0);
+  }
+  function close() {
+    panel.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+  }
+
+  trigger.addEventListener('click', () => panel.hidden ? open() : close());
+  document.addEventListener('click', (e) => {
+    if (!root.contains(e.target) && !panel.hidden) close();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !panel.hidden) { close(); trigger.focus(); }
+  });
+
+  search.addEventListener('input', () => renderList(search.value));
+
+  list.addEventListener('change', (e) => {
+    const cb = e.target.closest('input[type="checkbox"]');
+    if (!cb) return;
+    if (cb.checked) selected.add(cb.value); else selected.delete(cb.value);
+    syncTrigger(); emitChange();
+  });
+
+  allBtn.addEventListener('click', () => {
+    const f = search.value.trim().toLowerCase();
+    const visible = f ? items.filter(i => i.toLowerCase().includes(f)) : items;
+    visible.forEach(v => selected.add(v));
+    renderList(search.value); syncTrigger(); emitChange();
+  });
+  noneBtn.addEventListener('click', () => {
+    selected.clear();
+    renderList(search.value); syncTrigger(); emitChange();
+  });
+
+  const api = {
+    populate(arr) {
+      items = (arr || []).slice();
+      // drop selections that are no longer present
+      [...selected].forEach(v => { if (!items.includes(v)) selected.delete(v); });
+      renderList(); syncTrigger();
+    },
+    get values() { return [...selected]; },
+    setValues(arr) {
+      selected = new Set((arr || []).filter(v => items.includes(v)));
+      renderList(search.value); syncTrigger();
+    },
+    // Compatibility shims so legacy `.value`/`.value = ''` code keeps working.
+    get value() { return selected.size === 1 ? [...selected][0] : ''; },
+    set value(v) {
+      if (!v) { selected.clear(); }
+      else { selected = new Set([v]); }
+      renderList(search.value); syncTrigger();
+    },
+    addEventListener(name, fn) {
+      if (name === 'change') changeListeners.push(fn);
+    },
+    isEmpty() { return selected.size === 0; },
+    has(v) { return selected.has(v); },
+  };
+  return api;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Deputation dashboard started');
 
@@ -18,7 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterMyPayLevel = document.getElementById('filterMyPayLevel');
     const filterLevel = document.getElementById('filterLevel');
     const filterMinistry = document.getElementById('filterMinistry');
-    const filterLocation = document.getElementById('filterLocation');
+    const filterLocation = createMultiSelect(document.getElementById('filterLocationMS'), {
+      placeholder: 'All Locations',
+      singularPattern: (v) => v,
+      multiPattern: (n) => `${n} locations`,
+    });
     const filterStatus = document.getElementById('filterStatus');
 
     const clearFiltersBtn = document.getElementById('clearFiltersBtn');
@@ -120,7 +253,11 @@ function hydrateFiltersFromUrl() {
         setIfPresent('myPayLevel', filterMyPayLevel);
         setIfPresent('level', filterLevel);
         setIfPresent('ministry', filterMinistry);
-        setIfPresent('location', filterLocation);
+        // multi-select: ?location=a,b,c
+        if (params.has('location')) {
+          const arr = (params.get('location') || '').split(',').map(s => s.trim()).filter(Boolean);
+          if (arr.length) filterLocation.__pendingValues = arr;
+        }
         if (params.has('status')) filterStatus.value = params.get('status');
 
         const quick = (params.get('quick') || '').split(',').filter(Boolean);
@@ -438,7 +575,7 @@ function renderTable(data) {
 
         filterLevel.innerHTML = '<option value="">All Levels</option>';
         filterMinistry.innerHTML = '<option value="">All Ministries</option>';
-        filterLocation.innerHTML = '<option value="">All Locations</option>';
+        // (no-op for the multi-select; items populated below)
 
         const levels = uniqueSorted(rawData.map(i => i.Level_Text));
         const ministries = uniqueSorted(rawData.map(i => i.Ministry));
@@ -446,7 +583,11 @@ function renderTable(data) {
 
         addOptions(filterLevel, levels);
         addOptions(filterMinistry, ministries);
-        addOptions(filterLocation, locations);
+        filterLocation.populate(locations);
+        if (filterLocation.__pendingValues) {
+            filterLocation.setValues(filterLocation.__pendingValues);
+            delete filterLocation.__pendingValues;
+        }
     }
 
     function buildSearchSuggestions() {
@@ -510,7 +651,7 @@ function renderTable(data) {
     filterMyPayLevel.value = '';
     filterLevel.value = '';
     filterMinistry.value = '';
-    filterLocation.value = '';
+    filterLocation.setValues([]);
     filterStatus.value = 'Active';
     showWatchlistOnly = false;
     kpiFilter = 'all';
@@ -550,7 +691,11 @@ function renderTable(data) {
     if (filterName === 'myPayLevel') filterMyPayLevel.value = '';
     if (filterName === 'level') filterLevel.value = '';
     if (filterName === 'ministry') filterMinistry.value = '';
-    if (filterName === 'location') filterLocation.value = '';
+    if (filterName === 'location') filterLocation.setValues([]);
+    if (filterName && filterName.startsWith('location:')) {
+      const v = filterName.slice('location:'.length);
+      filterLocation.setValues(filterLocation.values.filter(x => x !== v));
+    }
     if (filterName === 'status') filterStatus.value = '';
     if (filterName === 'watchlist') showWatchlistOnly = false;
     if (filterName === 'kpi') kpiFilter = 'all';
@@ -742,7 +887,8 @@ kpiGrid.addEventListener('click', (e) => {
   const myPayLevel = filterMyPayLevel.value;
   const level = filterLevel.value;
   const ministry = filterMinistry.value;
-  const location = filterLocation.value;
+  const locations = filterLocation.values;
+  const locationSet = locations.length ? new Set(locations) : null;
   const status = filterStatus.value;
 
   return rawData.filter(item => {
@@ -770,7 +916,7 @@ kpiGrid.addEventListener('click', (e) => {
     if (search && !fuzzyIncludes(search, searchableText)) return false;
     if (level && itemLevel !== level) return false;
     if (ministry && itemMinistry !== ministry) return false;
-    if (location && itemLocation !== location) return false;
+    if (locationSet && !locationSet.has(itemLocation)) return false;
     if (status && itemStatus !== status) return false;
 
     if (myPayLevel) {
@@ -992,7 +1138,9 @@ kpiGrid.addEventListener('click', (e) => {
   if (filterMyPayLevel.value) chips.push(makeChip('myPayLevel', `My Pay Level: Level ${filterMyPayLevel.value}`));
   if (filterLevel.value) chips.push(makeChip('level', `Pay Level: ${escapeHtml(filterLevel.value)}`));
   if (filterMinistry.value) chips.push(makeChip('ministry', `Ministry: ${escapeHtml(filterMinistry.value)}`));
-  if (filterLocation.value) chips.push(makeChip('location', `Location: ${escapeHtml(filterLocation.value)}`));
+  filterLocation.values.forEach(loc => {
+    chips.push(makeChip(`location:${loc}`, `Location: ${escapeHtml(loc)}`));
+  });
   if (filterStatus.value) chips.push(makeChip('status', `Status: ${escapeHtml(filterStatus.value)}`));
   if (showWatchlistOnly) chips.push(makeChip('watchlist', 'Watchlist'));
 
