@@ -1,0 +1,1820 @@
+[
+  {
+    "id": "r_0001",
+    "org_id": "ministry-of-ports-shipping-waterways__ministry-of-ports-shipping-waterways-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Allowed with conditions",
+    "conditions": {
+      "vacancy_based": null,
+      "fcfs": "If SO is applying for deputation then at that time less than 10% seats must be vacant wrt sanctioned strength of SO in ministry..",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0002",
+    "org_id": "ministry-of-finance__department-of-economic-affairs",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": null,
+      "fcfs": null,
+      "senior_only": true,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0003",
+    "org_id": "ministry-of-development-of-north-eastern-region-doner__ministry-of-doner-secretariat",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": null,
+      "fcfs": null,
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0004",
+    "org_id": "ministry-of-finance__department-of-revenue",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "Vacancy position",
+      "fcfs": null,
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0005",
+    "org_id": "ministry-of-defence__department-of-defence-production",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": null,
+      "fcfs": null,
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0006",
+    "org_id": "ministry-of-defence__ministry-of-defence-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Allowed with conditions",
+    "conditions": {
+      "vacancy_based": null,
+      "fcfs": null,
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "synth-secretariat"
+  },
+  {
+    "id": "r_0007",
+    "org_id": "ministry-of-defence__department-of-defence",
+    "type": "policy",
+    "deputation_allowed": "Allowed with conditions",
+    "conditions": {
+      "vacancy_based": null,
+      "fcfs": null,
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0008",
+    "org_id": "ministry-of-commerce-industry__department-of-commerce",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": null,
+      "fcfs": null,
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0009",
+    "org_id": "ministry-of-social-justice-empowerment__department-of-social-justice-empowerment",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": null,
+      "fcfs": null,
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0010",
+    "org_id": "ministry-of-women-child-development__ministry-of-women-child-development-secretariat",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": null,
+      "fcfs": null,
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0011",
+    "org_id": "ministry-of-statistics-programme-implementation__ministry-of-statistics-programme-implementation-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": null,
+      "fcfs": null,
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "synth-secretariat"
+  },
+  {
+    "id": "r_0012",
+    "org_id": "ministry-of-agriculture-farmers-welfare__department-of-agriculture-farmers-welfare",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "Senior officers",
+      "fcfs": null,
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0013",
+    "org_id": "ministry-of-personnel-public-grievances-pensions__staff-selection-commission-ssc",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "Vacancy position | Highly beneficial",
+      "fcfs": null,
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0014",
+    "org_id": "ministry-of-housing-urban-affairs__ministry-of-housing-urban-affairs-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": null,
+      "fcfs": null,
+      "senior_only": true,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0015",
+    "org_id": "ministry-of-corporate-affairs__ministry-of-corporate-affairs-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": null,
+      "fcfs": null,
+      "senior_only": true,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0016",
+    "org_id": "ministry-of-coal__ministry-of-coal-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": null,
+      "fcfs": null,
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0017",
+    "org_id": "ministry-of-fisheries-animal-husbandry-dairying__department-of-fisheries",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": null,
+      "fcfs": null,
+      "senior_only": true,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0018",
+    "org_id": "ministry-of-finance__department-of-expenditure",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "Vacancy position",
+      "fcfs": null,
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": null
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0019",
+    "org_id": "ministry-of-defence__department-of-defence",
+    "type": "policy",
+    "deputation_allowed": "Allowed with conditions",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": "Minimum two years of service in respective grade in MoD."
+    },
+    "sources": {
+      "om": "Allow for some who have approach at higher ups",
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0020",
+    "org_id": "ministry-of-skill-development-entrepreneurship__ministry-of-skill-development-entrepreneurship-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": "In this, this Ministry has already framed a guideline for dealing cases related to deputation.",
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0021",
+    "org_id": "ministry-of-external-affairs__branch-secretariats-regional-passport-offices",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0022",
+    "org_id": "ministry-of-fisheries-animal-husbandry-dairying__department-of-animal-husbandry-dairying",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": "DEPUTATION ALLOWED ONLY FOR TECHNICAL POSTS IN THE DEPARTMENT",
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0023",
+    "org_id": "ministry-of-chemicals-fertilizers__department-of-chemicals-petrochemicals",
+    "type": "policy",
+    "deputation_allowed": null,
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": "Hardly forward deputation application. Even application was not forwarded in spouse ground cases citing 09 years service provision of DoPT.",
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0024",
+    "org_id": "ministry-of-jal-shakti__department-of-water-resources-river-development-ganga-rejuvenation",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0025",
+    "org_id": "ministry-of-labour-employment__ministry-of-labour-employment-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "YES"
+    },
+    "match_quality": "synth-secretariat"
+  },
+  {
+    "id": "r_0026",
+    "org_id": "ministry-of-commerce-industry__department-of-commerce",
+    "type": "policy",
+    "deputation_allowed": "Allowed with conditions",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": "3 years in department"
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0027",
+    "org_id": "ministry-of-jal-shakti__department-of-water-resources-river-development-ganga-rejuvenation",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "YES"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0028",
+    "org_id": "ministry-of-defence__army-headquarters",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0029",
+    "org_id": "ministry-of-defence__army-headquarters",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "YES",
+      "fcfs": "NO",
+      "senior_only": true,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "YES"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0030",
+    "org_id": "ministry-of-communications__ministry-of-communications-secretariat",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": "In general, department is not allowing. However in some cases they have allowed also.",
+      "personal": "YES"
+    },
+    "match_quality": "synth-secretariat"
+  },
+  {
+    "id": "r_0031",
+    "org_id": "ministry-of-ayush__ministry-of-ayush-secretariat",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "synth-secretariat"
+  },
+  {
+    "id": "r_0032",
+    "org_id": "ministry-of-ayush__ministry-of-ayush-secretariat",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "synth-secretariat"
+  },
+  {
+    "id": "r_0033",
+    "org_id": "ministry-of-defence__ministry-of-defence-secretariat",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": "Minimum two years service in MoD and sufficient number of officers available for replacement for forwarding deputation application",
+      "personal": "YES"
+    },
+    "match_quality": "synth-secretariat"
+  },
+  {
+    "id": "r_0034",
+    "org_id": "ministry-of-education__department-of-higher-education",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0035",
+    "org_id": "ministry-of-defence__ministry-of-defence-secretariat",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": "condition like the section officer kust have served as Section Officer for"
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "synth-secretariat"
+  },
+  {
+    "id": "r_0036",
+    "org_id": "ministry-of-personnel-public-grievances-pensions__department-of-personnel-training-dopt",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0037",
+    "org_id": "ministry-of-defence__department-of-defence",
+    "type": "policy",
+    "deputation_allowed": "Allowed with conditions",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": "After rendering 2 years service. It is not good practice."
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0038",
+    "org_id": "ministry-of-defence__army-headquarters",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0039",
+    "org_id": "ministry-of-defence__army-headquarters",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "YES"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0040",
+    "org_id": "ministry-of-labour-employment__ministry-of-labour-employment-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "YES"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0041",
+    "org_id": "ministry-of-micro-small-medium-enterprises__office-of-the-development-commissioner-msme",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0042",
+    "org_id": "ministry-of-labour-employment__chief-labour-commissioner-central",
+    "type": "policy",
+    "deputation_allowed": "Allowed with conditions",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": "After one year of service in Ministry"
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0043",
+    "org_id": "ministry-of-labour-employment__chief-labour-commissioner-central",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "YES",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0044",
+    "org_id": "ministry-of-steel__ministry-of-steel-secretariat",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": "JS (Estt.) would retire in June, 2026, situation may change after that.",
+      "personal": "YES"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0045",
+    "org_id": "ministry-of-personnel-public-grievances-pensions__department-of-personnel-training-dopt",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0046",
+    "org_id": "ministry-of-commerce-industry__department-for-promotion-of-industry-internal-trade-dpiit",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": true,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0047",
+    "org_id": "ministry-of-finance__department-of-revenue",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "YES"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0048",
+    "org_id": "ministry-of-housing-urban-affairs__ministry-of-housing-urban-affairs-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Allowed with conditions",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": "They are generally very negative. Need to effort alot to get the application forwarded"
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0049",
+    "org_id": "ministry-of-labour-employment__ministry-of-labour-employment-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "YES"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0050",
+    "org_id": "ministry-of-education__department-of-higher-education",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0051",
+    "org_id": "ministry-of-labour-employment__employees-provident-fund-organisation-epfo",
+    "type": "policy",
+    "deputation_allowed": "Allowed with conditions",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": "Only at levl14 and above for inside deputation and rearly allow depution outside for employees."
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0052",
+    "org_id": "ministry-of-power__ministry-of-power-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "YES"
+    },
+    "match_quality": "synth-secretariat"
+  },
+  {
+    "id": "r_0053",
+    "org_id": "ministry-of-chemicals-fertilizers__department-of-pharmaceuticals",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0054",
+    "org_id": "ministry-of-youth-affairs-sports__department-of-youth-affairs",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0055",
+    "org_id": "ministry-of-science-technology__department-of-science-technology-dst",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "YES",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0056",
+    "org_id": "ministry-of-finance__department-of-expenditure",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "YES",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0057",
+    "org_id": "ministry-of-finance__department-of-economic-affairs",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0058",
+    "org_id": "ministry-of-jal-shakti__department-of-water-resources-river-development-ganga-rejuvenation",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": "The current policy of 9 years in Group A service for CSS cadre is unjust as we already have spent 9 year in our cadre.",
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0059",
+    "org_id": "ministry-of-jal-shakti__department-of-water-resources-river-development-ganga-rejuvenation",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": "The current policy of 9 years in Group A service for CSS cadre is unjust as we already have spent 9 year in our cadre.",
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0060",
+    "org_id": "ministry-of-communications__department-of-telecommunications-dot",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "YES"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0061",
+    "org_id": "ministry-of-commerce-industry__department-of-commerce",
+    "type": "policy",
+    "deputation_allowed": "Allowed with conditions",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": "Officers are required to complete three years' service in DoC."
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0062",
+    "org_id": "ministry-of-mines__ministry-of-mines-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": true,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0063",
+    "org_id": "ministry-of-finance__department-of-expenditure",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": true,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0064",
+    "org_id": "ministry-of-personnel-public-grievances-pensions__department-of-personnel-training-dopt",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "YES"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0065",
+    "org_id": "ministry-of-ports-shipping-waterways__ministry-of-ports-shipping-waterways-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Allowed with conditions",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": "If vacancy is more than 10%, deputation not allowed."
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0066",
+    "org_id": "ministry-of-jal-shakti__department-of-water-resources-river-development-ganga-rejuvenation",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0067",
+    "org_id": "ministry-of-jal-shakti__department-of-water-resources-river-development-ganga-rejuvenation",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0068",
+    "org_id": "ministry-of-railways__ministry-of-railways-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "synth-secretariat"
+  },
+  {
+    "id": "r_0069",
+    "org_id": "ministry-of-fisheries-animal-husbandry-dairying__department-of-animal-husbandry-dairying",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0070",
+    "org_id": "ministry-of-textiles__ministry-of-textiles-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0071",
+    "org_id": "ministry-of-finance__department-of-revenue",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "YES",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "YES"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0072",
+    "org_id": "ministry-of-labour-employment__directorate-general-factory-advice-service-and-labour-institutes-dgfasli",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": "Depends on the vacancy position of the department in a particular grade.",
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0073",
+    "org_id": "ministry-of-home-affairs__ministry-of-home-affairs-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": "They allowed",
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0074",
+    "org_id": "ministry-of-labour-employment__ministry-of-labour-employment-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "YES",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0075",
+    "org_id": "ministry-of-housing-urban-affairs__directorate-of-estates",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0076",
+    "org_id": "ministry-of-civil-aviation__ministry-of-civil-aviation-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0077",
+    "org_id": "ministry-of-civil-aviation__bureau-of-civil-aviation-security-bcas",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": true,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0078",
+    "org_id": "ministry-of-skill-development-entrepreneurship__ministry-of-skill-development-entrepreneurship-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "YES",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "YES"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0079",
+    "org_id": "ministry-of-jal-shakti__department-of-water-resources-river-development-ganga-rejuvenation",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0080",
+    "org_id": "ministry-of-education__department-of-higher-education",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "YES",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0081",
+    "org_id": "ministry-of-defence__department-of-defence",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0082",
+    "org_id": "ministry-of-defence__department-of-defence",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0083",
+    "org_id": "ministry-of-home-affairs__ministry-of-home-affairs-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "synth-secretariat"
+  },
+  {
+    "id": "r_0084",
+    "org_id": "ministry-of-cooperation__central-registrar-of-cooperative-societies-crcs",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0085",
+    "org_id": "ministry-of-home-affairs__police-division",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "YES",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0086",
+    "org_id": "ministry-of-housing-urban-affairs__ministry-of-housing-urban-affairs-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0087",
+    "org_id": "ministry-of-women-child-development__mission-poshan-2-0-division",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "YES"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0088",
+    "org_id": "ministry-of-communications__ministry-of-communications-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "synth-secretariat"
+  },
+  {
+    "id": "r_0089",
+    "org_id": "ministry-of-defence__department-of-defence",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": "There is no coloum of AFHQ JS CAO",
+      "personal": "YES"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0090",
+    "org_id": "ministry-of-labour-employment__directorate-general-factory-advice-service-and-labour-institutes-dgfasli",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0091",
+    "org_id": "ministry-of-jal-shakti__department-of-water-resources-river-development-ganga-rejuvenation",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0092",
+    "org_id": "ministry-of-law-justice__department-of-legal-affairs",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0093",
+    "org_id": "ministry-of-civil-aviation__ministry-of-civil-aviation-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Allowed with conditions",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": "Only if concerned JS recommends the proposal\nand\nthat JS does not immediately ask for replacement, replacement will only be provided as per the availability."
+    },
+    "sources": {
+      "om": null,
+      "personal": "YES"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0094",
+    "org_id": "ministry-of-chemicals-fertilizers__department-of-fertilizers",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0095",
+    "org_id": "ministry-of-consumer-affairs-food-public-distribution__department-of-food-public-distribution",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0096",
+    "org_id": "ministry-of-defence__department-of-defence",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0097",
+    "org_id": "ministry-of-commerce-industry__department-of-commerce",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": "Despite completing tenure as prescribe by DOPT, applicant has to wait another 2 year to apply for deputation in this Department",
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0098",
+    "org_id": "ministry-of-development-of-north-eastern-region-doner__ministry-of-doner-secretariat",
+    "type": "policy",
+    "deputation_allowed": "No",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": "Administration / Establishment Section has not proceed such kind of application, even Cadre Clearance has not given to applicant and their application of deputation has also not forwarded.",
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0099",
+    "org_id": "ministry-of-housing-urban-affairs__ministry-of-housing-urban-affairs-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0100",
+    "org_id": "ministry-of-corporate-affairs__ministry-of-corporate-affairs-secretariat",
+    "type": "policy",
+    "deputation_allowed": "Allow for some",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": true,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  },
+  {
+    "id": "r_0101",
+    "org_id": "ministry-of-information-broadcasting__prasar-bharati-doordarshan-all-india-radio",
+    "type": "policy",
+    "deputation_allowed": "Yes",
+    "conditions": {
+      "vacancy_based": "NO",
+      "fcfs": "NO",
+      "senior_only": false,
+      "highly_beneficial": false,
+      "details": null
+    },
+    "sources": {
+      "om": null,
+      "personal": "NO"
+    },
+    "match_quality": "exact"
+  }
+]

@@ -1,0 +1,64 @@
+name: Build DEX data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 4 * * 1"   # ~09:45 IST every Monday
+  push:
+    branches: [main]
+    paths:
+      - "scripts/build_dex.py"
+      - "scripts/requirements.txt"
+      - "data/raw/anonymised-deputation-data.xlsx"
+      - "data/ministries.json"
+      - ".github/workflows/build-dex.yml"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build-dex:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Build DEX data files
+        env:
+          DEX_GOOGLE_SHEET_ID: ${{ secrets.DEX_GOOGLE_SHEET_ID }}
+        run: python scripts/build_dex.py
+
+      - name: Safety check — no Suspect_Bribe leak in public files
+        run: |
+          if grep -rIl -E 'suspect[_-]?bribe|Suspect_Bribe' data/dex/; then
+            echo "::error::Public DEX files leaked the Suspect_Bribe column. Failing build."
+            exit 1
+          fi
+
+      - name: Commit generated files if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/dex/*.json
+          if git diff --cached --quiet; then
+            echo "No DEX data changes to commit"
+          else
+            git commit -m "chore: rebuild DEX data"
+            git push
+          fi

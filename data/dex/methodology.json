@@ -1,0 +1,84 @@
+{
+  "version": "0.1.0-beta",
+  "status": "beta",
+  "formula": {
+    "expression": "DEX = clamp(0, 100,  B - sum(Pi) + E)",
+    "base_scores": {
+      "Yes": 88,
+      "Allow for some": 70,
+      "Allowed with conditions": 58,
+      "No": 18
+    },
+    "penalties": {
+      "vacancy_based": 18,
+      "senior_only": 15,
+      "fcfs": 8,
+      "highly_beneficial": 0
+    },
+    "evidence_bonus": {
+      "with_om": 8,
+      "with_personal": 2,
+      "max": 8
+    },
+    "caps": [
+      "If any penalty applies, DEX is capped at 75.",
+      "Missing data does not lower DEX — it lowers confidence."
+    ]
+  },
+  "bands": [
+    {
+      "min": 80,
+      "max": 100,
+      "label": "Deputation-friendly"
+    },
+    {
+      "min": 65,
+      "max": 79,
+      "label": "Generally supportive"
+    },
+    {
+      "min": 50,
+      "max": 64,
+      "label": "Mixed"
+    },
+    {
+      "min": 35,
+      "max": 49,
+      "label": "Restrictive"
+    },
+    {
+      "min": 0,
+      "max": 34,
+      "label": "Very restrictive"
+    },
+    {
+      "label": "Unrated",
+      "note": "Insufficient data — appears in Mapped tab only."
+    }
+  ],
+  "confidence": {
+    "weights": {
+      "reports": 0.25,
+      "official_source": 0.4,
+      "recency": 0.15,
+      "consistency": 0.1,
+      "stage_coverage": 0.1
+    },
+    "bands": {
+      "High": 0.7,
+      "Medium": 0.45,
+      "Low": 0.2
+    }
+  },
+  "moderation": {
+    "officer_names_policy": "Submissions are scanned for officer names and rejected — never redacted.",
+    "integrity_flag_policy": "Submissions alleging integrity issues are NEVER displayed publicly. They route to manual review and may lower confidence."
+  },
+  "changelog": [
+    {
+      "version": "0.1.0-beta",
+      "date": "2026-05-26",
+      "note": "Initial public beta. Formula derived from one-row-per-org policy snapshots; per-applicant timeline reports begin populating via the community survey."
+    }
+  ]
+}

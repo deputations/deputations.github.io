@@ -1,0 +1,840 @@
+[
+  {
+    "org_id": "ministry-of-ports-shipping-waterways__ministry-of-ports-shipping-waterways-secretariat",
+    "dex": 60,
+    "band": "Mixed",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0065"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-finance__department-of-economic-affairs",
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0057"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-development-of-north-eastern-region-doner__ministry-of-doner-secretariat",
+    "dex": 26,
+    "band": "Very restrictive",
+    "confidence": 0.94,
+    "confidence_band": "High",
+    "signals": [],
+    "report_ids": [
+      "r_0098"
+    ],
+    "has_om": true,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-finance__department-of-revenue",
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0047",
+      "r_0071"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-defence__department-of-defence-production",
+    "dex": 88,
+    "band": "Deputation-friendly",
+    "confidence": 0.27,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0005"
+    ],
+    "has_om": false,
+    "has_personal": false
+  },
+  {
+    "org_id": "ministry-of-defence__ministry-of-defence-secretariat",
+    "dex": 26,
+    "band": "Very restrictive",
+    "confidence": 0.94,
+    "confidence_band": "High",
+    "signals": [],
+    "report_ids": [
+      "r_0033",
+      "r_0035"
+    ],
+    "has_om": true,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-defence__department-of-defence",
+    "dex": 66,
+    "band": "Generally supportive",
+    "confidence": 0.94,
+    "confidence_band": "High",
+    "signals": [
+      {
+        "key": "highly_beneficial",
+        "label": "Release only if highly beneficial to parent",
+        "weight": 0
+      }
+    ],
+    "report_ids": [
+      "r_0019",
+      "r_0037",
+      "r_0081",
+      "r_0082",
+      "r_0089",
+      "r_0096"
+    ],
+    "has_om": true,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-commerce-industry__department-of-commerce",
+    "dex": 26,
+    "band": "Very restrictive",
+    "confidence": 0.94,
+    "confidence_band": "High",
+    "signals": [],
+    "report_ids": [
+      "r_0097"
+    ],
+    "has_om": true,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-social-justice-empowerment__department-of-social-justice-empowerment",
+    "dex": 18,
+    "band": "Very restrictive",
+    "confidence": 0.27,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0009"
+    ],
+    "has_om": false,
+    "has_personal": false
+  },
+  {
+    "org_id": "ministry-of-women-child-development__ministry-of-women-child-development-secretariat",
+    "dex": 18,
+    "band": "Very restrictive",
+    "confidence": 0.27,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0010"
+    ],
+    "has_om": false,
+    "has_personal": false
+  },
+  {
+    "org_id": "ministry-of-statistics-programme-implementation__ministry-of-statistics-programme-implementation-secretariat",
+    "dex": 88,
+    "band": "Deputation-friendly",
+    "confidence": 0.27,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0011"
+    ],
+    "has_om": false,
+    "has_personal": false
+  },
+  {
+    "org_id": "ministry-of-agriculture-farmers-welfare__department-of-agriculture-farmers-welfare",
+    "dex": 70,
+    "band": "Generally supportive",
+    "confidence": 0.27,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0012"
+    ],
+    "has_om": false,
+    "has_personal": false
+  },
+  {
+    "org_id": "ministry-of-personnel-public-grievances-pensions__staff-selection-commission-ssc",
+    "dex": 52,
+    "band": "Mixed",
+    "confidence": 0.27,
+    "confidence_band": "Low",
+    "signals": [
+      {
+        "key": "vacancy_based",
+        "label": "Vacancy-based release",
+        "weight": -18
+      }
+    ],
+    "report_ids": [
+      "r_0013"
+    ],
+    "has_om": false,
+    "has_personal": false
+  },
+  {
+    "org_id": "ministry-of-housing-urban-affairs__ministry-of-housing-urban-affairs-secretariat",
+    "dex": 60,
+    "band": "Mixed",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0048",
+      "r_0086",
+      "r_0099"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-corporate-affairs__ministry-of-corporate-affairs-secretariat",
+    "dex": 72,
+    "band": "Generally supportive",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [
+      {
+        "key": "highly_beneficial",
+        "label": "Release only if highly beneficial to parent",
+        "weight": 0
+      }
+    ],
+    "report_ids": [
+      "r_0100"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-coal__ministry-of-coal-secretariat",
+    "dex": 88,
+    "band": "Deputation-friendly",
+    "confidence": 0.27,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0016"
+    ],
+    "has_om": false,
+    "has_personal": false
+  },
+  {
+    "org_id": "ministry-of-fisheries-animal-husbandry-dairying__department-of-fisheries",
+    "dex": 3,
+    "band": "Very restrictive",
+    "confidence": 0.27,
+    "confidence_band": "Low",
+    "signals": [
+      {
+        "key": "senior_only",
+        "label": "Senior-rank-only release",
+        "weight": -15
+      }
+    ],
+    "report_ids": [
+      "r_0017"
+    ],
+    "has_om": false,
+    "has_personal": false
+  },
+  {
+    "org_id": "ministry-of-finance__department-of-expenditure",
+    "dex": 54,
+    "band": "Mixed",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [
+      {
+        "key": "vacancy_based",
+        "label": "Vacancy-based release",
+        "weight": -18
+      },
+      {
+        "key": "highly_beneficial",
+        "label": "Release only if highly beneficial to parent",
+        "weight": 0
+      }
+    ],
+    "report_ids": [
+      "r_0056",
+      "r_0063"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-skill-development-entrepreneurship__ministry-of-skill-development-entrepreneurship-secretariat",
+    "dex": 96,
+    "band": "Deputation-friendly",
+    "confidence": 0.94,
+    "confidence_band": "High",
+    "signals": [],
+    "report_ids": [
+      "r_0020",
+      "r_0078"
+    ],
+    "has_om": true,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-external-affairs__branch-secretariats-regional-passport-offices",
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0021"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-fisheries-animal-husbandry-dairying__department-of-animal-husbandry-dairying",
+    "dex": 96,
+    "band": "Deputation-friendly",
+    "confidence": 0.94,
+    "confidence_band": "High",
+    "signals": [],
+    "report_ids": [
+      "r_0022",
+      "r_0069"
+    ],
+    "has_om": true,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-chemicals-fertilizers__department-of-chemicals-petrochemicals",
+    "dex": null,
+    "band": "Unrated",
+    "confidence": 0.94,
+    "confidence_band": "High",
+    "signals": [],
+    "report_ids": [
+      "r_0023"
+    ],
+    "has_om": true,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-jal-shakti__department-of-water-resources-river-development-ganga-rejuvenation",
+    "dex": 96,
+    "band": "Deputation-friendly",
+    "confidence": 0.94,
+    "confidence_band": "High",
+    "signals": [],
+    "report_ids": [
+      "r_0058",
+      "r_0059",
+      "r_0066",
+      "r_0067",
+      "r_0079",
+      "r_0091"
+    ],
+    "has_om": true,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-labour-employment__ministry-of-labour-employment-secretariat",
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0025",
+      "r_0040",
+      "r_0049",
+      "r_0074"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-defence__army-headquarters",
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0028",
+      "r_0029",
+      "r_0038",
+      "r_0039"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-communications__ministry-of-communications-secretariat",
+    "dex": 26,
+    "band": "Very restrictive",
+    "confidence": 0.94,
+    "confidence_band": "High",
+    "signals": [],
+    "report_ids": [
+      "r_0030",
+      "r_0088"
+    ],
+    "has_om": true,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-ayush__ministry-of-ayush-secretariat",
+    "dex": 20,
+    "band": "Very restrictive",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0031",
+      "r_0032"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-education__department-of-higher-education",
+    "dex": 72,
+    "band": "Generally supportive",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [
+      {
+        "key": "highly_beneficial",
+        "label": "Release only if highly beneficial to parent",
+        "weight": 0
+      }
+    ],
+    "report_ids": [
+      "r_0034",
+      "r_0050",
+      "r_0080"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-personnel-public-grievances-pensions__department-of-personnel-training-dopt",
+    "dex": 20,
+    "band": "Very restrictive",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0036",
+      "r_0045",
+      "r_0064"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-micro-small-medium-enterprises__office-of-the-development-commissioner-msme",
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0041"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-labour-employment__chief-labour-commissioner-central",
+    "dex": 60,
+    "band": "Mixed",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0042",
+      "r_0043"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-steel__ministry-of-steel-secretariat",
+    "dex": 26,
+    "band": "Very restrictive",
+    "confidence": 0.94,
+    "confidence_band": "High",
+    "signals": [],
+    "report_ids": [
+      "r_0044"
+    ],
+    "has_om": true,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-commerce-industry__department-for-promotion-of-industry-internal-trade-dpiit",
+    "dex": 57,
+    "band": "Mixed",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [
+      {
+        "key": "senior_only",
+        "label": "Senior-rank-only release",
+        "weight": -15
+      },
+      {
+        "key": "highly_beneficial",
+        "label": "Release only if highly beneficial to parent",
+        "weight": 0
+      }
+    ],
+    "report_ids": [
+      "r_0046"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-labour-employment__employees-provident-fund-organisation-epfo",
+    "dex": 60,
+    "band": "Mixed",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0051"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-power__ministry-of-power-secretariat",
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0052"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-chemicals-fertilizers__department-of-pharmaceuticals",
+    "dex": 72,
+    "band": "Generally supportive",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [
+      {
+        "key": "highly_beneficial",
+        "label": "Release only if highly beneficial to parent",
+        "weight": 0
+      }
+    ],
+    "report_ids": [
+      "r_0053"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-youth-affairs-sports__department-of-youth-affairs",
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0054"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-science-technology__department-of-science-technology-dst",
+    "dex": 54,
+    "band": "Mixed",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [
+      {
+        "key": "vacancy_based",
+        "label": "Vacancy-based release",
+        "weight": -18
+      }
+    ],
+    "report_ids": [
+      "r_0055"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-communications__department-of-telecommunications-dot",
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0060"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-mines__ministry-of-mines-secretariat",
+    "dex": 57,
+    "band": "Mixed",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [
+      {
+        "key": "senior_only",
+        "label": "Senior-rank-only release",
+        "weight": -15
+      },
+      {
+        "key": "highly_beneficial",
+        "label": "Release only if highly beneficial to parent",
+        "weight": 0
+      }
+    ],
+    "report_ids": [
+      "r_0062"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-railways__ministry-of-railways-secretariat",
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0068"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-textiles__ministry-of-textiles-secretariat",
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0070"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-labour-employment__directorate-general-factory-advice-service-and-labour-institutes-dgfasli",
+    "dex": 78,
+    "band": "Generally supportive",
+    "confidence": 0.94,
+    "confidence_band": "High",
+    "signals": [],
+    "report_ids": [
+      "r_0072",
+      "r_0090"
+    ],
+    "has_om": true,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-home-affairs__ministry-of-home-affairs-secretariat",
+    "dex": 96,
+    "band": "Deputation-friendly",
+    "confidence": 0.94,
+    "confidence_band": "High",
+    "signals": [],
+    "report_ids": [
+      "r_0073",
+      "r_0083"
+    ],
+    "has_om": true,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-housing-urban-affairs__directorate-of-estates",
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0075"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-civil-aviation__ministry-of-civil-aviation-secretariat",
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0076",
+      "r_0093"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-civil-aviation__bureau-of-civil-aviation-security-bcas",
+    "dex": 57,
+    "band": "Mixed",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [
+      {
+        "key": "senior_only",
+        "label": "Senior-rank-only release",
+        "weight": -15
+      },
+      {
+        "key": "highly_beneficial",
+        "label": "Release only if highly beneficial to parent",
+        "weight": 0
+      }
+    ],
+    "report_ids": [
+      "r_0077"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-cooperation__central-registrar-of-cooperative-societies-crcs",
+    "dex": 20,
+    "band": "Very restrictive",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0084"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-home-affairs__police-division",
+    "dex": 54,
+    "band": "Mixed",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [
+      {
+        "key": "vacancy_based",
+        "label": "Vacancy-based release",
+        "weight": -18
+      },
+      {
+        "key": "highly_beneficial",
+        "label": "Release only if highly beneficial to parent",
+        "weight": 0
+      }
+    ],
+    "report_ids": [
+      "r_0085"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-women-child-development__mission-poshan-2-0-division",
+    "dex": 20,
+    "band": "Very restrictive",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0087"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-law-justice__department-of-legal-affairs",
+    "dex": 20,
+    "band": "Very restrictive",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0092"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-chemicals-fertilizers__department-of-fertilizers",
+    "dex": 20,
+    "band": "Very restrictive",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0094"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-consumer-affairs-food-public-distribution__department-of-food-public-distribution",
+    "dex": 72,
+    "band": "Generally supportive",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [
+      {
+        "key": "highly_beneficial",
+        "label": "Release only if highly beneficial to parent",
+        "weight": 0
+      }
+    ],
+    "report_ids": [
+      "r_0095"
+    ],
+    "has_om": false,
+    "has_personal": true
+  },
+  {
+    "org_id": "ministry-of-information-broadcasting__prasar-bharati-doordarshan-all-india-radio",
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "signals": [],
+    "report_ids": [
+      "r_0101"
+    ],
+    "has_om": false,
+    "has_personal": true
+  }
+]
