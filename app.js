@@ -219,22 +219,27 @@ if (themeToggle && !themeToggle.dataset.bound) {
 loadDataFromJSON();
 
 // Prefill My Pay Level from the saved deputation profile (if present).
-// Skipped if the URL already pinned a pay level, or if the user has manually
-// chosen one earlier in this session.
+// Runs on every fresh page load. Doesn't clobber a value the user already
+// picked (URL param or in-session selection). The toast is suppressed only
+// after the user explicitly dismisses it once in the session.
 function autoselectPayLevelFromProfile() {
   try {
-    if (filterMyPayLevel.value) return;                         // URL param wins
-    if (sessionStorage.getItem('payLevelToastShown') === '1') return;
     const raw = localStorage.getItem('dep_profile_v1');
     if (!raw) return;
     const profile = JSON.parse(raw);
     const lvl = String(profile && profile.payLevel || '').trim();
     if (!lvl) return;
-    // Confirm the option exists in the dropdown.
-    if (![...filterMyPayLevel.options].some(o => o.value === lvl)) return;
-    filterMyPayLevel.value = lvl;
+
+    // Only set if the dropdown is currently empty.
+    if (!filterMyPayLevel.value) {
+      if (![...filterMyPayLevel.options].some(o => o.value === lvl)) return;
+      filterMyPayLevel.value = lvl;
+      // Make sure renders downstream see the new value.
+      filterMyPayLevel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    if (sessionStorage.getItem('payLevelToastDismissed') === '1') return;
     showHomeToast(`Pay Level <strong>${lvl}</strong> auto-selected from your <a href="/my-deputation.html#profile">profile</a>.`);
-    sessionStorage.setItem('payLevelToastShown', '1');
   } catch (e) {
     console.warn('payLevel autoselect skipped:', e);
   }
@@ -255,7 +260,10 @@ function showHomeToast(html) {
       <span class="home-toast-msg"></span>
       <button type="button" class="home-toast-close" aria-label="Dismiss">×</button>`;
     document.body.appendChild(t);
-    t.querySelector('.home-toast-close').addEventListener('click', () => t.classList.remove('show'));
+    t.querySelector('.home-toast-close').addEventListener('click', () => {
+      t.classList.remove('show');
+      try { sessionStorage.setItem('payLevelToastDismissed', '1'); } catch (e) {}
+    });
   }
   t.querySelector('.home-toast-msg').innerHTML = html;
   // Allow the element to be in the DOM before transitioning.

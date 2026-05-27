@@ -413,6 +413,10 @@ body {
 .ms-caret { width: 16px; height: 16px; color: var(--text-secondary); transition: transform 180ms ease; flex: none; }
 .ms-trigger[aria-expanded="true"] .ms-caret { transform: rotate(180deg); }
 
+/* The HTML `hidden` attribute is overridden by `display: flex` below —
+   restore it so the panel stays hidden until the trigger opens it. */
+.ms-panel[hidden] { display: none !important; }
+
 .ms-panel {
   position: absolute; left: 0; right: 0; top: calc(100% + 6px);
   z-index: 50;
