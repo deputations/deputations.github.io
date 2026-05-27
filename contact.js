@@ -4,15 +4,16 @@
 (function () {
   "use strict";
 
-  /* ---------- Theme toggle (persisted) ---------- */
-  var THEME_KEY = "dep-theme";
+  /* ---------- Theme toggle (persisted, unified key) ---------- */
+  var THEME_KEY = "deputation_theme_v1";
   function applyTheme(theme) {
-    if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
-    else document.documentElement.removeAttribute("data-theme");
+    document.documentElement.setAttribute("data-theme", theme === "light" ? "light" : "dark");
   }
+  /* The head bootstrap already applied the saved theme; this guard keeps the
+   * page in sync if the script runs after some other code mutated the attr. */
   try {
-    var savedTheme = localStorage.getItem(THEME_KEY);
-    if (savedTheme === "light" || savedTheme === "dark") applyTheme(savedTheme);
+    var savedTheme = localStorage.getItem(THEME_KEY) || "dark";
+    applyTheme(savedTheme);
   } catch (e) {}
   document.addEventListener("DOMContentLoaded", function () {
     var btn = document.getElementById("ctThemeToggle");

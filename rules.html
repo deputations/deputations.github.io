@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
   <title>Rules & Regulations on Central Government Deputation | Deputations Portal</title>
   <meta name="description" content="A modern searchable knowledge hub for Central Government deputation rules, DoPT OMs, tenure limits, cooling-off, deputation allowance, lien, absorption, and related circulars." />
   <meta name="theme-color" content="#07111f" />
@@ -2753,14 +2754,13 @@ Keywords: deputation, foreign service, central government, DoPT, CSS, Central St
     }
 
     function setupTheme() {
-      const saved = localStorage.getItem("rules-theme");
-      if (saved) document.documentElement.dataset.theme = saved;
+      // Theme is already applied by the inline bootstrap in <head>.
       $("#themeToggle").textContent = document.documentElement.dataset.theme === "dark" ? "☾" : "☀";
 
       $("#themeToggle").addEventListener("click", () => {
         const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
         document.documentElement.dataset.theme = next;
-        localStorage.setItem("rules-theme", next);
+        localStorage.setItem("deputation_theme_v1", next);
         $("#themeToggle").textContent = next === "dark" ? "☾" : "☀";
       });
     }

@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||localStorage.getItem('depfaq-theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
 <title>FAQs — Deputation Vacancies</title>
 <meta name="description" content="Frequently asked questions on deputation and foreign service of Central Government employees — eligibility, tenure, pay, deputation duty allowance, leave, pension and more.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1216,18 +1217,16 @@ var DISCREPANCY_API = (window.DEPUTATIONS_API) ||
   function store(k,v){try{localStorage.setItem(k,v);}catch(e){}}
   function read(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 
-  /* theme */
+  /* theme — unified key across pages, dark default */
   var themeBtn=document.getElementById("themeBtn")||document.getElementById("themeToggle");
-  function applyTheme(t){root.setAttribute("data-theme",t);store("depfaq-theme",t);}
+  function applyTheme(t){root.setAttribute("data-theme",t);store("deputation_theme_v1",t);}
   (function(){
-    var saved=read("depfaq-theme");
-    if(saved){applyTheme(saved);}
-    else if(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches){applyTheme("light");}
-    else{applyTheme("dark");}
+    var saved=read("deputation_theme_v1")||read("depfaq-theme");  // migrate legacy key
+    applyTheme(saved||"dark");
   })();
-  themeBtn.addEventListener("click",function(){
+  if(themeBtn){themeBtn.addEventListener("click",function(){
     applyTheme(root.getAttribute("data-theme")==="dark"?"light":"dark");
-  });
+  });}
 
   /* progress + back to top */
   var progress=document.getElementById("progress"),toTop=document.getElementById("toTop");
