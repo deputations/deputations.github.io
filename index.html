@@ -16,7 +16,7 @@
     rel="stylesheet"
   >
 
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=ms3">
   <link rel="stylesheet" href="navbar.css">
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -106,15 +106,28 @@
               </svg>
             </button>
             <div class="ms-panel" id="filterLocationPanel" hidden role="dialog" aria-label="Select locations">
-              <div class="ms-search-wrap">
-                <input type="search" class="ms-search" placeholder="Search locations…" aria-label="Search locations">
-              </div>
-              <div class="ms-actions">
-                <button type="button" class="ms-action" data-ms-all>Select all (filtered)</button>
-                <button type="button" class="ms-action" data-ms-none>Clear</button>
-              </div>
+              <header class="ms-panel-head">
+                <div class="ms-search-wrap">
+                  <svg class="ms-search-icon" viewBox="0 0 24 24" aria-hidden="true"
+                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+                  </svg>
+                  <input type="search" class="ms-search" placeholder="Search locations…" aria-label="Search locations">
+                </div>
+                <button type="button" class="ms-close" data-ms-done aria-label="Close">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              </header>
+              <p class="ms-hint">Click a location to select it · click again to deselect</p>
               <ul class="ms-list" id="filterLocationList" role="listbox" aria-multiselectable="true"></ul>
               <div class="ms-empty" hidden>No matches</div>
+              <footer class="ms-panel-foot">
+                <span class="ms-count" data-ms-count>0 selected</span>
+                <div class="ms-foot-actions">
+                  <button type="button" class="ms-action" data-ms-none>Clear all</button>
+                  <button type="button" class="ms-action ms-action--primary" data-ms-done>Done</button>
+                </div>
+              </footer>
             </div>
           </div>
         </div>
@@ -165,6 +178,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=ms1"></script>
+  <script src="app.js?v=ms3"></script>
 </body>
 </html>

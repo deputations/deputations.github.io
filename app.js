@@ -9,8 +9,9 @@ function createMultiSelect(root, opts = {}) {
   const search  = root.querySelector('.ms-search');
   const list    = root.querySelector('.ms-list');
   const empty   = root.querySelector('.ms-empty');
-  const allBtn  = root.querySelector('[data-ms-all]');
   const noneBtn = root.querySelector('[data-ms-none]');
+  const doneBtns = root.querySelectorAll('[data-ms-done]');
+  const countEl = root.querySelector('[data-ms-count]');
 
   const placeholder    = opts.placeholder || 'All';
   const singularPattern = opts.singularPattern || ((v) => v);
@@ -31,14 +32,25 @@ function createMultiSelect(root, opts = {}) {
     if (!visible.length) {
       list.innerHTML = '';
       empty.hidden = false;
-      return;
+    } else {
+      empty.hidden = true;
+      list.innerHTML = visible.map(v => `
+        <li><button type="button" class="ms-opt ${selected.has(v) ? 'is-selected' : ''}"
+              role="option" aria-selected="${selected.has(v)}" data-value="${esc(v)}">
+          <span class="ms-opt-check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <span class="ms-opt-label">${esc(v)}</span>
+        </button></li>`).join('');
     }
-    empty.hidden = true;
-    list.innerHTML = visible.map(v => `
-      <li><label class="ms-opt">
-        <input type="checkbox" value="${esc(v)}" ${selected.has(v) ? 'checked' : ''}>
-        <span>${esc(v)}</span>
-      </label></li>`).join('');
+    syncCount();
+  }
+
+  function syncCount() {
+    if (!countEl) return;
+    const n = selected.size;
+    countEl.textContent = n === 0 ? 'None selected' : (n === 1 ? '1 selected' : `${n} selected`);
+    countEl.setAttribute('data-active', n > 0 ? 'true' : 'false');
   }
 
   function syncTrigger() {
@@ -81,23 +93,23 @@ function createMultiSelect(root, opts = {}) {
 
   search.addEventListener('input', () => renderList(search.value));
 
-  list.addEventListener('change', (e) => {
-    const cb = e.target.closest('input[type="checkbox"]');
-    if (!cb) return;
-    if (cb.checked) selected.add(cb.value); else selected.delete(cb.value);
-    syncTrigger(); emitChange();
+  list.addEventListener('click', (e) => {
+    const btn = e.target.closest('.ms-opt');
+    if (!btn) return;
+    const v = btn.dataset.value;
+    if (selected.has(v)) selected.delete(v); else selected.add(v);
+    // Animate just this row, don't full-rerender (preserves scroll position)
+    const nowSelected = selected.has(v);
+    btn.classList.toggle('is-selected', nowSelected);
+    btn.setAttribute('aria-selected', String(nowSelected));
+    syncCount(); syncTrigger(); emitChange();
   });
 
-  allBtn.addEventListener('click', () => {
-    const f = search.value.trim().toLowerCase();
-    const visible = f ? items.filter(i => i.toLowerCase().includes(f)) : items;
-    visible.forEach(v => selected.add(v));
-    renderList(search.value); syncTrigger(); emitChange();
-  });
   noneBtn.addEventListener('click', () => {
     selected.clear();
     renderList(search.value); syncTrigger(); emitChange();
   });
+  doneBtns.forEach(b => b.addEventListener('click', close));
 
   const api = {
     populate(arr) {
@@ -205,7 +217,52 @@ if (themeToggle && !themeToggle.dataset.bound) {
 }
 
 loadDataFromJSON();
-    
+
+// Prefill My Pay Level from the saved deputation profile (if present).
+// Skipped if the URL already pinned a pay level, or if the user has manually
+// chosen one earlier in this session.
+function autoselectPayLevelFromProfile() {
+  try {
+    if (filterMyPayLevel.value) return;                         // URL param wins
+    if (sessionStorage.getItem('payLevelToastShown') === '1') return;
+    const raw = localStorage.getItem('dep_profile_v1');
+    if (!raw) return;
+    const profile = JSON.parse(raw);
+    const lvl = String(profile && profile.payLevel || '').trim();
+    if (!lvl) return;
+    // Confirm the option exists in the dropdown.
+    if (![...filterMyPayLevel.options].some(o => o.value === lvl)) return;
+    filterMyPayLevel.value = lvl;
+    showHomeToast(`Pay Level <strong>${lvl}</strong> auto-selected from your <a href="/my-deputation.html#profile">profile</a>.`);
+    sessionStorage.setItem('payLevelToastShown', '1');
+  } catch (e) {
+    console.warn('payLevel autoselect skipped:', e);
+  }
+}
+
+function showHomeToast(html) {
+  let t = document.getElementById('homeToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'homeToast';
+    t.className = 'home-toast';
+    t.setAttribute('role', 'status');
+    t.setAttribute('aria-live', 'polite');
+    t.innerHTML = `
+      <span class="home-toast-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+      </span>
+      <span class="home-toast-msg"></span>
+      <button type="button" class="home-toast-close" aria-label="Dismiss">×</button>`;
+    document.body.appendChild(t);
+    t.querySelector('.home-toast-close').addEventListener('click', () => t.classList.remove('show'));
+  }
+  t.querySelector('.home-toast-msg').innerHTML = html;
+  // Allow the element to be in the DOM before transitioning.
+  setTimeout(() => t.classList.add('show'), 30);
+  setTimeout(() => t.classList.remove('show'), 6500);
+}
+
  function getCurrentPageSize() {
   return currentView === 'card' ? 9 : 10;
 }   
@@ -219,6 +276,7 @@ function loadDataFromJSON() {
             reconcileWatchlistWithData();
             populateFilters();
             hydrateFiltersFromUrl();
+            autoselectPayLevelFromProfile();
             buildSearchSuggestions();
             bindEvents();
             updateQuickFiltersBar();
