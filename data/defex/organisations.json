@@ -225,12 +225,12 @@
     "name": "Department of AYUSH (Administration)",
     "ministry": "Ministry of AYUSH",
     "type": "Attached Office",
-    "rated": false,
-    "dex": null,
-    "band": "Unrated",
-    "confidence": 0,
-    "confidence_band": "Insufficient",
-    "reports": 0,
+    "rated": true,
+    "dex": 20,
+    "band": "Very restrictive",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "reports": 2,
     "has_om": false
   },
   {
@@ -772,12 +772,12 @@
     "ministry": "Ministry of Communications",
     "type": "Attached Office",
     "rated": true,
-    "dex": 90,
-    "band": "Deputation-friendly",
-    "confidence": 0.415,
-    "confidence_band": "Low",
-    "reports": 1,
-    "has_om": false
+    "dex": 26,
+    "band": "Very restrictive",
+    "confidence": 0.94,
+    "confidence_band": "High",
+    "reports": 3,
+    "has_om": true
   },
   {
     "id": "ministry-of-communications__postal-directorate-field-offices",
@@ -1465,7 +1465,7 @@
     "band": "Generally supportive",
     "confidence": 0.94,
     "confidence_band": "High",
-    "reports": 6,
+    "reports": 8,
     "has_om": true
   },
   {
@@ -5581,12 +5581,12 @@
     "name": "Ministry of Railways (Railway Board)",
     "ministry": "Ministry of Railways",
     "type": "Attached Office",
-    "rated": false,
-    "dex": null,
-    "band": "Unrated",
-    "confidence": 0,
-    "confidence_band": "Insufficient",
-    "reports": 0,
+    "rated": true,
+    "dex": 90,
+    "band": "Deputation-friendly",
+    "confidence": 0.415,
+    "confidence_band": "Low",
+    "reports": 1,
     "has_om": false
   },
   {
@@ -7280,32 +7280,6 @@
     "has_om": false
   },
   {
-    "id": "ministry-of-defence__ministry-of-defence-secretariat",
-    "name": "Ministry of Defence (Secretariat)",
-    "ministry": "Ministry of Defence",
-    "type": "Ministry Secretariat",
-    "rated": true,
-    "dex": 26,
-    "band": "Very restrictive",
-    "confidence": 0.94,
-    "confidence_band": "High",
-    "reports": 2,
-    "has_om": true
-  },
-  {
-    "id": "ministry-of-statistics-programme-implementation__ministry-of-statistics-programme-implementation-secretariat",
-    "name": "Ministry of Statistics & Programme Implementation (Secretariat)",
-    "ministry": "Ministry of Statistics & Programme Implementation",
-    "type": "Ministry Secretariat",
-    "rated": true,
-    "dex": 88,
-    "band": "Deputation-friendly",
-    "confidence": 0.27,
-    "confidence_band": "Low",
-    "reports": 1,
-    "has_om": false
-  },
-  {
     "id": "ministry-of-labour-employment__ministry-of-labour-employment-secretariat",
     "name": "Ministry of Labour & Employment (Secretariat)",
     "ministry": "Ministry of Labour & Employment",
@@ -7317,70 +7291,5 @@
     "confidence_band": "Low",
     "reports": 4,
     "has_om": false
-  },
-  {
-    "id": "ministry-of-communications__ministry-of-communications-secretariat",
-    "name": "Ministry of Communications (Secretariat)",
-    "ministry": "Ministry of Communications",
-    "type": "Ministry Secretariat",
-    "rated": true,
-    "dex": 26,
-    "band": "Very restrictive",
-    "confidence": 0.94,
-    "confidence_band": "High",
-    "reports": 2,
-    "has_om": true
-  },
-  {
-    "id": "ministry-of-ayush__ministry-of-ayush-secretariat",
-    "name": "Ministry of AYUSH (Secretariat)",
-    "ministry": "Ministry of AYUSH",
-    "type": "Ministry Secretariat",
-    "rated": true,
-    "dex": 20,
-    "band": "Very restrictive",
-    "confidence": 0.415,
-    "confidence_band": "Low",
-    "reports": 2,
-    "has_om": false
-  },
-  {
-    "id": "ministry-of-power__ministry-of-power-secretariat",
-    "name": "Ministry of Power (Secretariat)",
-    "ministry": "Ministry of Power",
-    "type": "Ministry Secretariat",
-    "rated": true,
-    "dex": 90,
-    "band": "Deputation-friendly",
-    "confidence": 0.415,
-    "confidence_band": "Low",
-    "reports": 1,
-    "has_om": false
-  },
-  {
-    "id": "ministry-of-railways__ministry-of-railways-secretariat",
-    "name": "Ministry of Railways (Secretariat)",
-    "ministry": "Ministry of Railways",
-    "type": "Ministry Secretariat",
-    "rated": true,
-    "dex": 90,
-    "band": "Deputation-friendly",
-    "confidence": 0.415,
-    "confidence_band": "Low",
-    "reports": 1,
-    "has_om": false
-  },
-  {
-    "id": "ministry-of-home-affairs__ministry-of-home-affairs-secretariat",
-    "name": "Ministry of Home Affairs (Secretariat)",
-    "ministry": "Ministry of Home Affairs",
-    "type": "Ministry Secretariat",
-    "rated": true,
-    "dex": 96,
-    "band": "Deputation-friendly",
-    "confidence": 0.94,
-    "confidence_band": "High",
-    "reports": 2,
-    "has_om": true
   }
 ]

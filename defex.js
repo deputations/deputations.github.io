@@ -21,17 +21,20 @@
     tab: "ranked",
     explorerBand: "all",
     sort: { key: "dex", dir: "desc" },
-    filters: { ministry: "", type: "", band: "", confidence: "", om: false },
+    filters: { ministry: "", band: "", confidence: "", om: false },
   };
 
   // ---------- load ----------------------------------------------------------
   async function load() {
+    // Cache-bust by version — bump along with defex.js's ?v= query.
+    const V = "ms5";
+    const get = (p) => fetch(`${p}?v=${V}`).then(r => r.json());
     const [orgs, scores, reports, method, upd] = await Promise.all([
-      fetch("data/defex/organisations.json").then(r => r.json()),
-      fetch("data/defex/scores.json").then(r => r.json()),
-      fetch("data/defex/reports.json").then(r => r.json()),
-      fetch("data/defex/methodology.json").then(r => r.json()),
-      fetch("data/defex/updates.json").then(r => r.json()),
+      get("data/defex/organisations.json"),
+      get("data/defex/scores.json"),
+      get("data/defex/reports.json"),
+      get("data/defex/methodology.json"),
+      get("data/defex/updates.json"),
     ]);
     state.organisations = orgs;
     state.scores = new Map(scores.map(s => [s.org_id, s]));
@@ -242,11 +245,8 @@
   // ---------- leaderboard ---------------------------------------------------
   function populateFilters() {
     const mins = [...new Set(state.organisations.map(o => o.ministry))].sort();
-    const types = [...new Set(state.organisations.map(o => o.type).filter(Boolean))].sort();
     $("#filter-ministry").innerHTML = '<option value="">All</option>' +
       mins.map(m => `<option>${escapeHtml(m)}</option>`).join("");
-    $("#filter-type").innerHTML = '<option value="">All</option>' +
-      types.map(t => `<option>${escapeHtml(t)}</option>`).join("");
 
     $("#chk-ministry").innerHTML = '<option value="">Select…</option>' +
       mins.map(m => `<option>${escapeHtml(m)}</option>`).join("");
@@ -327,7 +327,6 @@
       <td class="num dex-row-rank">${rank}</td>
       <td><div class="dex-row-name">${escapeHtml(o.name)}</div></td>
       <td class="dex-row-min">${escapeHtml(o.ministry)}</td>
-      <td class="dex-row-min">${escapeHtml(o.type || "—")}</td>
       <td class="num">${dexCell}</td>
       <td><span class="dex-band-pill" data-band="${escapeHtml(o.band)}">${escapeHtml(o.band)}</span></td>
       <td>${confDots(o.confidence_band)}</td>
@@ -347,13 +346,12 @@
     }));
 
     $("#filter-ministry").addEventListener("change", e => { state.filters.ministry = e.target.value; renderTable(); });
-    $("#filter-type").addEventListener("change",     e => { state.filters.type = e.target.value; renderTable(); });
     $("#filter-band").addEventListener("change",     e => { state.filters.band = e.target.value; renderTable(); });
     $("#filter-confidence").addEventListener("change", e => { state.filters.confidence = e.target.value; renderTable(); });
     $("#filter-om").addEventListener("change",       e => { state.filters.om = e.target.checked; renderTable(); });
     $("#filter-reset").addEventListener("click", () => {
-      state.filters = { ministry: "", type: "", band: "", confidence: "", om: false };
-      $("#filter-ministry").value = ""; $("#filter-type").value = "";
+      state.filters = { ministry: "", band: "", confidence: "", om: false };
+      $("#filter-ministry").value = "";
       $("#filter-band").value = ""; $("#filter-confidence").value = "";
       $("#filter-om").checked = false;
       renderTable();

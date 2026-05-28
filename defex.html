@@ -8,7 +8,7 @@
   <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="navbar.css">
-  <link rel="stylesheet" href="defex.css">
+  <link rel="stylesheet" href="defex.css?v=ms5">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 </head>
 <body>
@@ -144,10 +144,6 @@
           <select id="filter-ministry"><option value="">All</option></select>
         </label>
         <label class="dex-filter">
-          <span>Organisation type</span>
-          <select id="filter-type"><option value="">All</option></select>
-        </label>
-        <label class="dex-filter">
           <span>Band</span>
           <select id="filter-band">
             <option value="">All</option>
@@ -182,7 +178,6 @@
               <th data-sort="rank">#</th>
               <th data-sort="name">Organisation</th>
               <th data-sort="ministry">Ministry</th>
-              <th data-sort="type">Type</th>
               <th data-sort="dex" class="num">DeFeX</th>
               <th data-sort="band">Band</th>
               <th data-sort="confidence">Confidence</th>
@@ -448,6 +443,6 @@
   </button>
 
   <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
-  <script src="defex.js"></script>
+  <script src="defex.js?v=ms5"></script>
 </body>
 </html>

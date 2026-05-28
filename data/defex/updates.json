@@ -1,12 +1,12 @@
 {
-  "generated_at_utc": "2026-05-27T11:01:17Z",
+  "generated_at_utc": "2026-05-28T07:51:07Z",
   "methodology_version": "0.1.0-beta",
   "source": "xlsx:anonymised-deputation-data.xlsx",
   "counts": {
-    "organisations_mapped": 568,
+    "organisations_mapped": 561,
     "ministries_covered": 51,
-    "organisations_rated": 57,
-    "organisations_with_om": 13,
+    "organisations_rated": 52,
+    "organisations_with_om": 11,
     "reports_total": 101,
     "unresolved_input_rows": 0
   },

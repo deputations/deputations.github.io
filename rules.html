@@ -1656,9 +1656,8 @@
               <p class="section-description">This is now the main default view. Search terms are matched against visible rule metadata and any full PDF text saved inside each rule object.</p>
             </div>
             <div class="search-mode-actions">
-              <a href="#timeline" data-view-target="timeline" data-scroll-target="timeline" class="btn primary"><span>↳</span><span>View Chronological Rules</span></a>
-              <a href="#search" data-view-target="search" data-scroll-target="search" class="btn"><span>⌕</span><span>Search by Topic</span></a>
-              <a href="#library" data-view-target="library" data-scroll-target="library" class="btn"><span>▣</span><span>Official PDF Library</span></a>
+              <button class="global-detail-toggle" id="searchExpandAll" type="button" aria-label="Show details for all" title="Show details for all">+</button>
+              <button class="global-detail-toggle" id="searchCollapseAll" type="button" aria-label="Hide details for all" title="Hide details for all">−</button>
             </div>
           </div>
           <div class="search-bar">
@@ -2600,7 +2599,7 @@ Keywords: deputation, foreign service, central government, DoPT, CSS, Central St
 
     function ruleCardHTML(rule, scope) {
       return `
-        <article class="rule-card expanded" data-rule-id="${esc(rule.id)}" data-scope="${scope}">
+        <article class="rule-card" data-rule-id="${esc(rule.id)}" data-scope="${scope}">
           <div class="rule-head">
             <div class="rule-date"><span>Date</span>${esc(rule.date)}</div>
             <div class="rule-title">
@@ -2614,13 +2613,13 @@ Keywords: deputation, foreign service, central government, DoPT, CSS, Central St
               ${state.query ? `<div class="pdf-hit-preview"><strong>Matched preview from PDF / extracted text</strong><p>${makePreview(rule)}</p></div>` : ""}
             </div>
             <div class="rule-actions">
-              <button class="mini-btn" type="button" data-expand="${esc(rule.id)}">Hide details</button>
+              <button class="mini-btn" type="button" data-expand="${esc(rule.id)}">Details</button>
               <button class="mini-btn" type="button" data-modal="${esc(rule.id)}">Full view</button>
               ${rule.pdfUrl ? `<a class="mini-btn primary" href="${esc(rule.pdfUrl)}" target="_blank" rel="noopener">PDF ↗</a>` : `<span class="mini-btn">PDF to add</span>`}
             </div>
           </div>
 
-          <div class="rule-details" aria-hidden="false">
+          <div class="rule-details" aria-hidden="true">
             <div class="detail-grid">
               <div class="detail-box">
                 <h4>Key provisions</h4>
@@ -2918,8 +2917,8 @@ Keywords: deputation, foreign service, central government, DoPT, CSS, Central St
       // Reuse the existing per-card data-expand handler by simulating
       // a click on each card's "Hide details"/"Details" button only when
       // its current state differs from the requested target state.
-      const setAll = (shouldExpand) => {
-        const cards = $$("#timelineContainer .rule-card");
+      const setAllIn = (containerSel, shouldExpand) => {
+        const cards = $$(`${containerSel} .rule-card`);
         cards.forEach(card => {
           const isExpanded = card.classList.contains("expanded");
           if (isExpanded === shouldExpand) return;
@@ -2927,10 +2926,16 @@ Keywords: deputation, foreign service, central government, DoPT, CSS, Central St
           if (btn) btn.click();
         });
       };
-      const expandBtn = $("#expandAllDetails");
-      if (expandBtn) expandBtn.addEventListener("click", () => setAll(true));
-      const collapseBtn = $("#collapseAllDetails");
-      if (collapseBtn) collapseBtn.addEventListener("click", () => setAll(false));
+
+      const tlExpand = $("#expandAllDetails");
+      if (tlExpand) tlExpand.addEventListener("click", () => setAllIn("#timelineContainer", true));
+      const tlCollapse = $("#collapseAllDetails");
+      if (tlCollapse) tlCollapse.addEventListener("click", () => setAllIn("#timelineContainer", false));
+
+      const sExpand = $("#searchExpandAll");
+      if (sExpand) sExpand.addEventListener("click", () => setAllIn("#searchResultsContainer", true));
+      const sCollapse = $("#searchCollapseAll");
+      if (sCollapse) sCollapse.addEventListener("click", () => setAllIn("#searchResultsContainer", false));
     }
 
     function setupSortToggles() {

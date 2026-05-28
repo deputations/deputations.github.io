@@ -66,20 +66,6 @@
     "has_personal": false
   },
   {
-    "org_id": "ministry-of-defence__ministry-of-defence-secretariat",
-    "dex": 26,
-    "band": "Very restrictive",
-    "confidence": 0.94,
-    "confidence_band": "High",
-    "signals": [],
-    "report_ids": [
-      "r_0033",
-      "r_0035"
-    ],
-    "has_om": true,
-    "has_personal": true
-  },
-  {
     "org_id": "ministry-of-defence__department-of-defence",
     "dex": 66,
     "band": "Generally supportive",
@@ -94,6 +80,8 @@
     ],
     "report_ids": [
       "r_0019",
+      "r_0033",
+      "r_0035",
       "r_0037",
       "r_0081",
       "r_0082",
@@ -383,7 +371,7 @@
     "has_personal": true
   },
   {
-    "org_id": "ministry-of-communications__ministry-of-communications-secretariat",
+    "org_id": "ministry-of-communications__department-of-telecommunications-dot",
     "dex": 26,
     "band": "Very restrictive",
     "confidence": 0.94,
@@ -391,13 +379,14 @@
     "signals": [],
     "report_ids": [
       "r_0030",
+      "r_0060",
       "r_0088"
     ],
     "has_om": true,
     "has_personal": true
   },
   {
-    "org_id": "ministry-of-ayush__ministry-of-ayush-secretariat",
+    "org_id": "ministry-of-ayush__department-of-ayush-administration",
     "dex": 20,
     "band": "Very restrictive",
     "confidence": 0.415,
@@ -588,19 +577,6 @@
     "has_personal": true
   },
   {
-    "org_id": "ministry-of-communications__department-of-telecommunications-dot",
-    "dex": 90,
-    "band": "Deputation-friendly",
-    "confidence": 0.415,
-    "confidence_band": "Low",
-    "signals": [],
-    "report_ids": [
-      "r_0060"
-    ],
-    "has_om": false,
-    "has_personal": true
-  },
-  {
     "org_id": "ministry-of-mines__ministry-of-mines-secretariat",
     "dex": 57,
     "band": "Mixed",
@@ -625,7 +601,7 @@
     "has_personal": true
   },
   {
-    "org_id": "ministry-of-railways__ministry-of-railways-secretariat",
+    "org_id": "ministry-of-railways__ministry-of-railways-railway-board",
     "dex": 90,
     "band": "Deputation-friendly",
     "confidence": 0.415,

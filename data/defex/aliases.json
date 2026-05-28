@@ -17,7 +17,7 @@
     "central council research in yoga naturopathy": "ministry-of-ayush__central-council-for-research-in-yoga-naturopathy-ccryn",
     "central council homoeopathy": "ministry-of-ayush__central-council-of-homoeopathy-cch",
     "central council indian medicine": "ministry-of-ayush__central-council-of-indian-medicine-ccim",
-    "ayush": "ministry-of-ayush__ministry-of-ayush-secretariat",
+    "ayush": "ministry-of-ayush__department-of-ayush-administration",
     "national institute ayurveda jaipur": "ministry-of-ayush__national-institute-of-ayurveda-nia-jaipur",
     "national institute homoeopathy kolkata": "ministry-of-ayush__national-institute-of-homoeopathy-nih-kolkata",
     "national institute siddha chennai": "ministry-of-ayush__national-institute-of-siddha-nis-chennai",
@@ -112,7 +112,7 @@
     "cantonment boards": "ministry-of-defence__cantonment-boards",
     "coast guard headquarters": "ministry-of-defence__coast-guard-headquarters",
     "defence research development organisation": "ministry-of-defence__defence-research-development-organisation-drdo",
-    "defence": "ministry-of-defence__ministry-of-defence-secretariat",
+    "defence": "ministry-of-defence__department-of-defence",
     "defence production": "ministry-of-defence__department-of-defence-production",
     "ex servicemen welfare": "ministry-of-defence__department-of-ex-servicemen-welfare",
     "military affairs": "ministry-of-defence__department-of-military-affairs",
@@ -426,7 +426,7 @@
     "indian railways institute transport management": "ministry-of-railways__indian-railways-institute-of-transport-management-iritm",
     "ircon international limited": "ministry-of-railways__ircon-international-limited-policy-admin",
     "irctc": "ministry-of-railways__irctc-policy-admin",
-    "railways": "ministry-of-railways__ministry-of-railways-secretariat",
+    "railways": "ministry-of-railways__ministry-of-railways-railway-board",
     "national rail transportation institute": "ministry-of-railways__national-rail-and-transportation-institute-nrti",
     "production units": "ministry-of-railways__production-units-chittaranjan-icf-dlw-rcf-mcf-etc",
     "railway board electrical directorate": "ministry-of-railways__railway-board-electrical-directorate",
@@ -552,7 +552,6 @@
     "netaji subhas national institute sports patiala": "ministry-of-youth-affairs-sports__netaji-subhas-national-institute-of-sports-nsnis-patiala",
     "sports authority": "ministry-of-youth-affairs-sports__sports-authority-of-india-sai",
     "sports authority regional training centres": "ministry-of-youth-affairs-sports__sports-authority-of-india-sai-regional-training-centres",
-    "labour employment": "ministry-of-labour-employment__ministry-of-labour-employment-secretariat",
-    "communications": "ministry-of-communications__ministry-of-communications-secretariat"
+    "labour employment": "ministry-of-labour-employment__ministry-of-labour-employment-secretariat"
   }
 }

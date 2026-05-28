@@ -91,7 +91,7 @@
   },
   {
     "id": "r_0006",
-    "org_id": "ministry-of-defence__ministry-of-defence-secretariat",
+    "org_id": "ministry-of-defence__department-of-defence",
     "type": "policy",
     "deputation_allowed": "Allowed with conditions",
     "conditions": {
@@ -105,7 +105,7 @@
       "om": null,
       "personal": null
     },
-    "match_quality": "synth-secretariat"
+    "match_quality": "secretariat-fallback"
   },
   {
     "id": "r_0007",
@@ -195,7 +195,7 @@
       "om": null,
       "personal": null
     },
-    "match_quality": "synth-secretariat"
+    "match_quality": "secretariat-fallback"
   },
   {
     "id": "r_0012",
@@ -523,7 +523,7 @@
   },
   {
     "id": "r_0030",
-    "org_id": "ministry-of-communications__ministry-of-communications-secretariat",
+    "org_id": "ministry-of-communications__department-of-telecommunications-dot",
     "type": "policy",
     "deputation_allowed": "No",
     "conditions": {
@@ -537,11 +537,11 @@
       "om": "In general, department is not allowing. However in some cases they have allowed also.",
       "personal": "YES"
     },
-    "match_quality": "synth-secretariat"
+    "match_quality": "secretariat-fallback"
   },
   {
     "id": "r_0031",
-    "org_id": "ministry-of-ayush__ministry-of-ayush-secretariat",
+    "org_id": "ministry-of-ayush__department-of-ayush-administration",
     "type": "policy",
     "deputation_allowed": "No",
     "conditions": {
@@ -555,11 +555,11 @@
       "om": null,
       "personal": "NO"
     },
-    "match_quality": "synth-secretariat"
+    "match_quality": "secretariat-fallback"
   },
   {
     "id": "r_0032",
-    "org_id": "ministry-of-ayush__ministry-of-ayush-secretariat",
+    "org_id": "ministry-of-ayush__department-of-ayush-administration",
     "type": "policy",
     "deputation_allowed": "No",
     "conditions": {
@@ -573,11 +573,11 @@
       "om": null,
       "personal": "NO"
     },
-    "match_quality": "synth-secretariat"
+    "match_quality": "secretariat-fallback"
   },
   {
     "id": "r_0033",
-    "org_id": "ministry-of-defence__ministry-of-defence-secretariat",
+    "org_id": "ministry-of-defence__department-of-defence",
     "type": "policy",
     "deputation_allowed": "No",
     "conditions": {
@@ -591,7 +591,7 @@
       "om": "Minimum two years service in MoD and sufficient number of officers available for replacement for forwarding deputation application",
       "personal": "YES"
     },
-    "match_quality": "synth-secretariat"
+    "match_quality": "secretariat-fallback"
   },
   {
     "id": "r_0034",
@@ -613,7 +613,7 @@
   },
   {
     "id": "r_0035",
-    "org_id": "ministry-of-defence__ministry-of-defence-secretariat",
+    "org_id": "ministry-of-defence__department-of-defence",
     "type": "policy",
     "deputation_allowed": "No",
     "conditions": {
@@ -627,7 +627,7 @@
       "om": null,
       "personal": "NO"
     },
-    "match_quality": "synth-secretariat"
+    "match_quality": "secretariat-fallback"
   },
   {
     "id": "r_0036",
@@ -933,7 +933,7 @@
       "om": null,
       "personal": "YES"
     },
-    "match_quality": "synth-secretariat"
+    "match_quality": "secretariat-fallback"
   },
   {
     "id": "r_0053",
@@ -1207,7 +1207,7 @@
   },
   {
     "id": "r_0068",
-    "org_id": "ministry-of-railways__ministry-of-railways-secretariat",
+    "org_id": "ministry-of-railways__ministry-of-railways-railway-board",
     "type": "policy",
     "deputation_allowed": "Yes",
     "conditions": {
@@ -1221,7 +1221,7 @@
       "om": null,
       "personal": "NO"
     },
-    "match_quality": "synth-secretariat"
+    "match_quality": "secretariat-fallback"
   },
   {
     "id": "r_0069",
@@ -1491,7 +1491,7 @@
       "om": null,
       "personal": "NO"
     },
-    "match_quality": "synth-secretariat"
+    "match_quality": "secretariat-fallback"
   },
   {
     "id": "r_0084",
@@ -1567,7 +1567,7 @@
   },
   {
     "id": "r_0088",
-    "org_id": "ministry-of-communications__ministry-of-communications-secretariat",
+    "org_id": "ministry-of-communications__department-of-telecommunications-dot",
     "type": "policy",
     "deputation_allowed": "Yes",
     "conditions": {
@@ -1581,7 +1581,7 @@
       "om": null,
       "personal": "NO"
     },
-    "match_quality": "synth-secretariat"
+    "match_quality": "secretariat-fallback"
   },
   {
     "id": "r_0089",

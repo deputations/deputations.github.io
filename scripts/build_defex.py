@@ -341,22 +341,28 @@ def main():
 
         target, how = match_org(orgs, ministry, dept)
 
-        # Fallback: ministry-level record (empty dept or "(Secretariat)") → synthesise a Secretariat org
+        # Fallback for ministry-level records (empty dept or "(Secretariat)").
+        # First try matching against the existing master-list "Ministry X (Secretariat)"
+        # entry; only synthesise a new org if that doesn't exist either.
         if not target and ministry and (not dept or "secretariat" in dept.lower()):
-            key = ministry
-            if key not in synth_secretariats:
-                sec_name = f"{ministry} (Secretariat)"
-                sec_id = f"{slugify(ministry)}__{slugify(sec_name)}"
-                sec = {
-                    "id": sec_id, "name": sec_name, "ministry": ministry,
-                    "type": "Ministry Secretariat",
-                    "_nk_name": normkey(sec_name), "_nk_ministry": normkey(ministry),
-                }
-                orgs.append(sec)
-                org_by_id[sec_id] = sec
-                synth_secretariats[key] = sec
-            target = synth_secretariats[key]
-            how = "synth-secretariat"
+            sec_name_guess = f"{ministry} (Secretariat)"
+            target, how = match_org(orgs, ministry, sec_name_guess)
+            if not target:
+                key = ministry
+                if key not in synth_secretariats:
+                    sec_id = f"{slugify(ministry)}__{slugify(sec_name_guess)}"
+                    sec = {
+                        "id": sec_id, "name": sec_name_guess, "ministry": ministry,
+                        "type": "Ministry Secretariat",
+                        "_nk_name": normkey(sec_name_guess), "_nk_ministry": normkey(ministry),
+                    }
+                    orgs.append(sec)
+                    org_by_id[sec_id] = sec
+                    synth_secretariats[key] = sec
+                target = synth_secretariats[key]
+                how = "synth-secretariat"
+            else:
+                how = "secretariat-fallback"
 
         if not target:
             unresolved.append({"ministry": ministry, "department": dept, "reason": how})
