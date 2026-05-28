@@ -223,6 +223,9 @@ input[type="date"] { color-scheme: dark; }
 .rv-drop-inner span { color: var(--rv-muted); font-size: .85rem; }
 .rv-drop-inner u { color: var(--rv-primary); text-decoration: none; border-bottom: 1px dashed currentColor; }
 
+/* `display: flex` overrides the HTML `hidden` attribute — restore it. */
+.rv-file[hidden], .rv-drop-inner[hidden] { display: none !important; }
+
 .rv-file {
   display: flex; align-items: center; gap: .8rem;
   padding: .6rem .8rem;
