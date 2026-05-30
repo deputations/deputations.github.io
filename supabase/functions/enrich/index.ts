@@ -55,7 +55,7 @@ Respond with ONLY a JSON object, no prose:
 {"pdf_url":"<direct .pdf url or empty>","page_url":"<official page url or empty>","confidence":"high|medium|low","note":"<short reason>"}`;
 
   const body = { contents: [{ role: "user", parts: [{ text: prompt }] }], tools: [{ google_search: {} }] };
-  for (const model of [GEMINI_MODEL, "gemini-2.0-flash"]) {
+  for (const model of [GEMINI_MODEL, "gemini-2.5-flash-lite"]) {
     for (let attempt = 0; attempt < 2; attempt++) {
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
@@ -66,7 +66,8 @@ Respond with ONLY a JSON object, no prose:
         const text = data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join(" ") ?? "";
         return extractJson(text) ?? { pdf_url: "", page_url: "", confidence: "low", note: "no parseable result" };
       }
-      if ([429, 500, 503].includes(res.status)) { await sleep(1000 * (attempt + 1)); continue; }
+      if (res.status === 429) break; // quota — switch model
+      if ([500, 503].includes(res.status)) { await sleep(1000 * (attempt + 1)); continue; }
       break;
     }
   }
@@ -101,7 +102,7 @@ Dates ISO yyyy-mm-dd; if "within N days of notification", compute from notificat
     contents: [{ role: "user", parts: [{ text: prompt }, { inlineData: { mimeType: "application/pdf", data: pdfB64 } }] }],
     generationConfig: { temperature: 0, responseMimeType: "application/json", responseSchema: DETAIL_SCHEMA },
   };
-  for (const model of [GEMINI_MODEL, "gemini-2.0-flash"]) {
+  for (const model of [GEMINI_MODEL, "gemini-2.5-flash-lite"]) {
     for (let attempt = 0; attempt < 2; attempt++) {
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
@@ -111,7 +112,8 @@ Dates ISO yyyy-mm-dd; if "within N days of notification", compute from notificat
         const data = await res.json();
         return extractJson(data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}") ?? {};
       }
-      if ([429, 500, 503].includes(res.status)) { await sleep(1000 * (attempt + 1)); continue; }
+      if (res.status === 429) break; // quota — switch model
+      if ([500, 503].includes(res.status)) { await sleep(1000 * (attempt + 1)); continue; }
       break;
     }
   }

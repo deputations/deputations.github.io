@@ -191,7 +191,10 @@ async function callGemini(promptText: string, parts: unknown[]) {
   // Try the configured model first, then fall back to a different-capacity
   // model. Retry each on transient overload (503/429/500) with backoff so a
   // brief demand spike doesn't fail the whole ingest.
-  const models = [GEMINI_MODEL, "gemini-2.0-flash"].filter(
+  // gemini-2.0-flash has 0 free quota on this tier; gemini-2.5-flash is capped at
+  // ~20/day; gemini-2.5-flash-lite has plentiful free quota. So: try the quality
+  // model, and on a quota error (429) drop straight to flash-lite.
+  const models = [GEMINI_MODEL, "gemini-2.5-flash-lite"].filter(
     (m, i, a) => m && a.indexOf(m) === i,
   );
   let lastErr = "Gemini call failed";
@@ -206,9 +209,10 @@ async function callGemini(promptText: string, parts: unknown[]) {
         return parseItems(data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]");
       }
       lastErr = `Gemini ${res.status} (${model}): ${await res.text()}`;
-      if (res.status === 503 || res.status === 429 || res.status === 500) {
-        await sleep(1200 * (attempt + 1)); // 1.2s, 2.4s, 3.6s
-        continue; // retry same model
+      if (res.status === 429) break;                 // quota — switch model now
+      if (res.status === 503 || res.status === 500) { // transient overload — retry
+        await sleep(1200 * (attempt + 1));
+        continue;
       }
       break; // non-transient — try the next model
     }
