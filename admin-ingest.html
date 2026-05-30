@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Admin — Ingest &amp; Review · Deputations</title>
+  <style>
+    :root{ --bg:#0f1220; --panel:#181c2e; --panel2:#1f2438; --line:#2a3050;
+      --txt:#e7e9f3; --muted:#9aa3c4; --accent:#6c8cff; --good:#22c55e; --bad:#ef4444;
+      --warn:#f59e0b; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:var(--bg);color:var(--txt);}
+    header{display:flex;align-items:center;justify-content:space-between;
+      padding:14px 20px;border-bottom:1px solid var(--line);background:var(--panel);}
+    header h1{font-size:16px;margin:0;font-weight:600}
+    header .who{font-size:13px;color:var(--muted)}
+    button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);
+      color:var(--txt);border-radius:8px;padding:8px 14px;font-size:14px}
+    button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+    button.good{background:var(--good);border-color:var(--good);color:#04210f;font-weight:600}
+    button.bad{background:transparent;border-color:var(--bad);color:var(--bad)}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .wrap{max-width:1000px;margin:0 auto;padding:24px 20px 80px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+      padding:20px;margin-bottom:18px}
+    label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+    input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);
+      color:var(--txt);border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .tabs{display:flex;gap:8px;margin-bottom:18px}
+    .tabs button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+    .hidden{display:none}
+    .muted{color:var(--muted);font-size:13px}
+    .pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;
+      border:1px solid var(--line)}
+    .pill.high{color:var(--good);border-color:var(--good)}
+    .pill.medium{color:var(--warn);border-color:var(--warn)}
+    .pill.low{color:var(--bad);border-color:var(--bad)}
+    .draft{border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0;
+      background:var(--panel2)}
+    .draft .head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+    .draft .acts{display:flex;gap:8px}
+    .jobhdr{margin:22px 0 6px;font-size:14px;color:var(--muted);border-bottom:1px dashed var(--line);padding-bottom:6px}
+    .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+      background:var(--panel);border:1px solid var(--line);padding:12px 18px;border-radius:10px;
+      box-shadow:0 8px 30px rgba(0,0,0,.4);font-size:14px;opacity:0;transition:.2s;pointer-events:none}
+    .toast.show{opacity:1}
+    .dropzone{border:2px dashed var(--line);border-radius:12px;padding:26px;text-align:center;color:var(--muted)}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--line);
+      border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-3px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    a{color:var(--accent)}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🛡️ Admin · Ingest &amp; Review</h1>
+    <div><span class="who" id="who"></span>
+      <button id="logoutBtn" class="hidden">Sign out</button></div>
+  </header>
+
+  <div class="wrap">
+    <!-- LOGIN -->
+    <div id="loginCard" class="card hidden">
+      <h2 style="margin-top:0">Sign in</h2>
+      <p class="muted">Enter your admin email. We'll send a one-time magic link — no password.</p>
+      <label>Admin email</label>
+      <input id="loginEmail" type="email" placeholder="you@example.com" />
+      <div style="margin-top:14px"><button id="loginBtn" class="primary">Send magic link</button></div>
+      <p id="loginMsg" class="muted" style="margin-top:12px"></p>
+    </div>
+
+    <!-- CONFIG MISSING -->
+    <div id="setupCard" class="card hidden">
+      <h2 style="margin-top:0">⚙️ Supabase not configured</h2>
+      <p class="muted">Fill <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code> in
+        <code>config.js</code>, then reload. See <code>SETUP.md</code>.</p>
+    </div>
+
+    <!-- APP -->
+    <div id="app" class="hidden">
+      <div class="tabs">
+        <button id="tabIngest" class="active" data-tab="ingest">⬆️ Ingest</button>
+        <button id="tabReview" data-tab="review">📝 Review queue <span id="draftCount"></span></button>
+      </div>
+
+      <!-- INGEST -->
+      <section id="paneIngest" class="card">
+        <h2 style="margin-top:0">Add a source</h2>
+        <label>Source type</label>
+        <select id="srcType">
+          <option value="notification">Official notification PDF (e.g. NCLT) — clean, high accuracy</option>
+          <option value="employment_news">Employment News PDF — finds deputation ads only</option>
+          <option value="url">URL of a notification page</option>
+        </select>
+
+        <div id="fileBlock">
+          <label>PDF file (max 10 MB)</label>
+          <div class="dropzone" id="dropzone">
+            <input id="fileInput" type="file" accept="application/pdf" style="display:none" />
+            <div id="dzText">Click to choose a PDF, or drop it here</div>
+          </div>
+        </div>
+
+        <div id="urlBlock" class="hidden">
+          <label>Notification URL</label>
+          <input id="urlInput" type="url" placeholder="https://…" />
+        </div>
+
+        <label>Label (optional — helps you find these rows later)</label>
+        <input id="srcLabel" placeholder="e.g. Employment News 28 Mar 2026" />
+
+        <div style="margin-top:16px">
+          <button id="ingestBtn" class="primary">Extract vacancies</button>
+          <span id="ingestStatus" class="muted" style="margin-left:10px"></span>
+        </div>
+      </section>
+
+      <!-- REVIEW -->
+      <section id="paneReview" class="card hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h2 style="margin:0">Review queue</h2>
+          <button id="refreshBtn">↻ Refresh</button>
+        </div>
+        <p class="muted">Edit any field, then <b>Approve</b> (publishes live) or <b>Reject</b>.</p>
+        <div id="draftList"></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="config.js?v=sb1"></script>
+  <script src="enrich.js?v=sb1"></script>
+  <script src="admin-ingest.js?v=sb1" type="module"></script>
+</body>
+</html>
