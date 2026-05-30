@@ -322,14 +322,10 @@ function fetchVacancies() {
         })
         .then(res => { if (!res.ok) throw new Error('Supabase ' + res.status); return res.json(); })
         .then(rows => {
-            if (!rows || rows.length === 0) {
-                // No approved rows yet — keep showing the committed dataset so the
-                // public page never looks empty during the migration.
-                console.log('📡 Supabase has 0 approved rows; falling back to data/vacancies.json');
-                return fetch('data/vacancies.json').then(r => r.json());
-            }
-            console.log('📡 Source: Supabase', rows.length, 'approved rows');
-            return enrich(rows);
+            // Supabase is the source of truth. 0 approved rows = genuinely empty
+            // (show the empty state), NOT a reason to resurrect old dummy data.
+            console.log('📡 Source: Supabase', (rows || []).length, 'approved rows');
+            return enrich(rows || []);
         });
     }
 
