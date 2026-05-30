@@ -85,9 +85,11 @@ async function gcseSearch(q: string): Promise<Hit[]> {
 }
 
 function pickBest(hits: Hit[]) {
-  const offPdf = hits.find((h) => isPdf(h.url) && isOfficial(h.url));
+  const relevant = (h: Hit) => /deput|vacanc|circular|notif|advert|recruit/i.test(`${h.url} ${h.title}`);
+  const offPdfs = hits.filter((h) => isPdf(h.url) && isOfficial(h.url));
+  const offPdf = offPdfs.find(relevant) ?? offPdfs[0];
   if (offPdf) return { pdf_url: offPdf.url, page_url: "", quality: "official-pdf" };
-  const anyPdf = hits.find((h) => isPdf(h.url));
+  const anyPdf = hits.find((h) => isPdf(h.url) && relevant(h)) ?? hits.find((h) => isPdf(h.url));
   if (anyPdf) return { pdf_url: anyPdf.url, page_url: "", quality: "pdf" };
   const offPage = hits.find((h) => isOfficial(h.url));
   if (offPage) return { pdf_url: "", page_url: offPage.url, quality: "official-page" };
