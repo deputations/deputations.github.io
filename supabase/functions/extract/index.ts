@@ -65,6 +65,7 @@ const VACANCY_ITEM = {
     eligible_service: { type: "string" },
     mode_of_application: { type: "string" },
     tags_keywords: { type: "string" },
+    source_page: { type: "string" },
     confidence: { type: "string", enum: ["high", "medium", "low"] },
   },
   required: ["post_name", "is_deputation", "confidence"],
@@ -81,6 +82,7 @@ last_date_to_apply. If the ad says applications are due "within N days" / "N day
 from the date of this notification/advertisement", COMPUTE last_date_to_apply by
 adding N days to notification_date and return the computed ISO date.
 "level" and "req_level1" are the Pay Matrix level NUMBER as a string (e.g. "12").
+"source_page" = the PDF page number where this advertisement appears, as a string.
 Also capture, when present:
 - organisation_type: nature of the body (e.g. "Ministry/Department", "Attached Office",
   "Subordinate Office", "PSU/CPSE", "Autonomous Body", "Statutory Body",
@@ -245,6 +247,18 @@ Deno.serve(async (req) => {
   // needs storage permissions.
   let body: any = {};
   try { body = await req.json(); } catch { /* ignore */ }
+
+  // --- store-only mode: just save a PDF to storage (used by the paste flow so
+  // the EN issue can be shown side-by-side in review). No Gemini call. ---
+  if (body.store_only) {
+    if (!body.file_base64) return json({ error: "file_base64 required" }, 400);
+    const bytes = fromBase64(String(body.file_base64));
+    const safe = String(body.filename || "source.pdf").replace(/[^a-z0-9._-]/gi, "_");
+    const path = `${Date.now()}_${safe}`;
+    const up = await admin.storage.from("sources").upload(path, bytes, { contentType: "application/pdf" });
+    if (up.error) return json({ error: "upload failed: " + up.error.message }, 500);
+    return json({ ok: true, path });
+  }
 
   let job: any;
   let inlineBytes: Uint8Array | null = null;

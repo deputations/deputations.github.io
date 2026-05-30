@@ -104,7 +104,7 @@ STEP 4 — Expand to ONE object per (post x location/bench x pay level). Never c
 STEP 5 — BEFORE finalising, re-check: every page covered first to last? boxed/short ads and continuation pages re-scanned? Add anything missed.
 
 Output ONLY a JSON array — no prose, no markdown code fences. Each object must use EXACTLY these keys (use "" when unknown):
-{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","confidence"}
+{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
 
 Rules:
 - Only use official sources for links; never invent a URL. If unsure a link is real, leave it empty.
@@ -112,6 +112,7 @@ Rules:
 - "level" and "req_level1" = Pay Matrix level NUMBER only, as a string (e.g. "12").
 - organisation_type: one of Ministry/Department, Attached Office, Subordinate Office, PSU/CPSE, Autonomous Body, Statutory Body, Tribunal/Commission, Bank/Financial Institution.
 - functional_area: a short summary of duties / job description.
+- source_page: the PDF page number of the advertisement in the Employment News issue, as a string (for side-by-side verification).
 - confidence: "high" only if details came from the official notification and post, level, location AND a date are all clear; otherwise "medium" or "low".
 - If the issue is large, you may answer in BATCHES by page range; I will paste each batch separately. Keep the SAME schema every time and never skip pages between batches.
 - Return [] only if the issue genuinely contains no deputation vacancies.`;
@@ -123,7 +124,16 @@ function minCode(ministry) {
   return w.map((x) => x[0].toUpperCase()).join('').slice(0, 5) || 'DEP';
 }
 
-function mapPasted(it, jobId, label, year, i) {
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(String(fr.result).split(',')[1]);
+    fr.onerror = rej;
+    fr.readAsDataURL(file);
+  });
+}
+
+function mapPasted(it, jobId, label, year, i, sourceFileUrl) {
   const lvl = String(it.level || it.req_level1 || '').replace(/\D/g, '');
   const mc = minCode(it.ministry);
   return {
@@ -141,7 +151,8 @@ function mapPasted(it, jobId, label, year, i) {
     eligible_service: it.eligible_service || '', mode_of_application: it.mode_of_application || '',
     functional_area: it.functional_area || '', tags_keywords: it.tags_keywords || '',
     status: 'draft', confidence: (it.confidence || 'medium'), source_type: 'employment_news',
-    source_category: label || 'Pasted import', ingest_job_id: jobId, raw_extraction: it,
+    source_category: label || 'Pasted import', source_file_url: sourceFileUrl || '',
+    ingest_job_id: jobId, raw_extraction: it,
   };
 }
 
@@ -179,14 +190,31 @@ async function importPasted(label, st) {
   items = items.filter((it) => { const k = dedupKey(it); if (seen.has(k)) return false; seen.add(k); return true; });
   const skipped = before - items.length;
   if (!items.length) { st.textContent = `All ${before} row(s) were already in the queue (skipped duplicates).`; return; }
+  // optional: store the EN PDF so review can show pages side-by-side
+  let enPdfPath = '';
+  const enFile = $('enPdf').files[0];
+  if (enFile) {
+    if (enFile.size > 15 * 1024 * 1024) throw new Error('EN PDF exceeds 15 MB');
+    st.innerHTML = '<span class="spinner"></span> Uploading EN PDF…';
+    const b64 = await fileToBase64(enFile);
+    const upRes = await api('/functions/v1/extract', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ store_only: true, filename: enFile.name, file_base64: b64 }),
+    });
+    const upD = await upRes.json().catch(() => ({}));
+    if (upRes.ok && upD.path) enPdfPath = upD.path;
+    else toast('EN PDF upload failed — importing rows without side-by-side');
+  }
+
+  st.innerHTML = '<span class="spinner"></span> Importing…';
   const jobRes = await api('/rest/v1/ingest_jobs', {
     method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
-    body: JSON.stringify({ source_type: 'employment_news', source_label: label || 'Pasted import', status: 'done', rows_extracted: items.length }),
+    body: JSON.stringify({ source_type: 'employment_news', source_label: label || 'Pasted import', source_file_url: enPdfPath || null, status: 'done', rows_extracted: items.length }),
   });
   if (!jobRes.ok) throw new Error('Could not create job: ' + (await jobRes.text()));
   const job = (await jobRes.json())[0];
   const year = new Date().getFullYear();
-  const rows = items.map((it, i) => mapPasted(it, job.id, label, year, i));
+  const rows = items.map((it, i) => mapPasted(it, job.id, label, year, i, enPdfPath));
   const ins = await api('/rest/v1/vacancies', {
     method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
     body: JSON.stringify(rows),
@@ -195,6 +223,7 @@ async function importPasted(label, st) {
   st.textContent = `✅ Imported ${rows.length} row(s)` + (skipped ? ` (skipped ${skipped} duplicate(s))` : '') + ' to the review queue.';
   toast(`Imported ${rows.length} draft(s)` + (skipped ? `, skipped ${skipped} dup(s)` : ''));
   $('pasteJson').value = '';
+  $('enPdf').value = '';
   document.querySelector('[data-tab="review"]').click();
 }
 
@@ -342,6 +371,8 @@ function wireApp() {
 
   $('refreshBtn').onclick = loadDrafts;
 
+  $('viewerClose').onclick = () => { $('viewerFrame').src = 'about:blank'; $('viewerPane').style.display = 'none'; };
+
   $('enrichAllBtn').onclick = async () => {
     const ids = [...CURRENT_DRAFT_IDS];
     if (!ids.length) return toast('No drafts to enrich');
@@ -410,6 +441,7 @@ function draftCard(r) {
   el.className = 'draft';
   const conf = (r.confidence || 'medium').toLowerCase();
   const score = window.DepEnrich ? window.DepEnrich.enrichRecord(r).completeness_score : '';
+  const srcPage = String((r.raw_extraction && r.raw_extraction.source_page) || '').replace(/\D/g, '');
   el.innerHTML = `
     <div class="head">
       <div>
@@ -418,7 +450,7 @@ function draftCard(r) {
         <span class="muted"> · ${score}% complete</span>
       </div>
       <div class="acts">
-        ${r.source_file_url ? `<a class="muted" href="#" data-src="${escapeHtml(r.source_file_url)}">source</a>` : ''}
+        ${r.source_file_url ? `<button data-act="source">📄 source${srcPage ? ' p.' + srcPage : ''}</button>` : ''}
         <button data-act="enrich" title="Find the official notification PDF and fill blank fields">🔎 Official PDF</button>
         <button class="good" data-act="approve">Approve</button>
         <button class="bad" data-act="reject">Reject</button>
@@ -466,18 +498,32 @@ function draftCard(r) {
       toast('Enrich failed: ' + err.message); b.disabled = false; b.textContent = old;
     }
   };
-  const srcLink = el.querySelector('[data-src]');
-  if (srcLink) srcLink.onclick = async (e) => {
-    e.preventDefault();
-    try {
-      const r2 = await api(`/storage/v1/object/sign/sources/${encodeURIComponent(srcLink.dataset.src)}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 120 }),
-      });
-      const d = await r2.json();
-      if (d.signedURL) window.open(SB + '/storage/v1' + d.signedURL, '_blank');
-    } catch { toast('Could not open source'); }
-  };
+  const srcBtn = el.querySelector('[data-act="source"]');
+  if (srcBtn) srcBtn.onclick = (e) => { e.preventDefault(); openSource(r, srcPage); };
   return el;
+}
+
+// Open a row's source in the side-by-side viewer, jumping to its page.
+async function openSource(r, page) {
+  let url = '';
+  const src = r.source_file_url || '';
+  if (/^https?:\/\//i.test(src)) {
+    // external official link — gov sites usually block iframing, so open a tab
+    window.open(src + (page ? `#page=${page}` : ''), '_blank');
+    return;
+  }
+  try {
+    const res = await api(`/storage/v1/object/sign/sources/${encodeURIComponent(src)}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 600 }),
+    });
+    const d = await res.json();
+    if (d.signedURL) url = SB + '/storage/v1' + d.signedURL;
+  } catch { /* */ }
+  if (!url) return toast('Could not open source');
+  if (page) url += `#page=${page}`;
+  $('viewerLabel').textContent = (r.post_name || 'Source') + (page ? ` — p.${page}` : '');
+  $('viewerFrame').src = url;
+  $('viewerPane').style.display = 'block';
 }
 
 function bumpCount(d) {

@@ -116,6 +116,8 @@
           <button type="button" id="copyPromptBtn">📋 Copy extraction prompt</button>
           <label style="margin-top:12px">2) Paste the JSON array it returns here</label>
           <textarea id="pasteJson" rows="9" placeholder='[ { "post_name": "...", "organisation": "...", ... }, ... ]'></textarea>
+          <label style="margin-top:10px">3) (Optional) Attach the Employment News PDF — enables side-by-side page verification in review</label>
+          <input id="enPdf" type="file" accept="application/pdf" />
           <p class="muted">No API quota used — your chat does the extraction. For a big issue you can paste in <b>batches</b> (e.g. ask the chat page-range by page-range) and Import each; duplicates are skipped automatically.</p>
         </div>
 
@@ -137,8 +139,17 @@
             <button id="refreshBtn">↻ Refresh</button>
           </div>
         </div>
-        <p class="muted">Edit any field, then <b>Approve</b> (publishes live) or <b>Reject</b>.</p>
-        <div id="draftList"></div>
+        <p class="muted">Edit any field, then <b>Approve</b> (publishes live) or <b>Reject</b>. Click <b>📄 source</b> on a card to view the original page beside it.</p>
+        <div id="reviewSplit" style="display:flex;gap:16px;align-items:flex-start">
+          <div id="draftList" style="flex:1 1 55%;min-width:0"></div>
+          <div id="viewerPane" style="flex:1 1 45%;position:sticky;top:12px;display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span class="muted" id="viewerLabel">Source</span>
+              <button id="viewerClose" title="Close viewer">✕</button>
+            </div>
+            <iframe id="viewerFrame" style="width:100%;height:82vh;border:1px solid var(--line);border-radius:8px;background:#fff"></iframe>
+          </div>
+        </div>
       </section>
     </div>
   </div>
@@ -147,6 +158,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb2"></script>
-  <script src="admin-ingest.js?v=sb8"></script>
+  <script src="admin-ingest.js?v=sb9"></script>
 </body>
 </html>
