@@ -35,7 +35,18 @@ if (!window.SUPABASE_READY || !window.SUPABASE_READY()) {
 }
 
 function boot() {
-  const sb = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  const sb = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      // Disable the Web Locks API serialization. supabase-js otherwise wraps
+      // token reads in navigator.locks, which can deadlock so that
+      // getSession()/storage.upload() hang forever with no error. This no-op
+      // lock just runs the callback directly.
+      lock: async (_name, _acquireTimeout, fn) => await fn(),
+    },
+  });
 
   // ---------- auth ----------
   async function refreshAuth() {
