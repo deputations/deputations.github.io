@@ -322,7 +322,13 @@ function fetchVacancies() {
         })
         .then(res => { if (!res.ok) throw new Error('Supabase ' + res.status); return res.json(); })
         .then(rows => {
-            console.log('📡 Source: Supabase');
+            if (!rows || rows.length === 0) {
+                // No approved rows yet — keep showing the committed dataset so the
+                // public page never looks empty during the migration.
+                console.log('📡 Supabase has 0 approved rows; falling back to data/vacancies.json');
+                return fetch('data/vacancies.json').then(r => r.json());
+            }
+            console.log('📡 Source: Supabase', rows.length, 'approved rows');
             return enrich(rows);
         });
     }
