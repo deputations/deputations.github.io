@@ -84,9 +84,12 @@ adding N days to notification_date and return the computed ISO date.
 "level" and "req_level1" are the Pay Matrix level NUMBER as a string (e.g. "12").
 "source_page" = the PDF page number where this advertisement appears, as a string.
 Also capture, when present:
-- organisation_type: nature of the body (e.g. "Ministry/Department", "Attached Office",
-  "Subordinate Office", "PSU/CPSE", "Autonomous Body", "Statutory Body",
-  "Tribunal/Commission", "Bank/Financial Institution").
+- ministry: the standard Government of India ministry, WITHOUT the "Ministry of" /
+  "Department of" prefix (e.g. "Agriculture and Farmers Welfare", "Home Affairs",
+  "Personnel, Public Grievances and Pensions").
+- organisation_type: EXACTLY one of: "Ministry", "Department",
+  "Attached and Subordinate Offices", "Constitutional Bodies", "Statutory Bodies",
+  "Autonomous Bodies", "Central Public Sector Enterprises (CPSEs)".
 - application_form_link: URL of the application form/proforma, if a link is given.
 - source_website: the organisation's website URL, if mentioned.
 - functional_area: a short summary of the job description / duties / nature of work

@@ -93,6 +93,54 @@ const FIELDS = [
   ['application_form_link', 'Application form link'], ['source_website', 'Source website'],
 ];
 
+// Fixed, standardised vocabularies for the review dropdowns.
+const ORG_TYPES = [
+  'Ministry', 'Department', 'Attached and Subordinate Offices', 'Constitutional Bodies',
+  'Statutory Bodies', 'Autonomous Bodies', 'Central Public Sector Enterprises (CPSEs)',
+];
+// [standard name, Min_Code]
+const MINISTRIES = [
+  ['AYUSH', 'MoA'], ['Agriculture and Farmers Welfare', 'MoAFW'], ['Chemicals and Fertilizers', 'MoCF'],
+  ['Civil Aviation', 'MoCA'], ['Coal', 'COAL'], ['Commerce and Industry', 'MoCI'], ['Communications', 'MoC'],
+  ['Consumer Affairs, Food and Public Distribution', 'MoCAFP'], ['Cooperation', 'COOP'], ['Corporate Affairs', 'MCA'],
+  ['Culture', 'CULT'], ['Defence', 'MoD'], ['Development of North Eastern Region', 'MDONER'], ['Earth Sciences', 'MoES'],
+  ['Education', 'MoE'], ['Electronics and Information Technology', 'MeitY'], ['Environment, Forest and Climate Change', 'MoEFCC'],
+  ['External Affairs', 'MEA'], ['Finance', 'MoF'], ['Fisheries, Animal Husbandry and Dairying', 'MoFAHD'],
+  ['Food Processing Industries', 'MoFPI'], ['Health and Family Welfare', 'MoHFW'], ['Heavy Industries', 'MoHI'],
+  ['Home Affairs', 'MHA'], ['Housing and Urban Affairs', 'MoHUA'], ['Information and Broadcasting', 'MIB'],
+  ['Jal Shakti', 'MoJS'], ['Labour and Employment', 'MoLE'], ['Law and Justice', 'MoLJ'],
+  ['Micro, Small & Medium Enterprises', 'MSME'], ['Mines', 'MoM'], ['Minority Affairs', 'MoMA'],
+  ['New and Renewable Energy', 'MNRE'], ['Panchayati Raj', 'MoPR'], ['Parliamentary Affairs', 'MPA'],
+  ['Personnel, Public Grievances and Pensions', 'MoPPGP'], ['Petroleum and Natural Gas', 'MoPNG'], ['Planning', 'MoP'],
+  ['Ports, Shipping and Waterways', 'MoPSW'], ['Power', 'POWER'], ['Railways', 'MoR'],
+  ['Road Transport and Highways', 'MoRTH'], ['Rural Development', 'MoRD'], ['Science and Technology', 'MST'],
+  ['Skill Development and Entrepreneurship', 'MSDE'], ['Social Justice and Empowerment', 'MoSJE'],
+  ['Statistics and Programme Implementation', 'MoSPI'], ['Steel', 'MoS'], ['Textiles', 'MoT'], ['Tourism', 'TOUR'],
+  ['Tribal Affairs', 'MoTA'], ['Women and Child Development', 'MoWCD'], ['Youth Affairs and Sports', 'MoYAS'],
+];
+const MINISTRY_NAMES = MINISTRIES.map((m) => m[0]);
+const MIN_CODE_BY_NAME = Object.fromEntries(MINISTRIES.map((m) => [m[0], m[1]]));
+const normMinistry = (s) => String(s || '').toLowerCase()
+  .replace(/ministry of|department of|deptt? of|govt\.? of india|government of india/g, '')
+  .replace(/&/g, 'and').replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim();
+
+function buildSelect(k, lbl, val, options, normalizer) {
+  const nval = normalizer(val);
+  const matched = val ? options.find((o) => normalizer(o) === nval) : null;
+  let opts = '';
+  if (val && !matched) opts += `<option value="${escapeHtml(val)}" selected>⚠ ${escapeHtml(val)} (pick standard)</option>`;
+  opts += `<option value=""${!val ? ' selected' : ''}>— select —</option>`;
+  opts += options.map((o) => `<option value="${escapeHtml(o)}"${matched === o ? ' selected' : ''}>${escapeHtml(o)}</option>`).join('');
+  return `<div><label>${lbl}</label><select data-k="${k}">${opts}</select></div>`;
+}
+
+function fieldHtml(k, lbl, r) {
+  const val = r[k] || '';
+  if (k === 'organisation_type') return buildSelect(k, lbl, val, ORG_TYPES, (s) => String(s || '').toLowerCase().trim());
+  if (k === 'ministry') return buildSelect(k, lbl, val, MINISTRY_NAMES, normMinistry);
+  return `<div><label>${lbl}</label><input data-k="${escapeHtml(k)}" value="${escapeHtml(val)}" /></div>`;
+}
+
 // Prompt the admin pastes into Gemini Advanced / Claude Pro along with the EN PDF.
 const EN_PROMPT = `You are extracting Government of India DEPUTATION vacancies from the attached weekly "Employment News" newspaper PDF, and ENRICHING each using web search. BE EXHAUSTIVE — missing a deputation vacancy is the worst possible outcome, far worse than including a doubtful one.
 
@@ -110,7 +158,8 @@ Rules:
 - Only use official sources for links; never invent a URL. If unsure a link is real, leave it empty.
 - Dates in ISO yyyy-mm-dd. If a deadline is "within N days of the notification/advertisement", compute last_date_to_apply = notification_date + N days.
 - "level" and "req_level1" = Pay Matrix level NUMBER only, as a string (e.g. "12").
-- organisation_type: one of Ministry/Department, Attached Office, Subordinate Office, PSU/CPSE, Autonomous Body, Statutory Body, Tribunal/Commission, Bank/Financial Institution.
+- ministry: the standard GoI ministry name WITHOUT the "Ministry of"/"Department of" prefix (e.g. "Agriculture and Farmers Welfare", "Home Affairs", "Personnel, Public Grievances and Pensions").
+- organisation_type: EXACTLY one of — Ministry; Department; Attached and Subordinate Offices; Constitutional Bodies; Statutory Bodies; Autonomous Bodies; Central Public Sector Enterprises (CPSEs).
 - functional_area: a short summary of duties / job description.
 - source_page: the PDF page number of the advertisement in the Employment News issue, as a string (for side-by-side verification).
 - confidence: "high" only if details came from the official notification and post, level, location AND a date are all clear; otherwise "medium" or "low".
@@ -468,15 +517,15 @@ function draftCard(r) {
       </div>
     </div>
     <div class="row">
-      ${FIELDS.map(([k, lbl]) => `
-        <div><label>${lbl}</label><input data-k="${k}" value="${escapeHtml(r[k] || '')}" /></div>`).join('')}
+      ${FIELDS.map(([k, lbl]) => fieldHtml(k, lbl, r)).join('')}
     </div>`;
 
   const collect = () => {
     const patch = {};
-    el.querySelectorAll('input[data-k]').forEach((inp) => { patch[inp.dataset.k] = inp.value.trim(); });
+    el.querySelectorAll('[data-k]').forEach((inp) => { patch[inp.dataset.k] = (inp.value || '').trim(); });
     const lvl = (patch.level || '').replace(/\D/g, '');
     patch.level_text = lvl ? `Level-${lvl}` : '';
+    if (patch.ministry) patch.min_code = MIN_CODE_BY_NAME[patch.ministry] || minCode(patch.ministry);
     return patch;
   };
 
