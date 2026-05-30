@@ -14,6 +14,7 @@
 // ============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -131,6 +132,30 @@ function fromBase64(b64: string): Uint8Array {
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
+}
+
+// Split a PDF into page-range chunks (base64). Used for the big Employment News
+// issue so each slice is small enough for the model to read carefully — higher
+// recall than one giant pass. Small PDFs return a single chunk.
+async function splitPdfToBase64(bytes: Uint8Array, pagesPerChunk: number): Promise<string[]> {
+  let src;
+  try {
+    src = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  } catch {
+    return [toBase64(bytes)]; // unparseable -> fall back to whole document
+  }
+  const total = src.getPageCount();
+  if (total <= pagesPerChunk) return [toBase64(bytes)];
+  const chunks: string[] = [];
+  for (let start = 0; start < total; start += pagesPerChunk) {
+    const doc = await PDFDocument.create();
+    const idxs: number[] = [];
+    for (let p = start; p < Math.min(start + pagesPerChunk, total); p++) idxs.push(p);
+    const pages = await doc.copyPages(src, idxs);
+    pages.forEach((pg) => doc.addPage(pg));
+    chunks.push(toBase64(await doc.save()));
+  }
+  return chunks;
 }
 
 function minCodeFromMinistry(ministry: string): string {
@@ -252,23 +277,22 @@ Deno.serve(async (req) => {
 
   try {
     const prompt = PROMPTS[job.source_type] ?? PROMPTS.notification;
-    let parts: unknown[] = [];
+    let pdfBytes: Uint8Array | null = null;
+    let parts: unknown[] = [];   // used only for the non-PDF (HTML) URL case
 
     if (inlineBytes) {
-      parts = [{ inlineData: { mimeType: "application/pdf", data: toBase64(inlineBytes) } }];
+      pdfBytes = inlineBytes;
     } else if (job.source_file_url) {
       // PDF stored in the 'sources' bucket; source_file_url holds the object path
       const { data: blob, error: dlErr } = await admin.storage
         .from("sources").download(job.source_file_url);
       if (dlErr || !blob) throw new Error(`download failed: ${dlErr?.message}`);
-      const bytes = new Uint8Array(await blob.arrayBuffer());
-      parts = [{ inlineData: { mimeType: "application/pdf", data: toBase64(bytes) } }];
+      pdfBytes = new Uint8Array(await blob.arrayBuffer());
     } else if (job.source_url) {
       const r = await fetch(job.source_url);
       const ct = r.headers.get("content-type") ?? "";
       if (ct.includes("pdf")) {
-        const bytes = new Uint8Array(await r.arrayBuffer());
-        parts = [{ inlineData: { mimeType: "application/pdf", data: toBase64(bytes) } }];
+        pdfBytes = new Uint8Array(await r.arrayBuffer());
       } else {
         const html = await r.text();
         const text = html.replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -280,8 +304,31 @@ Deno.serve(async (req) => {
       throw new Error("Job has neither source_file_url nor source_url");
     }
 
-    const items: any[] = await callGemini(prompt, parts);
-    const kept = items.filter((it) => it && it.is_deputation !== false && it.post_name);
+    // Gather raw model items. Employment News (big, noisy) is split into page
+    // chunks extracted in parallel for higher recall; everything else is one pass.
+    let items: any[] = [];
+    if (pdfBytes && job.source_type === "employment_news") {
+      const chunks = await splitPdfToBase64(pdfBytes, 8);
+      const perChunk = await Promise.all(
+        chunks.map((b64) => callGemini(prompt, [{ inlineData: { mimeType: "application/pdf", data: b64 } }])
+          .catch(() => [])), // a failed chunk shouldn't sink the whole run
+      );
+      items = perChunk.flat();
+    } else {
+      if (pdfBytes) parts = [{ inlineData: { mimeType: "application/pdf", data: toBase64(pdfBytes) } }];
+      items = await callGemini(prompt, parts);
+    }
+
+    // de-duplicate (chunk boundaries / repeated ads) by post+org+location+level
+    const seen = new Set<string>();
+    const kept = items.filter((it) => {
+      if (!it || it.is_deputation === false || !it.post_name) return false;
+      const key = [it.post_name, it.organisation, it.location_city, it.level]
+        .map((x: unknown) => String(x ?? "").toLowerCase().trim()).join("|");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
     const year = new Date().getFullYear();
     const rows = kept.map((it, i) => {
