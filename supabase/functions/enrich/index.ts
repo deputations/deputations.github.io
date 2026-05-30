@@ -18,6 +18,13 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
 const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 
+// Web-search providers, tried in order. Configure whichever you have:
+//   supabase secrets set SERPER_API_KEY=...  BRAVE_API_KEY=...  GOOGLE_CSE_KEY=... GOOGLE_CSE_CX=...
+const SERPER_KEY = Deno.env.get("SERPER_API_KEY") ?? "";
+const BRAVE_KEY = Deno.env.get("BRAVE_API_KEY") ?? "";
+const GCSE_KEY = Deno.env.get("GOOGLE_CSE_KEY") ?? "";
+const GCSE_CX = Deno.env.get("GOOGLE_CSE_CX") ?? "";
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -46,8 +53,78 @@ function extractJson(text: string): any {
   return null;
 }
 
-// ---- Step 1: find the official notification PDF via Google Search grounding ----
+// ---- Real web search (returns URLs that actually exist) --------------------
+type Hit = { url: string; title: string };
+const isOfficial = (u: string) => /\.(gov|nic)\.in(\/|$|:)/i.test(u) || /\.gov(\/|$|:)/i.test(u);
+const isPdf = (u: string) => /\.pdf(\?|#|$)/i.test(u);
+
+async function serperSearch(q: string): Promise<Hit[]> {
+  if (!SERPER_KEY) return [];
+  const r = await fetch("https://google.serper.dev/search", {
+    method: "POST", headers: { "X-API-KEY": SERPER_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ q, num: 10 }),
+  });
+  if (!r.ok) return [];
+  const d = await r.json();
+  return (d.organic ?? []).map((o: any) => ({ url: o.link, title: o.title ?? "" }));
+}
+async function braveSearch(q: string): Promise<Hit[]> {
+  if (!BRAVE_KEY) return [];
+  const r = await fetch("https://api.search.brave.com/res/v1/web/search?q=" + encodeURIComponent(q),
+    { headers: { "X-Subscription-Token": BRAVE_KEY, "Accept": "application/json" } });
+  if (!r.ok) return [];
+  const d = await r.json();
+  return ((d.web?.results) ?? []).map((o: any) => ({ url: o.url, title: o.title ?? "" }));
+}
+async function gcseSearch(q: string): Promise<Hit[]> {
+  if (!GCSE_KEY || !GCSE_CX) return [];
+  const r = await fetch(`https://www.googleapis.com/customsearch/v1?key=${GCSE_KEY}&cx=${GCSE_CX}&q=${encodeURIComponent(q)}`);
+  if (!r.ok) return [];
+  const d = await r.json();
+  return (d.items ?? []).map((o: any) => ({ url: o.link, title: o.title ?? "" }));
+}
+
+function pickBest(hits: Hit[]) {
+  const offPdf = hits.find((h) => isPdf(h.url) && isOfficial(h.url));
+  if (offPdf) return { pdf_url: offPdf.url, page_url: "", quality: "official-pdf" };
+  const anyPdf = hits.find((h) => isPdf(h.url));
+  if (anyPdf) return { pdf_url: anyPdf.url, page_url: "", quality: "pdf" };
+  const offPage = hits.find((h) => isOfficial(h.url));
+  if (offPage) return { pdf_url: "", page_url: offPage.url, quality: "official-page" };
+  return { pdf_url: "", page_url: hits[0]?.url ?? "", quality: "page" };
+}
+
+// ---- Primary finder: search-provider chain (Serper -> Brave -> Google CSE) --
 async function findOfficialPdf(v: any) {
+  const base = `${v.organisation || ""} ${v.post_name || ""} deputation notification`.replace(/\s+/g, " ").trim();
+  const providers: Array<[string, (q: string) => Promise<Hit[]>]> = [
+    ["serper", serperSearch], ["brave", braveSearch], ["googlecse", gcseSearch],
+  ];
+  for (const [name, fn] of providers) {
+    try {
+      let hits = await fn(`${base} filetype:pdf`);
+      if (!hits.length) hits = await fn(base);
+      if (hits.length) {
+        const best = pickBest(hits);
+        if (best.pdf_url || best.page_url) {
+          return {
+            pdf_url: best.pdf_url, page_url: best.page_url,
+            confidence: best.quality.startsWith("official") ? "high" : "medium",
+            note: `via ${name} (${best.quality})`,
+          };
+        }
+      }
+    } catch { /* try next provider */ }
+  }
+  // No usable search results. If no search keys are configured at all, fall back
+  // to grounding (unreliable). Otherwise report not-found.
+  if (!SERPER_KEY && !BRAVE_KEY && !(GCSE_KEY && GCSE_CX)) return await groundingFind(v);
+  return { pdf_url: "", page_url: "", confidence: "low", note: "no official result from search providers" };
+}
+
+// ---- Fallback finder: Gemini Google-Search grounding (only when no search API
+// keys are configured; unreliable — can hallucinate URLs) --------------------
+async function groundingFind(v: any) {
   const prompt =
 `Find the OFFICIAL detailed advertisement / vacancy notification for this Government of India DEPUTATION vacancy.
 
