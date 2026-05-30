@@ -94,13 +94,14 @@ const FIELDS = [
 ];
 
 // Prompt the admin pastes into Gemini Advanced / Claude Pro along with the EN PDF.
-const EN_PROMPT = `You are extracting Government of India DEPUTATION vacancies from the attached weekly "Employment News" newspaper PDF, and ENRICHING each one using web search. Use your built-in web search / browsing for Step 2.
+const EN_PROMPT = `You are extracting Government of India DEPUTATION vacancies from the attached weekly "Employment News" newspaper PDF, and ENRICHING each using web search. BE EXHAUSTIVE — missing a deputation vacancy is the worst possible outcome, far worse than including a doubtful one.
 
-STEP 1 — From the PDF, find every post open on DEPUTATION or DEPUTATION/ABSORPTION basis (also "deputation including short-term contract" / "deputation (ISTC)"). EXCLUDE direct recruitment, contract/tenure engagement, walk-in interviews, apprenticeships, and absorption-only posts.
-
-STEP 2 — For EACH such vacancy, SEARCH THE WEB to locate the OFFICIAL detailed advertisement/notification on the organisation's official website (prefer .gov.in / .nic.in or the body's official domain). Open it and fill ALL fields from that official notification, which is more authoritative than the abridged Employment News ad. Put the real link in official_notification_link (prefer the direct PDF URL). If you cannot find a credible official source, fill from the Employment News ad instead, leave official_notification_link empty, and lower the confidence.
-
-STEP 3 — Expand to ONE object per (post x location/bench x pay level). Never collapse multiple locations or levels into one row.
+WORK METHODICALLY — DO NOT SKIM:
+STEP 1 — Go through the ENTIRE issue page by page, first page to the very last. Process it in CHUNKS of about 8 pages so nothing is skipped. On every page scan EVERY advertisement, notice and boxed item — small/boxed ads, bottom-of-page ads, and "continued on page…" items included. Track page numbers.
+STEP 2 — For each advertisement, decide the basis of appointment. KEEP it if deputation is allowed in ANY form — "deputation", "deputation/absorption", "deputation (including short-term contract)/ISTC", or where deputation is one of several allowed modes. EXCLUDE only when CLEARLY not deputation (pure direct recruitment, contract/tenure engagement, walk-in, apprenticeship/trainee, or absorption-only). If UNSURE whether a post permits deputation, INCLUDE it with confidence "low" rather than dropping it.
+STEP 3 — For EACH kept vacancy, SEARCH THE WEB for the OFFICIAL detailed notification on the organisation's official site (prefer .gov.in / .nic.in or the body's official domain). Open it and fill ALL fields from it (more authoritative than the abridged ad). Put the real link in official_notification_link (prefer the direct PDF URL). If no credible official source is found, fill from the ad, leave official_notification_link empty, and lower confidence.
+STEP 4 — Expand to ONE object per (post x location/bench x pay level). Never collapse multiple locations or levels into one row.
+STEP 5 — BEFORE finalising, re-check: every page covered first to last? boxed/short ads and continuation pages re-scanned? Add anything missed.
 
 Output ONLY a JSON array — no prose, no markdown code fences. Each object must use EXACTLY these keys (use "" when unknown):
 {"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","confidence"}
@@ -112,7 +113,8 @@ Rules:
 - organisation_type: one of Ministry/Department, Attached Office, Subordinate Office, PSU/CPSE, Autonomous Body, Statutory Body, Tribunal/Commission, Bank/Financial Institution.
 - functional_area: a short summary of duties / job description.
 - confidence: "high" only if details came from the official notification and post, level, location AND a date are all clear; otherwise "medium" or "low".
-- If there are no deputation vacancies in the issue, return [].`;
+- If the issue is large, you may answer in BATCHES by page range; I will paste each batch separately. Keep the SAME schema every time and never skip pages between batches.
+- Return [] only if the issue genuinely contains no deputation vacancies.`;
 
 function minCode(ministry) {
   const c = String(ministry || '').replace(/ministry of|department of|govt\.? of india|government of india/gi, '')
@@ -143,18 +145,40 @@ function mapPasted(it, jobId, label, year, i) {
   };
 }
 
+function parsePastedArray(raw) {
+  let t = raw.trim().replace(/^```(?:json)?/i, '').replace(/```$/,'').trim();
+  try { const j = JSON.parse(t); return Array.isArray(j) ? j : (Array.isArray(j?.vacancies) ? j.vacancies : null); }
+  catch { /* fall through to substring scan */ }
+  const m = t.match(/\[[\s\S]*\]/);            // pull the array out of surrounding prose
+  if (m) { try { return JSON.parse(m[0]); } catch { /* */ } }
+  return null;
+}
+
+const dedupKey = (o) => [o.post_name, o.organisation, o.location_city,
+  String(o.level || o.req_level1 || '').replace(/\D/g, '')]
+  .map((x) => String(x || '').toLowerCase().trim()).join('|');
+
 async function importPasted(label, st) {
   const raw = $('pasteJson').value.trim();
   if (!raw) throw new Error('Paste the JSON array first');
-  let items;
-  try { items = JSON.parse(raw); }
-  catch { throw new Error('That is not valid JSON — copy the full [ ... ] array from your chat.'); }
-  if (!Array.isArray(items)) items = items && Array.isArray(items.vacancies) ? items.vacancies : null;
-  if (!items) throw new Error('Expected a JSON array of vacancies.');
+  let items = parsePastedArray(raw);
+  if (!items) throw new Error('Could not find a JSON array — copy the model\'s [ ... ] output (prose/code-fences are OK).');
   items = items.filter((x) => x && x.post_name);
   if (!items.length) throw new Error('No rows with a post_name found.');
 
   st.innerHTML = '<span class="spinner"></span> Importing…';
+
+  // de-duplicate against drafts already in the queue (so chunked batches accumulate cleanly)
+  let existing = [];
+  try {
+    const exRes = await api('/rest/v1/vacancies?status=eq.draft&select=post_name,organisation,location_city,level');
+    if (exRes.ok) existing = await exRes.json();
+  } catch { /* best effort */ }
+  const seen = new Set(existing.map(dedupKey));
+  const before = items.length;
+  items = items.filter((it) => { const k = dedupKey(it); if (seen.has(k)) return false; seen.add(k); return true; });
+  const skipped = before - items.length;
+  if (!items.length) { st.textContent = `All ${before} row(s) were already in the queue (skipped duplicates).`; return; }
   const jobRes = await api('/rest/v1/ingest_jobs', {
     method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
     body: JSON.stringify({ source_type: 'employment_news', source_label: label || 'Pasted import', status: 'done', rows_extracted: items.length }),
@@ -168,8 +192,8 @@ async function importPasted(label, st) {
     body: JSON.stringify(rows),
   });
   if (!ins.ok) throw new Error('Insert failed: ' + (await ins.text()));
-  st.textContent = `✅ Imported ${rows.length} row(s) to the review queue.`;
-  toast(`Imported ${rows.length} draft(s)`);
+  st.textContent = `✅ Imported ${rows.length} row(s)` + (skipped ? ` (skipped ${skipped} duplicate(s))` : '') + ' to the review queue.';
+  toast(`Imported ${rows.length} draft(s)` + (skipped ? `, skipped ${skipped} dup(s)` : ''));
   $('pasteJson').value = '';
   document.querySelector('[data-tab="review"]').click();
 }
