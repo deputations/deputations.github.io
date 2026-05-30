@@ -10,6 +10,9 @@ Thumbs.db
 .vscode/
 *.swp
 
+# Supabase CLI scratch
+supabase/.temp/
+
 # Python virtualenv / caches (for /scripts utilities)
 __pycache__/
 *.pyc

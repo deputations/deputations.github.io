@@ -276,8 +276,7 @@ function showHomeToast(html) {
 }   
 
 function loadDataFromJSON() {
-    fetch('data/vacancies.json')
-        .then(res => res.json())
+    fetchVacancies()
         .then(data => {
             rawData = data;
 
@@ -292,16 +291,50 @@ function loadDataFromJSON() {
             renderDashboard();
             lucide.createIcons();
 
-            console.log('✅ Loaded', rawData.length, 'vacancies (JSON)');
+            console.log('✅ Loaded', rawData.length, 'vacancies');
         })
         .catch(err => {
-            console.error('❌ JSON load failed:', err);
+            console.error('❌ Data load failed:', err);
             dataContainer.innerHTML = `
                 <div class="empty-state">
                     Failed to load data.
                 </div>
             `;
         });
+}
+
+// Source of truth = Supabase (approved rows only, enforced by RLS). Until
+// Supabase is configured in config.js, fall back to the committed JSON so the
+// site keeps working. Both paths run through the shared enrich.js so the
+// rendered records have identical derived fields.
+function fetchVacancies() {
+    const enrich = (rows) =>
+        (window.DepEnrich ? window.DepEnrich.enrichAll(rows) : rows);
+
+    if (window.SUPABASE_READY && window.SUPABASE_READY()) {
+        const url = `${window.SUPABASE_URL}/rest/v1/vacancies` +
+            `?status=eq.approved&select=*`;
+        return fetch(url, {
+            headers: {
+                apikey: window.SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`,
+            },
+        })
+        .then(res => { if (!res.ok) throw new Error('Supabase ' + res.status); return res.json(); })
+        .then(rows => {
+            if (!rows || rows.length === 0) {
+                // No approved rows yet — keep showing the committed dataset so the
+                // public page never looks empty during the migration.
+                console.log('📡 Supabase has 0 approved rows; falling back to data/vacancies.json');
+                return fetch('data/vacancies.json').then(r => r.json());
+            }
+            console.log('📡 Source: Supabase', rows.length, 'approved rows');
+            return enrich(rows);
+        });
+    }
+
+    console.log('📄 Source: data/vacancies.json (Supabase not configured)');
+    return fetch('data/vacancies.json').then(res => res.json());
 }
 
 function hydrateFiltersFromUrl() {
