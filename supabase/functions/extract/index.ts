@@ -110,6 +110,14 @@ function toBase64(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
+function fromBase64(b64: string): Uint8Array {
+  const clean = b64.includes(",") ? b64.split(",")[1] : b64; // strip data: prefix
+  const bin = atob(clean);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
 function minCodeFromMinistry(ministry: string): string {
   const cleaned = (ministry || "")
     .replace(/ministry of|department of|govt\.? of india|government of india/gi, "")
@@ -166,16 +174,46 @@ Deno.serve(async (req) => {
     .from("admins").select("email").ilike("email", email).maybeSingle();
   if (!adminRow) return json({ error: "Not authorised" }, 403);
 
-  // --- load the job ---
-  let ingest_job_id = "";
-  try {
-    ({ ingest_job_id } = await req.json());
-  } catch { /* ignore */ }
-  if (!ingest_job_id) return json({ error: "ingest_job_id required" }, 400);
+  // --- get or create the job ---
+  // Two modes:
+  //   legacy : { ingest_job_id }                      -> use an existing job row
+  //   inline : { source_type, source_label, filename, file_base64 }  (browser sends the PDF)
+  //          : { source_type, source_label, source_url }              (URL)
+  // Inline mode does the storage upload here (service role) so the browser never
+  // needs storage permissions.
+  let body: any = {};
+  try { body = await req.json(); } catch { /* ignore */ }
 
-  const { data: job, error: jobErr } = await admin
-    .from("ingest_jobs").select("*").eq("id", ingest_job_id).single();
-  if (jobErr || !job) return json({ error: "Job not found" }, 404);
+  let job: any;
+  let inlineBytes: Uint8Array | null = null;
+
+  if (body.ingest_job_id) {
+    const { data, error } = await admin.from("ingest_jobs").select("*").eq("id", body.ingest_job_id).single();
+    if (error || !data) return json({ error: "Job not found" }, 404);
+    job = data;
+  } else {
+    const source_type = String(body.source_type || "notification");
+    const { data, error } = await admin.from("ingest_jobs").insert({
+      source_type,
+      source_label: body.source_label || "",
+      source_url: body.source_url || null,
+      created_by: email,
+      status: "processing",
+    }).select().single();
+    if (error || !data) return json({ error: `could not create job: ${error?.message}` }, 500);
+    job = data;
+
+    if (body.file_base64) {
+      inlineBytes = fromBase64(String(body.file_base64));
+      const safe = String(body.filename || "source.pdf").replace(/[^a-z0-9._-]/gi, "_");
+      const path = `${Date.now()}_${safe}`;
+      const upErr = (await admin.storage.from("sources").upload(path, inlineBytes, { contentType: "application/pdf" })).error;
+      if (!upErr) {
+        await admin.from("ingest_jobs").update({ source_file_url: path }).eq("id", job.id);
+        job.source_file_url = path;
+      }
+    }
+  }
 
   await admin.from("ingest_jobs").update({ status: "processing" }).eq("id", job.id);
 
@@ -183,7 +221,9 @@ Deno.serve(async (req) => {
     const prompt = PROMPTS[job.source_type] ?? PROMPTS.notification;
     let parts: unknown[] = [];
 
-    if (job.source_file_url) {
+    if (inlineBytes) {
+      parts = [{ inlineData: { mimeType: "application/pdf", data: toBase64(inlineBytes) } }];
+    } else if (job.source_file_url) {
       // PDF stored in the 'sources' bucket; source_file_url holds the object path
       const { data: blob, error: dlErr } = await admin.storage
         .from("sources").download(job.source_file_url);
@@ -259,7 +299,7 @@ Deno.serve(async (req) => {
       .update({ status: "done", rows_extracted: rows.length, error: null })
       .eq("id", job.id);
 
-    return json({ ok: true, rows_extracted: rows.length, candidates: items.length });
+    return json({ ok: true, rows_extracted: rows.length, candidates: items.length, ingest_job_id: job.id });
   } catch (err) {
     await admin.from("ingest_jobs")
       .update({ status: "error", error: String(err) }).eq("id", job.id);
