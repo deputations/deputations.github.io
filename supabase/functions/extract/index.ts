@@ -315,8 +315,21 @@ Deno.serve(async (req) => {
         },
       });
       const ct = r.headers.get("content-type") ?? "";
-      if (ct.includes("pdf")) {
+      if (ct.includes("pdf") || job.source_url.toLowerCase().endsWith(".pdf")) {
         pdfBytes = new Uint8Array(await r.arrayBuffer());
+        // keep a copy so review can show the PDF side-by-side (the live URL may
+        // block embedding or change later)
+        try {
+          let safe = (job.source_url.split("/").pop() || "source.pdf").split("?")[0]
+            .replace(/[^a-z0-9._-]/gi, "_").slice(0, 80);
+          if (!safe.toLowerCase().endsWith(".pdf")) safe += ".pdf";
+          const path = `${Date.now()}_${safe}`;
+          const up = await admin.storage.from("sources").upload(path, pdfBytes, { contentType: "application/pdf" });
+          if (!up.error) {
+            await admin.from("ingest_jobs").update({ source_file_url: path }).eq("id", job.id);
+            job.source_file_url = path;
+          }
+        } catch { /* keep going even if storage copy fails */ }
       } else {
         const html = await r.text();
         const text = html.replace(/<script[\s\S]*?<\/script>/gi, " ")
