@@ -93,6 +93,84 @@ const FIELDS = [
   ['application_form_link', 'Application form link'], ['source_website', 'Source website'],
 ];
 
+// Prompt the admin pastes into Gemini Advanced / Claude Pro along with the EN PDF.
+const EN_PROMPT = `You are extracting Government of India DEPUTATION vacancies from the attached weekly "Employment News" newspaper PDF.
+
+INCLUDE a post ONLY if it is open on DEPUTATION or DEPUTATION/ABSORPTION basis (also "deputation including short-term contract" / "deputation (ISTC)"). EXCLUDE direct recruitment, contract/tenure engagement, walk-in interviews, apprenticeships, and absorption-only posts.
+
+Expand every advertisement: return ONE object per (post x location/bench x pay level). Never collapse multiple locations or levels into one row.
+
+Output ONLY a JSON array — no prose, no markdown code fences. Each object must use EXACTLY these keys (use "" when unknown):
+{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","confidence"}
+
+Rules:
+- Dates in ISO yyyy-mm-dd. If a deadline is "within N days of the notification/advertisement", compute last_date_to_apply = notification_date + N days.
+- "level" and "req_level1" = Pay Matrix level NUMBER only, as a string (e.g. "12").
+- organisation_type: one of Ministry/Department, Attached Office, Subordinate Office, PSU/CPSE, Autonomous Body, Statutory Body, Tribunal/Commission, Bank/Financial Institution.
+- functional_area: a short summary of duties / job description if the ad gives one.
+- confidence: "high" only if post, level, location AND a date are all clearly stated; otherwise "medium" or "low".
+- If there are no deputation vacancies in the issue, return [].`;
+
+function minCode(ministry) {
+  const c = String(ministry || '').replace(/ministry of|department of|govt\.? of india|government of india/gi, '')
+    .replace(/[^A-Za-z ]/g, ' ').trim();
+  const w = c.split(/\s+/).filter(Boolean);
+  return w.map((x) => x[0].toUpperCase()).join('').slice(0, 5) || 'DEP';
+}
+
+function mapPasted(it, jobId, label, year, i) {
+  const lvl = String(it.level || it.req_level1 || '').replace(/\D/g, '');
+  const mc = minCode(it.ministry);
+  return {
+    vacancy_id: `${mc}-${year}-L${lvl || 'X'}-${String(i + 1).padStart(3, '0')}`,
+    ministry: it.ministry || '', min_code: mc, department: it.department || '', organisation: it.organisation || '',
+    organisation_type: it.organisation_type || '', post_name: it.post_name || '',
+    level: lvl, level_text: lvl ? `Level-${lvl}` : '',
+    location_city: it.location_city || '', location_state: it.location_state || '',
+    req_level1: String(it.req_level1 || lvl || '').replace(/\D/g, ''), req_level2: String(it.req_level2 || '').replace(/\D/g, ''),
+    min_years_experience: String(it.min_years_experience || ''), min_years_experience2: String(it.min_years_experience2 || ''),
+    no_of_posts: String(it.no_of_posts || ''), deputation_period_years: String(it.deputation_period_years || ''),
+    deputation_type: it.deputation_type || '', notification_date: it.notification_date || '', last_date_to_apply: it.last_date_to_apply || '',
+    official_notification_link: it.official_notification_link || '', application_form_link: it.application_form_link || '',
+    source_website: it.source_website || '', essential_qualification: it.essential_qualification || '',
+    eligible_service: it.eligible_service || '', mode_of_application: it.mode_of_application || '',
+    functional_area: it.functional_area || '', tags_keywords: it.tags_keywords || '',
+    status: 'draft', confidence: (it.confidence || 'medium'), source_type: 'employment_news',
+    source_category: label || 'Pasted import', ingest_job_id: jobId, raw_extraction: it,
+  };
+}
+
+async function importPasted(label, st) {
+  const raw = $('pasteJson').value.trim();
+  if (!raw) throw new Error('Paste the JSON array first');
+  let items;
+  try { items = JSON.parse(raw); }
+  catch { throw new Error('That is not valid JSON — copy the full [ ... ] array from your chat.'); }
+  if (!Array.isArray(items)) items = items && Array.isArray(items.vacancies) ? items.vacancies : null;
+  if (!items) throw new Error('Expected a JSON array of vacancies.');
+  items = items.filter((x) => x && x.post_name);
+  if (!items.length) throw new Error('No rows with a post_name found.');
+
+  st.innerHTML = '<span class="spinner"></span> Importing…';
+  const jobRes = await api('/rest/v1/ingest_jobs', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify({ source_type: 'employment_news', source_label: label || 'Pasted import', status: 'done', rows_extracted: items.length }),
+  });
+  if (!jobRes.ok) throw new Error('Could not create job: ' + (await jobRes.text()));
+  const job = (await jobRes.json())[0];
+  const year = new Date().getFullYear();
+  const rows = items.map((it, i) => mapPasted(it, job.id, label, year, i));
+  const ins = await api('/rest/v1/vacancies', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify(rows),
+  });
+  if (!ins.ok) throw new Error('Insert failed: ' + (await ins.text()));
+  st.textContent = `✅ Imported ${rows.length} row(s) to the review queue.`;
+  toast(`Imported ${rows.length} draft(s)`);
+  $('pasteJson').value = '';
+  document.querySelector('[data-tab="review"]').click();
+}
+
 /* ================================================================= */
 if (!window.SUPABASE_READY || !window.SUPABASE_READY()) {
   $('setupCard').classList.remove('hidden');
@@ -164,9 +242,16 @@ function wireApp() {
 
   // source type toggle
   $('srcType').onchange = () => {
-    const isUrl = $('srcType').value === 'url';
-    $('urlBlock').classList.toggle('hidden', !isUrl);
-    $('fileBlock').classList.toggle('hidden', isUrl);
+    const t = $('srcType').value;
+    $('urlBlock').classList.toggle('hidden', t !== 'url');
+    $('pasteBlock').classList.toggle('hidden', t !== 'paste');
+    $('fileBlock').classList.toggle('hidden', t === 'url' || t === 'paste');
+    $('ingestBtn').textContent = t === 'paste' ? 'Import rows' : 'Extract vacancies';
+  };
+
+  $('copyPromptBtn').onclick = async () => {
+    try { await navigator.clipboard.writeText(EN_PROMPT); toast('Prompt copied — paste it into Gemini/Claude with the EN PDF'); }
+    catch { $('pasteJson').value = EN_PROMPT; toast('Copy blocked — prompt placed in the box; cut it from there'); }
   };
 
   // file picker
@@ -196,6 +281,7 @@ function wireApp() {
     const btn = $('ingestBtn'); const st = $('ingestStatus');
     btn.disabled = true;
     try {
+      if (srcType === 'paste') { await importPasted(label, st); return; }
       const payload = { source_type: srcType, source_label: label };
       if (srcType === 'url') {
         const url = $('urlInput').value.trim();

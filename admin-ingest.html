@@ -95,6 +95,7 @@
           <option value="notification">Official notification PDF (e.g. NCLT) — clean, high accuracy</option>
           <option value="employment_news">Employment News PDF — finds deputation ads only</option>
           <option value="url">URL of a notification page</option>
+          <option value="paste">Paste rows from your own AI chat (Gemini / Claude) — best for Employment News</option>
         </select>
 
         <div id="fileBlock">
@@ -108,6 +109,14 @@
         <div id="urlBlock" class="hidden">
           <label>Notification URL</label>
           <input id="urlInput" type="url" placeholder="https://…" />
+        </div>
+
+        <div id="pasteBlock" class="hidden">
+          <label>1) Copy this prompt into <b>Gemini Advanced</b> or <b>Claude Pro</b> and attach the Employment News PDF</label>
+          <button type="button" id="copyPromptBtn">📋 Copy extraction prompt</button>
+          <label style="margin-top:12px">2) Paste the JSON array it returns here</label>
+          <textarea id="pasteJson" rows="9" placeholder='[ { "post_name": "...", "organisation": "...", ... }, ... ]'></textarea>
+          <p class="muted">No API quota used — your chat does the extraction; this just imports the rows into the review queue.</p>
         </div>
 
         <label>Label (optional — helps you find these rows later)</label>
@@ -138,6 +147,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb2"></script>
-  <script src="admin-ingest.js?v=sb5"></script>
+  <script src="admin-ingest.js?v=sb6"></script>
 </body>
 </html>
