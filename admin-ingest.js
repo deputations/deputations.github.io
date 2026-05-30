@@ -94,21 +94,24 @@ const FIELDS = [
 ];
 
 // Prompt the admin pastes into Gemini Advanced / Claude Pro along with the EN PDF.
-const EN_PROMPT = `You are extracting Government of India DEPUTATION vacancies from the attached weekly "Employment News" newspaper PDF.
+const EN_PROMPT = `You are extracting Government of India DEPUTATION vacancies from the attached weekly "Employment News" newspaper PDF, and ENRICHING each one using web search. Use your built-in web search / browsing for Step 2.
 
-INCLUDE a post ONLY if it is open on DEPUTATION or DEPUTATION/ABSORPTION basis (also "deputation including short-term contract" / "deputation (ISTC)"). EXCLUDE direct recruitment, contract/tenure engagement, walk-in interviews, apprenticeships, and absorption-only posts.
+STEP 1 — From the PDF, find every post open on DEPUTATION or DEPUTATION/ABSORPTION basis (also "deputation including short-term contract" / "deputation (ISTC)"). EXCLUDE direct recruitment, contract/tenure engagement, walk-in interviews, apprenticeships, and absorption-only posts.
 
-Expand every advertisement: return ONE object per (post x location/bench x pay level). Never collapse multiple locations or levels into one row.
+STEP 2 — For EACH such vacancy, SEARCH THE WEB to locate the OFFICIAL detailed advertisement/notification on the organisation's official website (prefer .gov.in / .nic.in or the body's official domain). Open it and fill ALL fields from that official notification, which is more authoritative than the abridged Employment News ad. Put the real link in official_notification_link (prefer the direct PDF URL). If you cannot find a credible official source, fill from the Employment News ad instead, leave official_notification_link empty, and lower the confidence.
+
+STEP 3 — Expand to ONE object per (post x location/bench x pay level). Never collapse multiple locations or levels into one row.
 
 Output ONLY a JSON array — no prose, no markdown code fences. Each object must use EXACTLY these keys (use "" when unknown):
 {"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","confidence"}
 
 Rules:
+- Only use official sources for links; never invent a URL. If unsure a link is real, leave it empty.
 - Dates in ISO yyyy-mm-dd. If a deadline is "within N days of the notification/advertisement", compute last_date_to_apply = notification_date + N days.
 - "level" and "req_level1" = Pay Matrix level NUMBER only, as a string (e.g. "12").
 - organisation_type: one of Ministry/Department, Attached Office, Subordinate Office, PSU/CPSE, Autonomous Body, Statutory Body, Tribunal/Commission, Bank/Financial Institution.
-- functional_area: a short summary of duties / job description if the ad gives one.
-- confidence: "high" only if post, level, location AND a date are all clearly stated; otherwise "medium" or "low".
+- functional_area: a short summary of duties / job description.
+- confidence: "high" only if details came from the official notification and post, level, location AND a date are all clear; otherwise "medium" or "low".
 - If there are no deputation vacancies in the issue, return [].`;
 
 function minCode(ministry) {
