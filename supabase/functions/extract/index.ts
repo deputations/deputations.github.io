@@ -56,6 +56,10 @@ const VACANCY_ITEM = {
     notification_date: { type: "string" },
     last_date_to_apply: { type: "string" },
     official_notification_link: { type: "string" },
+    application_form_link: { type: "string" },
+    source_website: { type: "string" },
+    organisation_type: { type: "string" },
+    functional_area: { type: "string" },
     essential_qualification: { type: "string" },
     eligible_service: { type: "string" },
     mode_of_application: { type: "string" },
@@ -72,8 +76,19 @@ Return ONE row per (post × location/bench × pay level). If an advertisement
 lists a post available at several benches/cities or several levels, expand it
 into multiple rows — never collapse them.
 Dates MUST be ISO format yyyy-mm-dd. If only a closing date is given, fill
-last_date_to_apply. If you cannot determine a field, return an empty string "".
+last_date_to_apply. If the ad says applications are due "within N days" / "N days
+from the date of this notification/advertisement", COMPUTE last_date_to_apply by
+adding N days to notification_date and return the computed ISO date.
 "level" and "req_level1" are the Pay Matrix level NUMBER as a string (e.g. "12").
+Also capture, when present:
+- organisation_type: nature of the body (e.g. "Ministry/Department", "Attached Office",
+  "Subordinate Office", "PSU/CPSE", "Autonomous Body", "Statutory Body",
+  "Tribunal/Commission", "Bank/Financial Institution").
+- application_form_link: URL of the application form/proforma, if a link is given.
+- source_website: the organisation's website URL, if mentioned.
+- functional_area: a short summary of the job description / duties / nature of work
+  (a sentence or two), if the ad describes them.
+If you cannot determine a field, return an empty string "".
 Set confidence to "high" only when the post, level, location and a date are all
 clearly stated; otherwise "medium" or "low".
 `;
@@ -294,6 +309,10 @@ Deno.serve(async (req) => {
         notification_date: it.notification_date || "",
         last_date_to_apply: it.last_date_to_apply || "",
         official_notification_link: it.official_notification_link || job.source_url || "",
+        application_form_link: it.application_form_link || "",
+        source_website: it.source_website || "",
+        organisation_type: it.organisation_type || "",
+        functional_area: it.functional_area || "",
         essential_qualification: it.essential_qualification || "",
         eligible_service: it.eligible_service || "",
         mode_of_application: it.mode_of_application || "",

@@ -72,6 +72,24 @@
     return t;
   }
 
+  // Broad zone for an Indian state/UT — used to auto-fill Region when blank.
+  const REGION_BY_STATE = {
+    'jammu and kashmir':'North','jammu & kashmir':'North','ladakh':'North','himachal pradesh':'North',
+    'punjab':'North','haryana':'North','delhi':'North','new delhi':'North','chandigarh':'North',
+    'uttarakhand':'North','uttar pradesh':'North','rajasthan':'North',
+    'bihar':'East','jharkhand':'East','odisha':'East','orissa':'East','west bengal':'East',
+    'sikkim':'East','andaman and nicobar islands':'East',
+    'assam':'NorthEast','arunachal pradesh':'NorthEast','manipur':'NorthEast','meghalaya':'NorthEast',
+    'mizoram':'NorthEast','nagaland':'NorthEast','tripura':'NorthEast',
+    'gujarat':'West','maharashtra':'West','goa':'West','dadra and nagar haveli and daman and diu':'West',
+    'madhya pradesh':'Central','chhattisgarh':'Central',
+    'andhra pradesh':'South','telangana':'South','karnataka':'South','kerala':'South',
+    'tamil nadu':'South','puducherry':'South','lakshadweep':'South',
+  };
+  function regionForState(state) {
+    return REGION_BY_STATE[norm(state).toLowerCase()] || '';
+  }
+
   function buildLocationLabel(city, state) {
     city = norm(city); state = norm(state);
     if (city && state) return `${city}, ${state}`;
@@ -192,6 +210,7 @@
     o.Days_Left = daysLeft === null ? '' : daysLeft;
     o.Status = inferStatus(row.status_label || '', daysLeft);
     o.location_label = buildLocationLabel(o.Location_City, o.Location_State);
+    o.Region = o.Region || regionForState(o.Location_State);
     o.eligibility_text = formatEligibilityText(o.Req_Level1, o.Req_Level2);
     o.eligibility_rules = buildEligibilityRules(o.Req_Level1, o.Req_Level2);
     o.delhi_ncr_flag = isDelhiNcr(o.Location_City, o.Location_State);

@@ -82,11 +82,15 @@ function api(path, opts = {}) {
 /* ---------------- editable fields on each draft card ---------------- */
 const FIELDS = [
   ['post_name', 'Post name'], ['ministry', 'Ministry'], ['organisation', 'Organisation'],
-  ['level', 'Pay level'], ['location_city', 'City'], ['location_state', 'State'],
-  ['no_of_posts', 'No. of posts'], ['req_level1', 'Eligible level (from)'],
-  ['req_level2', 'Eligible level (to)'], ['notification_date', 'Notification date'],
-  ['last_date_to_apply', 'Last date'], ['essential_qualification', 'Essential qualification'],
-  ['official_notification_link', 'Official link'],
+  ['organisation_type', 'Organisation type'], ['level', 'Pay level'],
+  ['location_city', 'City'], ['location_state', 'State'], ['no_of_posts', 'No. of posts'],
+  ['req_level1', 'Eligible level (from)'], ['req_level2', 'Eligible level (to)'],
+  ['min_years_experience', 'Min experience (yrs)'], ['deputation_period_years', 'Deputation period (yrs)'],
+  ['notification_date', 'Notification date'], ['last_date_to_apply', 'Last date'],
+  ['essential_qualification', 'Essential qualification'], ['eligible_service', 'Eligible service'],
+  ['functional_area', 'Functional area / duties'], ['tags_keywords', 'Tags / keywords'],
+  ['mode_of_application', 'Mode of application'], ['official_notification_link', 'Official link'],
+  ['application_form_link', 'Application form link'], ['source_website', 'Source website'],
 ];
 
 /* ================================================================= */
