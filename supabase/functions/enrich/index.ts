@@ -27,6 +27,13 @@ const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Many .gov.in/.nic.in servers reject requests without a browser-like UA.
+const BROWSER_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+  "Accept": "text/html,application/xhtml+xml,application/pdf,*/*",
+  "Accept-Language": "en-US,en;q=0.9",
+};
+
 function toBase64(bytes: Uint8Array): string {
   let bin = ""; const chunk = 0x8000;
   for (let i = 0; i < bytes.length; i += chunk) bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
@@ -152,12 +159,14 @@ Deno.serve(async (req) => {
     const patch: Record<string, any> = {};
     let detailFilled: string[] = [];
     let pdfOk = false;
+    let resolvedUrl = "";
 
     if (found.pdf_url) {
       try {
-        const r = await fetch(found.pdf_url);
+        const r = await fetch(found.pdf_url, { headers: BROWSER_HEADERS, redirect: "follow" });
+        resolvedUrl = r.url || "";   // the real URL after following Google's redirect
         const ct = r.headers.get("content-type") ?? "";
-        if (r.ok && (ct.includes("pdf") || found.pdf_url.toLowerCase().endsWith(".pdf"))) {
+        if (r.ok && (ct.includes("pdf") || resolvedUrl.toLowerCase().includes(".pdf"))) {
           const bytes = new Uint8Array(await r.arrayBuffer());
           const detail = await extractDetail(toBase64(bytes), v);
           pdfOk = true;
@@ -173,10 +182,17 @@ Deno.serve(async (req) => {
       } catch { /* fetch/extract failed -> treat as link-only */ }
     }
 
-    // always record the best official link we found
-    if (found.pdf_url) patch.official_notification_link = found.pdf_url;
-    else if (found.page_url && !v.official_notification_link) patch.official_notification_link = found.page_url;
-    if (found.page_url && !v.source_website && !patch.source_website) patch.source_website = found.page_url;
+    // Record the cleanest usable link — NEVER the opaque vertexaisearch redirect.
+    // Prefer the resolved real PDF URL; else the official page URL.
+    const isRedirect = (u: string) => !u || u.includes("vertexaisearch.cloud.google.com");
+    let bestLink = "";
+    if (pdfOk && resolvedUrl && !isRedirect(resolvedUrl)) bestLink = resolvedUrl;
+    else if (found.page_url && !isRedirect(found.page_url)) bestLink = found.page_url;
+    else if (!isRedirect(found.pdf_url)) bestLink = found.pdf_url;
+    if (bestLink && (pdfOk || !v.official_notification_link)) patch.official_notification_link = bestLink;
+    if (found.page_url && !isRedirect(found.page_url) && !v.source_website && !patch.source_website) {
+      patch.source_website = found.page_url;
+    }
 
     const note = `[enrich ${new Date().toISOString().slice(0, 10)}] ` +
       (found.pdf_url ? `pdf=${found.pdf_url} ` : "no-pdf ") +

@@ -293,7 +293,13 @@ Deno.serve(async (req) => {
       if (dlErr || !blob) throw new Error(`download failed: ${dlErr?.message}`);
       pdfBytes = new Uint8Array(await blob.arrayBuffer());
     } else if (job.source_url) {
-      const r = await fetch(job.source_url);
+      const r = await fetch(job.source_url, {
+        redirect: "follow",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/pdf,*/*",
+        },
+      });
       const ct = r.headers.get("content-type") ?? "";
       if (ct.includes("pdf")) {
         pdfBytes = new Uint8Array(await r.arrayBuffer());
