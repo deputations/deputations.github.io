@@ -409,6 +409,17 @@ async function replaceCard(id, el) {
   else el.remove();
 }
 
+// After approvals/rejections, delete source PDFs no longer referenced by any
+// draft row. Debounced so a burst of approvals triggers one sweep.
+let _gcTimer = null;
+function scheduleGc() {
+  clearTimeout(_gcTimer);
+  _gcTimer = setTimeout(() => {
+    api('/functions/v1/gc_sources', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .catch(() => { /* best effort */ });
+  }, 4000);
+}
+
 /* ---------------- review queue ---------------- */
 async function loadDrafts() {
   try {
@@ -479,11 +490,11 @@ function draftCard(r) {
   };
 
   el.querySelector('[data-act="approve"]').onclick = async () => {
-    try { await patchRow({ ...collect(), status: 'approved' }); el.remove(); toast('✅ Approved & published'); bumpCount(-1); }
+    try { await patchRow({ ...collect(), status: 'approved' }); el.remove(); toast('✅ Approved & published'); bumpCount(-1); scheduleGc(); }
     catch (e) { toast('Approve failed: ' + e.message); }
   };
   el.querySelector('[data-act="reject"]').onclick = async () => {
-    try { await patchRow({ status: 'rejected' }); el.remove(); toast('Rejected'); bumpCount(-1); }
+    try { await patchRow({ status: 'rejected' }); el.remove(); toast('Rejected'); bumpCount(-1); scheduleGc(); }
     catch (e) { toast('Reject failed: ' + e.message); }
   };
   el.querySelector('[data-act="enrich"]').onclick = async (e) => {
