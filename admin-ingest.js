@@ -228,6 +228,41 @@ function wireApp() {
   };
 
   $('refreshBtn').onclick = loadDrafts;
+
+  $('enrichAllBtn').onclick = async () => {
+    const ids = [...CURRENT_DRAFT_IDS];
+    if (!ids.length) return toast('No drafts to enrich');
+    if (!confirm(`Find official PDFs for all ${ids.length} drafts?\nThis runs one web search + extraction each, so it can take several minutes and uses your Gemini search quota.`)) return;
+    const btn = $('enrichAllBtn'); btn.disabled = true;
+    let done = 0, found = 0;
+    for (const id of ids) {
+      try { const res = await enrichOne(id); if (res.found) found++; } catch { /* skip */ }
+      done++; btn.textContent = `🔎 Enriching ${done}/${ids.length}…`;
+    }
+    btn.textContent = '🔎 Find official PDFs (all)'; btn.disabled = false;
+    toast(`Enriched ${done} draft(s); found official links for ${found}`);
+    loadDrafts();
+  };
+}
+
+/* ---------------- enrichment (find official PDF) ---------------- */
+let CURRENT_DRAFT_IDS = [];
+
+async function enrichOne(id) {
+  const r = await api('/functions/v1/enrich', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ vacancy_id: id }),
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+  return d;
+}
+
+async function replaceCard(id, el) {
+  const r = await api(`/rest/v1/vacancies?id=eq.${id}&select=*`);
+  const rows = await r.json();
+  if (rows && rows[0]) el.replaceWith(draftCard(rows[0]));
+  else el.remove();
 }
 
 /* ---------------- review queue ---------------- */
@@ -236,6 +271,7 @@ async function loadDrafts() {
     const r = await api('/rest/v1/vacancies?status=eq.draft&select=*&order=ingest_job_id.asc,vacancy_id.asc');
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
+    CURRENT_DRAFT_IDS = data.map((x) => x.id);
     $('draftCount').textContent = data.length ? `(${data.length})` : '';
     renderDrafts(data);
   } catch (e) { toast('Load error: ' + e.message); }
@@ -270,6 +306,7 @@ function draftCard(r) {
       </div>
       <div class="acts">
         ${r.source_file_url ? `<a class="muted" href="#" data-src="${escapeHtml(r.source_file_url)}">source</a>` : ''}
+        <button data-act="enrich" title="Find the official notification PDF and fill blank fields">🔎 Official PDF</button>
         <button class="good" data-act="approve">Approve</button>
         <button class="bad" data-act="reject">Reject</button>
       </div>
@@ -303,6 +340,18 @@ function draftCard(r) {
   el.querySelector('[data-act="reject"]').onclick = async () => {
     try { await patchRow({ status: 'rejected' }); el.remove(); toast('Rejected'); bumpCount(-1); }
     catch (e) { toast('Reject failed: ' + e.message); }
+  };
+  el.querySelector('[data-act="enrich"]').onclick = async (e) => {
+    const b = e.currentTarget; const old = b.textContent; b.disabled = true; b.textContent = '🔎 Searching…';
+    try {
+      const res = await enrichOne(r.id);
+      toast(res.found
+        ? (res.pdf_ok ? `Filled ${res.filled.length} field(s) from official PDF` : 'Found a link (PDF could not be fetched)')
+        : 'No official PDF found — left as-is');
+      await replaceCard(r.id, el);
+    } catch (err) {
+      toast('Enrich failed: ' + err.message); b.disabled = false; b.textContent = old;
+    }
   };
   const srcLink = el.querySelector('[data-src]');
   if (srcLink) srcLink.onclick = async (e) => {

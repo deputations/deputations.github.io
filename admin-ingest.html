@@ -123,7 +123,10 @@
       <section id="paneReview" class="card hidden">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <h2 style="margin:0">Review queue</h2>
-          <button id="refreshBtn">↻ Refresh</button>
+          <div style="display:flex;gap:8px">
+            <button id="enrichAllBtn" title="Find the official notification PDF for every draft and fill blanks">🔎 Find official PDFs (all)</button>
+            <button id="refreshBtn">↻ Refresh</button>
+          </div>
         </div>
         <p class="muted">Edit any field, then <b>Approve</b> (publishes live) or <b>Reject</b>.</p>
         <div id="draftList"></div>
@@ -135,6 +138,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb2"></script>
-  <script src="admin-ingest.js?v=sb4"></script>
+  <script src="admin-ingest.js?v=sb5"></script>
 </body>
 </html>
