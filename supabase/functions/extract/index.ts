@@ -128,9 +128,18 @@ function minCodeFromMinistry(ministry: string): string {
   return code || "DEP";
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function parseItems(text: string) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const m = text.match(/\[[\s\S]*\]/); // strip ```json fences etc.
+    return m ? JSON.parse(m[0]) : [];
+  }
+}
+
 async function callGemini(promptText: string, parts: unknown[]) {
-  const url =
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
   const body = {
     contents: [{ role: "user", parts: [{ text: promptText }, ...parts] }],
     generationConfig: {
@@ -139,23 +148,32 @@ async function callGemini(promptText: string, parts: unknown[]) {
       responseSchema: RESPONSE_SCHEMA,
     },
   };
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    throw new Error(`Gemini ${res.status}: ${await res.text()}`);
+  // Try the configured model first, then fall back to a different-capacity
+  // model. Retry each on transient overload (503/429/500) with backoff so a
+  // brief demand spike doesn't fail the whole ingest.
+  const models = [GEMINI_MODEL, "gemini-2.0-flash"].filter(
+    (m, i, a) => m && a.indexOf(m) === i,
+  );
+  let lastErr = "Gemini call failed";
+  for (const model of models) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        return parseItems(data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]");
+      }
+      lastErr = `Gemini ${res.status} (${model}): ${await res.text()}`;
+      if (res.status === 503 || res.status === 429 || res.status === 500) {
+        await sleep(1200 * (attempt + 1)); // 1.2s, 2.4s, 3.6s
+        continue; // retry same model
+      }
+      break; // non-transient — try the next model
+    }
   }
-  const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]";
-  try {
-    return JSON.parse(text);
-  } catch {
-    // strip ```json fences if the model added them
-    const m = text.match(/\[[\s\S]*\]/);
-    return m ? JSON.parse(m[0]) : [];
-  }
+  throw new Error(lastErr);
 }
 
 // ---- main ------------------------------------------------------------------
