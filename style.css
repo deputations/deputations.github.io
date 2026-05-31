@@ -739,6 +739,11 @@ select:focus {
   border-color: var(--primary-color);
 }
 
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* KPI CARDS */
 .kpi-grid {
   display: grid;

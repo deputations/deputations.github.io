@@ -687,6 +687,7 @@ function renderTable(data) {
                 opt.textContent = y === 10 ? '10+ years' : (y === 1 ? '1 year' : `${y} years`);
                 filterExperience.appendChild(opt);
             }
+            syncExperienceState();
         }
 
         filterLevel.innerHTML = '<option value="">All Levels</option>';
@@ -944,6 +945,24 @@ kpiGrid.addEventListener('click', (e) => {
         renderDashboard();
     }
 
+    // Years-of-experience only makes sense relative to a chosen pay level, so the
+    // dropdown is disabled (showing "Select Pay Level first") until My Pay Level is
+    // set; clearing the level disables and resets it. Called from renderDashboard,
+    // so every path (filter change, Clear All, chip removal, URL load, profile
+    // autoselect) keeps it in sync.
+    function syncExperienceState() {
+        if (!filterExperience) return;
+        const placeholder = filterExperience.querySelector('option[value=""]');
+        if (filterMyPayLevel.value) {
+            filterExperience.disabled = false;
+            if (placeholder) placeholder.textContent = 'Any';
+        } else {
+            if (filterExperience.value) filterExperience.value = '';
+            filterExperience.disabled = true;
+            if (placeholder) placeholder.textContent = 'Select Pay Level first';
+        }
+    }
+
     function toggleSort(key) {
         if (sortState.key === key) {
             sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
@@ -955,6 +974,7 @@ kpiGrid.addEventListener('click', (e) => {
     }
 
    function renderDashboard(resetPageIfNeeded = true) {
+  syncExperienceState();
   const baseFilteredData = getFilteredData({ applyKpiFilter: false });
   let filteredData = getFilteredData({ applyKpiFilter: true });
 
