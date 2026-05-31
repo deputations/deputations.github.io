@@ -651,8 +651,16 @@ function draftCard(r) {
 async function openSource(r, page) {
   let url = '';
   const src = r.source_file_url || '';
+  // Google Drive file → embed its /preview (works inside the iframe)
+  const dm = src.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
+  if (dm) {
+    $('viewerLabel').textContent = (r.post_name || 'Source') + (page ? ` — p.${page}` : '');
+    $('viewerFrame').src = `https://drive.google.com/file/d/${dm[1]}/preview`;
+    $('viewerPane').style.display = 'block';
+    return;
+  }
   if (/^https?:\/\//i.test(src)) {
-    // external official link — gov sites usually block iframing, so open a tab
+    // other external link — gov sites usually block iframing, so open a tab
     window.open(src + (page ? `#page=${page}` : ''), '_blank');
     return;
   }

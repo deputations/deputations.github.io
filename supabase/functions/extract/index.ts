@@ -25,6 +25,23 @@ const MISTRAL_KEY = Deno.env.get("MISTRAL_API_KEY") ?? "";
 const MISTRAL_MODEL = Deno.env.get("MISTRAL_MODEL") ?? "mistral-large-latest";
 const OPENROUTER_KEY = Deno.env.get("OPENROUTER_API_KEY") ?? "";
 const OPENROUTER_MODEL = Deno.env.get("OPENROUTER_MODEL") ?? "google/gemma-4-31b-it:free";
+// Apps Script web app that stores PDFs in your Google Drive and returns a link.
+const APPS_SCRIPT_URL = Deno.env.get("APPS_SCRIPT_URL") ?? "";
+
+// Store a PDF in Google Drive via the Apps Script proxy; returns a public view
+// URL, or null on any failure (caller then falls back to Supabase storage).
+async function storeToDrive(base64: string, filename: string): Promise<string | null> {
+  if (!APPS_SCRIPT_URL) return null;
+  try {
+    const r = await fetch(APPS_SCRIPT_URL, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "drive_store", file_base64: base64, filename }),
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d?.ok && d.url ? d.url : null;
+  } catch { return null; }
+}
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -360,12 +377,16 @@ Deno.serve(async (req) => {
   // the EN issue can be shown side-by-side in review). No Gemini call. ---
   if (body.store_only) {
     if (!body.file_base64) return json({ error: "file_base64 required" }, 400);
-    const bytes = fromBase64(String(body.file_base64));
-    const safe = String(body.filename || "source.pdf").replace(/[^a-z0-9._-]/gi, "_");
-    const path = `${Date.now()}_${safe}`;
-    const up = await admin.storage.from("sources").upload(path, bytes, { contentType: "application/pdf" });
-    if (up.error) return json({ error: "upload failed: " + up.error.message }, 500);
-    return json({ ok: true, path });
+    let sfu = await storeToDrive(String(body.file_base64), String(body.filename || "source.pdf"));
+    if (!sfu) {
+      const bytes = fromBase64(String(body.file_base64));
+      const safe = String(body.filename || "source.pdf").replace(/[^a-z0-9._-]/gi, "_");
+      const path = `${Date.now()}_${safe}`;
+      const up = await admin.storage.from("sources").upload(path, bytes, { contentType: "application/pdf" });
+      if (up.error) return json({ error: "upload failed: " + up.error.message }, 500);
+      sfu = path;
+    }
+    return json({ ok: true, path: sfu });
   }
 
   let job: any;
@@ -389,12 +410,16 @@ Deno.serve(async (req) => {
 
     if (body.file_base64) {
       inlineBytes = fromBase64(String(body.file_base64));
-      const safe = String(body.filename || "source.pdf").replace(/[^a-z0-9._-]/gi, "_");
-      const path = `${Date.now()}_${safe}`;
-      const upErr = (await admin.storage.from("sources").upload(path, inlineBytes, { contentType: "application/pdf" })).error;
-      if (!upErr) {
-        await admin.from("ingest_jobs").update({ source_file_url: path }).eq("id", job.id);
-        job.source_file_url = path;
+      const fname = String(body.filename || "source.pdf");
+      let sfu = await storeToDrive(String(body.file_base64), fname); // Drive (5TB, public link)
+      if (!sfu) {                                                    // fall back to Supabase storage
+        const path = `${Date.now()}_${fname.replace(/[^a-z0-9._-]/gi, "_")}`;
+        const upErr = (await admin.storage.from("sources").upload(path, inlineBytes, { contentType: "application/pdf" })).error;
+        if (!upErr) sfu = path;
+      }
+      if (sfu) {
+        await admin.from("ingest_jobs").update({ source_file_url: sfu }).eq("id", job.id);
+        job.source_file_url = sfu;
       }
     }
   }
@@ -425,17 +450,20 @@ Deno.serve(async (req) => {
       const ct = r.headers.get("content-type") ?? "";
       if (ct.includes("pdf") || job.source_url.toLowerCase().endsWith(".pdf")) {
         pdfBytes = new Uint8Array(await r.arrayBuffer());
-        // keep a copy so review can show the PDF side-by-side (the live URL may
-        // block embedding or change later)
+        // keep a copy so review can show the PDF side-by-side and link to it
         try {
-          let safe = (job.source_url.split("/").pop() || "source.pdf").split("?")[0]
+          let fname = (job.source_url.split("/").pop() || "source.pdf").split("?")[0]
             .replace(/[^a-z0-9._-]/gi, "_").slice(0, 80);
-          if (!safe.toLowerCase().endsWith(".pdf")) safe += ".pdf";
-          const path = `${Date.now()}_${safe}`;
-          const up = await admin.storage.from("sources").upload(path, pdfBytes, { contentType: "application/pdf" });
-          if (!up.error) {
-            await admin.from("ingest_jobs").update({ source_file_url: path }).eq("id", job.id);
-            job.source_file_url = path;
+          if (!fname.toLowerCase().endsWith(".pdf")) fname += ".pdf";
+          let sfu = await storeToDrive(toBase64(pdfBytes), fname);
+          if (!sfu) {
+            const path = `${Date.now()}_${fname}`;
+            const up = await admin.storage.from("sources").upload(path, pdfBytes, { contentType: "application/pdf" });
+            if (!up.error) sfu = path;
+          }
+          if (sfu) {
+            await admin.from("ingest_jobs").update({ source_file_url: sfu }).eq("id", job.id);
+            job.source_file_url = sfu;
           }
         } catch { /* keep going even if storage copy fails */ }
       } else {
@@ -506,7 +534,8 @@ Deno.serve(async (req) => {
         deputation_type: it.deputation_type || "",
         notification_date: it.notification_date || "",
         last_date_to_apply: it.last_date_to_apply || "",
-        official_notification_link: it.official_notification_link || job.source_url || "",
+        official_notification_link: it.official_notification_link || job.source_url ||
+          (/^https?:\/\//i.test(job.source_file_url || "") ? job.source_file_url : "") || "",
         application_form_link: it.application_form_link || "",
         source_website: it.source_website || "",
         organisation_type: it.organisation_type || "",
