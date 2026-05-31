@@ -198,11 +198,21 @@ function parseItems(text: string) {
 
 type Src = { pdfBase64?: string; text?: string };
 
+function postNameOf(it: any): string {
+  return String(it?.post_name ?? it?.post ?? it?.postName ?? it?.name ?? it?.Post ?? "").trim();
+}
+
 function asArray(out: any): any[] {
   if (Array.isArray(out)) return out;
-  if (out && Array.isArray(out.vacancies)) return out.vacancies;
-  if (out && typeof out === "object") return (Object.values(out).find(Array.isArray) as any[]) ?? [];
-  return [];
+  if (!out || typeof out !== "object") return [];
+  // prefer a well-known key
+  for (const k of ["vacancies", "posts", "rows", "items", "data", "results", "extracted"]) {
+    if (Array.isArray(out[k])) return out[k];
+  }
+  // else the first array whose items look like vacancy objects
+  const arrays = Object.values(out).filter(Array.isArray) as any[][];
+  const withPost = arrays.find((a) => a.some((x) => x && typeof x === "object" && postNameOf(x)));
+  return withPost ?? arrays[0] ?? [];
 }
 
 // ---- Gemini (native PDF, JSON schema). flash -> flash-lite, retry on overload ----
@@ -457,7 +467,10 @@ Deno.serve(async (req) => {
     // de-duplicate (chunk boundaries / repeated ads) by post+org+location+level
     const seen = new Set<string>();
     const kept = items.filter((it) => {
-      if (!it || !it.post_name) return false;
+      if (!it) return false;
+      const pn = postNameOf(it);
+      if (!pn) return false;
+      it.post_name = pn; // normalise alternate keys (post / name / …) to post_name
       // Only Employment News needs the deputation filter (it's a mixed newspaper).
       // Single notifications / circulars / URLs: keep every advertised post.
       if (job.source_type === "employment_news" && it.is_deputation === false) return false;
