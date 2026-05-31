@@ -23,7 +23,7 @@ const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 // Fallback providers (used when Gemini's free 20/day quota is exhausted).
 const MISTRAL_KEY = Deno.env.get("MISTRAL_API_KEY") ?? "";
 const OPENROUTER_KEY = Deno.env.get("OPENROUTER_API_KEY") ?? "";
-const OPENROUTER_MODEL = Deno.env.get("OPENROUTER_MODEL") ?? "google/gemini-2.0-flash-exp:free";
+const OPENROUTER_MODEL = Deno.env.get("OPENROUTER_MODEL") ?? "google/gemma-4-31b-it:free";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -239,19 +239,22 @@ async function mistralCall(promptText: string, src: Src): Promise<any[]> {
   return asArray(parseItems((await res.json())?.choices?.[0]?.message?.content ?? "[]"));
 }
 
-// ---- OpenRouter (OpenAI-compatible; free model that can read PDFs) ----
+// ---- OpenRouter (TEXT only on the free tier — PDFs require a paid balance,
+// and Gemini/Mistral already cover PDFs natively). Good for HTML/URL sources. ----
 async function openrouterCall(promptText: string, src: Src): Promise<any[]> {
   if (!OPENROUTER_KEY) throw new Error("no openrouter key");
-  const content: any[] = [{ type: "text", text: promptText + "\nReturn ONLY a JSON array." }];
-  if (src.pdfBase64) content.push({ type: "file", file: { filename: "source.pdf", file_data: `data:application/pdf;base64,${src.pdfBase64}` } });
-  else if (src.text) content[0].text += "\n\nWEB PAGE CONTENT:\n" + src.text;
+  if (!src.text) throw new Error("openrouter: free tier is text-only (PDF needs balance)");
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json", Authorization: `Bearer ${OPENROUTER_KEY}`,
       "HTTP-Referer": "https://deputations.github.io", "X-Title": "Deputations",
     },
-    body: JSON.stringify({ model: OPENROUTER_MODEL, messages: [{ role: "user", content }], response_format: { type: "json_object" }, temperature: 0 }),
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
+      messages: [{ role: "user", content: promptText + "\nReturn ONLY a JSON array.\n\nWEB PAGE CONTENT:\n" + src.text }],
+      temperature: 0,
+    }),
   });
   if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${(await res.text()).slice(0, 160)}`);
   return asArray(parseItems((await res.json())?.choices?.[0]?.message?.content ?? "[]"));
