@@ -142,7 +142,6 @@ function createMultiSelect(root, opts = {}) {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Deputation dashboard started');
 
-    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtNK339wNsCATEu20kc0XPlFjHKKahfxZqunH3Gll2mA-9witdSGrKB3-1jmeauT5gbwkNg5Y8rCKk/pub?output=csv';
     const WATCHLIST_KEY = 'deputationWatchlist';
 
     const kpiGrid = document.getElementById('kpiGrid');
