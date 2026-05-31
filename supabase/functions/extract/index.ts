@@ -414,16 +414,25 @@ Deno.serve(async (req) => {
       };
     });
 
+    let inserted = 0;
     if (rows.length) {
-      const { error: insErr } = await admin.from("vacancies").insert(rows);
+      // ignoreDuplicates -> ON CONFLICT (dedup_key) DO NOTHING: any vacancy already
+      // present (this batch's run-dedup, or a prior draft/approved row) is skipped.
+      const { data: ins, error: insErr } = await admin.from("vacancies")
+        .upsert(rows, { onConflict: "dedup_key", ignoreDuplicates: true })
+        .select("id");
       if (insErr) throw new Error(`insert failed: ${insErr.message}`);
+      inserted = ins?.length ?? 0;
     }
 
     await admin.from("ingest_jobs")
-      .update({ status: "done", rows_extracted: rows.length, error: null })
+      .update({ status: "done", rows_extracted: inserted, error: null })
       .eq("id", job.id);
 
-    return json({ ok: true, rows_extracted: rows.length, candidates: items.length, ingest_job_id: job.id });
+    return json({
+      ok: true, rows_extracted: inserted, duplicates_skipped: rows.length - inserted,
+      candidates: items.length, ingest_job_id: job.id,
+    });
   } catch (err) {
     await admin.from("ingest_jobs")
       .update({ status: "error", error: String(err) }).eq("id", job.id);

@@ -228,17 +228,11 @@ async function importPasted(label, st) {
 
   st.innerHTML = '<span class="spinner"></span> Importing…';
 
-  // de-duplicate against drafts already in the queue (so chunked batches accumulate cleanly)
-  let existing = [];
-  try {
-    const exRes = await api('/rest/v1/vacancies?status=eq.draft&select=post_name,organisation,location_city,level');
-    if (exRes.ok) existing = await exRes.json();
-  } catch { /* best effort */ }
-  const seen = new Set(existing.map(dedupKey));
+  // remove exact duplicates WITHIN this paste; duplicates against rows already
+  // stored (draft or approved) are rejected by the DB unique key on insert.
   const before = items.length;
+  const seen = new Set();
   items = items.filter((it) => { const k = dedupKey(it); if (seen.has(k)) return false; seen.add(k); return true; });
-  const skipped = before - items.length;
-  if (!items.length) { st.textContent = `All ${before} row(s) were already in the queue (skipped duplicates).`; return; }
   // optional: store the EN PDF so review can show pages side-by-side
   let enPdfPath = '';
   const enFile = $('enPdf').files[0];
@@ -264,13 +258,23 @@ async function importPasted(label, st) {
   const job = (await jobRes.json())[0];
   const year = new Date().getFullYear();
   const rows = items.map((it, i) => mapPasted(it, job.id, label, year, i, enPdfPath));
-  const ins = await api('/rest/v1/vacancies', {
-    method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+  // on_conflict=dedup_key + ignore-duplicates -> rows already stored are skipped;
+  // return=representation lets us count what actually landed.
+  const ins = await api('/rest/v1/vacancies?on_conflict=dedup_key', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Prefer: 'return=representation,resolution=ignore-duplicates' },
     body: JSON.stringify(rows),
   });
   if (!ins.ok) throw new Error('Insert failed: ' + (await ins.text()));
-  st.textContent = `✅ Imported ${rows.length} row(s)` + (skipped ? ` (skipped ${skipped} duplicate(s))` : '') + ' to the review queue.';
-  toast(`Imported ${rows.length} draft(s)` + (skipped ? `, skipped ${skipped} dup(s)` : ''));
+  const insertedRows = await ins.json().catch(() => []);
+  const inserted = Array.isArray(insertedRows) ? insertedRows.length : rows.length;
+  const skipped = before - inserted;
+  await api(`/rest/v1/ingest_jobs?id=eq.${job.id}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify({ rows_extracted: inserted }),
+  }).catch(() => {});
+  st.textContent = `✅ Imported ${inserted} row(s)` + (skipped > 0 ? ` (skipped ${skipped} duplicate(s))` : '') + ' to the review queue.';
+  toast(`Imported ${inserted} draft(s)` + (skipped > 0 ? `, skipped ${skipped} dup(s)` : ''));
   $('pasteJson').value = '';
   $('enPdf').value = '';
   document.querySelector('[data-tab="review"]').click();
@@ -406,7 +410,8 @@ function wireApp() {
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
-      st.textContent = `✅ Extracted ${data.rows_extracted} vacanc${data.rows_extracted === 1 ? 'y' : 'ies'} from ${data.candidates} candidate(s).`;
+      st.textContent = `✅ Extracted ${data.rows_extracted} vacanc${data.rows_extracted === 1 ? 'y' : 'ies'} from ${data.candidates} candidate(s)` +
+        (data.duplicates_skipped ? `, skipped ${data.duplicates_skipped} duplicate(s)` : '') + '.';
       toast(`Added ${data.rows_extracted} draft(s) to the review queue`);
       pickedFile = null; $('fileInput').value = '';
       $('dzText').textContent = 'Click to choose a PDF, or drop it here';
@@ -543,8 +548,13 @@ function draftCard(r) {
     catch (e) { toast('Approve failed: ' + e.message); }
   };
   el.querySelector('[data-act="reject"]').onclick = async () => {
-    try { await patchRow({ status: 'rejected' }); el.remove(); toast('Rejected'); bumpCount(-1); scheduleGc(); }
-    catch (e) { toast('Reject failed: ' + e.message); }
+    try {
+      // delete outright (not status='rejected') so its dedup_key is freed and the
+      // same vacancy can be re-added later if it genuinely re-appears
+      const r2 = await api(`/rest/v1/vacancies?id=eq.${r.id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+      if (!r2.ok) throw new Error('HTTP ' + r2.status);
+      el.remove(); toast('Rejected & removed'); bumpCount(-1); scheduleGc();
+    } catch (e) { toast('Reject failed: ' + e.message); }
   };
   el.querySelector('[data-act="enrich"]').onclick = async (e) => {
     const b = e.currentTarget; const old = b.textContent; b.disabled = true; b.textContent = '🔎 Searching…';
