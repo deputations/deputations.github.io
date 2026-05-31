@@ -390,6 +390,19 @@ function wireApp() {
     $('ingestBtn').textContent = t === 'paste' ? 'Import rows' : 'Extract vacancies';
   };
 
+  $('providerStatusBtn').onclick = async () => {
+    const s = $('providerStatus'); s.textContent = 'Checking… (uses ~1 request per provider)';
+    try {
+      const r = await api('/functions/v1/extract', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ healthcheck: true }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+      const dot = (v) => v === 'ok' ? '🟢' : (/quota/.test(v) ? '🟡' : (/not configured/.test(v) ? '⚪' : '🔴'));
+      s.innerHTML = `${dot(d.gemini)} Gemini: <b>${d.gemini}</b> &nbsp; ${dot(d.mistral)} Mistral: <b>${d.mistral}</b> &nbsp; ${dot(d.openrouter)} OpenRouter: <b>${d.openrouter}</b>`;
+    } catch (e) { s.textContent = 'Check failed: ' + e.message; }
+  };
+
   $('copyPromptBtn').onclick = async () => {
     const prompt = ($('promptType') && $('promptType').value === 'notif') ? NOTIF_PROMPT : EN_PROMPT;
     try { await navigator.clipboard.writeText(prompt); toast('Prompt copied — paste it into Gemini/Claude with the PDF'); }
@@ -444,7 +457,8 @@ function wireApp() {
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
       st.textContent = `✅ Extracted ${data.rows_extracted} vacanc${data.rows_extracted === 1 ? 'y' : 'ies'} from ${data.candidates} candidate(s)` +
-        (data.duplicates_skipped ? `, skipped ${data.duplicates_skipped} duplicate(s)` : '') + '.';
+        (data.duplicates_skipped ? `, skipped ${data.duplicates_skipped} duplicate(s)` : '') +
+        ((data.providers && data.providers.length) ? ` · via ${data.providers.join(', ')}` : '') + '.';
       toast(`Added ${data.rows_extracted} draft(s) to the review queue`);
       pickedFile = null; $('fileInput').value = '';
       $('dzText').textContent = 'Click to choose a PDF, or drop it here';

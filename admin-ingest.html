@@ -93,6 +93,10 @@
       <!-- INGEST -->
       <section id="paneIngest" class="card">
         <h2 style="margin-top:0">Add a source</h2>
+        <div style="display:flex;align-items:center;gap:10px;margin:-6px 0 14px;flex-wrap:wrap">
+          <button type="button" id="providerStatusBtn">🔌 Check AI providers</button>
+          <span id="providerStatus" class="muted"></span>
+        </div>
         <label>Source type</label>
         <select id="srcType">
           <option value="notification">Official notification PDF (e.g. NCLT) — clean, high accuracy</option>
@@ -185,6 +189,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb2"></script>
-  <script src="admin-ingest.js?v=sb15"></script>
+  <script src="admin-ingest.js?v=sb16"></script>
 </body>
 </html>

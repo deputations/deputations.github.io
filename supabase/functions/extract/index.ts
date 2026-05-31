@@ -266,13 +266,13 @@ async function openrouterCall(promptText: string, src: Src): Promise<any[]> {
 
 // Provider chain: Gemini -> Mistral -> OpenRouter. Each is tried when the prior
 // fails (notably Gemini's 20/day quota). First success wins.
-async function aiExtract(promptText: string, src: Src): Promise<any[]> {
+async function aiExtract(promptText: string, src: Src, used?: Set<string>): Promise<any[]> {
   const providers: Array<[string, (p: string, s: Src) => Promise<any[]>]> = [["gemini", geminiCall]];
   if (MISTRAL_KEY) providers.push(["mistral", mistralCall]);
   if (OPENROUTER_KEY) providers.push(["openrouter", openrouterCall]);
   let lastErr = "all providers failed";
   for (const [name, fn] of providers) {
-    try { return await fn(promptText, src); }
+    try { const out = await fn(promptText, src); used?.add(name); return out; }
     catch (e) { lastErr = `${name}: ${e}`; }
   }
   throw new Error(lastErr);
@@ -303,6 +303,28 @@ Deno.serve(async (req) => {
   // needs storage permissions.
   let body: any = {};
   try { body = await req.json(); } catch { /* ignore */ }
+
+  // --- health check: ping each provider (uses ~1 request each). ---
+  if (body.healthcheck) {
+    const ping = async (fn: () => Promise<Response>) => {
+      try {
+        const r = await fn();
+        if (r.ok) return "ok";
+        if (r.status === 429) return "quota exhausted (resets daily)";
+        return `error ${r.status}`;
+      } catch (e) { return "error: " + String(e).slice(0, 60); }
+    };
+    const gemini = await ping(() => fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] }) }));
+    const mistral = !MISTRAL_KEY ? "not configured" : await ping(() => fetch(
+      "https://api.mistral.ai/v1/chat/completions",
+      { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${MISTRAL_KEY}` }, body: JSON.stringify({ model: "mistral-small-latest", messages: [{ role: "user", content: "ping" }], max_tokens: 1 }) }));
+    const openrouter = !OPENROUTER_KEY ? "not configured" : await ping(() => fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENROUTER_KEY}` }, body: JSON.stringify({ model: OPENROUTER_MODEL, messages: [{ role: "user", content: "ping" }], max_tokens: 1 }) }));
+    return json({ ok: true, gemini, mistral, openrouter });
+  }
 
   // --- store-only mode: just save a PDF to storage (used by the paste flow so
   // the EN issue can be shown side-by-side in review). No Gemini call. ---
@@ -398,17 +420,18 @@ Deno.serve(async (req) => {
 
     // Gather raw model items. Employment News (big, noisy) is split into page
     // chunks extracted in parallel for higher recall; everything else is one pass.
+    const used = new Set<string>();
     let items: any[] = [];
     if (pdfBytes && job.source_type === "employment_news") {
       const chunks = await splitPdfToBase64(pdfBytes, 8);
       const perChunk = await Promise.all(
-        chunks.map((b64) => aiExtract(prompt, { pdfBase64: b64 }).catch(() => [])),
+        chunks.map((b64) => aiExtract(prompt, { pdfBase64: b64 }, used).catch(() => [])),
       );
       items = perChunk.flat();
     } else if (pdfBytes) {
-      items = await aiExtract(prompt, { pdfBase64: toBase64(pdfBytes) });
+      items = await aiExtract(prompt, { pdfBase64: toBase64(pdfBytes) }, used);
     } else {
-      items = await aiExtract(prompt, { text: htmlText });
+      items = await aiExtract(prompt, { text: htmlText }, used);
     }
 
     // de-duplicate (chunk boundaries / repeated ads) by post+org+location+level
@@ -486,7 +509,7 @@ Deno.serve(async (req) => {
 
     return json({
       ok: true, rows_extracted: inserted, duplicates_skipped: rows.length - inserted,
-      candidates: items.length, ingest_job_id: job.id,
+      candidates: items.length, ingest_job_id: job.id, providers: [...used],
     });
   } catch (err) {
     await admin.from("ingest_jobs")
