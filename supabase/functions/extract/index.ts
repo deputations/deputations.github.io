@@ -109,9 +109,12 @@ EXACTLY these keys (empty string "" when unknown):
 
 const PROMPTS: Record<string, string> = {
   notification: `You are extracting Government of India DEPUTATION vacancies from a single
-official notification/advertisement PDF. Extract EVERY advertised post.
-Set is_deputation=true for posts open on deputation or deputation/absorption
-basis (that is the norm for these notifications).
+official notification / vacancy circular PDF. Extract EVERY post named in the document.
+If it is an EXTENSION, CORRIGENDUM, or REMINDER that references an earlier circular,
+STILL extract the post(s) it names using whatever details are present (e.g. the
+extended last date, the referenced notification date). Treat posts as deputation
+(is_deputation=true) unless the document clearly says otherwise. Return [] only if no
+post is named anywhere in the document.
 ${BASE_RULES}`,
 
   employment_news: `You are extracting Government of India DEPUTATION vacancies from the weekly
