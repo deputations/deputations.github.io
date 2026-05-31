@@ -363,7 +363,7 @@ Deno.serve(async (req) => {
     const seen = new Set<string>();
     const kept = items.filter((it) => {
       if (!it || it.is_deputation === false || !it.post_name) return false;
-      const key = [it.post_name, it.organisation, it.location_city, it.level]
+      const key = [it.post_name, it.organisation, it.location_city, it.level, it.notification_date]
         .map((x: unknown) => String(x ?? "").toLowerCase().trim()).join("|");
       if (seen.has(key)) return false;
       seen.add(key);

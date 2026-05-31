@@ -215,7 +215,7 @@ function parsePastedArray(raw) {
 }
 
 const dedupKey = (o) => [o.post_name, o.organisation, o.location_city,
-  String(o.level || o.req_level1 || '').replace(/\D/g, '')]
+  String(o.level || o.req_level1 || '').replace(/\D/g, ''), (o.notification_date || '')]
   .map((x) => String(x || '').toLowerCase().trim()).join('|');
 
 async function importPasted(label, st) {
