@@ -101,6 +101,10 @@ Also capture, when present:
 If you cannot determine a field, return an empty string "".
 Set confidence to "high" only when the post, level, location and a date are all
 clearly stated; otherwise "medium" or "low".
+
+Output ONLY a JSON array (no prose, no markdown fences). Each object MUST use
+EXACTLY these keys (empty string "" when unknown):
+{"is_deputation","ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
 `;
 
 const PROMPTS: Record<string, string> = {
@@ -410,7 +414,10 @@ Deno.serve(async (req) => {
     // de-duplicate (chunk boundaries / repeated ads) by post+org+location+level
     const seen = new Set<string>();
     const kept = items.filter((it) => {
-      if (!it || it.is_deputation === false || !it.post_name) return false;
+      if (!it || !it.post_name) return false;
+      // Only Employment News needs the deputation filter (it's a mixed newspaper).
+      // Single notifications / circulars / URLs: keep every advertised post.
+      if (job.source_type === "employment_news" && it.is_deputation === false) return false;
       const key = [it.post_name, it.organisation, it.location_city, it.level, it.notification_date]
         .map((x: unknown) => String(x ?? "").toLowerCase().trim()).join("|");
       if (seen.has(key)) return false;
