@@ -25,7 +25,11 @@
     });
   });
 
-  var API_URL = (typeof window !== "undefined" && window.DEPUTATIONS_API) || "";
+  var SB_READY = (typeof window !== "undefined" && window.SUPABASE_READY && window.SUPABASE_READY());
+  var API_URL = SB_READY
+    ? (window.SUPABASE_URL + "/functions/v1/submit")
+    : ((typeof window !== "undefined" && window.DEPUTATIONS_API) || "");
+  var SB_ANON = (typeof window !== "undefined" && window.SUPABASE_ANON_KEY) || "";
 
   var $  = function (s, root) { return (root || document).querySelector(s); };
 
@@ -223,9 +227,12 @@
     label.textContent = "Sending…";
     spin.hidden = false;
 
+    var headers = SB_READY
+      ? { "Content-Type": "application/json", "apikey": SB_ANON, "Authorization": "Bearer " + SB_ANON }
+      : { "Content-Type": "text/plain;charset=utf-8" };
     fetch(API_URL, {
       method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      headers: headers,
       body: JSON.stringify(buildPayload())
     })
       .then(function (r) { return r.json(); })

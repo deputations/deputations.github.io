@@ -8,9 +8,13 @@
 (function () {
   "use strict";
 
-  var API_URL =
-    (typeof window !== "undefined" && window.DEPUTATIONS_API) ||
-    "";
+  // Submit to the Supabase public `submit` function when configured; else fall
+  // back to the legacy Apps Script endpoint.
+  var SB_READY = (typeof window !== "undefined" && window.SUPABASE_READY && window.SUPABASE_READY());
+  var API_URL = SB_READY
+    ? (window.SUPABASE_URL + "/functions/v1/submit")
+    : ((typeof window !== "undefined" && window.DEPUTATIONS_API) || "");
+  var SB_ANON = (typeof window !== "undefined" && window.SUPABASE_ANON_KEY) || "";
 
   var DRAFT_KEY = "rv:draft:v1";
   var MAX_PDF_MB = 10;
@@ -368,10 +372,14 @@
     label.textContent = "Submitting…";
     spin.hidden = false;
 
-    // Use text/plain body to avoid CORS preflight on Apps Script.
+    // Supabase function accepts JSON (+ apikey); Apps Script uses text/plain to
+    // avoid a CORS preflight.
+    var headers = SB_READY
+      ? { "Content-Type": "application/json", "apikey": SB_ANON, "Authorization": "Bearer " + SB_ANON }
+      : { "Content-Type": "text/plain;charset=utf-8" };
     fetch(API_URL, {
       method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      headers: headers,
       body: JSON.stringify(buildPayload())
     })
       .then(function (r) { return r.json(); })
