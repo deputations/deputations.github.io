@@ -88,7 +88,7 @@
     setBookmarks(list) { this.write(KEYS.watchlist, [...new Set(list)]); },
     profile() {
       return this.read(KEYS.profile, {
-        payLevel: '', service: '', cadre: '',
+        payLevel: '', yearsAtCurrentLevel: '', service: '', cadre: '',
         currentMinistry: '', currentPost: '', yearsOfService: '',
         preferredMinistries: [], preferredLocations: [], experienceTags: [],
         lastDeputationStartDate: '', lastDeputationEndDate: '', coolingOffYears: 3
@@ -520,6 +520,7 @@
     if (f.location) parts.push(U.escapeHtml(f.location));
     if (f.status) parts.push(U.escapeHtml(f.status));
     if (f.myPayLevel) parts.push(`My Level ${U.escapeHtml(f.myPayLevel)}`);
+    if (f.experience) parts.push(`${U.escapeHtml(f.experience)}y exp`);
     if (f.quick) parts.push(U.escapeHtml(f.quick));
     return parts.length ? parts.join(' · ') : '<em>Any</em>';
   }
@@ -542,6 +543,7 @@
     if (f.location) q.set('location', f.location);
     if (f.status) q.set('status', f.status);
     if (f.myPayLevel) q.set('myPayLevel', f.myPayLevel);
+    if (f.experience) q.set('experience', f.experience);
     if (f.quick) q.set('quick', f.quick);
     const s = q.toString();
     return s ? '?' + s : '';
@@ -571,6 +573,10 @@
           <div><label>My pay level</label><input class="md-input" name="myPayLevel" type="number" min="1" max="18" value="${U.escapeHtml(f.myPayLevel || '')}"></div>
         </div>
         <div class="row">
+          <div><label>My years at level</label><input class="md-input" name="experience" type="number" min="0" max="40" value="${U.escapeHtml(f.experience || '')}" placeholder="e.g. 3"></div>
+          <div></div>
+        </div>
+        <div class="row">
           <div><label>Pay level</label>${selectHtml('level', levels, f.level)}</div>
           <div><label>Ministry</label>${selectHtml('ministry', ministries, f.ministry)}</div>
         </div>
@@ -598,6 +604,7 @@
         location: fd.get('location') || '',
         status: fd.get('status') || '',
         myPayLevel: fd.get('myPayLevel') || '',
+        experience: fd.get('experience') || '',
         quick: fd.get('quick') || ''
       };
       const name = (fd.get('name') || '').toString().trim() || autoSearchName(filters);
@@ -1234,6 +1241,10 @@
           </select>
         </div>
         <div class="md-field">
+          <label>Years at current level</label>
+          <input name="yearsAtCurrentLevel" type="number" min="0" max="40" value="${U.escapeHtml(p.yearsAtCurrentLevel || '')}" placeholder="e.g. 3">
+        </div>
+        <div class="md-field">
           <label>Service / Cadre</label>
           <input name="service" value="${U.escapeHtml(p.service || '')}" placeholder="e.g. IRS, IAS, CSS">
         </div>
@@ -1282,6 +1293,7 @@
       const next = {
         ...p,
         payLevel: fd.get('payLevel') || '',
+        yearsAtCurrentLevel: fd.get('yearsAtCurrentLevel') || '',
         service: fd.get('service') || '',
         cadre: fd.get('cadre') || '',
         yearsOfService: fd.get('yearsOfService') || '',
@@ -1395,13 +1407,16 @@
     if (!vacancy) return { score: 0, factors };
 
     const userLevel = Number(profile.payLevel);
-    const r1 = Number(vacancy.Req_Level1);
-    const r2 = Number(vacancy.Req_Level2);
-    if (userLevel && Number.isFinite(r1) && Number.isFinite(r2)) {
-      const lo = Math.min(r1, r2), hi = Math.max(r1, r2);
-      factors.level = userLevel >= lo && userLevel <= hi ? 40 : 0;
-    } else if (userLevel) {
-      factors.level = 20;
+    if (userLevel) {
+      // Tier-aware: full marks if the officer's level + years-at-level satisfy
+      // one of the vacancy's eligibility tiers; partial if level set but the
+      // vacancy carries no tier data to check against.
+      const tiers = vacancy.eligibility_tiers || [];
+      if (tiers.length && window.DepEnrich && window.DepEnrich.isEligible) {
+        factors.level = window.DepEnrich.isEligible(vacancy, profile.payLevel, profile.yearsAtCurrentLevel) ? 40 : 0;
+      } else {
+        factors.level = 20;
+      }
     }
 
     const prefMin = (profile.preferredMinistries || []).map(s => U.normalizeText(s));
@@ -1463,10 +1478,10 @@
       if (f.location && U.formatLocation(v) !== f.location) return false;
       if (f.status && v.Status !== f.status) return false;
       if (f.myPayLevel) {
-        const lvl = Number(f.myPayLevel);
-        const lo = Math.min(Number(v.Req_Level1), Number(v.Req_Level2));
-        const hi = Math.max(Number(v.Req_Level1), Number(v.Req_Level2));
-        if (!(lvl >= lo && lvl <= hi)) return false;
+        const eligible = (window.DepEnrich && window.DepEnrich.isEligible)
+          ? window.DepEnrich.isEligible(v, f.myPayLevel, f.experience)
+          : true;
+        if (!eligible) return false;
       }
       if (f.quick === 'closing7' && !(Number(v.Days_Left) >= 0 && Number(v.Days_Left) <= 7)) return false;
       if (f.quick === 'closingToday' && Number(v.Days_Left) !== 0) return false;

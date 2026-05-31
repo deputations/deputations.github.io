@@ -121,6 +121,74 @@
     return { min_level: null, max_level: null, type: 'unspecified' };
   }
 
+  // ---- Eligibility tiers (level + years-of-experience) --------------------
+  // A deputation post is open to officers from one or more feeder grades, each
+  // with its own minimum service. We model that as an array of tiers:
+  //   [{ level: 11, min_years: 0 }, { level: 10, min_years: 3 }, ...]
+  // Source of truth = the `eligibility_tiers` column if present; otherwise we
+  // backfill from the legacy req_level1/min_years_experience (+ …2) columns.
+  function parseYears(v) {
+    const m = norm(v).match(/(\d+)/);
+    return m ? parseInt(m[1], 10) : 0;
+  }
+
+  function dedupeTiers(tiers) {
+    // One tier per level; keep the most permissive (lowest min_years). Sort by
+    // level descending so the analogous (highest) grade reads first.
+    const byLevel = new Map();
+    for (const t of tiers) {
+      if (t.level === null || t.level === undefined) continue;
+      const prev = byLevel.get(t.level);
+      if (!prev || t.min_years < prev.min_years) byLevel.set(t.level, t);
+    }
+    return [...byLevel.values()].sort((a, b) => b.level - a.level);
+  }
+
+  function parseTiers(row) {
+    // 1) Explicit eligibility_tiers (jsonb array, or JSON string from the JSON file)
+    let raw = row && row.eligibility_tiers;
+    if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch (e) { raw = null; } }
+    if (Array.isArray(raw) && raw.length) {
+      const tiers = raw.map(t => ({
+        level: parseLevel(t && t.level),
+        min_years: (t && t.min_years != null) ? (parseInt(t.min_years, 10) || 0) : 0
+      }));
+      const cleaned = dedupeTiers(tiers);
+      if (cleaned.length) return cleaned;
+    }
+    // 2) Backfill from legacy flat columns
+    const tiers = [];
+    const l1 = parseLevel(row && row.req_level1);
+    if (l1 !== null) tiers.push({ level: l1, min_years: parseYears(row && row.min_years_experience) });
+    const l2 = parseLevel(row && row.req_level2);
+    if (l2 !== null) tiers.push({ level: l2, min_years: parseYears(row && row.min_years_experience2) });
+    return dedupeTiers(tiers);
+  }
+
+  // Is an officer at (userLevel, userYears-at-that-level) eligible for `vacancy`?
+  //   • No level chosen           → no constraint (true)
+  //   • Vacancy has no tier data  → no constraint (true)
+  //   • Over-qualified (above the top tier) → included (true)
+  //   • Otherwise → some tier matches level exactly AND years >= that tier's min
+  //   • userYears blank → match any tier at that level regardless of years
+  function isEligible(vacancy, userLevel, userYears) {
+    const lvl = parseLevel(userLevel);
+    if (lvl === null) return true;
+    const tiers = (vacancy && vacancy.eligibility_tiers) || [];
+    if (!tiers.length) return true;
+    const yrs = (userYears === '' || userYears === null || userYears === undefined)
+      ? null : (parseInt(userYears, 10) || 0);
+    const maxLevel = Math.max.apply(null, tiers.map(t => t.level));
+    if (lvl > maxLevel) return true; // senior / over-qualified
+    return tiers.some(t => t.level === lvl && (yrs === null || yrs >= t.min_years));
+  }
+
+  // "L11 · L10 (3y) · L8 (5y)" — compact human summary of the tiers.
+  function formatTiers(tiers) {
+    if (!tiers || !tiers.length) return '';
+    return tiers.map(t => t.min_years > 0 ? `L${t.level} (${t.min_years}y)` : `L${t.level}`).join(' · ');
+  }
+
   function inferStatus(raw, daysLeft) {
     const s = norm(raw).toLowerCase();
     if (['active','inactive','expired'].includes(s)) {
@@ -213,6 +281,8 @@
     o.Region = o.Region || regionForState(o.Location_State);
     o.eligibility_text = formatEligibilityText(o.Req_Level1, o.Req_Level2);
     o.eligibility_rules = buildEligibilityRules(o.Req_Level1, o.Req_Level2);
+    o.eligibility_tiers = parseTiers(row);
+    o.eligibility_tiers_text = formatTiers(o.eligibility_tiers);
     o.delhi_ncr_flag = isDelhiNcr(o.Location_City, o.Location_State);
     o.expired_flag = daysLeft !== null && daysLeft < 0;
     o.closing_soon = daysLeft !== null && daysLeft >= 0 && daysLeft <= 15;
@@ -232,5 +302,5 @@
     });
   }
 
-  global.DepEnrich = { enrichRecord, enrichAll };
+  global.DepEnrich = { enrichRecord, enrichAll, parseTiers, isEligible, formatTiers };
 })(window);

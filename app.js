@@ -156,6 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const searchPost = document.getElementById('searchPost');
     const filterMyPayLevel = document.getElementById('filterMyPayLevel');
+    const filterExperience = document.getElementById('filterExperience');
     const filterLevel = document.getElementById('filterLevel');
     const filterMinistry = document.getElementById('filterMinistry');
     const filterLocation = createMultiSelect(document.getElementById('filterLocationMS'), {
@@ -235,6 +236,16 @@ function autoselectPayLevelFromProfile() {
       filterMyPayLevel.value = lvl;
       // Make sure renders downstream see the new value.
       filterMyPayLevel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    // Mirror years-at-current-level from the profile, if set.
+    const yrs = String(profile && profile.yearsAtCurrentLevel || '').trim();
+    if (filterExperience && yrs && !filterExperience.value) {
+      const capped = Math.min(10, parseInt(yrs, 10) || 0);
+      if ([...filterExperience.options].some(o => o.value === String(capped))) {
+        filterExperience.value = String(capped);
+        filterExperience.dispatchEvent(new Event('change', { bubbles: true }));
+      }
     }
 
     if (sessionStorage.getItem('payLevelToastDismissed') === '1') return;
@@ -345,6 +356,7 @@ function hydrateFiltersFromUrl() {
         };
         setIfPresent('search', searchPost);
         setIfPresent('myPayLevel', filterMyPayLevel);
+        setIfPresent('experience', filterExperience);
         setIfPresent('level', filterLevel);
         setIfPresent('ministry', filterMinistry);
         // multi-select: ?location=a,b,c
@@ -667,6 +679,16 @@ function renderTable(data) {
             filterMyPayLevel.appendChild(opt);
         }
 
+        if (filterExperience) {
+            filterExperience.innerHTML = '<option value="">Any</option>';
+            for (let y = 0; y <= 10; y++) {
+                const opt = document.createElement('option');
+                opt.value = String(y);
+                opt.textContent = y === 10 ? '10+ years' : (y === 1 ? '1 year' : `${y} years`);
+                filterExperience.appendChild(opt);
+            }
+        }
+
         filterLevel.innerHTML = '<option value="">All Levels</option>';
         filterMinistry.innerHTML = '<option value="">All Ministries</option>';
         // (no-op for the multi-select; items populated below)
@@ -717,6 +739,7 @@ function renderTable(data) {
 
   [
     filterMyPayLevel,
+    filterExperience,
     filterLevel,
     filterMinistry,
     filterLocation,
@@ -743,6 +766,7 @@ function renderTable(data) {
   clearFiltersBtn.addEventListener('click', () => {
     searchPost.value = '';
     filterMyPayLevel.value = '';
+    if (filterExperience) filterExperience.value = '';
     filterLevel.value = '';
     filterMinistry.value = '';
     filterLocation.setValues([]);
@@ -783,6 +807,7 @@ function renderTable(data) {
 
     if (filterName === 'search') searchPost.value = '';
     if (filterName === 'myPayLevel') filterMyPayLevel.value = '';
+    if (filterName === 'experience' && filterExperience) filterExperience.value = '';
     if (filterName === 'level') filterLevel.value = '';
     if (filterName === 'ministry') filterMinistry.value = '';
     if (filterName === 'location') filterLocation.setValues([]);
@@ -979,6 +1004,7 @@ kpiGrid.addEventListener('click', (e) => {
     function getFilteredData({ applyKpiFilter = true } = {}) {
   const search = searchPost.value.trim().toLowerCase();
   const myPayLevel = filterMyPayLevel.value;
+  const myYears = filterExperience ? filterExperience.value : '';
   const level = filterLevel.value;
   const ministry = filterMinistry.value;
   const locations = filterLocation.values;
@@ -1014,21 +1040,13 @@ kpiGrid.addEventListener('click', (e) => {
     if (status && itemStatus !== status) return false;
 
     if (myPayLevel) {
-      const userLevel = Number(myPayLevel);
-      const req1 = parseLevelValue(item.Req_Level1);
-      const req2 = parseLevelValue(item.Req_Level2);
-
-      if (req1 !== null && req2 !== null) {
-        const minReq = Math.min(req1, req2);
-        const maxReq = Math.max(req1, req2);
-        if (userLevel < minReq || userLevel > maxReq) return false;
-      } else if (req1 !== null) {
-        if (userLevel !== req1) return false;
-      } else if (req2 !== null) {
-        if (userLevel !== req2) return false;
-      } else {
-        return false;
-      }
+      // Tier-aware eligibility: matches the candidate's level + years-at-level
+      // against the vacancy's eligibility_tiers (see enrich.js#isEligible).
+      // Experience only narrows results when a pay level is also chosen.
+      const eligible = (window.DepEnrich && window.DepEnrich.isEligible)
+        ? window.DepEnrich.isEligible(item, myPayLevel, myYears)
+        : true;
+      if (!eligible) return false;
     }
 
     if (showWatchlistOnly && !watchlist.has(itemId)) return false;
@@ -1230,6 +1248,7 @@ kpiGrid.addEventListener('click', (e) => {
 
   if (searchPost.value.trim()) chips.push(makeChip('search', `Search: ${escapeHtml(searchPost.value.trim())}`));
   if (filterMyPayLevel.value) chips.push(makeChip('myPayLevel', `My Pay Level: Level ${filterMyPayLevel.value}`));
+  if (filterExperience && filterExperience.value) chips.push(makeChip('experience', `Experience: ${filterExperience.value === '10' ? '10+' : escapeHtml(filterExperience.value)} yr`));
   if (filterLevel.value) chips.push(makeChip('level', `Pay Level: ${escapeHtml(filterLevel.value)}`));
   if (filterMinistry.value) chips.push(makeChip('ministry', `Ministry: ${escapeHtml(filterMinistry.value)}`));
   filterLocation.values.forEach(loc => {
