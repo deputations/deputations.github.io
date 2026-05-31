@@ -319,23 +319,26 @@ Deno.serve(async (req) => {
 
   // --- health check: ping each provider (uses ~1 request each). ---
   if (body.healthcheck) {
-    const ping = async (fn: () => Promise<Response>) => {
+    // dailyCap=true → a 429 means a real daily quota (Gemini). Otherwise a 429 is
+    // usually a transient shared-pool rate-limit, so retry once before reporting.
+    const ping = async (fn: () => Promise<Response>, dailyCap: boolean) => {
       try {
-        const r = await fn();
+        let r = await fn();
+        if (!r.ok && r.status === 429 && !dailyCap) { await sleep(1500); r = await fn(); }
         if (r.ok) return "ok";
-        if (r.status === 429) return "quota exhausted (resets daily)";
+        if (r.status === 429) return dailyCap ? "quota exhausted (resets daily)" : "busy — rate-limited (transient)";
         return `error ${r.status}`;
       } catch (e) { return "error: " + String(e).slice(0, 60); }
     };
     const gemini = await ping(() => fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] }) }));
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] }) }), true);
     const mistral = !MISTRAL_KEY ? "not configured" : await ping(() => fetch(
       "https://api.mistral.ai/v1/chat/completions",
-      { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${MISTRAL_KEY}` }, body: JSON.stringify({ model: "mistral-small-latest", messages: [{ role: "user", content: "ping" }], max_tokens: 1 }) }));
+      { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${MISTRAL_KEY}` }, body: JSON.stringify({ model: "mistral-small-latest", messages: [{ role: "user", content: "ping" }], max_tokens: 1 }) }), false);
     const openrouter = !OPENROUTER_KEY ? "not configured" : await ping(() => fetch(
       "https://openrouter.ai/api/v1/chat/completions",
-      { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENROUTER_KEY}` }, body: JSON.stringify({ model: OPENROUTER_MODEL, messages: [{ role: "user", content: "ping" }], max_tokens: 1 }) }));
+      { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENROUTER_KEY}` }, body: JSON.stringify({ model: OPENROUTER_MODEL, messages: [{ role: "user", content: "ping" }], max_tokens: 1 }) }), false);
     return json({ ok: true, gemini, mistral, openrouter });
   }
 

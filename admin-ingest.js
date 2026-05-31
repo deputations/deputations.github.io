@@ -398,7 +398,7 @@ function wireApp() {
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
-      const dot = (v) => v === 'ok' ? '🟢' : (/quota/.test(v) ? '🟡' : (/not configured/.test(v) ? '⚪' : '🔴'));
+      const dot = (v) => v === 'ok' ? '🟢' : (/not configured/.test(v) ? '⚪' : (/error/i.test(v) ? '🔴' : '🟡'));
       s.innerHTML = `${dot(d.gemini)} Gemini: <b>${d.gemini}</b> &nbsp; ${dot(d.mistral)} Mistral: <b>${d.mistral}</b> &nbsp; ${dot(d.openrouter)} OpenRouter: <b>${d.openrouter}</b>`;
     } catch (e) { s.textContent = 'Check failed: ' + e.message; }
   };
