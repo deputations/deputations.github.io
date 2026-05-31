@@ -474,6 +474,33 @@ function wireApp() {
 
   $('viewerClose').onclick = () => { $('viewerFrame').src = 'about:blank'; $('viewerPane').style.display = 'none'; };
 
+  $('approveAllBtn').onclick = async () => {
+    const n = CURRENT_DRAFT_IDS.length;
+    if (!n) return toast('No drafts to approve');
+    if (!confirm(`Approve & publish ALL ${n} draft(s) as they currently are?\n(Unsaved inline edits aren't included — Save those first if needed.)`)) return;
+    const b = $('approveAllBtn'); b.disabled = true;
+    try {
+      const r = await api('/rest/v1/vacancies?status=eq.draft', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: 'approved' }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      toast(`✅ Approved & published ${n} row(s)`); loadDrafts(); scheduleGc();
+    } catch (e) { toast('Approve all failed: ' + e.message); } finally { b.disabled = false; }
+  };
+
+  $('rejectAllBtn').onclick = async () => {
+    const n = CURRENT_DRAFT_IDS.length;
+    if (!n) return toast('No drafts to reject');
+    if (!confirm(`Delete ALL ${n} draft(s)? This cannot be undone.`)) return;
+    const b = $('rejectAllBtn'); b.disabled = true;
+    try {
+      const r = await api('/rest/v1/vacancies?status=eq.draft', { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      toast(`Deleted ${n} draft(s)`); loadDrafts(); scheduleGc();
+    } catch (e) { toast('Reject all failed: ' + e.message); } finally { b.disabled = false; }
+  };
+
   $('enrichAllBtn').onclick = async () => {
     const ids = [...CURRENT_DRAFT_IDS];
     if (!ids.length) return toast('No drafts to enrich');
