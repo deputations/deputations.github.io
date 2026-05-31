@@ -22,6 +22,7 @@ const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
 const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 // Fallback providers (used when Gemini's free 20/day quota is exhausted).
 const MISTRAL_KEY = Deno.env.get("MISTRAL_API_KEY") ?? "";
+const MISTRAL_MODEL = Deno.env.get("MISTRAL_MODEL") ?? "mistral-large-latest";
 const OPENROUTER_KEY = Deno.env.get("OPENROUTER_API_KEY") ?? "";
 const OPENROUTER_MODEL = Deno.env.get("OPENROUTER_MODEL") ?? "google/gemma-4-31b-it:free";
 
@@ -250,7 +251,7 @@ async function mistralCall(promptText: string, src: Src): Promise<any[]> {
   const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
     method: "POST", headers: auth,
     body: JSON.stringify({
-      model: "mistral-small-latest",
+      model: MISTRAL_MODEL,
       messages: [{ role: "user", content: promptText + "\nReturn ONLY a JSON array.\n\nDOCUMENT:\n" + docText.slice(0, 120_000) }],
       response_format: { type: "json_object" }, temperature: 0,
     }),
