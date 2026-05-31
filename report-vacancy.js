@@ -292,6 +292,7 @@
     if (val("rvDescription")) rows.push(["Description", val("rvDescription")]);
     if (val("rvPosts"))       rows.push(["Number of posts", val("rvPosts")]);
     if (val("rvPay"))         rows.push(["Pay level", val("rvPay")]);
+    if (val("rvMinYears"))    rows.push(["Min experience (yrs)", val("rvMinYears")]);
     if (val("rvEligibility")) rows.push(["Eligibility", val("rvEligibility")]);
     if (val("rvLocation"))    rows.push(["Location", val("rvLocation")]);
     if (val("rvSubmitter"))   rows.push(["Submitter", val("rvSubmitter")]);
@@ -337,6 +338,7 @@
       description: val("rvDescription"),
       numberOfPosts: val("rvPosts"),
       payLevel: val("rvPay"),
+      minYears: val("rvMinYears"),
       eligibility: val("rvEligibility"),
       location: val("rvLocation"),
       submitterName: val("rvSubmitter"),

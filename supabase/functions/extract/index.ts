@@ -73,6 +73,16 @@ const VACANCY_ITEM = {
     req_level2: { type: "string" },
     min_years_experience: { type: "string" },
     min_years_experience2: { type: "string" },
+    eligibility_tiers: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          level: { type: "string" },
+          min_years: { type: "string" },
+        },
+      },
+    },
     no_of_posts: { type: "string" },
     deputation_period_years: { type: "string" },
     deputation_type: { type: "string" },
@@ -104,6 +114,18 @@ last_date_to_apply. If the ad says applications are due "within N days" / "N day
 from the date of this notification/advertisement", COMPUTE last_date_to_apply by
 adding N days to notification_date and return the computed ISO date.
 "level" and "req_level1" are the Pay Matrix level NUMBER as a string (e.g. "12").
+"eligibility_tiers" is the list of feeder grades the post is open to. A deputation
+post is usually open to officers from one OR MORE pay levels, each with its own
+minimum service. Return one entry per feeder grade as {"level","min_years"} where
+level is the Pay Matrix level NUMBER (string) and min_years is the required years
+of regular service AT THAT LEVEL (string, "0" for an analogous-post / no-minimum
+tier). Example — a Level-11 post worded "(i) analogous; OR (ii) Level-10 with 3
+years; OR (iii) Level-8 with 5 years" becomes:
+  [{"level":"11","min_years":"0"},{"level":"10","min_years":"3"},{"level":"8","min_years":"5"}]
+Always include the analogous tier (the post's own level, min_years "0") when the
+ad says "holding analogous posts". Still ALSO fill req_level1/req_level2 and
+min_years_experience/min_years_experience2 with the first two tiers for backward
+compatibility. If only one grade is eligible, return a single-entry array.
 "source_page" = the PDF page number where this advertisement appears, as a string.
 Also capture, when present:
 - ministry: the standard Government of India ministry, WITHOUT the "Ministry of" /
@@ -122,7 +144,7 @@ clearly stated; otherwise "medium" or "low".
 
 Output ONLY a JSON array (no prose, no markdown fences). Each object MUST use
 EXACTLY these keys (empty string "" when unknown):
-{"is_deputation","ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
+{"is_deputation","ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
 `;
 
 const PROMPTS: Record<string, string> = {
@@ -190,6 +212,32 @@ async function splitPdfToBase64(bytes: Uint8Array, pagesPerChunk: number): Promi
     chunks.push(toBase64(await doc.save()));
   }
   return chunks;
+}
+
+// Normalise the model's eligibility_tiers into a clean [{level:int, min_years:int}]
+// array. Falls back to the legacy req_level1/2 + min_years fields when the model
+// didn't return tiers. One tier per level (lowest min_years wins), sorted desc.
+function normalizeTiers(it: any): Array<{ level: number; min_years: number }> {
+  const toInt = (v: unknown) => {
+    const m = String(v ?? "").match(/\d+/);
+    return m ? parseInt(m[0], 10) : null;
+  };
+  let raw: any[] = Array.isArray(it?.eligibility_tiers) ? it.eligibility_tiers : [];
+  let tiers = raw
+    .map((t) => ({ level: toInt(t?.level), min_years: toInt(t?.min_years) ?? 0 }))
+    .filter((t) => t.level !== null) as Array<{ level: number; min_years: number }>;
+  if (!tiers.length) {
+    const l1 = toInt(it?.req_level1) ?? toInt(it?.level);
+    if (l1 !== null) tiers.push({ level: l1, min_years: toInt(it?.min_years_experience) ?? 0 });
+    const l2 = toInt(it?.req_level2);
+    if (l2 !== null) tiers.push({ level: l2, min_years: toInt(it?.min_years_experience2) ?? 0 });
+  }
+  const byLevel = new Map<number, { level: number; min_years: number }>();
+  for (const t of tiers) {
+    const prev = byLevel.get(t.level);
+    if (!prev || t.min_years < prev.min_years) byLevel.set(t.level, t);
+  }
+  return [...byLevel.values()].sort((a, b) => b.level - a.level);
 }
 
 function minCodeFromMinistry(ministry: string): string {
@@ -529,6 +577,7 @@ Deno.serve(async (req) => {
         req_level2: (it.req_level2 || "").toString().replace(/\D/g, ""),
         min_years_experience: it.min_years_experience || "",
         min_years_experience2: it.min_years_experience2 || "",
+        eligibility_tiers: normalizeTiers(it),
         no_of_posts: (it.no_of_posts || "").toString(),
         deputation_period_years: (it.deputation_period_years || "").toString(),
         deputation_type: it.deputation_type || "",

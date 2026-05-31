@@ -84,14 +84,91 @@ const FIELDS = [
   ['post_name', 'Post name'], ['ministry', 'Ministry'], ['organisation', 'Organisation'],
   ['organisation_type', 'Organisation type'], ['level', 'Pay level'],
   ['location_city', 'City'], ['location_state', 'State'], ['no_of_posts', 'No. of posts'],
-  ['req_level1', 'Eligible level (from)'], ['req_level2', 'Eligible level (to)'],
-  ['min_years_experience', 'Min experience (yrs)'], ['deputation_period_years', 'Deputation period (yrs)'],
+  ['deputation_period_years', 'Deputation period (yrs)'],
   ['notification_date', 'Notification date'], ['last_date_to_apply', 'Last date'],
   ['essential_qualification', 'Essential qualification'], ['eligible_service', 'Eligible service'],
   ['functional_area', 'Functional area / duties'], ['tags_keywords', 'Tags / keywords'],
   ['mode_of_application', 'Mode of application'], ['official_notification_link', 'Official link'],
   ['application_form_link', 'Application form link'], ['source_website', 'Source website'],
 ];
+
+// ---- Eligibility tiers (level + min years) editor ----
+// Replaces the old flat req_level1/2 + min_years fields with an unbounded
+// repeater. Each tier = a feeder grade the post is open to. parseTiers (from
+// enrich.js) reads either the eligibility_tiers jsonb or the legacy columns.
+function tiersFor(obj) {
+  if (window.DepEnrich && window.DepEnrich.parseTiers) return window.DepEnrich.parseTiers(obj);
+  const num = (v) => { const m = String(v ?? '').match(/\d+/); return m ? parseInt(m[0], 10) : null; };
+  const out = [];
+  const l1 = num(obj && obj.req_level1); if (l1 !== null) out.push({ level: l1, min_years: num(obj && obj.min_years_experience) || 0 });
+  const l2 = num(obj && obj.req_level2); if (l2 !== null) out.push({ level: l2, min_years: num(obj && obj.min_years_experience2) || 0 });
+  return out;
+}
+
+function tierRowHtml(t) {
+  return `<div class="tier-row" style="display:flex;gap:6px;margin-bottom:5px;align-items:center;">
+    <input class="tier-level" type="number" min="1" max="18" placeholder="Level" value="${t ? escapeHtml(t.level) : ''}" style="width:90px;flex:0 0 auto">
+    <span class="muted" style="font-size:.8rem">with</span>
+    <input class="tier-years" type="number" min="0" max="40" placeholder="Years" value="${t ? escapeHtml(t.min_years) : ''}" style="width:90px;flex:0 0 auto">
+    <span class="muted" style="font-size:.8rem">yrs</span>
+    <button type="button" class="tier-del" title="Remove this tier" style="margin-left:auto">✕</button>
+  </div>`;
+}
+
+function tiersEditorHtml(r) {
+  const tiers = tiersFor(r);
+  const rows = (tiers.length ? tiers : [null]).map(tierRowHtml).join('');
+  return `<div data-tiers style="grid-column:1/-1;border:1px solid var(--line,#334155);border-radius:8px;padding:8px 10px;margin-top:4px">
+    <label style="display:block;margin-bottom:6px">Eligibility tiers <span class="muted" style="font-weight:400">— each feeder grade the post is open to (analogous = the post's level with 0 years)</span></label>
+    <div class="tier-rows">${rows}</div>
+    <button type="button" class="tier-add" style="margin-top:4px">+ Add tier</button>
+  </div>`;
+}
+
+function wireTiersEditor(scopeEl) {
+  const ed = scopeEl.querySelector('[data-tiers]');
+  if (!ed) return;
+  ed.querySelector('.tier-add').addEventListener('click', () => {
+    ed.querySelector('.tier-rows').insertAdjacentHTML('beforeend', tierRowHtml(null));
+  });
+  ed.addEventListener('click', (e) => {
+    const del = e.target.closest('.tier-del');
+    if (!del) return;
+    const rows = ed.querySelectorAll('.tier-row');
+    if (rows.length > 1) del.closest('.tier-row').remove();
+    else { del.closest('.tier-row').querySelectorAll('input').forEach((i) => { i.value = ''; }); }
+  });
+}
+
+// Read tier rows -> clean [{level,min_years}] (deduped, sorted desc). Returns
+// [] when the editor is present but empty, or null when there's no editor.
+function collectTiers(scopeEl) {
+  const ed = scopeEl.querySelector('[data-tiers]');
+  if (!ed) return null;
+  const tiers = [];
+  ed.querySelectorAll('.tier-row').forEach((row) => {
+    const lvl = parseInt(String(row.querySelector('.tier-level').value || '').replace(/\D/g, ''), 10);
+    if (!Number.isFinite(lvl)) return;
+    const yrs = parseInt(String(row.querySelector('.tier-years').value || '').replace(/\D/g, ''), 10) || 0;
+    tiers.push({ level: lvl, min_years: yrs });
+  });
+  const byLevel = new Map();
+  tiers.forEach((t) => { const p = byLevel.get(t.level); if (!p || t.min_years < p.min_years) byLevel.set(t.level, t); });
+  return [...byLevel.values()].sort((a, b) => b.level - a.level);
+}
+
+// Merge collected tiers into a patch object: writes eligibility_tiers AND
+// mirrors the first two tiers into the legacy columns for back-compat.
+function applyTiersToPatch(patch, scopeEl) {
+  const tiers = collectTiers(scopeEl);
+  if (tiers === null) return patch;
+  patch.eligibility_tiers = tiers;
+  patch.req_level1 = tiers[0] ? String(tiers[0].level) : '';
+  patch.min_years_experience = tiers[0] ? String(tiers[0].min_years) : '';
+  patch.req_level2 = tiers[1] ? String(tiers[1].level) : '';
+  patch.min_years_experience2 = tiers[1] ? String(tiers[1].min_years) : '';
+  return patch;
+}
 
 // Fixed, standardised vocabularies for the review dropdowns.
 const ORG_TYPES = [
@@ -152,12 +229,13 @@ STEP 4 — Expand to ONE object per (post x location/bench x pay level). Never c
 STEP 5 — BEFORE finalising, re-check: every page covered first to last? boxed/short ads and continuation pages re-scanned? Add anything missed.
 
 Output ONLY a JSON array — no prose, no markdown code fences. Each object must use EXACTLY these keys (use "" when unknown):
-{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
+{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
 
 Rules:
 - Only use official sources for links; never invent a URL. If unsure a link is real, leave it empty.
 - Dates in ISO yyyy-mm-dd. If a deadline is "within N days of the notification/advertisement", compute last_date_to_apply = notification_date + N days.
 - "level" and "req_level1" = Pay Matrix level NUMBER only, as a string (e.g. "12").
+- "eligibility_tiers" = the feeder grades the post is open to, as an array of {"level","min_years"} (both NUMBER strings). Include the analogous tier (the post's own level, "min_years":"0") when "analogous posts" is mentioned, plus each lower grade with its required years. Example for a Level-11 post open to "(i) analogous; (ii) L10+3y; (iii) L8+5y": [{"level":"11","min_years":"0"},{"level":"10","min_years":"3"},{"level":"8","min_years":"5"}]. Also still fill req_level1/req_level2 + min_years_experience/min_years_experience2 with the first two tiers.
 - ministry: the standard GoI ministry name WITHOUT the "Ministry of"/"Department of" prefix (e.g. "Agriculture and Farmers Welfare", "Home Affairs", "Personnel, Public Grievances and Pensions").
 - organisation_type: EXACTLY one of — Ministry; Department; Attached and Subordinate Offices; Constitutional Bodies; Statutory Bodies; Autonomous Bodies; Central Public Sector Enterprises (CPSEs).
 - functional_area: a short summary of duties / job description.
@@ -175,12 +253,13 @@ const NOTIF_PROMPT = `You are extracting Government of India DEPUTATION vacancie
 4) You may use web search to confirm the organisation's official website or any field the PDF leaves ambiguous.
 
 Output ONLY a JSON array. Each object must use EXACTLY these keys (use "" when unknown):
-{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
+{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
 
 Rules:
 - Only use official sources for links; NEVER invent a URL.
 - Dates ISO yyyy-mm-dd; if "within N days of the notification", compute last_date_to_apply = notification_date + N days.
 - "level"/"req_level1" = Pay Matrix level NUMBER only (e.g. "12").
+- "eligibility_tiers" = feeder grades as [{"level","min_years"}] (NUMBER strings). Include the analogous tier (post's own level, "0" years) plus each lower grade with its required years; e.g. [{"level":"11","min_years":"0"},{"level":"10","min_years":"3"},{"level":"8","min_years":"5"}]. Also still fill req_level1/2 + min_years_experience/2 from the first two tiers.
 - ministry = standard GoI name WITHOUT the "Ministry of"/"Department of" prefix.
 - organisation_type: EXACTLY one of — Ministry; Department; Attached and Subordinate Offices; Constitutional Bodies; Statutory Bodies; Autonomous Bodies; Central Public Sector Enterprises (CPSEs).
 - source_page = PDF page number of the post (string).
@@ -213,6 +292,7 @@ function mapPasted(it, jobId, label, year, i, sourceFileUrl) {
     location_city: it.location_city || '', location_state: it.location_state || '',
     req_level1: String(it.req_level1 || lvl || '').replace(/\D/g, ''), req_level2: String(it.req_level2 || '').replace(/\D/g, ''),
     min_years_experience: String(it.min_years_experience || ''), min_years_experience2: String(it.min_years_experience2 || ''),
+    eligibility_tiers: tiersFor(it),
     no_of_posts: String(it.no_of_posts || ''), deputation_period_years: String(it.deputation_period_years || ''),
     deputation_type: it.deputation_type || '', notification_date: it.notification_date || '', last_date_to_apply: it.last_date_to_apply || '',
     official_notification_link: it.official_notification_link || '', application_form_link: it.application_form_link || '',
@@ -597,7 +677,10 @@ function draftCard(r) {
     </div>
     <div class="row">
       ${FIELDS.map(([k, lbl]) => fieldHtml(k, lbl, r)).join('')}
+      ${tiersEditorHtml(r)}
     </div>`;
+
+  wireTiersEditor(el);
 
   const collect = () => {
     const patch = {};
@@ -605,6 +688,7 @@ function draftCard(r) {
     const lvl = (patch.level || '').replace(/\D/g, '');
     patch.level_text = lvl ? `Level-${lvl}` : '';
     if (patch.ministry) patch.min_code = MIN_CODE_BY_NAME[patch.ministry] || minCode(patch.ministry);
+    applyTiersToPatch(patch, el);
     return patch;
   };
 
@@ -692,6 +776,7 @@ function collectPatch(scopeEl) {
   const lvl = (patch.level || '').replace(/\D/g, '');
   patch.level_text = lvl ? `Level-${lvl}` : '';
   if (patch.ministry) patch.min_code = MIN_CODE_BY_NAME[patch.ministry] || minCode(patch.ministry);
+  applyTiersToPatch(patch, scopeEl);
   return patch;
 }
 
@@ -738,6 +823,7 @@ function manageCard(r, isNew) {
     <div class="editor" style="${isNew ? '' : 'display:none'}">
       <div class="row">
         ${FIELDS.map(([k, lbl]) => fieldHtml(k, lbl, r)).join('')}
+        ${tiersEditorHtml(r)}
         <div><label>Status</label>
           <select data-k="status">
             <option value="approved"${r.status === 'approved' ? ' selected' : ''}>approved (live)</option>
@@ -803,6 +889,8 @@ function manageCard(r, isNew) {
       el.remove(); toast('Deleted'); scheduleGc();
     } catch (e) { toast('Delete failed: ' + e.message); }
   };
+
+  wireTiersEditor(el);
 
   const srcBtn = el.querySelector('[data-act="source"]');
   if (srcBtn) srcBtn.onclick = () => openSource(r, String((r.raw_extraction && r.raw_extraction.source_page) || '').replace(/\D/g, ''));

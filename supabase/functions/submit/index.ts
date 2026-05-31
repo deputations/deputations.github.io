@@ -82,6 +82,11 @@ Deno.serve(async (req) => {
 
   const ministry = String(body.ministry || "");
   const level = String(body.payLevel || "").replace(/\D/g, "");
+  const minYears = String(body.minYears || "").replace(/\D/g, "");
+  // Public tips are single-tier (the analogous grade); admin refines on review.
+  const eligibility_tiers = level
+    ? [{ level: parseInt(level, 10), min_years: minYears ? parseInt(minYears, 10) : 0 }]
+    : [];
   const notes = [
     body.submitterName ? `Submitter: ${body.submitterName}` : "",
     body.submitterEmail ? `<${body.submitterEmail}>` : "",
@@ -94,6 +99,8 @@ Deno.serve(async (req) => {
     vacancy_id: `TIP-${new Date().getFullYear()}-L${level || "X"}-${Date.now() % 100000}`,
     post_name: title, organisation: org, ministry, min_code: minCode(ministry),
     level, level_text: level ? `Level-${level}` : "",
+    req_level1: level, min_years_experience: minYears,
+    eligibility_tiers,
     location_city: String(body.location || ""),
     no_of_posts: String(body.numberOfPosts || ""),
     last_date_to_apply: String(body.deadline || ""),
