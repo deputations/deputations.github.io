@@ -228,16 +228,29 @@ async function geminiCall(promptText: string, src: Src): Promise<any[]> {
   throw new Error(lastErr);
 }
 
-// ---- Mistral (native PDF via document_url; JSON mode) ----
+// ---- Mistral: OCR the PDF to text (handles searchable AND scanned), then
+// extract structured JSON from that text. (document_url chat was unreliable.) ----
 async function mistralCall(promptText: string, src: Src): Promise<any[]> {
   if (!MISTRAL_KEY) throw new Error("no mistral key");
-  const content: any[] = [{ type: "text", text: promptText + "\nReturn ONLY a JSON array." }];
-  if (src.pdfBase64) content.push({ type: "document_url", document_url: `data:application/pdf;base64,${src.pdfBase64}` });
-  else if (src.text) content[0].text += "\n\nWEB PAGE CONTENT:\n" + src.text;
+  const auth = { "Content-Type": "application/json", Authorization: `Bearer ${MISTRAL_KEY}` };
+  let docText = src.text || "";
+  if (src.pdfBase64) {
+    const ocr = await fetch("https://api.mistral.ai/v1/ocr", {
+      method: "POST", headers: auth,
+      body: JSON.stringify({ model: "mistral-ocr-latest", document: { type: "document_url", document_url: `data:application/pdf;base64,${src.pdfBase64}` } }),
+    });
+    if (!ocr.ok) throw new Error(`Mistral OCR ${ocr.status}: ${(await ocr.text()).slice(0, 160)}`);
+    const od = await ocr.json();
+    docText = (od.pages ?? []).map((p: any) => p.markdown ?? "").join("\n\n");
+  }
+  if (!docText.trim()) throw new Error("mistral: no text from source");
   const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${MISTRAL_KEY}` },
-    body: JSON.stringify({ model: "mistral-small-latest", messages: [{ role: "user", content }], response_format: { type: "json_object" }, temperature: 0 }),
+    method: "POST", headers: auth,
+    body: JSON.stringify({
+      model: "mistral-small-latest",
+      messages: [{ role: "user", content: promptText + "\nReturn ONLY a JSON array.\n\nDOCUMENT:\n" + docText.slice(0, 120_000) }],
+      response_format: { type: "json_object" }, temperature: 0,
+    }),
   });
   if (!res.ok) throw new Error(`Mistral ${res.status}: ${(await res.text()).slice(0, 160)}`);
   return asArray(parseItems((await res.json())?.choices?.[0]?.message?.content ?? "[]"));
