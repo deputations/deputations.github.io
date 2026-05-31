@@ -32,36 +32,61 @@ from (
   select
     id,
     coalesce(
-      jsonb_agg(t.tier order by t.lvl desc) filter (where t.tier is not null),
+      jsonb_agg(jsonb_build_object('level', lvl, 'min_years', yrs) order by lvl desc),
       '[]'::jsonb
     ) as tiers
-  from public.vacancies
-  cross join lateral (
-    values
-      (
-        nullif(regexp_replace(coalesce(req_level1, ''), '\D', '', 'g'), ''),
-        nullif(regexp_replace(coalesce(min_years_experience, ''), '\D', '', 'g'), '')
-      ),
-      (
-        nullif(regexp_replace(coalesce(req_level2, ''), '\D', '', 'g'), ''),
-        nullif(regexp_replace(coalesce(min_years_experience2, ''), '\D', '', 'g'), '')
-      )
-  ) as raw(lvl_text, yrs_text)
-  cross join lateral (
-    select
-      (raw.lvl_text)::int as lvl,
-      case
-        when raw.lvl_text is null then null
-        else jsonb_build_object(
-          'level', (raw.lvl_text)::int,
-          'min_years', coalesce((raw.yrs_text)::int, 0)
-        )
-      end as tier
-  ) as t
+  from (
+    -- one row per (id, distinct level), keeping the smallest min_years
+    select id, lvl, min(yrs) as yrs
+    from (
+      select id,
+             nullif(regexp_replace(coalesce(req_level1, ''), '\D', '', 'g'), '')::int as lvl,
+             coalesce(nullif(regexp_replace(coalesce(min_years_experience, ''), '\D', '', 'g'), '')::int, 0) as yrs
+      from public.vacancies
+      union all
+      select id,
+             nullif(regexp_replace(coalesce(req_level2, ''), '\D', '', 'g'), '')::int as lvl,
+             coalesce(nullif(regexp_replace(coalesce(min_years_experience2, ''), '\D', '', 'g'), '')::int, 0) as yrs
+      from public.vacancies
+    ) raw
+    where lvl is not null
+    group by id, lvl
+  ) d
   group by id
 ) as sub
 where v.id = sub.id
   and (v.eligibility_tiers is null or v.eligibility_tiers = '[]'::jsonb);
+
+-- ---------------------------------------------------------------------------
+-- Clean up any rows already backfilled with duplicate-level tiers (e.g. a
+-- post whose req_level1 = req_level2). Deduplicates the stored jsonb in place,
+-- keeping the lowest min_years per level. Safe & idempotent: rows with no
+-- duplicates are rewritten to the identical value; manual 3+ tier edits are
+-- preserved because it reads the existing array, not the legacy columns.
+-- ---------------------------------------------------------------------------
+update public.vacancies v
+set eligibility_tiers = sub.tiers
+from (
+  select id,
+         coalesce(
+           jsonb_agg(jsonb_build_object('level', lvl, 'min_years', yrs) order by lvl desc),
+           '[]'::jsonb
+         ) as tiers
+  from (
+    select id,
+           (elem->>'level')::int as lvl,
+           min((elem->>'min_years')::int) as yrs
+    from public.vacancies,
+         lateral jsonb_array_elements(eligibility_tiers) as elem
+    where jsonb_typeof(eligibility_tiers) = 'array'
+      and (elem->>'level') ~ '^\d+$'
+    group by id, (elem->>'level')::int
+  ) d
+  group by id
+) as sub
+where v.id = sub.id
+  and jsonb_typeof(v.eligibility_tiers) = 'array'
+  and jsonb_array_length(v.eligibility_tiers) > 0;
 
 -- Optional GIN index — handy if we later query "posts open to level N" in SQL.
 create index if not exists vacancies_elig_tiers_idx
