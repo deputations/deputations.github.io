@@ -87,6 +87,7 @@
       <div class="tabs">
         <button id="tabIngest" class="active" data-tab="ingest">⬆️ Ingest</button>
         <button id="tabReview" data-tab="review">📝 Review queue <span id="draftCount"></span></button>
+        <button id="tabManage" data-tab="manage">🗂 Manage data</button>
       </div>
 
       <!-- INGEST -->
@@ -153,6 +154,25 @@
           </div>
         </div>
       </section>
+
+      <!-- MANAGE -->
+      <section id="paneManage" class="card hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">Manage data <span id="manageCount" class="muted"></span></h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input id="mgSearch" placeholder="Search post / org / ministry / city…" style="width:260px" />
+            <select id="mgStatus" style="width:auto">
+              <option value="approved">Approved (live)</option>
+              <option value="draft">Draft</option>
+              <option value="all">All</option>
+            </select>
+            <button id="mgRefresh">↻</button>
+            <button id="mgAddBtn" class="primary">+ Add vacancy</button>
+          </div>
+        </div>
+        <p class="muted">Edit any field then <b>Save</b>, change <b>Status</b> to publish/unpublish, or <b>Delete</b> a row. Click <b>📄 source</b> if a PDF is attached.</p>
+        <div id="manageList"></div>
+      </section>
     </div>
   </div>
 
@@ -160,6 +180,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb2"></script>
-  <script src="admin-ingest.js?v=sb13"></script>
+  <script src="admin-ingest.js?v=sb14"></script>
 </body>
 </html>

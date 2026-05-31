@@ -345,9 +345,21 @@ function wireApp() {
       const t = b.dataset.tab;
       $('paneIngest').classList.toggle('hidden', t !== 'ingest');
       $('paneReview').classList.toggle('hidden', t !== 'review');
+      $('paneManage').classList.toggle('hidden', t !== 'manage');
       if (t === 'review') loadDrafts();
+      if (t === 'manage') loadManage();
     };
   });
+
+  $('mgRefresh').onclick = loadManage;
+  $('mgStatus').onclick = () => {};
+  $('mgStatus').onchange = loadManage;
+  let _mgFilterTimer = null;
+  $('mgSearch').oninput = () => { clearTimeout(_mgFilterTimer); _mgFilterTimer = setTimeout(renderManage, 200); };
+  $('mgAddBtn').onclick = () => {
+    const blank = { id: null, status: 'approved', source_type: 'manual' };
+    $('manageList').prepend(manageCard(blank, true));
+  };
 
   // source type toggle
   $('srcType').onchange = () => {
@@ -599,6 +611,132 @@ async function openSource(r, page) {
 function bumpCount(d) {
   const cur = parseInt(($('draftCount').textContent.match(/\d+/) || [0])[0], 10) + d;
   $('draftCount').textContent = cur > 0 ? `(${cur})` : '';
+}
+
+/* ---------------- manage (full CRUD over all rows) ---------------- */
+let MANAGE_ROWS = [];
+
+function collectPatch(scopeEl) {
+  const patch = {};
+  scopeEl.querySelectorAll('[data-k]').forEach((inp) => { patch[inp.dataset.k] = (inp.value || '').trim(); });
+  const lvl = (patch.level || '').replace(/\D/g, '');
+  patch.level_text = lvl ? `Level-${lvl}` : '';
+  if (patch.ministry) patch.min_code = MIN_CODE_BY_NAME[patch.ministry] || minCode(patch.ministry);
+  return patch;
+}
+
+async function loadManage() {
+  const status = $('mgStatus').value;
+  let url = '/rest/v1/vacancies?select=*&order=created_at.desc&limit=2000';
+  if (status !== 'all') url += `&status=eq.${status}`;
+  try {
+    const r = await api(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    MANAGE_ROWS = await r.json();
+    renderManage();
+  } catch (e) { toast('Load error: ' + e.message); }
+}
+
+function renderManage() {
+  const q = ($('mgSearch').value || '').toLowerCase().trim();
+  const rows = !q ? MANAGE_ROWS : MANAGE_ROWS.filter((r) =>
+    [r.post_name, r.organisation, r.ministry, r.location_city, r.vacancy_id]
+      .some((f) => String(f || '').toLowerCase().includes(q)));
+  $('manageCount').textContent = `(${rows.length})`;
+  const list = $('manageList');
+  list.innerHTML = '';
+  if (!rows.length) { list.innerHTML = '<p class="muted">No matching rows.</p>'; return; }
+  rows.forEach((r) => list.appendChild(manageCard(r, false)));
+}
+
+function manageCard(r, isNew) {
+  const el = document.createElement('div');
+  el.className = 'draft';
+  el.innerHTML = `
+    <div class="head">
+      <div>
+        <b>${escapeHtml(isNew ? 'New vacancy' : (r.post_name || '(untitled)'))}</b>
+        ${isNew ? '' : `<span class="muted"> · ${escapeHtml(r.organisation || '')}${r.level ? ' · L' + escapeHtml(r.level) : ''}${r.location_city ? ' · ' + escapeHtml(r.location_city) : ''}</span>`}
+        <span class="pill">${escapeHtml(isNew ? 'new' : (r.status || ''))}</span>
+      </div>
+      <div class="acts">
+        ${(!isNew && r.source_file_url) ? '<button data-act="source">📄 source</button>' : ''}
+        <button data-act="toggle">${isNew ? 'Hide' : 'Edit'}</button>
+        ${isNew ? '' : '<button class="bad" data-act="del">Delete</button>'}
+      </div>
+    </div>
+    <div class="editor" style="${isNew ? '' : 'display:none'}">
+      <div class="row">
+        ${FIELDS.map(([k, lbl]) => fieldHtml(k, lbl, r)).join('')}
+        <div><label>Status</label>
+          <select data-k="status">
+            <option value="approved"${r.status === 'approved' ? ' selected' : ''}>approved (live)</option>
+            <option value="draft"${r.status === 'draft' ? ' selected' : ''}>draft</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="good" data-act="save">${isNew ? 'Create' : 'Save changes'}</button>
+        <button data-act="cancel">Cancel</button>
+      </div>
+    </div>`;
+
+  const editor = el.querySelector('.editor');
+  el.querySelector('[data-act="toggle"]').onclick = (e) => {
+    const showing = editor.style.display !== 'none';
+    editor.style.display = showing ? 'none' : 'block';
+    e.currentTarget.textContent = showing ? 'Edit' : 'Hide';
+  };
+  el.querySelector('[data-act="cancel"]').onclick = () => {
+    if (isNew) { el.remove(); return; }
+    editor.style.display = 'none';
+    el.querySelector('[data-act="toggle"]').textContent = 'Edit';
+  };
+
+  el.querySelector('[data-act="save"]').onclick = async () => {
+    const patch = collectPatch(editor);
+    if (!patch.post_name) return toast('Post name is required');
+    try {
+      if (isNew) {
+        const yr = new Date().getFullYear();
+        patch.vacancy_id = `${patch.min_code || 'MAN'}-${yr}-L${(patch.level || 'X')}-${Date.now() % 100000}`;
+        patch.source_type = 'manual';
+        const res = await api('/rest/v1/vacancies?on_conflict=dedup_key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Prefer: 'return=representation,resolution=ignore-duplicates' },
+          body: JSON.stringify([patch]),
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const ins = await res.json();
+        if (!ins.length) return toast('That vacancy already exists (duplicate) — not added');
+        toast('✅ Added'); el.remove(); loadManage();
+      } else {
+        const res = await api(`/rest/v1/vacancies?id=eq.${r.id}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+          body: JSON.stringify(patch),
+        });
+        if (!res.ok) {
+          const t = await res.text();
+          throw new Error(/duplicate|unique/i.test(t) ? 'Would duplicate an existing entry' : t);
+        }
+        toast('✅ Saved'); loadManage();
+      }
+    } catch (e) { toast('Save failed: ' + e.message); }
+  };
+
+  const delBtn = el.querySelector('[data-act="del"]');
+  if (delBtn) delBtn.onclick = async () => {
+    if (!confirm(`Delete "${r.post_name}"? This cannot be undone.`)) return;
+    try {
+      const res = await api(`/rest/v1/vacancies?id=eq.${r.id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      el.remove(); toast('Deleted'); scheduleGc();
+    } catch (e) { toast('Delete failed: ' + e.message); }
+  };
+
+  const srcBtn = el.querySelector('[data-act="source"]');
+  if (srcBtn) srcBtn.onclick = () => openSource(r, String((r.raw_extraction && r.raw_extraction.source_page) || '').replace(/\D/g, ''));
+  return el;
 }
 
 function escapeHtml(s) {
