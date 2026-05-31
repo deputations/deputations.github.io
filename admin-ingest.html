@@ -115,7 +115,12 @@
         </div>
 
         <div id="pasteBlock" class="hidden">
-          <label>1) Copy this prompt into <b>Gemini Advanced</b> or <b>Claude Pro</b> and attach the Employment News PDF</label>
+          <label>Prompt for</label>
+          <select id="promptType">
+            <option value="en">Employment News (find deputation ads in the weekly issue)</option>
+            <option value="notif">Single notification / vacancy circular (e.g. NCLT)</option>
+          </select>
+          <label style="margin-top:12px">1) Copy this prompt into <b>Gemini Advanced</b> or <b>Claude Pro</b> and attach the PDF</label>
           <button type="button" id="copyPromptBtn">📋 Copy extraction prompt</button>
           <label style="margin-top:12px">2) Paste the JSON array it returns here</label>
           <textarea id="pasteJson" rows="9" placeholder='[ { "post_name": "...", "organisation": "...", ... }, ... ]'></textarea>
@@ -180,6 +185,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb2"></script>
-  <script src="admin-ingest.js?v=sb14"></script>
+  <script src="admin-ingest.js?v=sb15"></script>
 </body>
 </html>

@@ -20,6 +20,10 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
 const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+// Fallback providers (used when Gemini's free 20/day quota is exhausted).
+const MISTRAL_KEY = Deno.env.get("MISTRAL_API_KEY") ?? "";
+const OPENROUTER_KEY = Deno.env.get("OPENROUTER_API_KEY") ?? "";
+const OPENROUTER_MODEL = Deno.env.get("OPENROUTER_MODEL") ?? "google/gemini-2.0-flash-exp:free";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -184,43 +188,85 @@ function parseItems(text: string) {
   }
 }
 
-async function callGemini(promptText: string, parts: unknown[]) {
+type Src = { pdfBase64?: string; text?: string };
+
+function asArray(out: any): any[] {
+  if (Array.isArray(out)) return out;
+  if (out && Array.isArray(out.vacancies)) return out.vacancies;
+  if (out && typeof out === "object") return (Object.values(out).find(Array.isArray) as any[]) ?? [];
+  return [];
+}
+
+// ---- Gemini (native PDF, JSON schema). flash -> flash-lite, retry on overload ----
+async function geminiCall(promptText: string, src: Src): Promise<any[]> {
+  const parts: unknown[] = [{ text: promptText }];
+  if (src.pdfBase64) parts.push({ inlineData: { mimeType: "application/pdf", data: src.pdfBase64 } });
+  else if (src.text) parts.push({ text: src.text });
   const body = {
-    contents: [{ role: "user", parts: [{ text: promptText }, ...parts] }],
-    generationConfig: {
-      temperature: 0,
-      responseMimeType: "application/json",
-      responseSchema: RESPONSE_SCHEMA,
-    },
+    contents: [{ role: "user", parts }],
+    generationConfig: { temperature: 0, responseMimeType: "application/json", responseSchema: RESPONSE_SCHEMA },
   };
-  // Try the configured model first, then fall back to a different-capacity
-  // model. Retry each on transient overload (503/429/500) with backoff so a
-  // brief demand spike doesn't fail the whole ingest.
-  // gemini-2.0-flash has 0 free quota on this tier; gemini-2.5-flash is capped at
-  // ~20/day; gemini-2.5-flash-lite has plentiful free quota. So: try the quality
-  // model, and on a quota error (429) drop straight to flash-lite.
-  const models = [GEMINI_MODEL, "gemini-2.5-flash-lite"].filter(
-    (m, i, a) => m && a.indexOf(m) === i,
-  );
-  let lastErr = "Gemini call failed";
+  const models = [GEMINI_MODEL, "gemini-2.5-flash-lite"].filter((m, i, a) => m && a.indexOf(m) === i);
+  let lastErr = "gemini failed";
   for (const model of models) {
     for (let attempt = 0; attempt < 3; attempt++) {
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
         { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
       );
-      if (res.ok) {
-        const data = await res.json();
-        return parseItems(data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]");
-      }
-      lastErr = `Gemini ${res.status} (${model}): ${await res.text()}`;
-      if (res.status === 429) break;                 // quota — switch model now
-      if (res.status === 503 || res.status === 500) { // transient overload — retry
-        await sleep(1200 * (attempt + 1));
-        continue;
-      }
-      break; // non-transient — try the next model
+      if (res.ok) return asArray(parseItems((await res.json())?.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]"));
+      lastErr = `Gemini ${res.status} (${model})`;
+      if (res.status === 429) break;                  // quota — next model / provider
+      if (res.status === 503 || res.status === 500) { await sleep(1200 * (attempt + 1)); continue; }
+      break;
     }
+  }
+  throw new Error(lastErr);
+}
+
+// ---- Mistral (native PDF via document_url; JSON mode) ----
+async function mistralCall(promptText: string, src: Src): Promise<any[]> {
+  if (!MISTRAL_KEY) throw new Error("no mistral key");
+  const content: any[] = [{ type: "text", text: promptText + "\nReturn ONLY a JSON array." }];
+  if (src.pdfBase64) content.push({ type: "document_url", document_url: `data:application/pdf;base64,${src.pdfBase64}` });
+  else if (src.text) content[0].text += "\n\nWEB PAGE CONTENT:\n" + src.text;
+  const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${MISTRAL_KEY}` },
+    body: JSON.stringify({ model: "mistral-small-latest", messages: [{ role: "user", content }], response_format: { type: "json_object" }, temperature: 0 }),
+  });
+  if (!res.ok) throw new Error(`Mistral ${res.status}: ${(await res.text()).slice(0, 160)}`);
+  return asArray(parseItems((await res.json())?.choices?.[0]?.message?.content ?? "[]"));
+}
+
+// ---- OpenRouter (OpenAI-compatible; free model that can read PDFs) ----
+async function openrouterCall(promptText: string, src: Src): Promise<any[]> {
+  if (!OPENROUTER_KEY) throw new Error("no openrouter key");
+  const content: any[] = [{ type: "text", text: promptText + "\nReturn ONLY a JSON array." }];
+  if (src.pdfBase64) content.push({ type: "file", file: { filename: "source.pdf", file_data: `data:application/pdf;base64,${src.pdfBase64}` } });
+  else if (src.text) content[0].text += "\n\nWEB PAGE CONTENT:\n" + src.text;
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json", Authorization: `Bearer ${OPENROUTER_KEY}`,
+      "HTTP-Referer": "https://deputations.github.io", "X-Title": "Deputations",
+    },
+    body: JSON.stringify({ model: OPENROUTER_MODEL, messages: [{ role: "user", content }], response_format: { type: "json_object" }, temperature: 0 }),
+  });
+  if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${(await res.text()).slice(0, 160)}`);
+  return asArray(parseItems((await res.json())?.choices?.[0]?.message?.content ?? "[]"));
+}
+
+// Provider chain: Gemini -> Mistral -> OpenRouter. Each is tried when the prior
+// fails (notably Gemini's 20/day quota). First success wins.
+async function aiExtract(promptText: string, src: Src): Promise<any[]> {
+  const providers: Array<[string, (p: string, s: Src) => Promise<any[]>]> = [["gemini", geminiCall]];
+  if (MISTRAL_KEY) providers.push(["mistral", mistralCall]);
+  if (OPENROUTER_KEY) providers.push(["openrouter", openrouterCall]);
+  let lastErr = "all providers failed";
+  for (const [name, fn] of providers) {
+    try { return await fn(promptText, src); }
+    catch (e) { lastErr = `${name}: ${e}`; }
   }
   throw new Error(lastErr);
 }
@@ -299,7 +345,7 @@ Deno.serve(async (req) => {
   try {
     const prompt = PROMPTS[job.source_type] ?? PROMPTS.notification;
     let pdfBytes: Uint8Array | null = null;
-    let parts: unknown[] = [];   // used only for the non-PDF (HTML) URL case
+    let htmlText = "";   // used only for the non-PDF (HTML) URL case
 
     if (inlineBytes) {
       pdfBytes = inlineBytes;
@@ -335,10 +381,9 @@ Deno.serve(async (req) => {
         } catch { /* keep going even if storage copy fails */ }
       } else {
         const html = await r.text();
-        const text = html.replace(/<script[\s\S]*?<\/script>/gi, " ")
+        htmlText = html.replace(/<script[\s\S]*?<\/script>/gi, " ")
           .replace(/<style[\s\S]*?<\/style>/gi, " ")
           .replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 200_000);
-        parts = [{ text: `WEB PAGE CONTENT:\n${text}` }];
       }
     } else {
       throw new Error("Job has neither source_file_url nor source_url");
@@ -350,13 +395,13 @@ Deno.serve(async (req) => {
     if (pdfBytes && job.source_type === "employment_news") {
       const chunks = await splitPdfToBase64(pdfBytes, 8);
       const perChunk = await Promise.all(
-        chunks.map((b64) => callGemini(prompt, [{ inlineData: { mimeType: "application/pdf", data: b64 } }])
-          .catch(() => [])), // a failed chunk shouldn't sink the whole run
+        chunks.map((b64) => aiExtract(prompt, { pdfBase64: b64 }).catch(() => [])),
       );
       items = perChunk.flat();
+    } else if (pdfBytes) {
+      items = await aiExtract(prompt, { pdfBase64: toBase64(pdfBytes) });
     } else {
-      if (pdfBytes) parts = [{ inlineData: { mimeType: "application/pdf", data: toBase64(pdfBytes) } }];
-      items = await callGemini(prompt, parts);
+      items = await aiExtract(prompt, { text: htmlText });
     }
 
     // de-duplicate (chunk boundaries / repeated ads) by post+org+location+level

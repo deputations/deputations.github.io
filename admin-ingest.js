@@ -166,6 +166,26 @@ Rules:
 - If the issue is large, you may answer in BATCHES by page range; I will paste each batch separately. Keep the SAME schema every time and never skip pages between batches.
 - Return [] only if the issue genuinely contains no deputation vacancies.`;
 
+// Prompt for a SINGLE official notification / vacancy circular (e.g. NCLT).
+const NOTIF_PROMPT = `You are extracting Government of India DEPUTATION vacancies from a SINGLE official notification / vacancy circular PDF. Extract EVERY advertised post — be thorough and read all pages and annexures.
+
+1) Set is_deputation=true for posts open on deputation or deputation/absorption basis (the norm for such circulars). Skip any post that is clearly NOT deputation.
+2) Expand to ONE object per (post x location/bench x pay level). Never collapse multiple locations or levels into one row.
+3) Fill ALL fields from the document. If the circular states its own reference URL, put it in official_notification_link; otherwise leave it blank (you'll attach the PDF below).
+4) You may use web search to confirm the organisation's official website or any field the PDF leaves ambiguous.
+
+Output ONLY a JSON array. Each object must use EXACTLY these keys (use "" when unknown):
+{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
+
+Rules:
+- Only use official sources for links; NEVER invent a URL.
+- Dates ISO yyyy-mm-dd; if "within N days of the notification", compute last_date_to_apply = notification_date + N days.
+- "level"/"req_level1" = Pay Matrix level NUMBER only (e.g. "12").
+- ministry = standard GoI name WITHOUT the "Ministry of"/"Department of" prefix.
+- organisation_type: EXACTLY one of — Ministry; Department; Attached and Subordinate Offices; Constitutional Bodies; Statutory Bodies; Autonomous Bodies; Central Public Sector Enterprises (CPSEs).
+- source_page = PDF page number of the post (string).
+- confidence: "high" only if post, level, location AND a date are all clear.`;
+
 function minCode(ministry) {
   const c = String(ministry || '').replace(/ministry of|department of|govt\.? of india|government of india/gi, '')
     .replace(/[^A-Za-z ]/g, ' ').trim();
@@ -371,8 +391,9 @@ function wireApp() {
   };
 
   $('copyPromptBtn').onclick = async () => {
-    try { await navigator.clipboard.writeText(EN_PROMPT); toast('Prompt copied — paste it into Gemini/Claude with the EN PDF'); }
-    catch { $('pasteJson').value = EN_PROMPT; toast('Copy blocked — prompt placed in the box; cut it from there'); }
+    const prompt = ($('promptType') && $('promptType').value === 'notif') ? NOTIF_PROMPT : EN_PROMPT;
+    try { await navigator.clipboard.writeText(prompt); toast('Prompt copied — paste it into Gemini/Claude with the PDF'); }
+    catch { $('pasteJson').value = prompt; toast('Copy blocked — prompt placed in the box; cut it from there'); }
   };
 
   // file picker
