@@ -128,13 +128,32 @@
   const STAGES_TAB_LIST = ['overview', 'bookmarks', 'searches', 'tracker', 'documents', 'calendar', 'profile'];
 
   function loadVacancies() {
-    return fetch('data/vacancies.json')
-      .then(r => r.json())
+    return fetchVacancies()
       .then(data => {
         vacancies = Array.isArray(data) ? data : [];
         vacancyById = new Map(vacancies.map(v => [String(v.Vacancy_ID), v]));
       })
-      .catch(err => { console.error('vacancies.json failed', err); vacancies = []; });
+      .catch(err => { console.error('vacancies load failed', err); vacancies = []; });
+  }
+
+  // Mirror the vacancies page: Supabase (approved rows only) is the source of truth
+  // when configured in config.js; otherwise fall back to the committed JSON. Both
+  // paths run through enrich.js so derived fields (Days_Left, etc.) match index.html.
+  // Without this, bookmarks saved against live Supabase IDs never resolve here.
+  function fetchVacancies() {
+    const enrich = rows => (window.DepEnrich ? window.DepEnrich.enrichAll(rows) : rows);
+    if (window.SUPABASE_READY && window.SUPABASE_READY()) {
+      const url = `${window.SUPABASE_URL}/rest/v1/vacancies?status=eq.approved&select=*`;
+      return fetch(url, {
+        headers: {
+          apikey: window.SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`
+        }
+      })
+        .then(res => { if (!res.ok) throw new Error('Supabase ' + res.status); return res.json(); })
+        .then(rows => enrich(rows || []));
+    }
+    return fetch('data/vacancies.json').then(res => res.json());
   }
 
   // ---------- Theme ----------
@@ -434,11 +453,14 @@
           </div>`;
       });
 
+    const staleCount = bookmarks.length - items.length;
+
     panel.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:1rem;">
-        <div style="color:var(--text-secondary);font-size:0.9rem;">${items.length} bookmarked vacancy${items.length === 1 ? '' : 'ies'}${profile.payLevel ? '' : ' · set your pay level in Profile to enable match scores'}</div>
+        <div style="color:var(--text-secondary);font-size:0.9rem;">${items.length} bookmarked ${items.length === 1 ? 'vacancy' : 'vacancies'}${profile.payLevel ? '' : ' · set your pay level in Profile to enable match scores'}</div>
         <a href="/index.html" class="md-btn"><i data-lucide="plus"></i>Find more</a>
       </div>
+      ${staleCount > 0 ? `<div class="md-card-empty" style="margin-bottom:1rem">${staleCount} bookmarked ${staleCount === 1 ? 'vacancy is' : 'vacancies are'} no longer in the current list (likely closed or removed).</div>` : ''}
       <div class="md-grid">${items.join('')}</div>`;
 
     panel.querySelectorAll('[data-remove-bookmark]').forEach(b => b.addEventListener('click', () => removeBookmark(b.dataset.removeBookmark)));
