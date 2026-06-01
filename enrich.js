@@ -178,8 +178,10 @@
     if (!tiers.length) return true;
     const yrs = (userYears === '' || userYears === null || userYears === undefined)
       ? null : (parseInt(userYears, 10) || 0);
-    const maxLevel = Math.max.apply(null, tiers.map(t => t.level));
-    if (lvl > maxLevel) return true; // senior / over-qualified
+    // Eligible only if the officer's level matches one of the post's feeder
+    // grades AND meets that tier's minimum service. A higher-grade officer is
+    // NOT eligible for a lower post (it would be a reversion), and an in-between
+    // grade with no matching tier is not eligible either.
     return tiers.some(t => t.level === lvl && (yrs === null || yrs >= t.min_years));
   }
 
