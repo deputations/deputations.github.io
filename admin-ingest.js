@@ -448,6 +448,9 @@ function wireApp() {
       $('paneReview').classList.toggle('hidden', t !== 'review');
       $('paneManage').classList.toggle('hidden', t !== 'manage');
       $('paneFlags').classList.toggle('hidden', t !== 'flags');
+      // leaving Manage by hand clears any flag-comparison context so it doesn't
+      // re-trigger on a later manual visit (the flag's Open button re-sets it)
+      if (t !== 'manage') ACTIVE_FLAG = null;
       if (t === 'review') loadDrafts();
       if (t === 'manage') loadManage();
       if (t === 'flags') loadFlags();
@@ -831,23 +834,53 @@ function renderManage() {
   rows.forEach((r) => list.appendChild(manageCard(r, false)));
 }
 
+// Banner shown atop the editor when this row was opened from a flag. Compares
+// the current value of the flagged field with the reporter's suggestion and
+// offers a one-click "Apply" (fills the input; admin still Saves).
+function flagBannerHtml(r) {
+  const fl = ACTIVE_FLAG;
+  if (!fl || String(fl.vacancy_id) !== String(r.vacancy_id)) return '';
+  const col = FLAG_FIELD_TO_COLUMN[fl.field] || '';
+  const current = col ? (r[col] != null ? String(r[col]) : '') : '';
+  const suggested = fl.suggested_value || '';
+  const showCompare = !!col;
+  return `
+    <div class="flag-banner" data-flag-banner data-col="${escapeHtml(col)}">
+      <div class="flag-banner-head">
+        ⚑ Community flag — <b>${escapeHtml(FLAG_ISSUE_LABEL[fl.issue_type] || fl.issue_type)}</b>
+        <span class="muted">· ${escapeHtml(FLAG_FIELD_LABEL[fl.field] || fl.field)} · 👍 ${fl.endorsements}</span>
+      </div>
+      ${fl.note ? `<div class="flag-banner-note">${escapeHtml(fl.note)}</div>` : ''}
+      ${showCompare ? `
+        <div class="flag-compare">
+          <div class="fc-row"><span class="fc-lbl">Current</span><span class="fc-cur">${current ? escapeHtml(current) : '<em>(empty)</em>'}</span></div>
+          <div class="fc-row"><span class="fc-lbl">Suggested</span><span class="fc-sug">${suggested ? escapeHtml(suggested) : '<em>(none given)</em>'}</span></div>
+        </div>
+        ${suggested ? '<button type="button" class="good" data-apply-suggestion>Apply suggestion →</button>' : ''}
+      ` : `<div class="muted" style="font-size:.85rem">No specific field — review the whole vacancy below.${suggested ? ' Suggested: <b>' + escapeHtml(suggested) + '</b>' : ''}</div>`}
+    </div>`;
+}
+
 function manageCard(r, isNew) {
   const el = document.createElement('div');
   el.className = 'draft';
+  const flagged = !isNew && ACTIVE_FLAG && String(ACTIVE_FLAG.vacancy_id) === String(r.vacancy_id);
   el.innerHTML = `
     <div class="head">
       <div>
         <b>${escapeHtml(isNew ? 'New vacancy' : (r.post_name || '(untitled)'))}</b>
         ${isNew ? '' : `<span class="muted"> · ${escapeHtml(r.organisation || '')}${r.level ? ' · L' + escapeHtml(r.level) : ''}${r.location_city ? ' · ' + escapeHtml(r.location_city) : ''}</span>`}
         <span class="pill">${escapeHtml(isNew ? 'new' : (r.status || ''))}</span>
+        ${flagged ? '<span class="pill" style="background:rgba(244,63,94,.15);border-color:rgba(244,63,94,.4);color:#fda4af">⚑ flagged</span>' : ''}
       </div>
       <div class="acts">
         ${(!isNew && (r.source_file_url || r.official_notification_link)) ? '<button data-act="source">📄 source</button>' : ''}
-        <button data-act="toggle">${isNew ? 'Hide' : 'Edit'}</button>
+        <button data-act="toggle">${isNew ? 'Hide' : (flagged ? 'Hide' : 'Edit')}</button>
         ${isNew ? '' : '<button class="bad" data-act="del">Delete</button>'}
       </div>
     </div>
-    <div class="editor" style="${isNew ? '' : 'display:none'}">
+    <div class="editor" style="${(isNew || flagged) ? '' : 'display:none'}">
+      ${flagBannerHtml(r)}
       <div class="row">
         ${FIELDS.map(([k, lbl]) => fieldHtml(k, lbl, r)).join('')}
         ${tiersEditorHtml(r)}
@@ -870,6 +903,26 @@ function manageCard(r, isNew) {
     editor.style.display = showing ? 'none' : 'block';
     e.currentTarget.textContent = showing ? 'Edit' : 'Hide';
   };
+
+  // Flag comparison: spotlight the flagged field's input + wire "Apply suggestion".
+  if (flagged) {
+    const banner = el.querySelector('[data-flag-banner]');
+    const col = banner && banner.dataset.col;
+    const targetInput = col ? el.querySelector(`.editor [data-k="${col}"]`) : null;
+    if (targetInput) targetInput.classList.add('flag-target');
+    const applyBtn = el.querySelector('[data-apply-suggestion]');
+    if (applyBtn && targetInput) {
+      applyBtn.onclick = () => {
+        targetInput.value = ACTIVE_FLAG.suggested_value || '';
+        targetInput.classList.add('flag-applied');
+        targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+        targetInput.focus();
+        toast('Suggestion filled in — review, then Save changes');
+      };
+    }
+    // scroll the flagged card into view once rendered
+    setTimeout(() => { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+  }
   el.querySelector('[data-act="cancel"]').onclick = () => {
     if (isNew) { el.remove(); return; }
     editor.style.display = 'none';
@@ -936,6 +989,22 @@ const FLAG_FIELD_LABEL = {
   application_form_link: 'apply link', level: 'pay level',
   last_date_to_apply: 'last date', location: 'location', post_name: 'post name', other: 'other',
 };
+
+// The flag's `field` vocabulary -> the actual editable DB column (data-k) it maps
+// to. 'location' has no single column; we point it at location_city. 'whole'/
+// 'other' don't map to one field (banner shows guidance only, no field highlight).
+const FLAG_FIELD_TO_COLUMN = {
+  official_notification_link: 'official_notification_link',
+  application_form_link: 'application_form_link',
+  level: 'level',
+  last_date_to_apply: 'last_date_to_apply',
+  location: 'location_city',
+  post_name: 'post_name',
+};
+
+// Set when an admin clicks "Open in manager" on a flag; consumed by renderManage
+// to auto-expand the matching card and show the current-vs-suggested banner.
+let ACTIVE_FLAG = null;
 
 async function loadFlags() {
   const status = $('flagStatus') ? $('flagStatus').value : 'open';
@@ -1004,6 +1073,16 @@ function flagCard(f) {
   };
 
   el.querySelector('[data-act="open"]').onclick = () => {
+    // remember which flag we're acting on so the manager can show a
+    // current-vs-suggested comparison and spotlight the flagged field
+    ACTIVE_FLAG = {
+      vacancy_id: f.vacancy_id || '',
+      field: f.field || 'whole',
+      issue_type: f.issue_type || '',
+      note: f.note || '',
+      suggested_value: f.suggested_value || '',
+      endorsements: Number(f.endorsements) || 0,
+    };
     // jump to Manage, pre-filtered to this vacancy so the admin can fix it
     document.querySelector('[data-tab="manage"]').click();
     if ($('mgStatus')) $('mgStatus').value = 'all';
