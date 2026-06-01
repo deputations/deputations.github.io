@@ -98,14 +98,24 @@ function pickBest(hits: Hit[]) {
 
 // ---- Primary finder: search-provider chain (Serper -> Brave -> Google CSE) --
 async function findOfficialPdf(v: any) {
-  const base = `${v.organisation || ""} ${v.post_name || ""} deputation notification`.replace(/\s+/g, " ").trim();
+  // Notices are year-stamped; include the notification year (default current)
+  // so we bias toward the 2026 advert and away from old circulars. Query shape
+  // mirrors the manual "[post] deputation pdf 2026" pattern, with the org for
+  // precision. We try: post+org+year(pdf) -> post+year(pdf) -> post+org (page).
+  const yr = String(v.notification_date || "").slice(0, 4)
+    || String(new Date().getUTCFullYear());
+  const org = (v.organisation || "").trim();
+  const post = (v.post_name || "").trim();
+  const q1 = `${post} ${org} deputation notification ${yr}`.replace(/\s+/g, " ").trim();
+  const q2 = `${post} deputation ${yr}`.replace(/\s+/g, " ").trim();
+  const queries = [`${q1} filetype:pdf`, `${q2} filetype:pdf`, q1];
   const providers: Array<[string, (q: string) => Promise<Hit[]>]> = [
     ["serper", serperSearch], ["brave", braveSearch], ["googlecse", gcseSearch],
   ];
   for (const [name, fn] of providers) {
     try {
-      let hits = await fn(`${base} filetype:pdf`);
-      if (!hits.length) hits = await fn(base);
+      let hits: Hit[] = [];
+      for (const q of queries) { hits = await fn(q); if (hits.length) break; }
       if (hits.length) {
         const best = pickBest(hits);
         if (best.pdf_url || best.page_url) {
