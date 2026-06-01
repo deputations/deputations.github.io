@@ -261,14 +261,13 @@ Deno.serve(async (req) => {
       } catch { /* fetch/extract failed -> treat as link-only */ }
     }
 
-    // Record the cleanest usable link — NEVER the opaque vertexaisearch redirect.
-    // Prefer the resolved real PDF URL; else the official page URL.
+    // official_notification_link = ONLY the real notification PDF we actually
+    // fetched. A generic official page never becomes the official link — it goes
+    // to source_website instead. (NEVER the opaque vertexaisearch redirect.)
     const isRedirect = (u: string) => !u || u.includes("vertexaisearch.cloud.google.com");
-    let bestLink = "";
-    if (pdfOk && resolvedUrl && !isRedirect(resolvedUrl)) bestLink = resolvedUrl;
-    else if (found.page_url && !isRedirect(found.page_url)) bestLink = found.page_url;
-    else if (!isRedirect(found.pdf_url)) bestLink = found.pdf_url;
-    if (bestLink && (pdfOk || !v.official_notification_link)) patch.official_notification_link = bestLink;
+    const pdfLink = (pdfOk && resolvedUrl && !isRedirect(resolvedUrl)) ? resolvedUrl
+      : (pdfOk && !isRedirect(found.pdf_url) ? found.pdf_url : "");
+    if (pdfLink) patch.official_notification_link = pdfLink;
     if (found.page_url && !isRedirect(found.page_url) && !v.source_website && !patch.source_website) {
       patch.source_website = found.page_url;
     }
