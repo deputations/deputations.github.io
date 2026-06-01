@@ -219,30 +219,56 @@ function fieldHtml(k, lbl, r) {
 }
 
 // Prompt the admin pastes into Gemini Advanced / Claude Pro along with the EN PDF.
-const EN_PROMPT = `You are extracting Government of India DEPUTATION vacancies from the attached weekly "Employment News" newspaper PDF, and ENRICHING each using web search. BE EXHAUSTIVE — missing a deputation vacancy is the worst possible outcome, far worse than including a doubtful one.
+const EN_PROMPT = `# Extract & Enrich Government of India DEPUTATION Vacancies — Employment News
 
-WORK METHODICALLY — DO NOT SKIM:
-STEP 1 — Go through the ENTIRE issue page by page, first page to the very last. Process it in CHUNKS of about 8 pages so nothing is skipped. On every page scan EVERY advertisement, notice and boxed item — small/boxed ads, bottom-of-page ads, and "continued on page…" items included. Track page numbers.
-STEP 2 — For each advertisement, decide the basis of appointment. KEEP it if deputation is allowed in ANY form — "deputation", "deputation/absorption", "deputation (including short-term contract)/ISTC", or where deputation is one of several allowed modes. EXCLUDE only when CLEARLY not deputation (pure direct recruitment, contract/tenure engagement, walk-in, apprenticeship/trainee, or absorption-only). If UNSURE whether a post permits deputation, INCLUDE it with confidence "low" rather than dropping it.
-STEP 3 — For EACH kept vacancy, SEARCH THE WEB for the OFFICIAL detailed notification on the organisation's official site (prefer .gov.in / .nic.in or the body's official domain). Open it and fill ALL fields from it (more authoritative than the abridged ad). For official_notification_link, put the DIRECT URL of the notification DOCUMENT itself — ideally the ".pdf" link, or the specific notification/circular page that opens that vacancy. DO NOT use a generic homepage, a careers/"current vacancies" listing page, or a third-party job-aggregator link; if you can only find those, leave official_notification_link EMPTY and lower confidence.
-STEP 4 — Expand to ONE object per (post x location/bench x pay level). Never collapse multiple locations or levels into one row.
-STEP 5 — BEFORE finalising, re-check: every page covered first to last? boxed/short ads and continuation pages re-scanned? Add anything missed.
+Extract deputation vacancies from the attached Employment News PDF using the instructions below. If you have code execution, FIRST extract the page text programmatically (e.g. pdfplumber) before classifying — then follow the two-pass workflow.
 
-Output ONLY a JSON array — no prose, no markdown code fences. Each object must use EXACTLY these keys (use "" when unknown):
+## Role & Prime Directive
+You are extracting Government of India deputation vacancies from the attached weekly Employment News PDF and enriching each one via web search.
+Prime directive: Be exhaustive. Missing a deputation vacancy is the single worst outcome — far worse than including a doubtful one. When in doubt, KEEP it and lower the confidence. Never silently drop a borderline ad.
+
+## Workflow — Two Passes (do NOT interleave)
+
+### Pass 1 — Inventory (no enrichment yet)
+Go through the ENTIRE issue, first page to last, in chunks of ~2 pages. Do not skim.
+On every page, scan EVERY advertisement, notice and boxed item, including: small/boxed ads, bottom-of-page ads, and "continued on page…" items (follow them to the continuation).
+For each ad record: page number, organisation, post name(s), and a one-line keep/drop decision.
+When the inventory is complete, RE-SCAN once more for boxed/short ads and continuation pages before moving on.
+(Pass 1 is an internal working list only — do not include it in the final answer.)
+
+### Pass 2 — Enrich each KEPT vacancy
+For each kept vacancy:
+1. Web-search for the official detailed notification on the organisation's official site — prefer .gov.in / .nic.in or the body's official domain.
+2. Open it and fill ALL fields from the official source (more authoritative than the abridged ad).
+3. Put the real link in official_notification_link — prefer the DIRECT PDF URL of the notification document. DO NOT use a generic homepage, a careers / "current vacancies" listing page, or a third-party job-aggregator link.
+4. If no credible official source is found: fill from the ad, leave official_notification_link EMPTY, and lower confidence.
+
+## KEEP / DROP Rule
+KEEP if deputation is permitted in ANY form: "deputation"; "deputation/absorption"; "deputation (including short-term contract)" / ISTC; or deputation listed as one of several allowed modes.
+DROP only when CLEARLY not deputation: pure direct recruitment; contract/tenure engagement; walk-in; apprenticeship/trainee; absorption-only.
+If unsure whether deputation is allowed → KEEP with confidence "low".
+
+## Row Expansion
+Output ONE object per (post × location/bench × pay level). Never collapse multiple locations, benches, or levels into a single row.
+
+## Output Format
+Return ONLY a JSON array — no prose, no markdown fences. Each object uses EXACTLY these keys (use "" when unknown):
 {"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
 
-Rules:
-- official_notification_link must be the ACTUAL notification document — the direct ".pdf" link, or the specific circular/notification page that opens this vacancy. NEVER a generic homepage, a careers/"current vacancies" listing, or a third-party aggregator. If you don't find the real document, leave it empty. Never invent a URL.
-- Dates in ISO yyyy-mm-dd. If a deadline is "within N days of the notification/advertisement", compute last_date_to_apply = notification_date + N days.
-- "level" and "req_level1" = Pay Matrix level NUMBER only, as a string (e.g. "12").
-- "eligibility_tiers" = the feeder grades the post is open to, as an array of {"level","min_years"} (both NUMBER strings). Include the analogous tier (the post's own level, "min_years":"0") when "analogous posts" is mentioned, plus each lower grade with its required years. Example for a Level-11 post open to "(i) analogous; (ii) L10+3y; (iii) L8+5y": [{"level":"11","min_years":"0"},{"level":"10","min_years":"3"},{"level":"8","min_years":"5"}]. Also still fill req_level1/req_level2 + min_years_experience/min_years_experience2 with the first two tiers.
-- ministry: the standard GoI ministry name WITHOUT the "Ministry of"/"Department of" prefix (e.g. "Agriculture and Farmers Welfare", "Home Affairs", "Personnel, Public Grievances and Pensions").
+## Field Rules
+- ministry: standard GoI ministry name WITHOUT the "Ministry of" / "Department of" prefix (e.g. "Agriculture and Farmers Welfare", "Home Affairs", "Personnel, Public Grievances and Pensions").
 - organisation_type: EXACTLY one of — Ministry; Department; Attached and Subordinate Offices; Constitutional Bodies; Statutory Bodies; Autonomous Bodies; Central Public Sector Enterprises (CPSEs).
-- functional_area: a short summary of duties / job description.
-- source_page: the PDF page number of the advertisement in the Employment News issue, as a string (for side-by-side verification).
-- confidence: "high" only if details came from the official notification and post, level, location AND a date are all clear; otherwise "medium" or "low".
-- If the issue is large, you may answer in BATCHES by page range; I will paste each batch separately. Keep the SAME schema every time and never skip pages between batches.
-- Return [] only if the issue genuinely contains no deputation vacancies.`;
+- level, req_level1: Pay Matrix level NUMBER only, as a string (e.g. "12").
+- eligibility_tiers: array of {"level","min_years"} (both number-strings) = the feeder grades the post is open to. Include the analogous tier (the post's own level, "min_years":"0") when "analogous posts" is mentioned, plus each lower grade with its required years. Also still fill req_level1/req_level2 + min_years_experience/min_years_experience2 with the first two tiers. Example for a Level-11 post open to "(i) analogous; (ii) L10+3y; (iii) L8+5y": [{"level":"11","min_years":"0"},{"level":"10","min_years":"3"},{"level":"8","min_years":"5"}]
+- notification_date, last_date_to_apply: ISO yyyy-mm-dd. If a deadline is "within N days of the notification/advertisement", compute last_date_to_apply = notification_date + N days.
+- official_notification_link: official sources ONLY — the DIRECT ".pdf" link or the specific circular/notification page that opens this vacancy. NEVER a generic homepage, a careers/"current vacancies" listing, or a third-party aggregator. If unsure a link is real, leave it empty. Never invent a URL.
+- functional_area: short summary of duties / job description.
+- source_page: the PDF page number of the ad in the issue, as a string (for side-by-side verification).
+- confidence: "high" ONLY if details came from the official notification AND post, level, location and a date are all clear; otherwise "medium" or "low".
+
+## Batching
+If the issue is large, you may answer in batches by page range; I will paste each batch separately. Keep the SAME schema every time and never skip pages between batches.
+Return [] only if the issue genuinely contains no deputation vacancies.`;
 
 // Prompt for a SINGLE official notification / vacancy circular (e.g. NCLT).
 const NOTIF_PROMPT = `You are extracting Government of India DEPUTATION vacancies from a SINGLE official notification / vacancy circular PDF. Extract EVERY advertised post — be thorough and read all pages and annexures.
