@@ -146,8 +146,14 @@
       <section id="paneReview" class="card hidden">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <h2 style="margin:0">Review queue</h2>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button id="approveAllBtn" class="good" title="Approve & publish every draft in the queue">✓ Approve all</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <span class="muted" style="display:flex;align-items:center;gap:8px;font-size:13px">
+              approve:
+              <label style="display:flex;gap:3px;align-items:center"><input type="checkbox" id="cfHigh" checked> High</label>
+              <label style="display:flex;gap:3px;align-items:center"><input type="checkbox" id="cfMedium" checked> Med</label>
+              <label style="display:flex;gap:3px;align-items:center"><input type="checkbox" id="cfLow"> Low</label>
+            </span>
+            <button id="approveAllBtn" class="good" title="Approve & publish drafts matching the ticked confidence levels">✓ Approve ticked</button>
             <button id="rejectAllBtn" class="bad" title="Delete every draft in the queue">🗑 Reject all</button>
             <button id="enrichAllBtn" title="Find the official notification PDF for every draft and fill blanks">🔎 Find official PDFs (all)</button>
             <button id="refreshBtn">↻ Refresh</button>
@@ -191,6 +197,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb2"></script>
-  <script src="admin-ingest.js?v=sb20"></script>
+  <script src="admin-ingest.js?v=sb21"></script>
 </body>
 </html>

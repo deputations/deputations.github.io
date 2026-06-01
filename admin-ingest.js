@@ -555,18 +555,29 @@ function wireApp() {
   $('viewerClose').onclick = () => { $('viewerFrame').src = 'about:blank'; $('viewerPane').style.display = 'none'; };
 
   $('approveAllBtn').onclick = async () => {
-    const n = CURRENT_DRAFT_IDS.length;
-    if (!n) return toast('No drafts to approve');
-    if (!confirm(`Approve & publish ALL ${n} draft(s) as they currently are?\n(Unsaved inline edits aren't included — Save those first if needed.)`)) return;
+    const levels = [];
+    if ($('cfHigh').checked) levels.push('high');
+    if ($('cfMedium').checked) levels.push('medium');
+    if ($('cfLow').checked) levels.push('low');
+    if (!levels.length) return toast('Tick at least one confidence level');
+    const filt = `confidence=in.(${levels.join(',')})`;
+    // count how many match
+    let count = 0;
+    try {
+      const cr = await api(`/rest/v1/vacancies?status=eq.draft&${filt}&select=id`, { headers: { Prefer: 'count=exact' } });
+      count = parseInt(((cr.headers.get('content-range') || '/0').split('/')[1]) || '0', 10) || 0;
+    } catch { /* */ }
+    if (!count) return toast('No drafts match the ticked confidence');
+    if (!confirm(`Approve & publish ${count} draft(s) with confidence: ${levels.join(', ')}?\n(Unsaved inline edits aren't included — Save those first if needed.)`)) return;
     const b = $('approveAllBtn'); b.disabled = true;
     try {
-      const r = await api('/rest/v1/vacancies?status=eq.draft', {
+      const r = await api(`/rest/v1/vacancies?status=eq.draft&${filt}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
         body: JSON.stringify({ status: 'approved' }),
       });
       if (!r.ok) throw new Error(await r.text());
-      toast(`✅ Approved & published ${n} row(s)`); loadDrafts(); scheduleGc();
-    } catch (e) { toast('Approve all failed: ' + e.message); } finally { b.disabled = false; }
+      toast(`✅ Approved ${count} ${levels.join('/')} draft(s)`); loadDrafts(); scheduleGc();
+    } catch (e) { toast('Approve failed: ' + e.message); } finally { b.disabled = false; }
   };
 
   $('rejectAllBtn').onclick = async () => {
