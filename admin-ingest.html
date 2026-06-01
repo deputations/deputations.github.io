@@ -68,6 +68,13 @@
     .flag-banner button[data-apply-suggestion]{margin-top:10px}
     .editor [data-k].flag-target{border-color:#f43f5e;box-shadow:0 0 0 2px rgba(244,63,94,.25)}
     .editor [data-k].flag-applied{border-color:var(--good);box-shadow:0 0 0 2px rgba(34,197,94,.25)}
+    /* link-domain sanity badge */
+    .lk{display:inline-block;font-size:11px;padding:2px 7px;border-radius:999px;margin-left:6px;
+      border:1px solid var(--line);max-width:240px;overflow:hidden;text-overflow:ellipsis;
+      white-space:nowrap;vertical-align:middle}
+    .lk-ok{color:var(--good);border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.08)}
+    .lk-warn{color:#fbbf24;border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.08)}
+    .lk-none{color:var(--muted)}
   </style>
 </head>
 <body>
@@ -229,6 +236,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb3"></script>
-  <script src="admin-ingest.js?v=sb24"></script>
+  <script src="admin-ingest.js?v=sb25"></script>
 </body>
 </html>

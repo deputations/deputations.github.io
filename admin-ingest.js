@@ -675,6 +675,57 @@ function renderDrafts(rows) {
   });
 }
 
+// ---- Link sanity badge -----------------------------------------------------
+// Quick, client-side, zero-API check shown on each card so the reviewer can
+// tell at a glance whether the official link looks right WITHOUT opening it:
+//   ✓ green  — link host matches the organisation/ministry, and (if datable) 2026
+//   ⚠ amber  — host doesn't obviously match the org  OR the URL cites a pre-2026 year
+//   ▢ grey   — no link / a non-PDF source page (nothing to judge)
+// It's a heuristic to prioritise eyeballing, NOT a verification of contents.
+const STOPWORDS = new Set(['of','and','the','for','in','to','national','institute',
+  'department','ministry','office','india','indian','government','govt','board',
+  'authority','centre','center','council','commission','organisation','organization',
+  'directorate','general','development','central','bureau','service','services','all']);
+
+function linkDomainBadge(r) {
+  const url = (r.official_notification_link || '').trim();
+  if (!url) return '<span class="lk lk-none" title="No official link">▢ no link</span>';
+  let host = '';
+  try { host = new URL(url).hostname.toLowerCase(); } catch { host = ''; }
+  const isPdf = /\.pdf($|\?|#)/i.test(url);
+  if (!isPdf) return '<span class="lk lk-none" title="Source page (not a direct PDF)">▢ page</span>';
+
+  // tokens from organisation + ministry (drop generic words + short bits)
+  const text = `${r.organisation || ''} ${r.ministry || ''}`.toLowerCase();
+  const tokens = text.replace(/[^a-z0-9 ]/g, ' ').split(/\s+/)
+    .filter((w) => w.length >= 4 && !STOPWORDS.has(w));
+  const hostFlat = host.replace(/[^a-z0-9]/g, '');
+  // acronyms already written in the org, e.g. "(NCERT)", "IGIDR"
+  const acr = (r.organisation || '').match(/\b[A-Z]{3,6}\b/g) || [];
+  // acronym BUILT from the ORGANISATION's significant words' initials (not the
+  // ministry, which would pollute it), e.g. Food Safety Standards Authority
+  // India -> "fssai". Keep short stop-ish words like "of"/"and" out.
+  const orgWords = (r.organisation || '').toLowerCase()
+    .replace(/\([^)]*\)/g, ' ')           // drop the "(NCERT)" parenthetical
+    .replace(/[^a-z ]/g, ' ').split(/\s+/)
+    .filter((w) => w && !STOPWORDS.has(w));
+  const initials = orgWords.map((t) => t[0]).join('');
+  const initialsHit = initials.length >= 3 && hostFlat.includes(initials);
+  const hostMatch = tokens.some((t) => hostFlat.includes(t.slice(0, 6)))
+    || acr.some((a) => hostFlat.includes(a.toLowerCase()))
+    || initialsHit
+    || (/\.(gov|nic)\.in$/.test(host) && tokens.some((t) => hostFlat.includes(t.slice(0, 4))));
+
+  // year sanity: a pre-2026 year in the URL with no 2026 present = stale-looking
+  const hasOld = /20(1[0-9]|2[0-5])/.test(url) && !/2026/.test(url);
+  const isGov = /\.(gov|nic|edu|res|ac)\.in$/.test(host) || /\.gov$/.test(host);
+
+  if (hasOld) return `<span class="lk lk-warn" title="URL cites a pre-2026 year (${host})">⚠ old? ${escapeHtml(host)}</span>`;
+  if (hostMatch && isGov) return `<span class="lk lk-ok" title="Link host matches org (${host})">✓ ${escapeHtml(host)}</span>`;
+  if (hostMatch) return `<span class="lk lk-ok" title="Link host matches org (${host})">✓ ${escapeHtml(host)}</span>`;
+  return `<span class="lk lk-warn" title="Link host may not match the organisation (${host})">⚠ ${escapeHtml(host)}</span>`;
+}
+
 function draftCard(r) {
   const el = document.createElement('div');
   el.className = 'draft';
@@ -687,6 +738,7 @@ function draftCard(r) {
         <b>${escapeHtml(r.post_name || '(untitled)')}</b>
         <span class="pill ${conf}">${conf}</span>
         <span class="muted"> · ${score}% complete</span>
+        ${linkDomainBadge(r)}
       </div>
       <div class="acts">
         ${(r.source_file_url || r.official_notification_link) ? `<button data-act="source">📄 source${srcPage ? ' p.' + srcPage : ''}</button>` : ''}
@@ -871,6 +923,7 @@ function manageCard(r, isNew) {
         <b>${escapeHtml(isNew ? 'New vacancy' : (r.post_name || '(untitled)'))}</b>
         ${isNew ? '' : `<span class="muted"> · ${escapeHtml(r.organisation || '')}${r.level ? ' · L' + escapeHtml(r.level) : ''}${r.location_city ? ' · ' + escapeHtml(r.location_city) : ''}</span>`}
         <span class="pill">${escapeHtml(isNew ? 'new' : (r.status || ''))}</span>
+        ${isNew ? '' : linkDomainBadge(r)}
         ${flagged ? '<span class="pill" style="background:rgba(244,63,94,.15);border-color:rgba(244,63,94,.4);color:#fda4af">⚑ flagged</span>' : ''}
       </div>
       <div class="acts">
