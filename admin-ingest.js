@@ -680,7 +680,7 @@ function draftCard(r) {
         <span class="muted"> · ${score}% complete</span>
       </div>
       <div class="acts">
-        ${r.source_file_url ? `<button data-act="source">📄 source${srcPage ? ' p.' + srcPage : ''}</button>` : ''}
+        ${(r.source_file_url || r.official_notification_link) ? `<button data-act="source">📄 source${srcPage ? ' p.' + srcPage : ''}</button>` : ''}
         <button data-act="enrich" title="Find the official notification PDF and fill blank fields">🔎 Official PDF</button>
         <button class="good" data-act="approve">Approve</button>
         <button class="bad" data-act="reject">Reject</button>
@@ -744,33 +744,43 @@ function draftCard(r) {
 
 // Open a row's source in the side-by-side viewer, jumping to its page.
 async function openSource(r, page) {
-  let url = '';
-  const src = r.source_file_url || '';
-  // Google Drive file → embed its /preview (works inside the iframe)
+  // The side-by-side viewer pane lives in the Review tab only. When called from
+  // Manage (Review pane hidden), open the source in a new tab instead.
+  const inReview = !$('paneReview').classList.contains('hidden');
+  // prefer the stored source PDF; fall back to the official notification link
+  const src = r.source_file_url || r.official_notification_link || '';
+  if (!src) return toast('No source attached for this row');
+
+  const showInPane = (url, label) => {
+    $('viewerLabel').textContent = label;
+    $('viewerFrame').src = url;
+    $('viewerPane').style.display = 'block';
+  };
+
+  // Google Drive file → /preview embeds in the iframe; /view opens in a tab
   const dm = src.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
   if (dm) {
-    $('viewerLabel').textContent = (r.post_name || 'Source') + (page ? ` — p.${page}` : '');
-    $('viewerFrame').src = `https://drive.google.com/file/d/${dm[1]}/preview`;
-    $('viewerPane').style.display = 'block';
+    if (inReview) showInPane(`https://drive.google.com/file/d/${dm[1]}/preview`, (r.post_name || 'Source') + (page ? ` — p.${page}` : ''));
+    else window.open(`https://drive.google.com/file/d/${dm[1]}/view`, '_blank');
     return;
   }
   if (/^https?:\/\//i.test(src)) {
-    // other external link — gov sites usually block iframing, so open a tab
+    // external gov links usually block iframing → always open a tab
     window.open(src + (page ? `#page=${page}` : ''), '_blank');
     return;
   }
+  // Supabase storage path → signed URL
+  let url = '';
   try {
     const res = await api(`/storage/v1/object/sign/sources/${encodeURIComponent(src)}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 600 }),
     });
     const d = await res.json();
-    if (d.signedURL) url = SB + '/storage/v1' + d.signedURL;
+    if (d.signedURL) url = SB + '/storage/v1' + d.signedURL + (page ? `#page=${page}` : '');
   } catch { /* */ }
   if (!url) return toast('Could not open source');
-  if (page) url += `#page=${page}`;
-  $('viewerLabel').textContent = (r.post_name || 'Source') + (page ? ` — p.${page}` : '');
-  $('viewerFrame').src = url;
-  $('viewerPane').style.display = 'block';
+  if (inReview) showInPane(url, (r.post_name || 'Source') + (page ? ` — p.${page}` : ''));
+  else window.open(url, '_blank');
 }
 
 function bumpCount(d) {
@@ -826,7 +836,7 @@ function manageCard(r, isNew) {
         <span class="pill">${escapeHtml(isNew ? 'new' : (r.status || ''))}</span>
       </div>
       <div class="acts">
-        ${(!isNew && r.source_file_url) ? '<button data-act="source">📄 source</button>' : ''}
+        ${(!isNew && (r.source_file_url || r.official_notification_link)) ? '<button data-act="source">📄 source</button>' : ''}
         <button data-act="toggle">${isNew ? 'Hide' : 'Edit'}</button>
         ${isNew ? '' : '<button class="bad" data-act="del">Delete</button>'}
       </div>
