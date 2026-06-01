@@ -75,6 +75,10 @@
     .lk-ok{color:var(--good);border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.08)}
     .lk-warn{color:#fbbf24;border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.08)}
     .lk-none{color:var(--muted)}
+    /* review-queue pager */
+    .pager{display:flex;gap:12px;align-items:center;margin:10px 0;flex-wrap:wrap}
+    .pager button[disabled]{opacity:.4;cursor:not-allowed}
+    .draft .editor{margin-top:10px}
   </style>
 </head>
 <body>
@@ -180,7 +184,8 @@
             <button id="refreshBtn">↻ Refresh</button>
           </div>
         </div>
-        <p class="muted">Edit any field, then <b>Approve</b> (publishes live) or <b>Reject</b>. Click <b>📄 source</b> on a card to view the original page beside it.</p>
+        <p class="muted">Click <b>Edit</b> to change fields, then <b>Approve</b> (publishes live) or <b>Reject</b>. Approve without editing publishes the row as-is. Click <b>📄 source</b> to view the original page beside it.</p>
+        <div id="draftPager" class="pager"></div>
         <div id="reviewSplit" style="display:flex;gap:16px;align-items:flex-start">
           <div id="draftList" style="flex:1 1 38%;min-width:0"></div>
           <div id="viewerPane" style="flex:1 1 62%;position:sticky;top:12px;display:none">
@@ -236,6 +241,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb3"></script>
-  <script src="admin-ingest.js?v=sb26"></script>
+  <script src="admin-ingest.js?v=sb27"></script>
 </body>
 </html>

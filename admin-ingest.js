@@ -675,30 +675,85 @@ function scheduleGc() {
 }
 
 /* ---------------- review queue ---------------- */
+const DRAFT_PAGE_SIZE = 25;
+let DRAFT_PAGE = 1;
+let DRAFT_ROWS = [];   // full current draft list (display source for pagination)
+
 async function loadDrafts() {
   try {
     const r = await api('/rest/v1/vacancies?status=eq.draft&select=*&order=ingest_job_id.asc,vacancy_id.asc');
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
-    CURRENT_DRAFT_IDS = data.map((x) => x.id);
+    CURRENT_DRAFT_IDS = data.map((x) => x.id);   // whole queue — bulk ops use this
+    DRAFT_ROWS = data;
+    DRAFT_PAGE = 1;
     $('draftCount').textContent = data.length ? `(${data.length})` : '';
-    renderDrafts(data);
+    renderDrafts();
   } catch (e) { toast('Load error: ' + e.message); }
 }
 
-function renderDrafts(rows) {
+// Renders ONLY the current page's summary cards. Grouping headers are shown per
+// page for whichever job-groups the slice spans.
+function renderDrafts() {
+  const rows = DRAFT_ROWS;
   const list = $('draftList');
-  if (!rows.length) { list.innerHTML = '<p class="muted">No drafts awaiting review. 🎉</p>'; return; }
-  const groups = {};
-  rows.forEach((r) => { (groups[r.ingest_job_id || 'none'] ||= []).push(r); });
+  const pager = $('draftPager');
+  if (!rows.length) {
+    list.innerHTML = '<p class="muted">No drafts awaiting review. 🎉</p>';
+    if (pager) pager.innerHTML = '';
+    return;
+  }
+  const pages = Math.max(1, Math.ceil(rows.length / DRAFT_PAGE_SIZE));
+  if (DRAFT_PAGE > pages) DRAFT_PAGE = pages;
+  const start = (DRAFT_PAGE - 1) * DRAFT_PAGE_SIZE;
+  const slice = rows.slice(start, start + DRAFT_PAGE_SIZE);
+
   list.innerHTML = '';
-  Object.values(groups).forEach((items) => {
-    const hdr = document.createElement('div');
-    hdr.className = 'jobhdr';
-    hdr.textContent = `Source: ${items[0].source_category || items[0].source_type || 'unknown'} · ${items.length} row(s)`;
-    list.appendChild(hdr);
-    items.forEach((r) => list.appendChild(draftCard(r)));
+  let lastJob = null;
+  slice.forEach((r) => {
+    const job = r.ingest_job_id || 'none';
+    if (job !== lastJob) {
+      const hdr = document.createElement('div');
+      hdr.className = 'jobhdr';
+      hdr.textContent = `Source: ${r.source_category || r.source_type || 'unknown'}`;
+      list.appendChild(hdr);
+      lastJob = job;
+    }
+    list.appendChild(draftCard(r));
   });
+
+  renderDraftPager(pages, start, slice.length, rows.length);
+}
+
+function renderDraftPager(pages, start, shown, total) {
+  const pager = $('draftPager');
+  if (!pager) return;
+  if (pages <= 1) {
+    pager.innerHTML = `<span class="muted">${total} draft(s)</span>`;
+    return;
+  }
+  pager.innerHTML = `
+    <button data-pg="prev" ${DRAFT_PAGE <= 1 ? 'disabled' : ''}>‹ Prev</button>
+    <span class="muted">Page ${DRAFT_PAGE} / ${pages} · showing ${start + 1}-${start + shown} of ${total}</span>
+    <button data-pg="next" ${DRAFT_PAGE >= pages ? 'disabled' : ''}>Next ›</button>`;
+  pager.querySelector('[data-pg="prev"]')?.addEventListener('click', () => { if (DRAFT_PAGE > 1) { DRAFT_PAGE--; renderDrafts(); window.scrollTo(0, 0); } });
+  pager.querySelector('[data-pg="next"]')?.addEventListener('click', () => { if (DRAFT_PAGE < pages) { DRAFT_PAGE++; renderDrafts(); window.scrollTo(0, 0); } });
+}
+
+// After a card is approved/rejected (and removed from the DOM), drop it from the
+// in-memory list and re-render if the current page emptied out.
+function afterCardRemoved() {
+  const before = DRAFT_ROWS.length;
+  // Re-derive from remaining cards in the DOM would be fragile; instead trust
+  // CURRENT_DRAFT_IDS isn't authoritative here — just re-render when the visible
+  // page has no cards left so the pager/headers stay correct.
+  const visible = $('draftList').querySelectorAll('.draft').length;
+  if (visible === 0 && before > 0) {
+    // rebuild DRAFT_ROWS from a fresh fetch is heavy; cheaper: step back a page
+    // and re-render from the cached list minus removed ones is complex, so do a
+    // light reload of the queue (counts + slice) only when a page empties.
+    loadDrafts();
+  }
 }
 
 // ---- Link sanity badge -----------------------------------------------------
@@ -752,39 +807,65 @@ function linkDomainBadge(r) {
   return `<span class="lk lk-warn" title="Link host may not match the organisation (${host})">⚠ ${escapeHtml(host)}</span>`;
 }
 
+// Cheap completeness score for a RAW snake_case draft row — mirrors enrich.js's
+// completenessScore field list but avoids the full enrichRecord() (dates, region,
+// search-text, tiers) so it's safe to call for every card on render.
+function draftCompleteness(r) {
+  const f = ['vacancy_id', 'ministry', 'organisation', 'post_name', 'level_text',
+    'location_city', 'location_state', 'req_level1', 'req_level2', 'notification_date',
+    'last_date_to_apply', 'official_notification_link', 'application_form_link',
+    'mode_of_application', 'essential_qualification'];
+  const filled = f.filter((k) => String(r[k] ?? '').trim()).length;
+  return Math.round((filled / f.length) * 100);
+}
+
+// Review-queue card. Renders ONLY a lightweight summary up-front (no FIELDS,
+// no 34-option selects, no tiers editor); the heavy editor is built lazily by
+// buildDraftEditor() the first time "Edit" is clicked. This keeps the queue
+// fast even with hundreds of drafts.
 function draftCard(r) {
   const el = document.createElement('div');
   el.className = 'draft';
   const conf = (r.confidence || 'medium').toLowerCase();
-  const score = window.DepEnrich ? window.DepEnrich.enrichRecord(r).completeness_score : '';
+  const score = draftCompleteness(r);
   const srcPage = String((r.raw_extraction && r.raw_extraction.source_page) || '').replace(/\D/g, '');
   el.innerHTML = `
     <div class="head">
       <div>
         <b>${escapeHtml(r.post_name || '(untitled)')}</b>
+        <span class="muted"> · ${escapeHtml(r.organisation || '')}${r.level ? ' · L' + escapeHtml(r.level) : ''}${r.location_city ? ' · ' + escapeHtml(r.location_city) : ''}</span>
         <span class="pill ${conf}">${conf}</span>
         <span class="muted"> · ${score}% complete</span>
         ${linkDomainBadge(r)}
       </div>
       <div class="acts">
         ${(r.source_file_url || r.official_notification_link) ? `<button data-act="source">📄 source${srcPage ? ' p.' + srcPage : ''}</button>` : ''}
+        <button data-act="edit">Edit</button>
         <button data-act="enrich" title="Find the official notification PDF and fill blank fields">🔎 Official PDF</button>
         <button class="good" data-act="approve">Approve</button>
         <button class="bad" data-act="reject">Reject</button>
       </div>
     </div>
-    <div class="row">
+    <div class="editor" style="display:none"></div>`;
+
+  const editor = el.querySelector('.editor');
+
+  // Build the heavy editor once, on demand.
+  const buildEditor = () => {
+    if (el.dataset.built) return;
+    editor.innerHTML = `<div class="row">
       ${FIELDS.map(([k, lbl]) => fieldHtml(k, lbl, r)).join('')}
       ${tiersEditorHtml(r)}
     </div>`;
-
-  wireTiersEditor(el);
+    wireTiersEditor(el);
+    el.dataset.built = '1';
+  };
 
   const collect = () => {
     const patch = {};
-    el.querySelectorAll('[data-k]').forEach((inp) => { patch[inp.dataset.k] = (inp.value || '').trim(); });
+    editor.querySelectorAll('[data-k]').forEach((inp) => { patch[inp.dataset.k] = (inp.value || '').trim(); });
     const lvl = (patch.level || '').replace(/\D/g, '');
-    patch.level_text = lvl ? `Level-${lvl}` : '';
+    if ('level' in patch) patch.level_text = lvl ? `Level-${lvl}` : '';
     if (patch.ministry) patch.min_code = MIN_CODE_BY_NAME[patch.ministry] || minCode(patch.ministry);
     applyTiersToPatch(patch, el);
     return patch;
@@ -799,8 +880,17 @@ function draftCard(r) {
     if (!r2.ok) throw new Error('HTTP ' + r2.status + ' ' + (await r2.text()));
   };
 
+  el.querySelector('[data-act="edit"]').onclick = (e) => {
+    buildEditor();
+    const showing = editor.style.display !== 'none';
+    editor.style.display = showing ? 'none' : 'block';
+    e.currentTarget.textContent = showing ? 'Edit' : 'Hide';
+  };
+
   el.querySelector('[data-act="approve"]').onclick = async () => {
-    try { await patchRow({ ...collect(), status: 'approved' }); el.remove(); toast('✅ Approved & published'); bumpCount(-1); scheduleGc(); }
+    // Only serialise the editor if it was actually opened; otherwise approve as-is.
+    const body = el.dataset.built ? { ...collect(), status: 'approved' } : { status: 'approved' };
+    try { await patchRow(body); el.remove(); toast('✅ Approved & published'); bumpCount(-1); afterCardRemoved(); scheduleGc(); }
     catch (e) { toast('Approve failed: ' + e.message); }
   };
   el.querySelector('[data-act="reject"]').onclick = async () => {
@@ -809,7 +899,7 @@ function draftCard(r) {
       // same vacancy can be re-added later if it genuinely re-appears
       const r2 = await api(`/rest/v1/vacancies?id=eq.${r.id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
       if (!r2.ok) throw new Error('HTTP ' + r2.status);
-      el.remove(); toast('Rejected & removed'); bumpCount(-1); scheduleGc();
+      el.remove(); toast('Rejected & removed'); bumpCount(-1); afterCardRemoved(); scheduleGc();
     } catch (e) { toast('Reject failed: ' + e.message); }
   };
   el.querySelector('[data-act="enrich"]').onclick = async (e) => {
