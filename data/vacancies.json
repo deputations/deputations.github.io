@@ -24,7 +24,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-01-30",
     "Last_Date_To_Apply": "2026-03-03",
-    "Days_Left": -89,
+    "Days_Left": -90,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "",
@@ -49,18 +49,7 @@
     "closing_soon": false,
     "search_text": "private secretary (ps) ministry of ports, shipping & waterways noida, uttar pradesh uttar pradesh level-8 8 7 b.com",
     "completeness_score": 69,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 8,
-        "min_years": 0
-      },
-      {
-        "level": 7,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L8 · L7 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "CULT-2026-L11-001",
@@ -87,7 +76,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-04-20",
-    "Days_Left": -41,
+    "Days_Left": -42,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "",
@@ -112,18 +101,7 @@
     "closing_soon": false,
     "search_text": "curator (display) (group 'a' gazetted) ministry of culture new delhi delhi level-11 11 10",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 11,
-        "min_years": 0
-      },
-      {
-        "level": 10,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L11 · L10 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "AGRI-2026-L10-003",
@@ -150,7 +128,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-01-02",
     "Last_Date_To_Apply": "2026-04-20",
-    "Days_Left": -41,
+    "Days_Left": -42,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "",
@@ -175,18 +153,7 @@
     "closing_soon": false,
     "search_text": "it officer (group-a) ministry of agriculture & farmers welfare cco delhi delhi level-10 10 9",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 10,
-        "min_years": 0
-      },
-      {
-        "level": 9,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L10 · L9 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "MOCA-2026-L11-001",
@@ -213,7 +180,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-01-01",
     "Last_Date_To_Apply": "2026-04-20",
-    "Days_Left": -41,
+    "Days_Left": -42,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "",
@@ -238,18 +205,7 @@
     "closing_soon": false,
     "search_text": "principal private secretary (pps) ministry of corporate affairs principal bench level-11 11 10",
     "completeness_score": 56,
-    "data_quality_flag": "Low",
-    "eligibility_tiers": [
-      {
-        "level": 11,
-        "min_years": 0
-      },
-      {
-        "level": 10,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L11 · L10 (4y)"
+    "data_quality_flag": "Low"
   },
   {
     "Vacancy_ID": "MOCA-2026-L11-002",
@@ -276,7 +232,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-04-20",
-    "Days_Left": -41,
+    "Days_Left": -42,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "",
@@ -301,18 +257,7 @@
     "closing_soon": false,
     "search_text": "private secretary ministry of corporate affairs principal bench level-11 11 10",
     "completeness_score": 56,
-    "data_quality_flag": "Low",
-    "eligibility_tiers": [
-      {
-        "level": 11,
-        "min_years": 0
-      },
-      {
-        "level": 10,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L11 · L10 (4y)"
+    "data_quality_flag": "Low"
   },
   {
     "Vacancy_ID": "AGRI-2026-L7-001",
@@ -339,7 +284,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-04-24",
-    "Days_Left": -37,
+    "Days_Left": -38,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -364,18 +309,7 @@
     "closing_soon": false,
     "search_text": "senior mines surveyor (group-b) ministry of agriculture & farmers welfare cco delhi delhi level-7 7 6",
     "completeness_score": 69,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 7,
-        "min_years": 0
-      },
-      {
-        "level": 6,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L7 · L6 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "AGRI-2026-L11-001",
@@ -402,7 +336,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-12",
     "Last_Date_To_Apply": "2026-04-28",
-    "Days_Left": -33,
+    "Days_Left": -34,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "",
@@ -427,18 +361,7 @@
     "closing_soon": false,
     "search_text": "asstt. coal superintendent (grade-1) (group-a) ministry of agriculture & farmers welfare delhi (4) + other stations delhi level-11 11 10",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 11,
-        "min_years": 0
-      },
-      {
-        "level": 10,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L11 · L10 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "MORD-2026-L12-001",
@@ -465,7 +388,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-04-28",
-    "Days_Left": -33,
+    "Days_Left": -34,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "",
@@ -490,18 +413,7 @@
     "closing_soon": false,
     "search_text": "deputy commissioner (watershed development) ministry of rural development new delhi delhi level-12 12 11",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 12,
-        "min_years": 0
-      },
-      {
-        "level": 11,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L12 · L11 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "EDUC-2026-L14-001",
@@ -528,7 +440,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-04-28",
-    "Days_Left": -33,
+    "Days_Left": -34,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -553,18 +465,7 @@
     "closing_soon": false,
     "search_text": "professor ministry of education chennai tamil nadu level-14 14 13",
     "completeness_score": 69,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 14,
-        "min_years": 0
-      },
-      {
-        "level": 13,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L14 · L13 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "AGRI-2026-L11-002",
@@ -591,7 +492,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-04-28",
-    "Days_Left": -33,
+    "Days_Left": -34,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "",
@@ -616,18 +517,7 @@
     "closing_soon": false,
     "search_text": "secretary to coal controller (group-a) ministry of agriculture & farmers welfare cco delhi delhi level-11 11 10",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 11,
-        "min_years": 0
-      },
-      {
-        "level": 10,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L11 · L10 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "AGRI-2026-L11-003",
@@ -654,7 +544,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-04",
     "Last_Date_To_Apply": "2026-04-28",
-    "Days_Left": -33,
+    "Days_Left": -34,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "",
@@ -679,18 +569,7 @@
     "closing_soon": false,
     "search_text": "senior geologist (group-a) ministry of agriculture & farmers welfare cco delhi delhi level-11 11 10",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 11,
-        "min_years": 0
-      },
-      {
-        "level": 10,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L11 · L10 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "112",
@@ -717,7 +596,7 @@
     "Deputation_Type": "Standard",
     "Notification_Date": "2026-01-03",
     "Last_Date_To_Apply": "2026-04-29",
-    "Days_Left": -32,
+    "Days_Left": -33,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "https://uidai.gov.in",
@@ -742,18 +621,7 @@
     "closing_soon": false,
     "search_text": "private secretary ministry of electronics and it bengaluru karnataka level 8 7 8 graduation",
     "completeness_score": 88,
-    "data_quality_flag": "High",
-    "eligibility_tiers": [
-      {
-        "level": 8,
-        "min_years": 0
-      },
-      {
-        "level": 7,
-        "min_years": 5
-      }
-    ],
-    "eligibility_tiers_text": "L8 · L7 (5y)"
+    "data_quality_flag": "High"
   },
   {
     "Vacancy_ID": "110",
@@ -780,7 +648,7 @@
     "Deputation_Type": "Standard",
     "Notification_Date": "2026-01-03",
     "Last_Date_To_Apply": "2026-04-29",
-    "Days_Left": -32,
+    "Days_Left": -33,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "https://uidai.gov.in",
@@ -805,18 +673,7 @@
     "closing_soon": false,
     "search_text": "senior accounts officer ministry of electronics and it bengaluru karnataka level 10 9 10 commerce degree",
     "completeness_score": 88,
-    "data_quality_flag": "High",
-    "eligibility_tiers": [
-      {
-        "level": 10,
-        "min_years": 0
-      },
-      {
-        "level": 9,
-        "min_years": 2
-      }
-    ],
-    "eligibility_tiers_text": "L10 · L9 (2y)"
+    "data_quality_flag": "High"
   },
   {
     "Vacancy_ID": "111",
@@ -843,7 +700,7 @@
     "Deputation_Type": "Standard",
     "Notification_Date": "2026-01-03",
     "Last_Date_To_Apply": "2026-04-29",
-    "Days_Left": -32,
+    "Days_Left": -33,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "https://uidai.gov.in",
@@ -868,18 +725,7 @@
     "closing_soon": false,
     "search_text": "senior accounts officer ministry of electronics and it new delhi delhi level 10 9 10 commerce degree",
     "completeness_score": 88,
-    "data_quality_flag": "High",
-    "eligibility_tiers": [
-      {
-        "level": 10,
-        "min_years": 0
-      },
-      {
-        "level": 9,
-        "min_years": 2
-      }
-    ],
-    "eligibility_tiers_text": "L10 · L9 (2y)"
+    "data_quality_flag": "High"
   },
   {
     "Vacancy_ID": "AGRI-2026-L8-001",
@@ -906,7 +752,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-04-29",
-    "Days_Left": -32,
+    "Days_Left": -33,
     "Status": "Inactive",
     "Closing_Soon": "Yes",
     "Official_Notification_Link": "",
@@ -931,18 +777,7 @@
     "closing_soon": false,
     "search_text": "survey officer (group-b) ministry of agriculture & farmers welfare cco delhi delhi level-8 8 7",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 8,
-        "min_years": 0
-      },
-      {
-        "level": 7,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L8 · L7 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "SHIP-2026-L7-002",
@@ -969,7 +804,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-01",
     "Last_Date_To_Apply": "2026-04-30",
-    "Days_Left": -31,
+    "Days_Left": -32,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "",
@@ -994,18 +829,7 @@
     "closing_soon": false,
     "search_text": "regional officer (sails) ministry of ports, shipping & waterways mumbai maharashtra level-7 7 6",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 7,
-        "min_years": 0
-      },
-      {
-        "level": 6,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L7 · L6 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "HAFW-2026-L10-001",
@@ -1032,7 +856,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-04-30",
-    "Days_Left": -31,
+    "Days_Left": -32,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -1057,18 +881,7 @@
     "closing_soon": false,
     "search_text": "various deputation posts ministry of health and family welfare kalyani, west bengal level 10 10 8",
     "completeness_score": 69,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 10,
-        "min_years": 0
-      },
-      {
-        "level": 8,
-        "min_years": 5
-      }
-    ],
-    "eligibility_tiers_text": "L10 · L8 (5y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "SHIP-2026-L7-001",
@@ -1095,7 +908,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-05-06",
-    "Days_Left": -25,
+    "Days_Left": -26,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "",
@@ -1120,18 +933,7 @@
     "closing_soon": false,
     "search_text": "assistant marine engineer (group 'b' gazetted) ministry of ports, shipping & waterways andaman & nicobar andaman and nicobar islands level-7 7 6",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 7,
-        "min_years": 0
-      },
-      {
-        "level": 6,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L7 · L6 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "MPNG-2026-L7-001",
@@ -1158,7 +960,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-05-14",
-    "Days_Left": -17,
+    "Days_Left": -18,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -1183,18 +985,7 @@
     "closing_soon": false,
     "search_text": "hindi officer ministry of petroleum & natural gas not specified level-7 7 6",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 7,
-        "min_years": 0
-      },
-      {
-        "level": 6,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L7 · L6 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "107",
@@ -1221,7 +1012,7 @@
     "Deputation_Type": "Standard",
     "Notification_Date": "2026-01-03",
     "Last_Date_To_Apply": "2026-05-21",
-    "Days_Left": -10,
+    "Days_Left": -11,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://uidai.gov.in",
@@ -1246,18 +1037,7 @@
     "closing_soon": false,
     "search_text": "director ministry of electronics and it lucknow uttar pradesh level 13 12 13 btech",
     "completeness_score": 88,
-    "data_quality_flag": "High",
-    "eligibility_tiers": [
-      {
-        "level": 13,
-        "min_years": 0
-      },
-      {
-        "level": 12,
-        "min_years": 3
-      }
-    ],
-    "eligibility_tiers_text": "L13 · L12 (3y)"
+    "data_quality_flag": "High"
   },
   {
     "Vacancy_ID": "108",
@@ -1284,7 +1064,7 @@
     "Deputation_Type": "Standard",
     "Notification_Date": "2026-01-03",
     "Last_Date_To_Apply": "2026-05-21",
-    "Days_Left": -10,
+    "Days_Left": -11,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://uidai.gov.in",
@@ -1309,18 +1089,7 @@
     "closing_soon": false,
     "search_text": "director ministry of electronics and it guwahati assam level 13 12 13 btech",
     "completeness_score": 88,
-    "data_quality_flag": "High",
-    "eligibility_tiers": [
-      {
-        "level": 13,
-        "min_years": 0
-      },
-      {
-        "level": 12,
-        "min_years": 3
-      }
-    ],
-    "eligibility_tiers_text": "L13 · L12 (3y)"
+    "data_quality_flag": "High"
   },
   {
     "Vacancy_ID": "109",
@@ -1347,7 +1116,7 @@
     "Deputation_Type": "Standard",
     "Notification_Date": "2026-01-03",
     "Last_Date_To_Apply": "2026-05-21",
-    "Days_Left": -10,
+    "Days_Left": -11,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://uidai.gov.in",
@@ -1372,18 +1141,7 @@
     "closing_soon": false,
     "search_text": "director ministry of electronics and it bengaluru karnataka level 13 12 13 btech",
     "completeness_score": 88,
-    "data_quality_flag": "High",
-    "eligibility_tiers": [
-      {
-        "level": 13,
-        "min_years": 0
-      },
-      {
-        "level": 12,
-        "min_years": 3
-      }
-    ],
-    "eligibility_tiers_text": "L13 · L12 (3y)"
+    "data_quality_flag": "High"
   },
   {
     "Vacancy_ID": "106",
@@ -1410,7 +1168,7 @@
     "Deputation_Type": "Standard",
     "Notification_Date": "2026-08-04",
     "Last_Date_To_Apply": "2026-05-21",
-    "Days_Left": -10,
+    "Days_Left": -11,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://ugc.ac.in",
@@ -1435,18 +1193,7 @@
     "closing_soon": false,
     "search_text": "section officer ministry of education new delhi delhi level 8 7 8 graduation",
     "completeness_score": 81,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 8,
-        "min_years": 0
-      },
-      {
-        "level": 7,
-        "min_years": 3
-      }
-    ],
-    "eligibility_tiers_text": "L8 · L7 (3y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "HOME-2026-L10-001",
@@ -1473,7 +1220,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-05-21",
-    "Days_Left": -10,
+    "Days_Left": -11,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "",
@@ -1498,18 +1245,7 @@
     "closing_soon": false,
     "search_text": "system administrator ministry of home affairs hyderabad telangana level 10 10 8 b.tech",
     "completeness_score": 69,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 10,
-        "min_years": 0
-      },
-      {
-        "level": 8,
-        "min_years": 3
-      }
-    ],
-    "eligibility_tiers_text": "L10 · L8 (3y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "MSME-2026-L7-001",
@@ -1536,7 +1272,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-05-29",
-    "Days_Left": -2,
+    "Days_Left": -3,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -1561,18 +1297,7 @@
     "closing_soon": false,
     "search_text": "assistant development commissioner (group-b) ministry of micro, small & medium enterprises jaipur sez rajasthan level-7 7 6",
     "completeness_score": 69,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 7,
-        "min_years": 0
-      },
-      {
-        "level": 6,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L7 · L6 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "AGRI-2026-L2-001",
@@ -1599,7 +1324,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-05-29",
-    "Days_Left": -2,
+    "Days_Left": -3,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -1624,18 +1349,7 @@
     "closing_soon": false,
     "search_text": "copy holder (group 'c' gazetted, non-ministerial) ministry of agriculture & farmers welfare new delhi delhi level-2 2 1",
     "completeness_score": 69,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 2,
-        "min_years": 0
-      },
-      {
-        "level": 1,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L2 · L1 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "AGRI-2026-L5-001",
@@ -1662,7 +1376,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-01-29",
     "Last_Date_To_Apply": "2026-05-29",
-    "Days_Left": -2,
+    "Days_Left": -3,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -1687,18 +1401,7 @@
     "closing_soon": false,
     "search_text": "marketing assistant ministry of agriculture & farmers welfare calicut kerala level-5 5 4",
     "completeness_score": 69,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 5,
-        "min_years": 0
-      },
-      {
-        "level": 4,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L5 · L4 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "MPNG-2026-L6-001",
@@ -1725,7 +1428,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-05-29",
-    "Days_Left": -2,
+    "Days_Left": -3,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -1750,18 +1453,7 @@
     "closing_soon": false,
     "search_text": "office superintendent ministry of petroleum & natural gas not specified level-6 6 5",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 6,
-        "min_years": 0
-      },
-      {
-        "level": 5,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L6 · L5 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "SHIP-2026-L7-003",
@@ -1788,7 +1480,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-05-29",
-    "Days_Left": -2,
+    "Days_Left": -3,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -1813,18 +1505,7 @@
     "closing_soon": false,
     "search_text": "personal assistant (pa) ministry of ports, shipping & waterways noida, uttar pradesh uttar pradesh level-7 7 6",
     "completeness_score": 69,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 7,
-        "min_years": 0
-      },
-      {
-        "level": 6,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L7 · L6 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "JALS-2026-L6-001",
@@ -1851,7 +1532,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-05-29",
-    "Days_Left": -2,
+    "Days_Left": -3,
     "Status": "Inactive",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -1876,18 +1557,7 @@
     "closing_soon": false,
     "search_text": "stenographer grade-i (group-b non-gazetted) ministry of jal shakti different parts of india level-6 6 5",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 6,
-        "min_years": 0
-      },
-      {
-        "level": 5,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L6 · L5 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "DONR-2026-L14-001",
@@ -1914,7 +1584,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-01-28",
     "Last_Date_To_Apply": "2026-06-09",
-    "Days_Left": 9,
+    "Days_Left": 8,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -1939,18 +1609,7 @@
     "closing_soon": true,
     "search_text": "director ministry of development of north eastern region (doner) shillong meghalaya level-14 14 13",
     "completeness_score": 69,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 14,
-        "min_years": 0
-      },
-      {
-        "level": 13,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L14 · L13 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "AGRI-2026-L10-001",
@@ -1977,7 +1636,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "",
@@ -2002,18 +1661,7 @@
     "closing_soon": false,
     "search_text": "animal nutritionist (group 'a') ministry of agriculture & farmers welfare new delhi delhi level-10 10 9",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 10,
-        "min_years": 0
-      },
-      {
-        "level": 9,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L10 · L9 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "JALS-2026-L10-001",
@@ -2040,7 +1688,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-01-23",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "",
@@ -2065,18 +1713,7 @@
     "closing_soon": false,
     "search_text": "assistant director (official language) ministry of jal shakti murshidabad west bengal level-10 10 9",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 10,
-        "min_years": 0
-      },
-      {
-        "level": 9,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L10 · L9 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "RTHW-2026-L14-001",
@@ -2103,7 +1740,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -2128,18 +1765,7 @@
     "closing_soon": false,
     "search_text": "chief general manager (technical) ministry of road transport & highways not specified level-14 14 13",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 14,
-        "min_years": 0
-      },
-      {
-        "level": 13,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L14 · L13 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "AGRI-2026-L12-001",
@@ -2166,7 +1792,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "",
@@ -2191,18 +1817,7 @@
     "closing_soon": false,
     "search_text": "coal superintendent (group-a) ministry of agriculture & farmers welfare dhanbad jharkhand level-12 12 11",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 12,
-        "min_years": 0
-      },
-      {
-        "level": 11,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L12 · L11 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "CULT-2026-L11-002",
@@ -2229,7 +1844,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-04",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "",
@@ -2254,18 +1869,7 @@
     "closing_soon": false,
     "search_text": "curator (display) ministry of culture new delhi delhi level-11 11 10",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 11,
-        "min_years": 0
-      },
-      {
-        "level": 10,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L11 · L10 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "HAFW-2026-L14-001",
@@ -2292,7 +1896,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -2317,18 +1921,7 @@
     "closing_soon": false,
     "search_text": "dean (academic) ministry of health and family welfare karaikal puducherry level-14 14 13",
     "completeness_score": 69,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 14,
-        "min_years": 0
-      },
-      {
-        "level": 13,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L14 · L13 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "LABR-2022-L12-001",
@@ -2355,7 +1948,7 @@
     "Deputation_Type": "Deputation",
     "Notification_Date": "2022-10-20",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://ntro.gov.in",
@@ -2380,18 +1973,7 @@
     "closing_soon": false,
     "search_text": "deputy director (administration) ministry of labour & employment new delhi delhi level-12 11 10 bachelor's degree",
     "completeness_score": 81,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 11,
-        "min_years": 5
-      },
-      {
-        "level": 10,
-        "min_years": 0
-      }
-    ],
-    "eligibility_tiers_text": "L11 (5y) · L10"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "DOPT-2026-L11-001",
@@ -2418,7 +2000,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "",
@@ -2443,18 +2025,7 @@
     "closing_soon": false,
     "search_text": "deputy director (foundational course) ministry of personnel, public grievances & pensions new delhi delhi level-11 11 10",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 11,
-        "min_years": 0
-      },
-      {
-        "level": 10,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L11 · L10 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "AGRI-2026-L13-001",
@@ -2481,7 +2052,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -2506,18 +2077,7 @@
     "closing_soon": false,
     "search_text": "financial adviser ministry of agriculture & farmers welfare new delhi delhi level-13 13 12",
     "completeness_score": 69,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 13,
-        "min_years": 0
-      },
-      {
-        "level": 12,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L13 · L12 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "HAFW-2026-L12-001",
@@ -2544,7 +2104,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "",
@@ -2569,18 +2129,7 @@
     "closing_soon": false,
     "search_text": "joint director (quality assurance) ministry of health and family welfare new delhi delhi level-12 12 11",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 12,
-        "min_years": 0
-      },
-      {
-        "level": 11,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L12 · L11 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "AGRI-2026-L10-002",
@@ -2607,7 +2156,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-01-24",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "",
@@ -2632,18 +2181,7 @@
     "closing_soon": false,
     "search_text": "legal officer (group-a) ministry of agriculture & farmers welfare cco delhi delhi level-10 10 9",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 10,
-        "min_years": 0
-      },
-      {
-        "level": 9,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L10 · L9 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "AGRI-2026-L13-002",
@@ -2670,7 +2208,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -2695,18 +2233,7 @@
     "closing_soon": false,
     "search_text": "managing director ministry of agriculture & farmers welfare burnihat meghalaya level-13 13 12",
     "completeness_score": 69,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 13,
-        "min_years": 0
-      },
-      {
-        "level": 12,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L13 · L12 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "SHIP-2026-L11-001",
@@ -2733,7 +2260,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "",
@@ -2758,18 +2285,7 @@
     "closing_soon": false,
     "search_text": "principal private secretary (pps) ministry of ports, shipping & waterways noida, uttar pradesh uttar pradesh level-11 11 10",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 11,
-        "min_years": 0
-      },
-      {
-        "level": 10,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L11 · L10 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "AGRI-2026-L11-004",
@@ -2796,7 +2312,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "",
@@ -2821,18 +2337,7 @@
     "closing_soon": false,
     "search_text": "production manager (printed publicity) / production officer ministry of agriculture & farmers welfare not specified level-11 11 10",
     "completeness_score": 56,
-    "data_quality_flag": "Low",
-    "eligibility_tiers": [
-      {
-        "level": 11,
-        "min_years": 0
-      },
-      {
-        "level": 10,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L11 · L10 (4y)"
+    "data_quality_flag": "Low"
   },
   {
     "Vacancy_ID": "AGRI-2025-L11-001",
@@ -2859,7 +2364,7 @@
     "Deputation_Type": "Deputation",
     "Notification_Date": "2025-11-28",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://mib.gov.in/",
@@ -2884,18 +2389,7 @@
     "closing_soon": false,
     "search_text": "production manager (printed publicity)/production officer (production) ministry of agriculture & farmers welfare new delhi delhi level-11 11 10 essential: (i) diploma in printing technology from a recognized university /institution or degree of a recognized university or equivalent. (iii) practical experience in different processes of printing, layout photography, art work, costing and estimating etc. desirable: knowledge of hindi.",
     "completeness_score": 81,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 11,
-        "min_years": 0
-      },
-      {
-        "level": 10,
-        "min_years": 5
-      }
-    ],
-    "eligibility_tiers_text": "L11 · L10 (5y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "CHEM-2026-L13-001",
@@ -2922,7 +2416,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-07-07",
-    "Days_Left": 37,
+    "Days_Left": 36,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://dda.gov.in/sites/default/files/Personnel/advertisement_26.12_0.pdf",
@@ -2947,18 +2441,7 @@
     "closing_soon": false,
     "search_text": "registrar (administration) ministry of chemicals & fertilizers hajipur bihar level-13 13 12",
     "completeness_score": 69,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 13,
-        "min_years": 0
-      },
-      {
-        "level": 12,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L13 · L12 (4y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "105",
@@ -2985,7 +2468,7 @@
     "Deputation_Type": "Standard",
     "Notification_Date": "2025-01-12",
     "Last_Date_To_Apply": "2026-07-22",
-    "Days_Left": 52,
+    "Days_Left": 51,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://aiimsbhopal.edu.in",
@@ -3010,18 +2493,7 @@
     "closing_soon": false,
     "search_text": "assistant director ministry of health bhopal madhya pradesh level 10 9 10 masters degree",
     "completeness_score": 81,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 10,
-        "min_years": 0
-      },
-      {
-        "level": 9,
-        "min_years": 3
-      }
-    ],
-    "eligibility_tiers_text": "L10 · L9 (3y)"
+    "data_quality_flag": "Medium"
   },
   {
     "Vacancy_ID": "101",
@@ -3048,7 +2520,7 @@
     "Deputation_Type": "Standard",
     "Notification_Date": "2026-01-03",
     "Last_Date_To_Apply": "2026-07-22",
-    "Days_Left": 52,
+    "Days_Left": 51,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://uidai.gov.in",
@@ -3073,18 +2545,7 @@
     "closing_soon": false,
     "search_text": "deputy director general ministry of electronics and it new delhi delhi level 14 13 14 btech or equivalent",
     "completeness_score": 88,
-    "data_quality_flag": "High",
-    "eligibility_tiers": [
-      {
-        "level": 14,
-        "min_years": 0
-      },
-      {
-        "level": 13,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L14 · L13 (4y)"
+    "data_quality_flag": "High"
   },
   {
     "Vacancy_ID": "102",
@@ -3111,7 +2572,7 @@
     "Deputation_Type": "Standard",
     "Notification_Date": "2026-03-15",
     "Last_Date_To_Apply": "2026-07-22",
-    "Days_Left": 52,
+    "Days_Left": 51,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://incometaxindia.gov.in",
@@ -3136,18 +2597,7 @@
     "closing_soon": false,
     "search_text": "director ministry of finance mumbai maharashtra level 13 12 13 ca or equivalent",
     "completeness_score": 88,
-    "data_quality_flag": "High",
-    "eligibility_tiers": [
-      {
-        "level": 13,
-        "min_years": 0
-      },
-      {
-        "level": 12,
-        "min_years": 3
-      }
-    ],
-    "eligibility_tiers_text": "L13 · L12 (3y)"
+    "data_quality_flag": "High"
   },
   {
     "Vacancy_ID": "104",
@@ -3174,7 +2624,7 @@
     "Deputation_Type": "Standard",
     "Notification_Date": "2026-05-04",
     "Last_Date_To_Apply": "2026-07-22",
-    "Days_Left": 52,
+    "Days_Left": 51,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://drdo.gov.in",
@@ -3199,18 +2649,7 @@
     "closing_soon": false,
     "search_text": "private secretary ministry of defence hyderabad telangana level 8 7 8 graduation",
     "completeness_score": 88,
-    "data_quality_flag": "High",
-    "eligibility_tiers": [
-      {
-        "level": 8,
-        "min_years": 0
-      },
-      {
-        "level": 7,
-        "min_years": 5
-      }
-    ],
-    "eligibility_tiers_text": "L8 · L7 (5y)"
+    "data_quality_flag": "High"
   },
   {
     "Vacancy_ID": "103",
@@ -3237,7 +2676,7 @@
     "Deputation_Type": "Standard",
     "Notification_Date": "2026-01-04",
     "Last_Date_To_Apply": "2026-07-22",
-    "Days_Left": 52,
+    "Days_Left": 51,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "https://mha.gov.in",
@@ -3262,18 +2701,7 @@
     "closing_soon": false,
     "search_text": "senior accounts officer ministry of home affairs bengaluru karnataka level 10 9 10 commerce degree",
     "completeness_score": 88,
-    "data_quality_flag": "High",
-    "eligibility_tiers": [
-      {
-        "level": 10,
-        "min_years": 0
-      },
-      {
-        "level": 9,
-        "min_years": 2
-      }
-    ],
-    "eligibility_tiers_text": "L10 · L9 (2y)"
+    "data_quality_flag": "High"
   },
   {
     "Vacancy_ID": "HOME-2026-L13-001",
@@ -3300,7 +2728,7 @@
     "Deputation_Type": "",
     "Notification_Date": "2026-02-10",
     "Last_Date_To_Apply": "2026-07-24",
-    "Days_Left": 54,
+    "Days_Left": 53,
     "Status": "Active",
     "Closing_Soon": "No",
     "Official_Notification_Link": "",
@@ -3325,17 +2753,6 @@
     "closing_soon": false,
     "search_text": "additional director ministry of home affairs new delhi delhi level-13 13 12",
     "completeness_score": 62,
-    "data_quality_flag": "Medium",
-    "eligibility_tiers": [
-      {
-        "level": 13,
-        "min_years": 0
-      },
-      {
-        "level": 12,
-        "min_years": 4
-      }
-    ],
-    "eligibility_tiers_text": "L13 · L12 (4y)"
+    "data_quality_flag": "Medium"
   }
 ]
