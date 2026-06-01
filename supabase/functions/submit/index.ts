@@ -67,6 +67,40 @@ Deno.serve(async (req) => {
     return json({ ok: true, success: true, feedbackId: "FB-" + Date.now().toString(36).toUpperCase() });
   }
 
+  // ---------- community flag on a vacancy ----------
+  if (action === "flag") {
+    const vacancyId = String(body.vacancyId || "").trim();
+    const issueType = String(body.issueType || "").trim();
+    const VALID_ISSUES = ["broken_link","wrong_link","wrong_pay_level","wrong_deadline","closed_already","wrong_location","duplicate","other"];
+    if (!vacancyId) return json({ ok: false, message: "Vacancy reference is required." });
+    if (!VALID_ISSUES.includes(issueType)) return json({ ok: false, message: "Please choose what's wrong." });
+    if (body.reporterEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.reporterEmail)) {
+      return json({ ok: false, message: "Email looks invalid." });
+    }
+    const cap = (v: unknown, n: number) => String(v ?? "").trim().slice(0, n);
+    const { data, error } = await admin.from("vacancy_flags").insert({
+      vacancy_id: vacancyId,
+      field: cap(body.field, 60) || "whole",
+      issue_type: issueType,
+      note: cap(body.note, 600),
+      suggested_value: cap(body.suggestedValue, 600),
+      reporter_name: cap(body.reporterName, 120),
+      reporter_email: cap(body.reporterEmail, 160),
+    }).select("id").single();
+    if (error) return json({ ok: false, message: error.message }, 500);
+    return json({ ok: true, success: true, flagId: data?.id || null });
+  }
+
+  // ---------- endorse an existing open flag ----------
+  if (action === "endorse") {
+    const flagId = String(body.flagId || "").trim();
+    if (!/^[0-9a-f-]{36}$/i.test(flagId)) return json({ ok: false, message: "Invalid flag reference." });
+    const { data, error } = await admin.rpc("endorse_flag", { flag_id: flagId });
+    if (error) return json({ ok: false, message: error.message }, 500);
+    if (data === null || data === undefined) return json({ ok: false, message: "That report is no longer open." });
+    return json({ ok: true, success: true, endorsements: data });
+  }
+
   // ---------- vacancy tip ----------
   const title = String(body.title || "").trim();
   const org = String(body.organization || "").trim();

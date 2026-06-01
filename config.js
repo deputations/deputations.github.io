@@ -5,6 +5,11 @@
  *   - POST { action:"vote",    ... }   -> vote on a discrepancy
  *   - POST { action:"vacancy", ... }   -> submit a deputation vacancy (link/pdf/manual)
  *
+ * The Supabase `submit` Edge Function additionally handles:
+ *   - POST { action:"feedback", ... }  -> contact-form feedback
+ *   - POST { action:"flag", ... }      -> community-reported issue on a vacancy
+ *   - POST { action:"endorse", flagId }-> +1 endorse an existing open flag
+ *
  * If this file is missing or fails to load, the FAQ page falls back to its
  * hard-coded URL, and the Report Vacancy page disables submission and shows a
  * setup-needed notice. */

@@ -1581,6 +1581,7 @@ function applyTheme(theme) {
         modalBody.innerHTML = buildModalContent(item);
         modal.style.display = 'flex';
         lucide.createIcons();
+        wireFlagUI(vacancyId);
     }
 
     function closeVacancyModal() {
@@ -1723,9 +1724,230 @@ function applyTheme(theme) {
                             Apply
                         </a>
                     ` : ''}
+
+                    <button type="button" class="card-action-btn ghost flag-open-btn" data-flag-open="${escapeHtml(vacancyId)}">
+                        <i data-lucide="flag"></i> Report an issue
+                    </button>
+                </div>
+
+                <div class="modal-section flag-section" id="flagSection" data-vid="${escapeHtml(vacancyId)}">
+                    <div class="modal-section-title">Community-reported issues</div>
+                    <div class="flag-list" id="flagList"><div class="flag-status">Loading…</div></div>
+                    <div class="flag-form-wrap" id="flagFormWrap" hidden></div>
                 </div>
             </div>
         `;
+    }
+
+    /* ---------------- Vacancy issue flags (community-reported) ---------------- */
+    const FLAG_ISSUES = [
+        ['broken_link',     'Link is broken / dead'],
+        ['wrong_link',      'Link points to the wrong document'],
+        ['wrong_pay_level', 'Wrong pay level'],
+        ['wrong_deadline',  'Wrong last date / deadline'],
+        ['closed_already',  'Already closed / filled'],
+        ['wrong_location',  'Wrong location'],
+        ['duplicate',       'Duplicate of another vacancy'],
+        ['other',           'Something else'],
+    ];
+    const FLAG_ISSUE_LABEL = Object.fromEntries(FLAG_ISSUES);
+    const FLAG_FIELDS = [
+        ['whole',                       'The whole vacancy'],
+        ['official_notification_link',  'Notification link'],
+        ['application_form_link',       'Application / apply link'],
+        ['level',                       'Pay level'],
+        ['last_date_to_apply',          'Last date'],
+        ['location',                    'Location'],
+        ['post_name',                   'Post name'],
+        ['other',                       'Other field'],
+    ];
+
+    function flagApiReady() {
+        return !!(window.SUPABASE_READY && window.SUPABASE_READY());
+    }
+    function lsGet(key) { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } }
+    function lsAdd(key, val) {
+        try { const a = new Set(lsGet(key)); a.add(String(val)); localStorage.setItem(key, JSON.stringify([...a])); } catch (e) {}
+    }
+    const endorsedFlags = () => new Set(lsGet('dep_flag_endorsed_v1').map(String));
+    const reportedVacancies = () => lsGet('dep_flag_reported_v1').map(String);
+
+    async function fetchFlags(vacancyId) {
+        if (!flagApiReady()) return [];
+        const url = `${window.SUPABASE_URL}/rest/v1/vacancy_flags`
+            + `?vacancy_id=eq.${encodeURIComponent(vacancyId)}&status=eq.open`
+            + `&select=id,field,issue_type,note,suggested_value,endorsements,created_at`
+            + `&order=endorsements.desc,created_at.desc`;
+        try {
+            const r = await fetch(url, { headers: { apikey: window.SUPABASE_ANON_KEY, Authorization: `Bearer ${window.SUPABASE_ANON_KEY}` } });
+            if (!r.ok) return [];
+            return await r.json();
+        } catch { return []; }
+    }
+    async function postToSubmit(payload) {
+        const url = `${window.SUPABASE_URL}/functions/v1/submit`;
+        const r = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: window.SUPABASE_ANON_KEY, Authorization: `Bearer ${window.SUPABASE_ANON_KEY}` },
+            body: JSON.stringify(payload),
+        });
+        let d = {}; try { d = await r.json(); } catch {}
+        if (!r.ok || (d && d.ok === false)) throw new Error((d && d.message) || `Server error (${r.status})`);
+        return d;
+    }
+
+    function flagCardHtml(f) {
+        const endorsed = endorsedFlags().has(String(f.id));
+        const sv = safe(f.suggested_value);
+        return `
+            <div class="flag-card" data-flag-id="${escapeHtml(f.id)}">
+                <div class="flag-card-head">
+                    <span class="flag-tag">${escapeHtml(FLAG_ISSUE_LABEL[f.issue_type] || f.issue_type)}</span>
+                    <span class="flag-unverified" title="Reported by a reader; not yet verified by an admin">unverified</span>
+                </div>
+                ${hasMeaningfulValue(f.note) ? `<div class="flag-note">${escapeHtml(f.note)}</div>` : ''}
+                ${sv ? `<div class="flag-suggest"><span>Suggested correction:</span> ${escapeHtml(sv)}</div>` : ''}
+                <div class="flag-card-foot">
+                    <button type="button" class="flag-endorse-btn${endorsed ? ' done' : ''}" data-endorse="${escapeHtml(f.id)}" ${endorsed ? 'disabled' : ''}>
+                        <i data-lucide="thumbs-up"></i> ${endorsed ? 'Endorsed' : 'Endorse'} · <span class="flag-count">${Number(f.endorsements) || 0}</span>
+                    </button>
+                </div>
+            </div>`;
+    }
+
+    function renderFlagList(listEl, flags) {
+        if (!flagApiReady()) { listEl.innerHTML = '<div class="flag-status">Issue reporting isn\'t configured.</div>'; return; }
+        listEl.innerHTML = flags.length
+            ? flags.map(flagCardHtml).join('')
+            : '<div class="flag-status">No issues reported yet. Spotted something wrong? Use “Report an issue”.</div>';
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function flagFormHtml(vacancyId) {
+        const reportedBefore = reportedVacancies().filter(v => v === String(vacancyId)).length;
+        return `
+            <form class="flag-form" id="flagForm">
+                ${reportedBefore >= 3 ? '<div class="flag-status">You\'ve already reported this vacancy a few times — please endorse an existing report instead.</div>' : `
+                <div class="flag-row">
+                    <label>What's wrong?
+                        <select name="issueType" required>
+                            <option value="">Select…</option>
+                            ${FLAG_ISSUES.map(([v, l]) => `<option value="${v}">${escapeHtml(l)}</option>`).join('')}
+                        </select>
+                    </label>
+                    <label>Which part?
+                        <select name="field">
+                            ${FLAG_FIELDS.map(([v, l]) => `<option value="${v}">${escapeHtml(l)}</option>`).join('')}
+                        </select>
+                    </label>
+                </div>
+                <label>Details <span class="flag-opt">(what's wrong, in a line)</span>
+                    <textarea name="note" rows="2" maxlength="600" placeholder="e.g. The notification link 404s / points to a different post"></textarea>
+                </label>
+                <label>Suggested correction <span class="flag-opt">(optional — the right value/link)</span>
+                    <input type="text" name="suggestedValue" maxlength="600" placeholder="e.g. correct PDF URL, or the right pay level">
+                </label>
+                <div class="flag-row">
+                    <label>Your name <span class="flag-opt">(optional)</span><input type="text" name="reporterName" maxlength="120" autocomplete="name"></label>
+                    <label>Email <span class="flag-opt">(optional)</span><input type="email" name="reporterEmail" maxlength="160" autocomplete="email"></label>
+                </div>
+                <input type="text" name="website" class="flag-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+                <div class="flag-form-actions">
+                    <button type="button" class="card-action-btn ghost" data-flag-cancel>Cancel</button>
+                    <button type="submit" class="card-action-btn">Submit report</button>
+                </div>
+                <div class="flag-msg" id="flagMsg"></div>`}
+            </form>`;
+    }
+
+    async function loadFlagsInto(vacancyId) {
+        const section = document.getElementById('flagSection');
+        if (!section || section.dataset.vid !== String(vacancyId)) return; // modal changed
+        const listEl = document.getElementById('flagList');
+        if (!listEl) return;
+        const flags = await fetchFlags(vacancyId);
+        const cur = document.getElementById('flagSection');
+        if (!cur || cur.dataset.vid !== String(vacancyId)) return; // raced with a reopen
+        renderFlagList(listEl, flags);
+    }
+
+    function wireFlagUI(vacancyId) {
+        const section = document.getElementById('flagSection');
+        if (!section) return;
+        if (!flagApiReady()) { section.hidden = true; return; }
+
+        loadFlagsInto(vacancyId);
+
+        const openBtn = modalBody.querySelector(`[data-flag-open="${CSS.escape(String(vacancyId))}"]`);
+        const wrap = document.getElementById('flagFormWrap');
+        const listEl = document.getElementById('flagList');
+
+        if (openBtn && wrap) {
+            openBtn.addEventListener('click', () => {
+                const showing = !wrap.hidden;
+                if (showing) { wrap.hidden = true; wrap.innerHTML = ''; return; }
+                wrap.innerHTML = flagFormHtml(vacancyId);
+                wrap.hidden = false;
+                if (window.lucide) lucide.createIcons();
+                const form = document.getElementById('flagForm');
+                form?.querySelector('[data-flag-cancel]')?.addEventListener('click', () => { wrap.hidden = true; wrap.innerHTML = ''; });
+                form?.addEventListener('submit', (e) => submitFlagForm(e, vacancyId));
+                wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        }
+
+        // Endorse (delegated within the list)
+        if (listEl) {
+            listEl.addEventListener('click', async (e) => {
+                const btn = e.target.closest('[data-endorse]');
+                if (!btn || btn.disabled) return;
+                const flagId = btn.getAttribute('data-endorse');
+                if (endorsedFlags().has(String(flagId))) return;
+                btn.disabled = true;
+                try {
+                    const d = await postToSubmit({ action: 'endorse', flagId });
+                    lsAdd('dep_flag_endorsed_v1', flagId);
+                    const countEl = btn.querySelector('.flag-count');
+                    if (countEl && typeof d.endorsements === 'number') countEl.textContent = d.endorsements;
+                    btn.classList.add('done');
+                    btn.childNodes.forEach(n => { if (n.nodeType === 3 && n.textContent.includes('Endorse')) n.textContent = ' Endorsed · '; });
+                } catch (err) {
+                    btn.disabled = false;
+                    showHomeToast(`Couldn't endorse: ${escapeHtml(err.message)}`);
+                }
+            });
+        }
+    }
+
+    async function submitFlagForm(e, vacancyId) {
+        e.preventDefault();
+        const form = e.target;
+        const msg = document.getElementById('flagMsg');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const fd = new FormData(form);
+        if (fd.get('website')) { if (msg) msg.textContent = 'Thanks!'; return; } // honeypot
+        const issueType = fd.get('issueType');
+        if (!issueType) { if (msg) { msg.textContent = 'Please choose what\'s wrong.'; msg.className = 'flag-msg err'; } return; }
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting…'; }
+        try {
+            await postToSubmit({
+                action: 'flag',
+                vacancyId,
+                issueType,
+                field: fd.get('field') || 'whole',
+                note: fd.get('note') || '',
+                suggestedValue: fd.get('suggestedValue') || '',
+                reporterName: fd.get('reporterName') || '',
+                reporterEmail: fd.get('reporterEmail') || '',
+            });
+            lsAdd('dep_flag_reported_v1', vacancyId);
+            const wrap = document.getElementById('flagFormWrap');
+            if (wrap) { wrap.innerHTML = '<div class="flag-status ok">✓ Thanks — your report was submitted for admin review.</div>'; }
+            loadFlagsInto(vacancyId);
+        } catch (err) {
+            if (msg) { msg.textContent = err.message; msg.className = 'flag-msg err'; }
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit report'; }
+        }
     }
 
     function buildModalField(label, value, isHtml = false) {

@@ -433,6 +433,7 @@ async function boot() {
   $('app').classList.remove('hidden');
   wireApp();
   loadDrafts();
+  refreshFlagCount();
 }
 
 /* ---------------- app wiring ---------------- */
@@ -446,10 +447,15 @@ function wireApp() {
       $('paneIngest').classList.toggle('hidden', t !== 'ingest');
       $('paneReview').classList.toggle('hidden', t !== 'review');
       $('paneManage').classList.toggle('hidden', t !== 'manage');
+      $('paneFlags').classList.toggle('hidden', t !== 'flags');
       if (t === 'review') loadDrafts();
       if (t === 'manage') loadManage();
+      if (t === 'flags') loadFlags();
     };
   });
+
+  $('flagRefresh').onclick = loadFlags;
+  $('flagStatus').onchange = loadFlags;
 
   $('mgRefresh').onclick = loadManage;
   $('mgStatus').onclick = () => {};
@@ -915,6 +921,98 @@ function manageCard(r, isNew) {
 
   const srcBtn = el.querySelector('[data-act="source"]');
   if (srcBtn) srcBtn.onclick = () => openSource(r, String((r.raw_extraction && r.raw_extraction.source_page) || '').replace(/\D/g, ''));
+  return el;
+}
+
+/* ---------------- community flags (reported issues) ---------------- */
+const FLAG_ISSUE_LABEL = {
+  broken_link: 'Broken / dead link', wrong_link: 'Wrong document link',
+  wrong_pay_level: 'Wrong pay level', wrong_deadline: 'Wrong deadline',
+  closed_already: 'Already closed', wrong_location: 'Wrong location',
+  duplicate: 'Duplicate', other: 'Other',
+};
+const FLAG_FIELD_LABEL = {
+  whole: 'whole vacancy', official_notification_link: 'notification link',
+  application_form_link: 'apply link', level: 'pay level',
+  last_date_to_apply: 'last date', location: 'location', post_name: 'post name', other: 'other',
+};
+
+async function loadFlags() {
+  const status = $('flagStatus') ? $('flagStatus').value : 'open';
+  let url = '/rest/v1/vacancy_flags?select=*&order=endorsements.desc,created_at.desc&limit=500';
+  if (status !== 'all') url += `&status=eq.${status}`;
+  const list = $('flagsList');
+  if (list) list.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const r = await api(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const rows = await r.json();
+    renderFlags(rows);
+  } catch (e) { if (list) list.innerHTML = `<p class="muted">Load error: ${escapeHtml(e.message)}</p>`; }
+}
+
+async function refreshFlagCount() {
+  try {
+    const r = await api('/rest/v1/vacancy_flags?status=eq.open&select=id');
+    if (!r.ok) return;
+    const rows = await r.json();
+    const badge = $('flagCount');
+    if (badge) badge.textContent = rows.length ? `(${rows.length})` : '';
+  } catch { /* */ }
+}
+
+function renderFlags(rows) {
+  const list = $('flagsList');
+  if ($('flagsCount')) $('flagsCount').textContent = `(${rows.length})`;
+  if (!list) return;
+  if (!rows.length) { list.innerHTML = '<p class="muted">No flags in this view.</p>'; return; }
+  list.innerHTML = '';
+  rows.forEach((f) => list.appendChild(flagCard(f)));
+}
+
+function flagCard(f) {
+  const el = document.createElement('div');
+  el.className = 'draft';
+  const when = (f.created_at || '').slice(0, 10);
+  const sv = f.suggested_value || '';
+  el.innerHTML = `
+    <div class="head">
+      <div>
+        <b>${escapeHtml(FLAG_ISSUE_LABEL[f.issue_type] || f.issue_type)}</b>
+        <span class="muted"> · ${escapeHtml(FLAG_FIELD_LABEL[f.field] || f.field || 'whole')} · ${escapeHtml(f.vacancy_id || '')}</span>
+        <span class="pill">${escapeHtml(f.status || 'open')}</span>
+        <span class="muted"> · 👍 ${Number(f.endorsements) || 0} · ${escapeHtml(when)}</span>
+      </div>
+      <div class="acts">
+        <button data-act="open">🗂 Open in manager</button>
+        ${f.status === 'open' ? '<button class="good" data-act="valid">✓ Valid</button><button class="bad" data-act="dismiss">Dismiss</button>' : '<button data-act="reopen">Re-open</button>'}
+      </div>
+    </div>
+    ${f.note ? `<div style="margin:6px 0;color:var(--text,#cbd5e1)">${escapeHtml(f.note)}</div>` : ''}
+    ${sv ? `<div class="muted" style="margin:4px 0"><b>Suggested:</b> ${escapeHtml(sv)}</div>` : ''}
+    ${(f.reporter_name || f.reporter_email) ? `<div class="muted" style="font-size:.8rem">Reporter: ${escapeHtml(f.reporter_name || '')} ${escapeHtml(f.reporter_email || '')}</div>` : ''}`;
+
+  const setStatus = async (status) => {
+    try {
+      const r = await api(`/rest/v1/vacancy_flags?id=eq.${f.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ status }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      toast(`Flag marked ${status}`); loadFlags(); refreshFlagCount();
+    } catch (e) { toast('Update failed: ' + e.message); }
+  };
+
+  el.querySelector('[data-act="open"]').onclick = () => {
+    // jump to Manage, pre-filtered to this vacancy so the admin can fix it
+    document.querySelector('[data-tab="manage"]').click();
+    if ($('mgStatus')) $('mgStatus').value = 'all';
+    if ($('mgSearch')) $('mgSearch').value = f.vacancy_id || '';
+    loadManage();
+  };
+  el.querySelector('[data-act="valid"]')?.addEventListener('click', () => setStatus('approved'));
+  el.querySelector('[data-act="dismiss"]')?.addEventListener('click', () => setStatus('dismissed'));
+  el.querySelector('[data-act="reopen"]')?.addEventListener('click', () => setStatus('open'));
   return el;
 }
 

@@ -88,6 +88,7 @@
         <button id="tabIngest" class="active" data-tab="ingest">⬆️ Ingest</button>
         <button id="tabReview" data-tab="review">📝 Review queue <span id="draftCount"></span></button>
         <button id="tabManage" data-tab="manage">🗂 Manage data</button>
+        <button id="tabFlags" data-tab="flags">⚑ Flags <span id="flagCount"></span></button>
       </div>
 
       <!-- INGEST -->
@@ -190,6 +191,24 @@
         <p class="muted">Edit any field then <b>Save</b>, change <b>Status</b> to publish/unpublish, or <b>Delete</b> a row. Click <b>📄 source</b> if a PDF is attached.</p>
         <div id="manageList"></div>
       </section>
+
+      <!-- FLAGS -->
+      <section id="paneFlags" class="card hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">Community-reported issues <span id="flagsCount" class="muted"></span></h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="flagStatus" style="width:auto">
+              <option value="open">Open</option>
+              <option value="approved">Approved</option>
+              <option value="dismissed">Dismissed</option>
+              <option value="all">All</option>
+            </select>
+            <button id="flagRefresh">↻</button>
+          </div>
+        </div>
+        <p class="muted">Readers flag problems on live vacancies. <b>Open</b> in the manager to fix the vacancy yourself, then mark the flag <b>✓ Valid</b> (keep for the record) or <b>Dismiss</b> (invalid / hide). Sorted by endorsements.</p>
+        <div id="flagsList"></div>
+      </section>
     </div>
   </div>
 
@@ -197,6 +216,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb2"></script>
-  <script src="admin-ingest.js?v=sb22"></script>
+  <script src="admin-ingest.js?v=sb23"></script>
 </body>
 </html>

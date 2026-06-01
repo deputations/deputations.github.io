@@ -1518,6 +1518,65 @@ select:disabled {
   gap: 0.8rem;
 }
 
+/* ============== Community issue flags (vacancy modal) ============== */
+.card-action-btn.ghost {
+  border-color: var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  gap: 0.4rem;
+}
+.card-action-btn.ghost i { width: 15px; height: 15px; }
+.card-action-btn.ghost:hover { color: var(--danger-color, #f43f5e); border-color: color-mix(in srgb, var(--danger-color, #f43f5e) 45%, transparent); }
+
+.flag-section { margin-top: 0.4rem; }
+.flag-list { display: flex; flex-direction: column; gap: 0.6rem; }
+.flag-status { color: var(--text-muted); font-size: 0.86rem; padding: 0.5rem 0; }
+.flag-status.ok { color: var(--success-color); }
+
+.flag-card {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  background: rgba(15, 23, 42, 0.4);
+}
+.flag-card-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
+.flag-tag {
+  font-size: 0.78rem; font-weight: 700; color: var(--primary-color);
+  background: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.22);
+  padding: 0.18rem 0.55rem; border-radius: 999px;
+}
+.flag-unverified {
+  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-muted); border: 1px dashed var(--border-color);
+  padding: 0.12rem 0.45rem; border-radius: 999px; margin-left: auto;
+}
+.flag-note { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.3rem; }
+.flag-suggest { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.4rem; word-break: break-word; }
+.flag-suggest span { color: var(--text-muted); font-weight: 600; }
+.flag-card-foot { display: flex; }
+.flag-endorse-btn {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.82rem; font-weight: 700; cursor: pointer;
+  border: 1px solid var(--border-color); border-radius: 999px;
+  background: rgba(15, 23, 42, 0.5); color: var(--text-secondary);
+  padding: 0.3rem 0.7rem;
+}
+.flag-endorse-btn i { width: 14px; height: 14px; }
+.flag-endorse-btn:hover:not(:disabled) { color: var(--success-color); border-color: rgba(34, 197, 94, 0.4); }
+.flag-endorse-btn.done { color: var(--success-color); border-color: rgba(34, 197, 94, 0.4); cursor: default; }
+
+.flag-form-wrap { margin-top: 0.8rem; border-top: 1px solid var(--border-color); padding-top: 0.8rem; }
+.flag-form { display: flex; flex-direction: column; gap: 0.6rem; }
+.flag-form label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.82rem; color: var(--text-secondary); font-weight: 600; }
+.flag-form .flag-opt { color: var(--text-muted); font-weight: 400; }
+.flag-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.flag-row label { flex: 1; min-width: 150px; }
+.flag-form input, .flag-form select, .flag-form textarea { width: 100%; }
+.flag-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.flag-form-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+.flag-msg { font-size: 0.82rem; text-align: right; }
+.flag-msg.err { color: var(--danger-color, #f43f5e); }
+
 .application-mode-badge {
   display: inline-flex;
   align-items: center;
