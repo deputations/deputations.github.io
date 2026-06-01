@@ -240,6 +240,12 @@ Deno.serve(async (req) => {
     let pdfOk = false;
     let resolvedUrl = "";
 
+    // Did the fetched PDF actually contain THIS post, and is it a 2026 notice?
+    // Both gates must pass before we trust the PDF as the official link.
+    let postMatched = false;   // Gemini confirmed this post is in the PDF
+    let yearOk = false;        // the notification is from 2026 (not a stale/old doc)
+    let rejectReason = "";
+
     if (found.pdf_url) {
       try {
         const r = await fetch(found.pdf_url, { headers: BROWSER_HEADERS, redirect: "follow" });
@@ -249,24 +255,37 @@ Deno.serve(async (req) => {
           const bytes = new Uint8Array(await r.arrayBuffer());
           const detail = await extractDetail(toBase64(bytes), v);
           pdfOk = true;
-          if (detail && detail.matched !== false) {
-            for (const f of FILLABLE) {
-              const incoming = (detail[f] ?? "").toString().trim();
-              const current = (v[f] ?? "").toString().trim();
-              if (incoming && !current) { patch[f] = incoming; detailFilled.push(f); }
+          // matched===false (or a doc with no post fields at all) => generic /
+          // wrong PDF (e.g. a deputation-policy guideline). Do NOT trust it.
+          postMatched = detail && detail.matched === true;
+          if (postMatched) {
+            // Recency: the notification must be 2026. Prefer the PDF's own date;
+            // fall back to the draft's existing date. Reject anything earlier.
+            const yr = parseInt(String((detail.notification_date || v.notification_date || "")).slice(0, 4), 10);
+            yearOk = Number.isFinite(yr) ? yr >= 2026 : true; // unknown year -> don't block
+            if (!yearOk) rejectReason = `stale source (${yr}) rejected`;
+            if (yearOk) {
+              for (const f of FILLABLE) {
+                const incoming = (detail[f] ?? "").toString().trim();
+                const current = (v[f] ?? "").toString().trim();
+                if (incoming && !current) { patch[f] = incoming; detailFilled.push(f); }
+              }
+              if (patch.level && !patch.level_text) patch.level_text = `Level-${String(patch.level).replace(/\D/g, "")}`;
             }
-            if (patch.level && !patch.level_text) patch.level_text = `Level-${String(patch.level).replace(/\D/g, "")}`;
+          } else {
+            rejectReason = "post not found in PDF (generic/wrong doc)";
           }
         }
       } catch { /* fetch/extract failed -> treat as link-only */ }
     }
 
-    // official_notification_link = ONLY the real notification PDF we actually
-    // fetched. A generic official page never becomes the official link — it goes
-    // to source_website instead. (NEVER the opaque vertexaisearch redirect.)
+    // official_notification_link = ONLY a PDF we fetched AND confirmed contains
+    // THIS post AND is a 2026 notice. A generic policy PDF, a wrong post's PDF,
+    // or an old notification is NEVER attached. (NEVER the vertexai redirect.)
     const isRedirect = (u: string) => !u || u.includes("vertexaisearch.cloud.google.com");
-    const pdfLink = (pdfOk && resolvedUrl && !isRedirect(resolvedUrl)) ? resolvedUrl
-      : (pdfOk && !isRedirect(found.pdf_url) ? found.pdf_url : "");
+    const trustPdf = pdfOk && postMatched && yearOk;
+    const pdfLink = (trustPdf && resolvedUrl && !isRedirect(resolvedUrl)) ? resolvedUrl
+      : (trustPdf && !isRedirect(found.pdf_url) ? found.pdf_url : "");
     if (pdfLink) patch.official_notification_link = pdfLink;
     if (found.page_url && !isRedirect(found.page_url) && !v.source_website && !patch.source_website) {
       patch.source_website = found.page_url;
@@ -274,7 +293,9 @@ Deno.serve(async (req) => {
 
     const note = `[enrich ${new Date().toISOString().slice(0, 10)}] ` +
       (found.pdf_url ? `pdf=${found.pdf_url} ` : "no-pdf ") +
-      (pdfOk ? `filled:${detailFilled.join(",") || "none"}` : "pdf-not-fetched") +
+      (pdfOk ? (pdfLink ? `linked filled:${detailFilled.join(",") || "none"}`
+                        : `LINK REJECTED: ${rejectReason || "not trusted"}`)
+             : "pdf-not-fetched") +
       (found.note ? ` (${found.note})` : "");
     patch.reviewer_notes = ((v.reviewer_notes || "") + "\n" + note).trim();
 
@@ -284,6 +305,10 @@ Deno.serve(async (req) => {
       ok: true,
       found: !!found.pdf_url,
       pdf_ok: pdfOk,
+      linked: !!pdfLink,
+      matched: postMatched,
+      year_ok: yearOk,
+      reject_reason: rejectReason,
       pdf_url: found.pdf_url || "",
       page_url: found.page_url || "",
       confidence: found.confidence || "low",
