@@ -610,18 +610,10 @@ function renderTable(data) {
           ` : '—'}
         </td>
 
-        <td class="table-link-cell" data-label="Apply">
-          ${applyLink ? `
-            <a
-              class="table-link-btn apply"
-              href="${escapeHtml(applyLink)}"
-              target="_blank"
-              rel="noopener noreferrer"
-              onclick="event.stopPropagation();"
-            >
-              Apply
-            </a>
-          ` : '—'}
+        <td class="table-link-cell" data-label="Source">
+          ${item.Source_Ref
+            ? `<span class="source-badge" title="${escapeHtml(safe(item['Source Category']))}">${escapeHtml(item.Source_Ref)}</span>`
+            : '—'}
         </td>
 
         <td class="table-heart-cell save-col" data-label="Bookmark">
@@ -654,7 +646,7 @@ function renderTable(data) {
             ${renderSortableHeader('Days Left', 'Days_Left', 'days-col')}
             ${renderSortableHeader('Notification Date', 'Notification_Date', 'notification-date-col')}
             <th class="table-link-cell">Notification</th>
-            <th class="table-link-cell">Apply</th>
+            <th class="table-link-cell">Source</th>
             <th
               class="save-col save-col-heading ${hasSavedAny ? 'has-saved' : ''}"
               title="${hasSavedAny ? 'Bookmarks saved' : 'No bookmarks yet'}"
@@ -1460,7 +1452,7 @@ function applyTheme(theme) {
           </div>
         </div>
 
-        ${(detailedNotificationLink || applyLink) ? `
+        ${(detailedNotificationLink || item.Source_Ref) ? `
           <div class="job-card-footer">
             ${detailedNotificationLink ? `
               <a
@@ -1474,16 +1466,10 @@ function applyTheme(theme) {
               </a>
             ` : ''}
 
-            ${applyLink ? `
-              <a
-                class="card-action-btn secondary apply-btn"
-                href="${escapeHtml(applyLink)}"
-                target="_blank"
-                rel="noopener noreferrer"
-                onclick="event.stopPropagation();"
-              >
-                Apply
-              </a>
+            ${item.Source_Ref ? `
+              <span class="card-source-badge" title="${escapeHtml(safe(item['Source Category']))}">
+                ${escapeHtml(item.Source_Ref)}
+              </span>
             ` : ''}
           </div>
         ` : ''}
@@ -1691,6 +1677,7 @@ function applyTheme(theme) {
                         ${buildModalField('Organisation', organisation || 'Not specified')}
                         ${buildModalField('Closing Date', `<span class="${closingDateDays !== null && closingDateDays >= 0 && closingDateDays <= 15 ? 'closing-date-text' : ''}">${escapeHtml(closingDate)}</span>`, true)}
                         ${buildModalField('Notification Date', notificationDate)}
+                        ${item.Source_Ref ? buildModalField('Source', `${escapeHtml(item.Source_Ref)}${safe(item['Source Category']) ? ` <span class="modal-muted">(${escapeHtml(safe(item['Source Category']))})</span>` : ''}`, true) : ''}
                         ${buildModalField('Mode of Application', renderModeBadge(modeOfApplication), true)}
                         ${tenure ? buildModalField('Tenure', tenure) : ''}
                         ${ageLimit ? buildModalField('Age Limit', ageLimit) : ''}
@@ -1716,12 +1703,6 @@ function applyTheme(theme) {
                     ${detailedNotificationLink ? `
                         <a class="card-action-btn secondary" href="${escapeHtml(detailedNotificationLink)}" target="_blank" rel="noopener noreferrer">
                             Detailed Notification
-                        </a>
-                    ` : ''}
-
-                    ${applyLink ? `
-                        <a class="card-action-btn secondary apply-btn" href="${escapeHtml(applyLink)}" target="_blank" rel="noopener noreferrer">
-                            Apply
                         </a>
                     ` : ''}
 

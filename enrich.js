@@ -210,10 +210,31 @@
   function completenessScore(o) {
     const fields = ['Vacancy_ID','Ministry','Organisation','Post_Name','Level_Text',
       'Location_City','Location_State','Req_Level1','Req_Level2','Notification_Date',
-      'Last_Date_To_Apply','Official_Notification_Link','Application_Form_Link',
+      'Last_Date_To_Apply','Official_Notification_Link',
       'Mode_of_Application','Essential_Qualification'];
     const filled = fields.filter(f => norm(o[f])).length;
     return Math.round((filled / fields.length) * 100);
+  }
+
+  // ---- source provenance label (table "Source" column + modal) ----
+  const MONTHS = { jan:'Jan',feb:'Feb',mar:'Mar',apr:'Apr',may:'May',jun:'Jun',
+    jul:'Jul',aug:'Aug',sep:'Sep',oct:'Oct',nov:'Nov',dec:'Dec' };
+  // "EN 23-29 May 2026" / "Employment News (11-17 Apr 2026)" -> "23May26" / "11Apr26"
+  function enIssueCompact(cat) {
+    const s = norm(cat);
+    const day = (s.match(/\b(\d{1,2})\b/) || [])[1];
+    const mon = (s.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i) || [])[1];
+    const year = (s.match(/\b(\d{4})\b/) || [])[1];
+    if (day && mon && year) {
+      return `${parseInt(day, 10)}${MONTHS[mon.slice(0,3).toLowerCase()]}${year.slice(-2)}`;
+    }
+    return s.replace(/^employment news\s*/i, '').replace(/^EN\s*/i, '') || s;
+  }
+  function sourceRef(type, cat, page) {
+    const isEN = String(type || '').toLowerCase() === 'employment_news' ||
+      /employment news|^EN\b/i.test(cat || '');
+    if (isEN) return `EN ${enIssueCompact(cat)}${page ? ' p' + page : ''}`;
+    return 'Circular';
   }
 
   function qualityFlag(score) {
@@ -292,6 +313,8 @@
     o.search_text = buildSearchText(o);
     o.completeness_score = completenessScore(o);
     o.data_quality_flag = qualityFlag(o.completeness_score);
+    o.Source_Page = norm(row.raw_extraction && row.raw_extraction.source_page).replace(/\D/g, '');
+    o.Source_Ref = sourceRef(o._source_type, o['Source Category'], o.Source_Page);
     return o;
   }
 
