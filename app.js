@@ -1649,6 +1649,14 @@ function applyTheme(theme) {
         const detailedNotificationLink = normalizeUrl(safe(item.Official_Notification_Link));
         const applyLink = normalizeUrl(safe(item.Application_Form_Link));
 
+        const srcRef = safe(item.Source_Ref);
+        const srcCat = safe(item['Source Category']);
+        const srcPage = safe(item.Source_Page);
+        const sourceDisplay = !srcRef ? ''
+            : (srcPage && srcCat) ? `p${escapeHtml(srcPage)} of ${escapeHtml(srcCat)}`
+            : srcCat ? `${escapeHtml(srcRef)} <span class="modal-muted">${escapeHtml(srcCat)}</span>`
+            : escapeHtml(srcRef);
+
         return `
             <div class="vacancy-modal">
                 <div class="vacancy-modal-header">
@@ -1677,7 +1685,7 @@ function applyTheme(theme) {
                         ${buildModalField('Organisation', organisation || 'Not specified')}
                         ${buildModalField('Closing Date', `<span class="${closingDateDays !== null && closingDateDays >= 0 && closingDateDays <= 15 ? 'closing-date-text' : ''}">${escapeHtml(closingDate)}</span>`, true)}
                         ${buildModalField('Notification Date', notificationDate)}
-                        ${item.Source_Ref ? buildModalField('Source', `${escapeHtml(item.Source_Ref)}${safe(item['Source Category']) ? ` <span class="modal-muted">(${escapeHtml(safe(item['Source Category']))})</span>` : ''}`, true) : ''}
+                        ${sourceDisplay ? buildModalField('Source', sourceDisplay, true) : ''}
                         ${buildModalField('Mode of Application', renderModeBadge(modeOfApplication), true)}
                         ${tenure ? buildModalField('Tenure', tenure) : ''}
                         ${ageLimit ? buildModalField('Age Limit', ageLimit) : ''}
