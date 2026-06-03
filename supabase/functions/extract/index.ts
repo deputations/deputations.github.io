@@ -275,10 +275,21 @@ const normPart = (s: unknown) =>
 const normLevel = (s: unknown) => String(s ?? "").replace(/[^0-9]/g, "");
 
 // Replicates the generated dedup_key (0002) and match_key (0006) exactly.
-function keysOf(row: any): { dedupKey: string; matchKey: string } {
-  const matchKey = `${normPart(row.organisation)}|${normPart(row.post_name)}|${normPart(row.location_city)}|${normLevel(row.level)}`;
-  return { matchKey, dedupKey: `${matchKey}|${String(row.notification_date ?? "").toLowerCase()}` };
+//   matchKey  = org|post|city|level   (= DB match_key)
+//   emptyKey  = org|post|city|        (the empty-level row of the same post)
+//   prefix    = org|post|city         (level-free grouping, code-only)
+// We look up matchKey + emptyKey so a level-bearing re-upload also finds a live
+// row whose level is blank; level still discriminates via lvlCompat (below).
+function keysOf(row: any): { prefix: string; matchKey: string; emptyKey: string; dedupKey: string } {
+  const org = normPart(row.organisation), post = normPart(row.post_name), city = normPart(row.location_city);
+  const lvl = normLevel(row.level), date = String(row.notification_date ?? "").toLowerCase();
+  const prefix = `${org}|${post}|${city}`;
+  return { prefix, matchKey: `${prefix}|${lvl}`, emptyKey: `${prefix}|`, dedupKey: `${prefix}|${lvl}|${date}` };
 }
+// Levels are compatible when equal, or when either side is blank (unknown).
+const lvlCompat = (a: unknown, b: unknown) => {
+  const x = normLevel(a), y = normLevel(b); return !x || !y || x === y;
+};
 
 const isEmptyVal = (v: unknown) =>
   v === null || v === undefined || (Array.isArray(v) ? v.length === 0 : String(v).trim() === "");
@@ -677,50 +688,61 @@ Deno.serve(async (req) => {
     // for an approved/live row). Loose match (same org|post|city|level, other
     // date) -> a possible-duplicate suggestion. No match -> insert as draft.
     const keyed = rows.map((r) => ({ r, ...keysOf(r) }));
-    const matchKeys = [...new Set(keyed.map((k) => k.matchKey).filter(Boolean))];
+    const lookupKeys = [...new Set(keyed.flatMap((k) => [k.matchKey, k.emptyKey]).filter(Boolean))];
 
     const selCols = ["id", "status", "dedup_key", "match_key", "source_type",
       "source_category", "source_file_url", ...CONTENT_FIELDS].join(",");
     const existing: any[] = [];
-    for (let i = 0; i < matchKeys.length; i += 100) {
+    for (let i = 0; i < lookupKeys.length; i += 100) {
       const { data, error } = await admin.from("vacancies")
-        .select(selCols).in("match_key", matchKeys.slice(i, i + 100));
+        .select(selCols).in("match_key", lookupKeys.slice(i, i + 100));
       if (error) throw new Error(`match lookup failed: ${error.message}`);
       if (data) existing.push(...data);
     }
-    const byDedup = new Map<string, any>();
-    const byMatch = new Map<string, any[]>();
+    // Group by level-free prefix so an empty-level live row and a level-bearing
+    // re-upload of the same post land together; lvlCompat keeps real levels apart.
+    const byPrefix = new Map<string, any[]>();
     for (const e of existing) {
-      if (e.dedup_key) byDedup.set(e.dedup_key, e);
-      if (e.match_key) (byMatch.get(e.match_key) ?? byMatch.set(e.match_key, []).get(e.match_key))!.push(e);
+      const p = keysOf(e).prefix;
+      const a = byPrefix.get(p); if (a) a.push(e); else byPrefix.set(p, [e]);
     }
+    // Same vacancy & cycle: equal notification dates (a blank date is a wildcard).
+    const dnorm = (s: unknown) => String(s ?? "").trim().toLowerCase();
+    const sameCycle = (a: unknown, b: unknown) => {
+      const x = dnorm(a), y = dnorm(b); return !x || !y || x === y;
+    };
 
     const toInsert: any[] = [];
     const draftPatches: Array<{ id: string; patch: any }> = [];
     const updateRows: any[] = [];
     let unchanged = 0;
 
-    for (const { r, dedupKey, matchKey } of keyed) {
-      const exact = byDedup.get(dedupKey);
-      if (exact) {
-        const { patch, diff, changed } = smartMerge(exact, r);
+    for (const { r, prefix } of keyed) {
+      const pool = (byPrefix.get(prefix) ?? []).filter((e) => lvlCompat(e.level, r.level));
+      const same = pool.filter((e) => sameCycle(e.notification_date, r.notification_date));
+      // Prefer the live (approved) row so a re-upload enriches what's public,
+      // never a stale draft duplicate.
+      const target = same.find((e) => e.status === "approved") ?? same.find((e) => e.status !== "approved");
+      if (target) {
+        const { patch, diff, changed } = smartMerge(target, r);
         if (!changed) { unchanged++; continue; }
-        if (exact.status === "approved") {
+        if (target.status === "approved") {
           updateRows.push({
-            target_id: exact.id, kind: "update", proposed: patch, diff,
+            target_id: target.id, kind: "update", proposed: patch, diff,
             source_type: r.source_type, source_category: r.source_category,
             source_file_url: r.source_file_url, confidence: r.confidence, ingest_job_id: r.ingest_job_id,
           });
         } else {
-          draftPatches.push({ id: exact.id, patch });
+          draftPatches.push({ id: target.id, patch });
         }
         continue;
       }
-      const loose = (byMatch.get(matchKey) ?? [])[0];
-      if (loose) {
-        const { diff } = smartMerge(loose, r);
+      const other = pool.filter((e) => !sameCycle(e.notification_date, r.notification_date));
+      if (other.length) {
+        const dupTarget = other.find((e) => e.status === "approved") ?? other[0];
+        const { diff } = smartMerge(dupTarget, r);
         updateRows.push({
-          target_id: loose.id, kind: "duplicate", proposed: r, diff,
+          target_id: dupTarget.id, kind: "duplicate", proposed: r, diff,
           source_type: r.source_type, source_category: r.source_category,
           source_file_url: r.source_file_url, confidence: r.confidence, ingest_job_id: r.ingest_job_id,
         });

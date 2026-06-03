@@ -355,10 +355,17 @@ const CONTENT_FIELDS = [
 const normPart = (s) => String(s ?? '').replace(/[^a-zA-Z0-9]+/g, ' ').trim().toLowerCase();
 const normLevel = (s) => String(s ?? '').replace(/[^0-9]/g, '');
 // Replicates the generated dedup_key (0002) and match_key (0006) exactly.
+//   matchKey = org|post|city|level (= DB match_key), emptyKey = org|post|city|
+//   (empty-level twin), prefix = org|post|city (level-free grouping).
 function keysOf(row) {
-  const matchKey = `${normPart(row.organisation)}|${normPart(row.post_name)}|${normPart(row.location_city)}|${normLevel(row.level)}`;
-  return { matchKey, dedupKey: `${matchKey}|${String(row.notification_date ?? '').toLowerCase()}` };
+  const org = normPart(row.organisation); const post = normPart(row.post_name);
+  const city = normPart(row.location_city); const lvl = normLevel(row.level);
+  const date = String(row.notification_date ?? '').toLowerCase();
+  const prefix = `${org}|${post}|${city}`;
+  return { prefix, matchKey: `${prefix}|${lvl}`, emptyKey: `${prefix}|`, dedupKey: `${prefix}|${lvl}|${date}` };
 }
+// Levels are compatible when equal, or when either side is blank (unknown).
+const lvlCompat = (a, b) => { const x = normLevel(a); const y = normLevel(b); return !x || !y || x === y; };
 const dedupKey = (o) => keysOf(o).dedupKey;
 
 const isEmptyVal = (v) =>
@@ -404,37 +411,46 @@ async function applyMergeImport(rows) {
   const sel = ['id', 'status', 'dedup_key', 'match_key', 'source_type',
     'source_category', 'source_file_url', ...CONTENT_FIELDS].join(',');
   const keyed = rows.map((r) => ({ r, ...keysOf(r) }));
-  const matchKeys = [...new Set(keyed.map((k) => k.matchKey).filter(Boolean))];
+  // Look up the exact-level key AND the empty-level twin of each post.
+  const lookupKeys = [...new Set(keyed.flatMap((k) => [k.matchKey, k.emptyKey]).filter(Boolean))];
 
   const existing = [];
-  for (let i = 0; i < matchKeys.length; i += 100) {
-    const enc = matchKeys.slice(i, i + 100).map(encodeURIComponent).join(',');
+  for (let i = 0; i < lookupKeys.length; i += 100) {
+    const enc = lookupKeys.slice(i, i + 100).map(encodeURIComponent).join(',');
     const r = await api(`/rest/v1/vacancies?select=${sel}&match_key=in.(${enc})`);
     if (!r.ok) throw new Error('Match lookup failed: ' + (await r.text()));
     existing.push(...await r.json());
   }
-  const byDedup = new Map(); const byMatch = new Map();
+  // Group by level-free prefix; lvlCompat keeps genuinely different levels apart.
+  const byPrefix = new Map();
   for (const e of existing) {
-    if (e.dedup_key) byDedup.set(e.dedup_key, e);
-    if (e.match_key) { const a = byMatch.get(e.match_key) || []; a.push(e); byMatch.set(e.match_key, a); }
+    const p = keysOf(e).prefix;
+    const a = byPrefix.get(p) || []; a.push(e); byPrefix.set(p, a);
   }
+  // Same vacancy & cycle: equal notification dates (a blank date is a wildcard).
+  const dnorm = (s) => String(s ?? '').trim().toLowerCase();
+  const sameCycle = (a, b) => { const x = dnorm(a); const y = dnorm(b); return !x || !y || x === y; };
 
   const toInsert = []; const draftPatches = []; const updateRows = [];
   let unchanged = 0;
-  for (const { r, dedupKey: dk, matchKey } of keyed) {
-    const exact = byDedup.get(dk);
-    if (exact) {
-      const { patch, diff, changed } = smartMerge(exact, r);
+  for (const { r, prefix } of keyed) {
+    const pool = (byPrefix.get(prefix) || []).filter((e) => lvlCompat(e.level, r.level));
+    const same = pool.filter((e) => sameCycle(e.notification_date, r.notification_date));
+    // Prefer the live (approved) row so re-uploads enrich what's public.
+    const target = same.find((e) => e.status === 'approved') || same.find((e) => e.status !== 'approved');
+    if (target) {
+      const { patch, diff, changed } = smartMerge(target, r);
       if (!changed) { unchanged++; continue; }
-      if (exact.status === 'approved') {
-        updateRows.push({ target_id: exact.id, kind: 'update', proposed: patch, diff, source_type: r.source_type, source_category: r.source_category, source_file_url: r.source_file_url, confidence: r.confidence, ingest_job_id: r.ingest_job_id });
-      } else { draftPatches.push({ id: exact.id, patch }); }
+      if (target.status === 'approved') {
+        updateRows.push({ target_id: target.id, kind: 'update', proposed: patch, diff, source_type: r.source_type, source_category: r.source_category, source_file_url: r.source_file_url, confidence: r.confidence, ingest_job_id: r.ingest_job_id });
+      } else { draftPatches.push({ id: target.id, patch }); }
       continue;
     }
-    const loose = (byMatch.get(matchKey) || [])[0];
-    if (loose) {
-      const { diff } = smartMerge(loose, r);
-      updateRows.push({ target_id: loose.id, kind: 'duplicate', proposed: r, diff, source_type: r.source_type, source_category: r.source_category, source_file_url: r.source_file_url, confidence: r.confidence, ingest_job_id: r.ingest_job_id });
+    const other = pool.filter((e) => !sameCycle(e.notification_date, r.notification_date));
+    if (other.length) {
+      const dupTarget = other.find((e) => e.status === 'approved') || other[0];
+      const { diff } = smartMerge(dupTarget, r);
+      updateRows.push({ target_id: dupTarget.id, kind: 'duplicate', proposed: r, diff, source_type: r.source_type, source_category: r.source_category, source_file_url: r.source_file_url, confidence: r.confidence, ingest_job_id: r.ingest_job_id });
       continue;
     }
     toInsert.push(r);
