@@ -315,6 +315,9 @@
     o.data_quality_flag = qualityFlag(o.completeness_score);
     o.Source_Page = norm(row.raw_extraction && row.raw_extraction.source_page).replace(/\D/g, '');
     o.Source_Ref = sourceRef(o._source_type, o['Source Category'], o.Source_Page);
+    o.Detailed_Eligibility = row.raw_extraction && row.raw_extraction.detailed_eligibility
+      ? String(row.raw_extraction.detailed_eligibility).replace(/\r\n/g, '\n').trim()
+      : '';
     return o;
   }
 

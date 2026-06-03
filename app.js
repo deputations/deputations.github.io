@@ -1622,6 +1622,8 @@ function applyTheme(theme) {
             'Pay_Band'
         ]);
 
+        const detailedEligibility = getFirstNonEmpty(item, ['Detailed_Eligibility']);
+
         const essentialQualification = getFirstNonEmpty(item, [
             'Essential_Qualification',
             'Qualification',
@@ -1693,6 +1695,7 @@ function applyTheme(theme) {
                     </div>
                 </div>
 
+                ${renderModalRichSection('Detailed Eligibility', detailedEligibility)}
                 ${renderModalRichSection('Essential Qualification', essentialQualification)}
                 ${renderModalRichSection('Desirable Qualification', desirableQualification)}
                 ${renderModalRichSection('Experience', experience)}
