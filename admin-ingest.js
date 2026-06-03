@@ -988,6 +988,7 @@ function draftCard(r) {
       </div>
       <div class="acts">
         ${(r.source_file_url || r.official_notification_link) ? `<button data-act="source">📄 source${srcPage ? ' p.' + srcPage : ''}</button>` : ''}
+        <button data-act="gsearch" title="Open a Google search (new tab) for this post + organisation deputation PDF">🌐 Google</button>
         <button data-act="edit">Edit</button>
         <button data-act="enrich" title="Find the official notification PDF and fill blank fields">🔎 Official PDF</button>
         <button class="good" data-act="approve">Approve</button>
@@ -1033,6 +1034,19 @@ function draftCard(r) {
     const showing = editor.style.display !== 'none';
     editor.style.display = showing ? 'none' : 'block';
     e.currentTarget.textContent = showing ? 'Edit' : 'Hide';
+  };
+
+  // Open a Google search in a new tab: [post name] [organisation] "Deputation" "2026" "pdf".
+  // Uses the live edited values if the editor is open, otherwise the row's values.
+  el.querySelector('[data-act="gsearch"]').onclick = () => {
+    const val = (k, fb) => {
+      const inp = el.querySelector(`[data-k="${k}"]`);
+      return ((inp && inp.value.trim()) || fb || '').trim();
+    };
+    const post = val('post_name', r.post_name);
+    const org = val('organisation', r.organisation);
+    const q = `${post} ${org} "Deputation" "2026" "pdf"`.replace(/\s+/g, ' ').trim();
+    window.open('https://www.google.com/search?q=' + encodeURIComponent(q), '_blank', 'noopener');
   };
 
   el.querySelector('[data-act="approve"]').onclick = async () => {
