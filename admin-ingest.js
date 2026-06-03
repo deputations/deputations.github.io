@@ -1474,6 +1474,7 @@ function updateCard(u) {
         <span class="muted"> · from ${escapeHtml(u.source_category || u.source_type || 'ingest')}</span>
       </div>
       <div class="acts">
+        <button data-act="gsearch" title="Open a Google search (new tab) for this post + organisation deputation PDF">🌐 Google</button>
         <button data-act="edit">Edit</button>
         ${isDup
           ? '<button class="good" data-act="merge">Merge into existing</button><button data-act="createnew">Create as new</button><button class="bad" data-act="discard">Discard</button>'
@@ -1523,6 +1524,17 @@ function updateCard(u) {
     const showing = editor.style.display !== 'none';
     editor.style.display = showing ? 'none' : 'block';
     btn.textContent = showing ? 'Edit' : 'Hide';
+  };
+
+  // Google search (new tab): [post name] [organisation] "Deputation" "2026" "pdf".
+  // Prefers live edited values, then the target row, then the proposed candidate.
+  el.querySelector('[data-act="gsearch"]').onclick = () => {
+    const live = (k) => { const inp = editor.querySelector(`[data-k="${k}"]`); return inp && inp.value.trim(); };
+    const p = u.proposed || {};
+    const post = (live('post_name') || t.post_name || p.post_name || '').trim();
+    const org = (live('organisation') || t.organisation || p.organisation || '').trim();
+    const q = `${post} ${org} "Deputation" "2026" "pdf"`.replace(/\s+/g, ' ').trim();
+    window.open('https://www.google.com/search?q=' + encodeURIComponent(q), '_blank', 'noopener');
   };
 
   el.querySelector('[data-act="apply"]')?.addEventListener('click', async () => {
