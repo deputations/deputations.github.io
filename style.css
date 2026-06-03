@@ -4632,13 +4632,19 @@ html:not([data-theme="light"]) .premium-credit {
      + a clip-path RIGHT face fade in. clip-path (not skew) keeps the side face
      aligned to the corner with no hanging triangle.
    =========================================================================== */
-.data-table tbody tr { --depth: 14px; }
+.data-table tbody tr {
+  --depth: 14px;
+  transform-origin: left center;
+  transition: transform 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.48s cubic-bezier(0.16, 1, 0.3, 1);
+}
 .data-table tbody td {
   position: relative;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.04));
   border: none;
   box-shadow: none;                 /* no internal cell shading */
-  transition: background 0.28s ease, color 0.28s ease;
+  transition: background 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.48s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .data-table tbody tr td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
 .data-table tbody tr td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
@@ -4648,24 +4654,34 @@ html:not([data-theme="light"]) .premium-credit {
 /* keep cell content (text, buttons, the bookmark heart) above the 3D side faces */
 .data-table tbody td > * { position: relative; z-index: 1; }
 
-/* BOTTOM face (every cell -> continuous) — angled parallelogram so its left &
-   right edges slope at the same 45° as the right face (no straight edge). */
+/* BOTTOM face — ONE continuous band. Middle cells are plain rectangles (slightly
+   overlapped via left/right: -1px so there are no seams); only the FIRST cell
+   angles its left edge and the LAST cell angles its right edge. This fixes the
+   "broken per-column shadow" — the base now reads as a single plank. */
 .data-table tbody td::before {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
+  left: -1px;
+  right: -1px;
   bottom: calc(-1 * var(--depth));
   height: var(--depth);
-  background: var(--bottom-face, #62cdf2);
-  clip-path: polygon(0 0, 100% 0, calc(100% + var(--depth)) 100%, var(--depth) 100%);
+  background: var(--bottom-face, #5fd4ef);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
   opacity: 0;
   z-index: 0;
   pointer-events: none;
-  transition: opacity 0.28s ease;
+  transition: opacity 0.48s cubic-bezier(0.16, 1, 0.3, 1);
 }
-/* RIGHT side face (last cell only) — clip-path parallelogram aligns to the
-   corner, so no extra hanging triangle pokes outside the row. */
+.data-table tbody td:first-child::before {
+  left: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, var(--depth) 100%);   /* angled left end */
+}
+.data-table tbody td:last-child::before {
+  right: calc(-1 * var(--depth));
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--depth)) 100%, 0 100%);  /* angled right end */
+}
+/* RIGHT side face (last cell only) — solid darker side-face colour (no filter,
+   so the per-row --side-face renders true). */
 .data-table tbody td:last-child::after {
   content: "";
   position: absolute;
@@ -4673,13 +4689,12 @@ html:not([data-theme="light"]) .premium-credit {
   right: calc(-1 * var(--depth));
   width: var(--depth);
   height: calc(100% + var(--depth));
-  background: var(--row, #0ea5e9);
-  filter: brightness(0.6);
+  background: var(--side-face, #07576f);
   clip-path: polygon(0 0, 100% var(--depth), 100% 100%, 0 calc(100% - var(--depth)));
   opacity: 0;
   z-index: 0;
   pointer-events: none;
-  transition: opacity 0.28s ease;
+  transition: opacity 0.48s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Bookmarked rows: persistent glowing side edge (rest state only) */
@@ -4697,12 +4712,23 @@ html:not([data-theme="light"]) .premium-credit {
   transform-origin: left center;
   filter: drop-shadow(20px 20px 18px rgba(15, 23, 42, 0.26));
   z-index: 6;
+  /* ONE continuous top-face gradient across the WHOLE row (painted on the <tr>,
+     not per cell) — lighter top + left (Post Name), darker bottom + right (Bookmark). */
+  /* !important so it beats the light-theme "fluorescent" tr:hover rule (which is
+     itself !important) — otherwise light mode washes the row out to near-white. */
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 38%, rgba(0, 0, 0, 0.24) 100%),
+    linear-gradient(180deg, var(--row-top, #19b4ec), var(--row-bottom, #0a90c4)) !important;
+  border-radius: 14px 0 0 0;   /* rounded top-left, square elsewhere (plank) */
+  box-shadow: none;   /* kill the theme-specific inset tint (blue in light / white in dark)
+                         so the hovered plank looks IDENTICAL in both themes */
 }
-/* top face: brand gradient (no internal shading, no flat box-shadow base — the
-   angled ::before/::after pseudo-faces provide the depth instead) */
+/* cells become transparent so the single row-wide gradient shows through with no
+   per-column seams; subtle text-shadow keeps white text crisp on the lighter left. */
 .data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) td {
-  background: linear-gradient(180deg, var(--row, #0ea5e9), var(--row-dark, #0284c7));
-  color: #ffffff;
+  background: transparent;
+  color: var(--row-text, #ffffff);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
   box-shadow: none;
 }
 /* on hover the plank's right edge goes square so the side face connects flush;
@@ -4734,12 +4760,41 @@ html:not([data-theme="light"]) .premium-credit {
   color: #ffffff; background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.45);
 }
 
-/* Per-row hover colour (4-cycle): blue -> dark blue -> red -> pink.
-   --row = top, --row-dark = gradient bottom, --bottom-face = the lit flat base edge. */
-.data-table tbody tr:nth-child(4n + 1):hover { --row: #19b4ec; --row-dark: #0a90c4; --bottom-face: #62cdf2; }
-.data-table tbody tr:nth-child(4n + 2):hover { --row: #3b5998; --row-dark: #2c4677; --bottom-face: #6f8bc4; }
-.data-table tbody tr:nth-child(4n + 3):hover { --row: #dd4b39; --row-dark: #b83a2b; --bottom-face: #f0856f; }
-.data-table tbody tr:nth-child(4n):hover     { --row: #e4405f; --row-dark: #c52647; --bottom-face: #f0859a; }
+/* Per-row colour cycle (10 styles = the original 4 + 6 new). Each sets:
+   --row-top / --row-bottom = top-face gradient stops (light top -> dark bottom)
+   --row-text               = readable text colour on that plank
+   --bottom-face            = the lit bottom base edge
+   --side-face              = the darker right side edge
+   Defined per theme so each looks premium in dark vs light. 10 rows pass before
+   the cycle repeats, so adjacent rows are always a different colour. */
+
+/* ----- DARK ----- original 4 ----- */
+[data-theme="dark"] .data-table tbody tr:nth-child(10n + 1) { --row-top: #19b4ec; --row-bottom: #0a90c4; --row-text: #fff; --bottom-face: #62cdf2; --side-face: #075b78; }
+[data-theme="dark"] .data-table tbody tr:nth-child(10n + 2) { --row-top: #3b5998; --row-bottom: #2c4677; --row-text: #fff; --bottom-face: #6f8bc4; --side-face: #1f3357; }
+[data-theme="dark"] .data-table tbody tr:nth-child(10n + 3) { --row-top: #dd4b39; --row-bottom: #b83a2b; --row-text: #fff; --bottom-face: #f0856f; --side-face: #8a2a1d; }
+[data-theme="dark"] .data-table tbody tr:nth-child(10n + 4) { --row-top: #e4405f; --row-bottom: #c52647; --row-text: #fff; --bottom-face: #f0859a; --side-face: #8f1733; }
+/* ----- DARK ----- 6 new ----- */
+[data-theme="dark"] .data-table tbody tr:nth-child(10n + 5) { --row-top: #19c6ee; --row-bottom: #0786b0; --row-text: #fff; --bottom-face: #5fd4ef; --side-face: #07576f; }
+[data-theme="dark"] .data-table tbody tr:nth-child(10n + 6) { --row-top: #6366f1; --row-bottom: #3730a3; --row-text: #fff; --bottom-face: #818cf8; --side-face: #272075; }
+[data-theme="dark"] .data-table tbody tr:nth-child(10n + 7) { --row-top: #14b8a6; --row-bottom: #0f766e; --row-text: #fff; --bottom-face: #5eead4; --side-face: #0b4f4a; }
+[data-theme="dark"] .data-table tbody tr:nth-child(10n + 8) { --row-top: #f97316; --row-bottom: #c2410c; --row-text: #fff; --bottom-face: #fdba74; --side-face: #7c2d12; }
+[data-theme="dark"] .data-table tbody tr:nth-child(10n + 9) { --row-top: #8b5cf6; --row-bottom: #5b21b6; --row-text: #fff; --bottom-face: #c4b5fd; --side-face: #3b0764; }
+[data-theme="dark"] .data-table tbody tr:nth-child(10n)     { --row-top: #10b981; --row-bottom: #047857; --row-text: #fff; --bottom-face: #6ee7b7; --side-face: #064e3b; }
+
+/* ----- LIGHT ----- original 4 ----- */
+/* Light mode reuses the SAME saturated planks as dark — white text stays readable
+   even on the lighter top/left of the continuous gradient (the pale set washed out). */
+[data-theme="light"] .data-table tbody tr:nth-child(10n + 1) { --row-top: #19b4ec; --row-bottom: #0a90c4; --row-text: #fff; --bottom-face: #62cdf2; --side-face: #075b78; }
+[data-theme="light"] .data-table tbody tr:nth-child(10n + 2) { --row-top: #3b5998; --row-bottom: #2c4677; --row-text: #fff; --bottom-face: #6f8bc4; --side-face: #1f3357; }
+[data-theme="light"] .data-table tbody tr:nth-child(10n + 3) { --row-top: #dd4b39; --row-bottom: #b83a2b; --row-text: #fff; --bottom-face: #f0856f; --side-face: #8a2a1d; }
+[data-theme="light"] .data-table tbody tr:nth-child(10n + 4) { --row-top: #e4405f; --row-bottom: #c52647; --row-text: #fff; --bottom-face: #f0859a; --side-face: #8f1733; }
+/* ----- LIGHT ----- 6 new ----- */
+[data-theme="light"] .data-table tbody tr:nth-child(10n + 5) { --row-top: #19c6ee; --row-bottom: #0786b0; --row-text: #fff; --bottom-face: #5fd4ef; --side-face: #07576f; }
+[data-theme="light"] .data-table tbody tr:nth-child(10n + 6) { --row-top: #6366f1; --row-bottom: #3730a3; --row-text: #fff; --bottom-face: #818cf8; --side-face: #272075; }
+[data-theme="light"] .data-table tbody tr:nth-child(10n + 7) { --row-top: #14b8a6; --row-bottom: #0f766e; --row-text: #fff; --bottom-face: #5eead4; --side-face: #0b4f4a; }
+[data-theme="light"] .data-table tbody tr:nth-child(10n + 8) { --row-top: #f97316; --row-bottom: #c2410c; --row-text: #fff; --bottom-face: #fdba74; --side-face: #7c2d12; }
+[data-theme="light"] .data-table tbody tr:nth-child(10n + 9) { --row-top: #8b5cf6; --row-bottom: #5b21b6; --row-text: #fff; --bottom-face: #c4b5fd; --side-face: #3b0764; }
+[data-theme="light"] .data-table tbody tr:nth-child(10n)     { --row-top: #10b981; --row-bottom: #047857; --row-text: #fff; --bottom-face: #6ee7b7; --side-face: #064e3b; }
 
 /* light theme */
 [data-theme="light"] .data-table thead th {
@@ -4833,12 +4888,14 @@ html:not([data-theme="light"]) .premium-credit {
     overflow: visible;
     vertical-align: middle;
   }
-  /* smaller Days-Left pill so it fits its column */
+  /* smaller Days-Left pill so it always fits its column */
+  #dataContainer.view-table .data-table td:nth-child(7) { text-align: center; white-space: nowrap; }
   #dataContainer.view-table .data-table td:nth-child(7) .days-pill {
-    font-size: 0.78rem;
-    line-height: 1.1;
-    padding: 0.34rem 0.6rem;
+    font-size: 0.72rem;
+    line-height: 1.05;
+    padding: 0.32rem 0.55rem;
     white-space: nowrap;
+    display: inline-block;
   }
   /* header labels may wrap (so "NOTIFICATION" never clips) */
   #dataContainer.view-table .data-table thead th { white-space: normal; }
