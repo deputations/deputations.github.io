@@ -562,7 +562,7 @@ function renderTable(data) {
         : '—';
 
     return `
-      <tr class="clickable-row" data-open-details="${escapeHtml(vacancyId)}">
+      <tr class="clickable-row ${saved ? 'row-bookmarked' : ''}" data-open-details="${escapeHtml(vacancyId)}">
         <td class="post-col" data-label="Post Name">
           <strong>${escapeHtml(safe(item.Post_Name) || '—')}</strong>
           <div class="table-subtext">
@@ -580,6 +580,10 @@ function renderTable(data) {
 
         <td class="ministry-col" data-label="Ministry">
           ${escapeHtml(withAcronym(item.Ministry) || '—')}
+        </td>
+
+        <td class="org-col" data-label="Org.">
+          ${escapeHtml(orgAcronym(item) || '—')}
         </td>
 
         <td class="location-col" data-label="Location">
@@ -608,12 +612,9 @@ function renderTable(data) {
               Notification
             </a>
           ` : '—'}
-        </td>
-
-        <td class="table-link-cell" data-label="Source">
           ${item.Source_Ref
-            ? `<span class="source-badge" title="${escapeHtml(safe(item['Source Category']))}">${escapeHtml(item.Source_Ref)}</span>`
-            : '—'}
+            ? `<div class="table-source-line"><span class="source-badge" title="${escapeHtml(safe(item['Source Category']))}">${escapeHtml(item.Source_Ref)}</span></div>`
+            : ''}
         </td>
 
         <td class="table-heart-cell save-col" data-label="Bookmark">
@@ -642,11 +643,11 @@ function renderTable(data) {
             ${renderSortableHeader('Level', 'Level_Text', 'level-col')}
             ${renderSortableHeader('Eligibility', 'Eligibility', 'eligibility-col')}
             ${renderSortableHeader('Ministry', 'Ministry', 'ministry-col')}
+            ${renderSortableHeader('Org.', 'Org', 'org-col')}
             ${renderSortableHeader('Location', 'Location', 'location-col')}
             ${renderSortableHeader('Days Left', 'Days_Left', 'days-col')}
             ${renderSortableHeader('Notification Date', 'Notification_Date', 'notification-date-col')}
             <th class="table-link-cell">Notification</th>
-            <th class="table-link-cell">Source</th>
             <th
               class="save-col save-col-heading ${hasSavedAny ? 'has-saved' : ''}"
               title="${hasSavedAny ? 'Bookmarks saved' : 'No bookmarks yet'}"
@@ -1117,6 +1118,10 @@ kpiGrid.addEventListener('click', (e) => {
                     aVal = safe(a.Ministry).toLowerCase();
                     bVal = safe(b.Ministry).toLowerCase();
                     break;
+                case 'Org':
+                    aVal = orgAcronym(a).toLowerCase();
+                    bVal = orgAcronym(b).toLowerCase();
+                    break;
                 case 'Location':
                     aVal = formatLocation(a).toLowerCase();
                     bVal = formatLocation(b).toLowerCase();
@@ -1442,7 +1447,7 @@ function applyTheme(theme) {
 
           <div class="detail-item">
             <span class="detail-label">Organisation</span>
-            <span class="detail-value">${escapeHtml(safe(item.Department_Organisation) || '—')}</span>
+            <span class="detail-value">${escapeHtml(orgAcronym(item) || safe(item.Department_Organisation) || '—')}</span>
           </div>
 
           <div class="detail-item">
@@ -1472,7 +1477,7 @@ function applyTheme(theme) {
 
             ${item.Source_Ref ? `
               <span class="card-source-badge" title="${escapeHtml(safe(item['Source Category']))}">
-                ${escapeHtml(item.Source_Ref)}
+                ${escapeHtml(item.Source_Ref_Long || item.Source_Ref)}
               </span>
             ` : ''}
           </div>
@@ -2165,6 +2170,13 @@ function applyTheme(theme) {
         const v = safe(value);
         if (!v) return v;
         return (window.DepEnrich && window.DepEnrich.withAcronym) ? window.DepEnrich.withAcronym(v) : v;
+    }
+
+    // Short form (acronym only) of the organisation/department, if derivable.
+    function orgAcronym(item) {
+        const f = window.DepEnrich && window.DepEnrich.acronymFor;
+        if (!f) return '';
+        return f(safe(item.Organisation)) || f(safe(item.Department)) || '';
     }
 
     function formatLocation(item) {

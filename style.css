@@ -1041,6 +1041,7 @@ select:disabled {
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y;
+  padding: 10px 34px 34px 10px;   /* room for the right + bottom 3D faces and the lift */
 }
 
 .data-table {
@@ -2799,6 +2800,59 @@ select:disabled {
   }
 }
 
+/* ===== table column tweaks: slimmer Level, wider Ministry, new Org. ===== */
+.data-table { min-width: 1100px; }
+.data-table .level-col,
+.data-table td.level-col {
+  min-width: 84px;
+}
+.data-table .ministry-col,
+.data-table td.ministry-col {
+  min-width: 168px;
+  white-space: normal;
+}
+/* let the date column shrink (header wraps) so Notification stays on-screen */
+.data-table .notification-date-col,
+.data-table td.notification-date-col {
+  min-width: 104px;
+  white-space: normal;
+}
+.data-table .org-col,
+.data-table td.org-col {
+  min-width: 60px;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+/* Notification button + source badge: equal-width stacked boxes */
+.data-table .table-link-cell {
+  min-width: 120px;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+.data-table td.table-link-cell .table-link-btn {
+  display: flex;
+  width: 108px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+  white-space: nowrap;
+}
+.data-table td.table-link-cell .table-source-line {
+  margin-top: 6px;
+}
+.data-table td.table-link-cell .source-badge {
+  display: flex;
+  width: 108px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  justify-content: center;
+  font-size: 0.6rem;
+  letter-spacing: 0;
+  padding: 4px 4px;
+}
+
 /* ===== LIGHT THEME PREMIUM REFINEMENT ===== */
 
 [data-theme="light"] body {
@@ -4039,9 +4093,9 @@ html:not([data-theme="light"]) .data-table th:has(.sort-btn.active) {
 }
 
 .days-pill-safe {
-  color: var(--success-color);
-  background: rgba(34, 197, 94, 0.12);
-  border-color: rgba(34, 197, 94, 0.28);
+  color: inherit;                  /* match the row's text (white on hover); yellow border */
+  background: transparent;
+  border: 1.5px solid #facc15;
 }
 
 .days-pill-closing {
@@ -4093,9 +4147,10 @@ html:not([data-theme="light"]) .data-table th:has(.sort-btn.active) {
 
 /* light theme refinement */
 [data-theme="light"] .days-pill-safe {
-  color: #15803d;
-  background: rgba(22, 163, 74, 0.10);
-  border-color: rgba(22, 163, 74, 0.18);
+  color: #166534;                 /* readable dark green */
+  background: transparent;
+  border: 1.5px solid #eab308;    /* yellow border, no fill */
+  font-weight: 800;
 }
 
 [data-theme="light"] .days-pill-closing {
@@ -4274,14 +4329,24 @@ html:not([data-theme="light"]) .job-highlight-row .highlight-box:first-child:has
 
 .job-card-footer {
   display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 8px;
   align-items: stretch;
 }
 
 .job-card-footer .card-action-btn {
-  flex: 1 1 160px;
-  min-width: 0;
+  width: 100%;
+  flex: none;
+}
+
+/* Source badge: full-width box under the Notification button, smaller font */
+.job-card-footer .card-source-badge {
+  align-self: stretch;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: center;
+  font-size: 0.62rem;
+  letter-spacing: 0;
 }
 
 /* keep notification chip neat in light theme too */
@@ -4493,4 +4558,426 @@ html:not([data-theme="light"]) .premium-credit {
 }
 .modal-richtext .rich-subhead:first-child {
   margin-top: 0;
+}
+
+/* ===== modern, neutral table styling (compact, frosted header) ===== */
+
+/* 1. Uniform compact type across the table (size of the Level column) */
+.data-table td {
+  font-size: 0.82rem;
+}
+
+/* 2. Distinct frosted header, clearly separated from the rows */
+.data-table thead th {
+  background: rgba(255, 255, 255, 0.045);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  text-transform: uppercase;
+  letter-spacing: 0.045em;
+}
+[data-theme="light"] .data-table thead th {
+  background: rgba(15, 23, 42, 0.045);
+  border-bottom-color: rgba(15, 23, 42, 0.14);
+}
+
+/* 3. Neutral, low-contrast alternating rows + hairline dividers + clean hover.
+   (Neutral palette keeps it modern; colour is reserved for the status pills.) */
+.data-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.025);
+}
+.data-table tbody td {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+.data-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+[data-theme="light"] .data-table tbody tr:nth-child(even) {
+  background: rgba(15, 23, 42, 0.028);
+}
+[data-theme="light"] .data-table tbody td {
+  border-bottom-color: rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .data-table tbody tr:hover {
+  background: rgba(2, 132, 199, 0.07);
+}
+
+/* ===== ROW DESIGN (Design 1: 3D plank rows, CodePen-style lift + colour change) ===== */
+.data-table {
+  border-collapse: separate;
+  border-spacing: 0 12px;   /* no column gaps -> row is one plank; gap leaves room for the 3D edge */
+}
+.data-table tr {
+  transition: transform 0.28s ease, filter 0.28s ease;
+}
+/* Header = one teal glossy plank with a 3D bottom edge */
+.data-table thead th {
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.30), rgba(14, 116, 144, 0.20));
+  color: #eafdff;
+  border: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16),
+              0 4px 0 rgba(125, 232, 255, 0.25),
+              0 8px 12px -4px rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.data-table thead th:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
+.data-table thead th:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
+
+/* ===========================================================================
+   TABLE ROW 3D PLANK HOVER  (scoped to .data-container.view-table)
+   - rest: flat tile with a whisper of internal left/right shading
+   - hover (anywhere EXCEPT the Notification/Bookmark cells): row lifts up-left,
+     top face takes the brand colour (4-cycle), a flat bottom face (box-shadow)
+     + a clip-path RIGHT face fade in. clip-path (not skew) keeps the side face
+     aligned to the corner with no hanging triangle.
+   =========================================================================== */
+.data-table tbody tr { --depth: 14px; }
+.data-table tbody td {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.04));
+  border: none;
+  box-shadow: none;                 /* no internal cell shading */
+  transition: background 0.28s ease, color 0.28s ease;
+}
+.data-table tbody tr td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+.data-table tbody tr td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+.data-table tbody tr:nth-child(even) td {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+}
+/* keep cell content (text, buttons, the bookmark heart) above the 3D side faces */
+.data-table tbody td > * { position: relative; z-index: 1; }
+
+/* BOTTOM face (every cell -> continuous) — angled parallelogram so its left &
+   right edges slope at the same 45° as the right face (no straight edge). */
+.data-table tbody td::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(-1 * var(--depth));
+  height: var(--depth);
+  background: var(--bottom-face, #62cdf2);
+  clip-path: polygon(0 0, 100% 0, calc(100% + var(--depth)) 100%, var(--depth) 100%);
+  opacity: 0;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+/* RIGHT side face (last cell only) — clip-path parallelogram aligns to the
+   corner, so no extra hanging triangle pokes outside the row. */
+.data-table tbody td:last-child::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: calc(-1 * var(--depth));
+  width: var(--depth);
+  height: calc(100% + var(--depth));
+  background: var(--row, #0ea5e9);
+  filter: brightness(0.6);
+  clip-path: polygon(0 0, 100% var(--depth), 100% 100%, 0 calc(100% - var(--depth)));
+  opacity: 0;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+
+/* Bookmarked rows: persistent glowing side edge (rest state only) */
+.data-table tbody tr.row-bookmarked td {
+  box-shadow: 0 4px 0 rgba(125, 232, 255, 0.85),
+              0 4px 16px rgba(34, 211, 238, 0.55),
+              0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* HOVER — gated with :not(:has(... :hover)) so hovering the Notification (9) or
+   Bookmark (10) cell does NOT lift/recolour the row (only that control reacts).
+   Scoped under .data-container.view-table for specificity (beats the zebra rule). */
+.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) {
+  transform: translate(-8px, -8px) skewX(-2.2deg);   /* tilt the whole plank (text included) */
+  transform-origin: left center;
+  filter: drop-shadow(20px 20px 18px rgba(15, 23, 42, 0.26));
+  z-index: 6;
+}
+/* top face: brand gradient (no internal shading, no flat box-shadow base — the
+   angled ::before/::after pseudo-faces provide the depth instead) */
+.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) td {
+  background: linear-gradient(180deg, var(--row, #0ea5e9), var(--row-dark, #0284c7));
+  color: #ffffff;
+  box-shadow: none;
+}
+/* on hover the plank's right edge goes square so the side face connects flush;
+   top-left stays rounded, bottom-left squared (angled bottom face takes over). */
+.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) td:first-child {
+  border-bottom-left-radius: 0; border-top-left-radius: 14px;
+}
+.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) td:last-child {
+  border-bottom-right-radius: 0; border-top-right-radius: 0;
+}
+/* fade in the angled bottom face + the right side face */
+.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) td::before,
+.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) td:last-child::after {
+  opacity: 1;
+}
+.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) td strong,
+.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) td .table-subtext {
+  color: #ffffff;
+}
+
+/* pills/badges stay readable on the coloured hover (same gate) */
+.data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-safe {
+  color: #ffffff; background: rgba(0, 0, 0, 0.18); border-color: #fde047;
+}
+.data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-closing {
+  color: #ffffff; background: rgba(0, 0, 0, 0.20); border: 1.5px solid #ff6b6b;
+}
+.data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .source-badge {
+  color: #ffffff; background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.45);
+}
+
+/* Per-row hover colour (4-cycle): blue -> dark blue -> red -> pink.
+   --row = top, --row-dark = gradient bottom, --bottom-face = the lit flat base edge. */
+.data-table tbody tr:nth-child(4n + 1):hover { --row: #19b4ec; --row-dark: #0a90c4; --bottom-face: #62cdf2; }
+.data-table tbody tr:nth-child(4n + 2):hover { --row: #3b5998; --row-dark: #2c4677; --bottom-face: #6f8bc4; }
+.data-table tbody tr:nth-child(4n + 3):hover { --row: #dd4b39; --row-dark: #b83a2b; --bottom-face: #f0856f; }
+.data-table tbody tr:nth-child(4n):hover     { --row: #e4405f; --row-dark: #c52647; --bottom-face: #f0859a; }
+
+/* light theme */
+[data-theme="light"] .data-table thead th {
+  background: linear-gradient(180deg, #1e8ab8, #0e7490);
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.30),
+              0 8px 12px -4px rgba(15, 23, 42, 0.22);
+}
+[data-theme="light"] .data-table tbody td {
+  background: linear-gradient(180deg, #ffffff, #eef3f8);
+  box-shadow: inset 10px 0 18px rgba(15, 23, 42, 0.03),
+              inset -9px 0 16px rgba(255, 255, 255, 0.55),
+              0 1px 2px rgba(15, 23, 42, 0.10);
+}
+[data-theme="light"] .data-table tbody tr:nth-child(even) td {
+  background: linear-gradient(180deg, #fbfdff, #e9eff5);
+}
+[data-theme="light"] .data-table tbody tr.row-bookmarked td {
+  box-shadow: 0 4px 0 #5fd0ec,
+              0 4px 16px rgba(34, 160, 200, 0.50),
+              0 2px 4px rgba(15, 23, 42, 0.15);
+}
+
+/* ===== Notification button: consistent glass look (readable on any coloured
+   hover row) + a shine sweep on its own hover. Solid glass base means it never
+   washes out on the blue / dark-blue plank in dark mode. ===== */
+.data-table td.table-link-cell .table-link-btn {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.82);
+  color: #0e7490;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  font-weight: 800;
+  border-radius: 12px;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, color 0.22s ease, background 0.22s ease;
+}
+[data-theme="dark"] .data-table td.table-link-cell .table-link-btn {
+  background: rgba(30, 41, 59, 0.88);
+  color: #e0f2fe;
+  border-color: rgba(148, 163, 184, 0.42);
+}
+/* its own hover (also the only thing that reacts when the cell itself is hovered) */
+.data-table td.table-link-cell .table-link-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.22),
+              inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.data-table td.table-link-cell .table-link-btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -80%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  transform: skewX(-20deg);
+  pointer-events: none;
+  transition: left 0.55s ease;
+}
+.data-table td.table-link-cell .table-link-btn:hover::after { left: 140%; }
+
+/* respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .data-table tbody tr,
+  .data-table tbody td,
+  .data-table tbody td::before,
+  .data-table tbody td:last-child::after { transition: none; }
+  .data-container.view-table .data-table tbody tr:hover { transform: none; filter: none; }
+}
+
+/* ===========================================================================
+   FIT-TO-WIDTH COLUMN LAYOUT (desktop) — stop the horizontal scrollbar and the
+   "Notificatio…" clipping. Fixed layout + percentage widths so the table always
+   fills its container; text-heavy columns wrap instead of forcing it wider.
+   Scoped to #dataContainer.view-table and gated to desktop so the <=768px
+   stacked/responsive layout is untouched.
+   =========================================================================== */
+@media (min-width: 769px) {
+  #dataContainer.view-table .data-table {
+    min-width: 0;
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0 10px;          /* floating plank rows with gaps (matches earlier dark look) */
+  }
+  #dataContainer.view-table .data-table tbody td { border-bottom: none; }
+  #dataContainer.view-table .data-table th,
+  #dataContainer.view-table .data-table td {
+    overflow: visible;
+    vertical-align: middle;
+  }
+  /* smaller Days-Left pill so it fits its column */
+  #dataContainer.view-table .data-table td:nth-child(7) .days-pill {
+    font-size: 0.78rem;
+    line-height: 1.1;
+    padding: 0.34rem 0.6rem;
+    white-space: nowrap;
+  }
+  /* header labels may wrap (so "NOTIFICATION" never clips) */
+  #dataContainer.view-table .data-table thead th { white-space: normal; }
+
+  /* column balance — sums to 100% */
+  #dataContainer.view-table .data-table th:nth-child(1),
+  #dataContainer.view-table .data-table td:nth-child(1)  { width: 11%; min-width: 0; }   /* Post */
+  #dataContainer.view-table .data-table th:nth-child(2),
+  #dataContainer.view-table .data-table td:nth-child(2)  { width: 6%;  min-width: 0; }   /* Level */
+  #dataContainer.view-table .data-table th:nth-child(3),
+  #dataContainer.view-table .data-table td:nth-child(3)  { width: 10%; min-width: 0; }   /* Eligibility */
+  #dataContainer.view-table .data-table th:nth-child(4),
+  #dataContainer.view-table .data-table td:nth-child(4)  { width: 18%; min-width: 0; }   /* Ministry */
+  #dataContainer.view-table .data-table th:nth-child(5),
+  #dataContainer.view-table .data-table td:nth-child(5)  { width: 7%;  min-width: 0; }   /* Org */
+  #dataContainer.view-table .data-table th:nth-child(6),
+  #dataContainer.view-table .data-table td:nth-child(6)  { width: 11%; min-width: 0; }   /* Location */
+  #dataContainer.view-table .data-table th:nth-child(7),
+  #dataContainer.view-table .data-table td:nth-child(7)  { width: 9%;  min-width: 0; }   /* Days Left */
+  #dataContainer.view-table .data-table th:nth-child(8),
+  #dataContainer.view-table .data-table td:nth-child(8)  { width: 9%;  min-width: 0; white-space: normal; } /* Notif. Date */
+  #dataContainer.view-table .data-table th:nth-child(9),
+  #dataContainer.view-table .data-table td:nth-child(9)  { width: 14%; min-width: 0; }   /* Notification */
+  #dataContainer.view-table .data-table th:nth-child(10),
+  #dataContainer.view-table .data-table td:nth-child(10) { width: 5%;  min-width: 0; }   /* Bookmark */
+
+  /* wrap only the text-heavy columns; the rest stay tidy */
+  #dataContainer.view-table .data-table td:nth-child(1),
+  #dataContainer.view-table .data-table td:nth-child(3),
+  #dataContainer.view-table .data-table td:nth-child(4),
+  #dataContainer.view-table .data-table td:nth-child(5),
+  #dataContainer.view-table .data-table td:nth-child(6) {
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  /* the Notification button + EN badge fill their column without clipping */
+  #dataContainer.view-table .data-table td:nth-child(9) { text-align: center; }
+  #dataContainer.view-table .data-table td.table-link-cell .table-link-btn,
+  #dataContainer.view-table .data-table td.table-link-cell .source-badge {
+    width: 100%;
+    max-width: 132px;
+  }
+  /* Notification cell stays above the 3D faces and is the only thing that reacts
+     to its own hover (row stays put — see :has() gate above). */
+  #dataContainer.view-table .data-table tbody tr td:nth-child(9),
+  #dataContainer.view-table .data-table tbody tr td:nth-child(10) {
+    position: relative;
+    z-index: 7;
+  }
+}
+
+/* ===========================================================================
+   CARD VIEW — matching 3D plank lift + brand colour cycle + clip-path side face.
+   A softer version of the table-row effect so both views feel consistent.
+   =========================================================================== */
+#dataContainer.view-card .cards-grid { overflow: visible; }
+#dataContainer.view-card .job-card {
+  --depth: 14px;
+  position: relative;
+  overflow: visible;
+  transform-origin: left center;
+  transition: transform 0.24s ease, box-shadow 0.24s ease, filter 0.24s ease, border-color 0.24s ease, border-radius 0.24s ease;
+}
+/* keep card content above the side/bottom faces */
+#dataContainer.view-card .job-card > * { position: relative; z-index: 3; }
+
+/* colour cycle per card */
+#dataContainer.view-card .job-card:nth-child(4n + 1) { --row: #19b4ec; --bottom-face: #62cdf2; }
+#dataContainer.view-card .job-card:nth-child(4n + 2) { --row: #3b5998; --bottom-face: #6f8bc4; }
+#dataContainer.view-card .job-card:nth-child(4n + 3) { --row: #dd4b39; --bottom-face: #f0856f; }
+#dataContainer.view-card .job-card:nth-child(4n)     { --row: #e4405f; --bottom-face: #f0859a; }
+
+/* angled BOTTOM face */
+#dataContainer.view-card .job-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(-1 * var(--depth));
+  height: var(--depth);
+  background: var(--bottom-face, #62cdf2);
+  clip-path: polygon(0 0, 100% 0, calc(100% + var(--depth)) 100%, var(--depth) 100%);
+  opacity: 0;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 0.24s ease;
+}
+/* clip-path RIGHT side face */
+#dataContainer.view-card .job-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: calc(-1 * var(--depth));
+  width: var(--depth);
+  height: calc(100% + var(--depth));
+  background: var(--row, #19b4ec);
+  filter: brightness(0.6);
+  clip-path: polygon(0 0, 100% var(--depth), 100% 100%, 0 calc(100% - var(--depth)));
+  opacity: 0;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 0.24s ease;
+}
+/* hover: lift + plank tilt; square the right + bottom corners so faces meet flush */
+#dataContainer.view-card .job-card:hover {
+  transform: translate(-8px, -8px) skewX(-2deg);
+  border-color: var(--row, #19b4ec);
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+  filter: drop-shadow(14px 18px 16px rgba(15, 23, 42, 0.20));
+  z-index: 5;
+}
+#dataContainer.view-card .job-card:hover::before,
+#dataContainer.view-card .job-card:hover::after { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  #dataContainer.view-card .job-card,
+  #dataContainer.view-card .job-card::before,
+  #dataContainer.view-card .job-card::after { transition: none; }
+  #dataContainer.view-card .job-card:hover { transform: none; filter: none; }
+}
+
+/* ===========================================================================
+   DARK THEME: clean navy plank rows at REST (revert the heavy translucent look).
+   No !important / no id → the brand-gradient hover rule still wins on :hover.
+   =========================================================================== */
+[data-theme="dark"] .data-table thead th {
+  background: linear-gradient(180deg, rgba(21, 36, 56, 0.96), rgba(14, 24, 40, 0.96));
+  color: #f8fafc;
+  box-shadow: none;
+}
+[data-theme="dark"] .data-table tbody td {
+  background: linear-gradient(180deg, rgba(20, 31, 49, 0.96), rgba(14, 23, 38, 0.96));
+  color: #f1f5f9;
+  box-shadow: none;
+}
+[data-theme="dark"] .data-table tbody tr:nth-child(even) td {
+  background: linear-gradient(180deg, rgba(27, 39, 60, 0.96), rgba(18, 29, 47, 0.96));
 }

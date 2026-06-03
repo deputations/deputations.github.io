@@ -310,6 +310,13 @@
     if (isEN) return `EN ${enIssueCompact(cat)}${page ? ' p' + page : ''}`;
     return 'Circular';
   }
+  // Longer label for roomier surfaces (card footer): "Employment News 30May26 Page33"
+  function sourceRefLong(type, cat, page) {
+    const isEN = String(type || '').toLowerCase() === 'employment_news' ||
+      /employment news|^EN\b/i.test(cat || '');
+    if (isEN) return `Employment News ${enIssueCompact(cat)}${page ? ' Page' + page : ''}`;
+    return 'Circular';
+  }
 
   function qualityFlag(score) {
     if (score >= 85) return 'High';
@@ -390,6 +397,7 @@
     o.data_quality_flag = qualityFlag(o.completeness_score);
     o.Source_Page = norm(row.raw_extraction && row.raw_extraction.source_page).replace(/\D/g, '');
     o.Source_Ref = sourceRef(o._source_type, o['Source Category'], o.Source_Page);
+    o.Source_Ref_Long = sourceRefLong(o._source_type, o['Source Category'], o.Source_Page);
     o.Detailed_Eligibility = row.raw_extraction && row.raw_extraction.detailed_eligibility
       ? String(row.raw_extraction.detailed_eligibility).replace(/\r\n/g, '\n').trim()
       : '';
