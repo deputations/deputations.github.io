@@ -2091,21 +2091,30 @@ function applyTheme(theme) {
         const normalizedText = normalizeText(text);
 
         if (!normalizedQuery) return true;
+        // Exact phrase / substring match (e.g. "external affairs").
         if (normalizedText.includes(normalizedQuery)) return true;
 
         const queryTokens = tokenizeText(normalizedQuery);
+        if (!queryTokens.length) return false;
         const textTokens = tokenizeText(normalizedText);
 
+        // Typo tolerance is reserved for single-word queries. Multi-word queries
+        // require every word to actually appear (AND of substrings) — otherwise
+        // loose fuzzy matching over the long qualification text returns rows that
+        // don't contain the phrase at all.
+        const allowFuzzy = queryTokens.length === 1;
+
         return queryTokens.every(qToken => {
-            return textTokens.some(tToken => {
-                if (tToken.includes(qToken) || qToken.includes(tToken)) return true;
+            // The query word must appear as a substring somewhere in the text
+            // ("affair" → "affairs", "extern" → "external").
+            if (normalizedText.includes(qToken)) return true;
+            if (!allowFuzzy || qToken.length < 4) return false;
 
-                const maxAllowedDistance =
-                    qToken.length <= 4 ? 1 :
-                    qToken.length <= 8 ? 2 : 2;
-
-                return levenshteinDistance(qToken, tToken) <= maxAllowedDistance;
-            });
+            // Single-word fallback: tolerate one typo against a similar-length word.
+            return textTokens.some(tToken =>
+                Math.abs(tToken.length - qToken.length) <= 1 &&
+                levenshteinDistance(qToken, tToken) <= 1
+            );
         });
     }
 

@@ -123,9 +123,11 @@
     const t = normalizeText(text);
     if (!q) return true;
     if (t.includes(q)) return true;
+    // Every query word must actually appear as a substring (AND). Avoid the
+    // reverse `qt.includes(tt)` check, which let a short text token satisfy a
+    // longer query word and surfaced unrelated rows.
     const qTokens = q.split(' ').filter(Boolean);
-    const tTokens = t.split(' ').filter(Boolean);
-    return qTokens.every(qt => tTokens.some(tt => tt.includes(qt) || qt.includes(tt)));
+    return qTokens.every(qt => t.includes(qt));
   }
 
   function uid(prefix) {
