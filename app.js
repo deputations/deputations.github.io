@@ -579,7 +579,7 @@ function renderTable(data) {
         </td>
 
         <td class="ministry-col" data-label="Ministry">
-          ${escapeHtml(safe(item.Ministry) || '—')}
+          ${escapeHtml(withAcronym(item.Ministry) || '—')}
         </td>
 
         <td class="location-col" data-label="Location">
@@ -1044,7 +1044,9 @@ kpiGrid.addEventListener('click', (e) => {
       item.Req_Level2,
       item.Keywords,
       item.Essential_Qualification,
-      item.Desirable_Qualification
+      item.Desirable_Qualification,
+      item.Acronyms,
+      item.Department
     ].map(safe).join(' ').toLowerCase();
 
     if (search && !fuzzyIncludes(search, searchableText)) return false;
@@ -1407,7 +1409,7 @@ function applyTheme(theme) {
           <div class="job-title-block">
             <div class="job-title">${escapeHtml(safe(item.Post_Name) || '—')}</div>
             <div class="job-org">
-              ${escapeHtml(safe(item.Ministry) || safe(item.Department_Organisation) || '—')}
+              ${escapeHtml(withAcronym(item.Ministry) || withAcronym(item.Department_Organisation) || '—')}
             </div>
           </div>
         </div>
@@ -1586,13 +1588,13 @@ function applyTheme(theme) {
         const expired = !Number.isNaN(daysLeft) && daysLeft < 0;
 
         const title = safe(item.Post_Name) || '—';
-        const ministry = safe(item.Ministry) || '—';
-        const organisation = getFirstNonEmpty(item, [
+        const ministry = withAcronym(item.Ministry) || '—';
+        const organisation = withAcronym(getFirstNonEmpty(item, [
             'Department_Organisation',
             'Organisation',
             'Department',
             'Office'
-        ]);
+        ]));
         const location = formatLocation(item) || 'Not specified';
         const level = safe(item.Level_Text) || '—';
         const eligibility = formatEligibility(item);
@@ -2157,6 +2159,12 @@ function applyTheme(theme) {
     function hasMeaningfulValue(value) {
         const text = safe(value).toLowerCase();
         return Boolean(text) && !['-', '—', 'na', 'n/a', 'null', 'undefined'].includes(text);
+    }
+
+    function withAcronym(value) {
+        const v = safe(value);
+        if (!v) return v;
+        return (window.DepEnrich && window.DepEnrich.withAcronym) ? window.DepEnrich.withAcronym(v) : v;
     }
 
     function formatLocation(item) {

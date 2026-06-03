@@ -1472,7 +1472,7 @@
   function filterByCriteria(f) {
     if (!f) return vacancies.slice();
     return vacancies.filter(v => {
-      if (f.search && !U.fuzzyIncludes(f.search, [v.Post_Name, v.Ministry, U.formatLocation(v), v.Level_Text, v.Essential_Qualification, v.Desirable_Qualification].filter(Boolean).join(' '))) return false;
+      if (f.search && !U.fuzzyIncludes(f.search, [v.Post_Name, v.Ministry, v.Organisation, v.Acronyms, U.formatLocation(v), v.Level_Text, v.Essential_Qualification, v.Desirable_Qualification].filter(Boolean).join(' '))) return false;
       if (f.level && v.Level_Text !== f.level) return false;
       if (f.ministry && v.Ministry !== f.ministry) return false;
       if (f.location && U.formatLocation(v) !== f.location) return false;

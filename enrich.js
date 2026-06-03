@@ -201,9 +201,83 @@
     return daysLeft < 0 ? 'Inactive' : 'Active';
   }
 
+  // ---- acronyms (searchable + shown in parentheses) ----------------------
+  // Curated full-name (normalised) -> canonical acronym. Ministries mirror the
+  // admin-ingest MINISTRIES table; add organisations/bodies as needed.
+  const ACRONYM_MAP = {
+    // ministries (stored WITHOUT the "Ministry of" prefix)
+    'ayush': 'MoA', 'agriculture and farmers welfare': 'MoAFW', 'chemicals and fertilizers': 'MoCF',
+    'civil aviation': 'MoCA', 'coal': 'COAL', 'commerce and industry': 'MoCI', 'communications': 'MoC',
+    'consumer affairs food and public distribution': 'MoCAFP', 'cooperation': 'COOP', 'corporate affairs': 'MCA',
+    'culture': 'CULT', 'defence': 'MoD', 'development of north eastern region': 'MDONER', 'earth sciences': 'MoES',
+    'education': 'MoE', 'electronics and information technology': 'MeitY', 'environment forest and climate change': 'MoEFCC',
+    'external affairs': 'MEA', 'finance': 'MoF', 'fisheries animal husbandry and dairying': 'MoFAHD',
+    'food processing industries': 'MoFPI', 'health and family welfare': 'MoHFW', 'heavy industries': 'MoHI',
+    'home affairs': 'MHA', 'housing and urban affairs': 'MoHUA', 'information and broadcasting': 'MIB',
+    'jal shakti': 'MoJS', 'labour and employment': 'MoLE', 'law and justice': 'MoLJ',
+    'micro small and medium enterprises': 'MSME', 'mines': 'MoM', 'minority affairs': 'MoMA',
+    'new and renewable energy': 'MNRE', 'panchayati raj': 'MoPR', 'parliamentary affairs': 'MPA',
+    'personnel public grievances and pensions': 'MoPPGP', 'petroleum and natural gas': 'MoPNG', 'planning': 'MoP',
+    'ports shipping and waterways': 'MoPSW', 'power': 'POWER', 'railways': 'MoR',
+    'road transport and highways': 'MoRTH', 'rural development': 'MoRD', 'science and technology': 'MST',
+    'skill development and entrepreneurship': 'MSDE', 'social justice and empowerment': 'MoSJE',
+    'statistics and programme implementation': 'MoSPI', 'steel': 'MoS', 'textiles': 'MoT', 'tourism': 'TOUR',
+    'tribal affairs': 'MoTA', 'women and child development': 'MoWCD', 'youth affairs and sports': 'MoYAS',
+    // common organisations / bodies
+    'food safety and standards authority of india': 'FSSAI', 'national commission for women': 'NCW',
+    'union public service commission': 'UPSC', 'staff selection commission': 'SSC',
+    'central bureau of investigation': 'CBI', 'comptroller and auditor general of india': 'CAG',
+    'national investigation agency': 'NIA', 'national human rights commission': 'NHRC',
+    'central vigilance commission': 'CVC', 'national informatics centre': 'NIC',
+    'indian council of medical research': 'ICMR', 'council of scientific and industrial research': 'CSIR',
+    'all india institute of medical sciences': 'AIIMS', 'bureau of indian standards': 'BIS',
+    'directorate general of health services': 'DGHS', 'national disaster management authority': 'NDMA',
+    'sardar vallabhbhai patel national police academy': 'SVPNPA', 'north eastern police academy': 'NEPA',
+  };
+  const ACR_STOP = new Set(['of', 'and', 'for', 'the', 'in', 'on', 'to', 'a', 'an', 'at', 'by', 'with', 'de', 'cum']);
+  function acrNorm(s) {
+    return String(s || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  function autoAcr(name) {
+    const n = acrNorm(name); if (!n) return [];
+    const words = n.split(' ');
+    const out = new Set();
+    const sig = words.filter(w => !ACR_STOP.has(w));
+    if (sig.length >= 2) out.add(sig.map(w => w[0]).join('').toUpperCase());            // skip filler -> FSSAI, MHA, NCW
+    const keepOf = words.filter(w => w === 'of' || !ACR_STOP.has(w));
+    if (keepOf.length >= 2) out.add(keepOf.map(w => (w === 'of' ? 'O' : w[0])).join('').toUpperCase()); // keep "of" -> MOHFW
+    if (words.length >= 2 && words.length <= 8) out.add(words.map(w => w[0]).join('').toUpperCase());   // all initials
+    return [...out].filter(a => a.length >= 2 && a.length <= 10);
+  }
+  function acronymFor(name) {                 // best single acronym (display)
+    const n = acrNorm(name); if (!n) return '';
+    if (ACRONYM_MAP[n]) return ACRONYM_MAP[n];
+    const a = autoAcr(name); return a.length ? a[0] : '';
+  }
+  function acronymVariants(name) {            // all searchable variants
+    const n = acrNorm(name); const set = new Set();
+    if (ACRONYM_MAP[n]) set.add(ACRONYM_MAP[n]);
+    autoAcr(name).forEach(a => set.add(a));
+    return [...set];
+  }
+  function withAcronym(name) {                // "Full Name (ACR)" for display
+    const s = norm(name); if (!s) return '';
+    const acr = acronymFor(s); if (!acr) return s;
+    if (acrNorm(s) === acr.toLowerCase()) return s;                 // name IS the acronym
+    if (new RegExp('\\(\\s*' + acr + '\\s*\\)', 'i').test(s)) return s; // already shown
+    return `${s} (${acr})`;
+  }
+  function acronymSearchText(o) {
+    const set = new Set();
+    [o.Ministry, o.Department, o.Organisation, o.Department_Organisation]
+      .forEach(nm => acronymVariants(nm).forEach(a => set.add(a)));
+    return [...set].join(' ');
+  }
+
   function buildSearchText(o) {
-    return [o.Post_Name, o.Organisation, o.Ministry, o.Location_City, o.Location_State,
-      o.Level_Text, o.Req_Level1, o.Req_Level2, o.Essential_Qualification, o.Tags_Keywords]
+    return [o.Post_Name, o.Organisation, o.Ministry, o.Department, o.Location_City, o.Location_State,
+      o.Level_Text, o.Req_Level1, o.Req_Level2, o.Essential_Qualification, o.Tags_Keywords,
+      acronymSearchText(o)]
       .map(norm).filter(Boolean).join(' ').toLowerCase();
   }
 
@@ -310,6 +384,7 @@
     o.expired_flag = daysLeft !== null && daysLeft < 0;
     o.closing_soon = daysLeft !== null && daysLeft >= 0 && daysLeft <= 15;
     o.Closing_Soon = o.closing_soon ? 'Yes' : 'No';
+    o.Acronyms = acronymSearchText(o);
     o.search_text = buildSearchText(o);
     o.completeness_score = completenessScore(o);
     o.data_quality_flag = qualityFlag(o.completeness_score);
@@ -330,5 +405,5 @@
     });
   }
 
-  global.DepEnrich = { enrichRecord, enrichAll, parseTiers, isEligible, formatTiers };
+  global.DepEnrich = { enrichRecord, enrichAll, parseTiers, isEligible, formatTiers, acronymFor, withAcronym };
 })(window);
