@@ -2210,7 +2210,9 @@ function applyTheme(theme) {
 }
 
     function formatRichText(value) {
-        return escapeHtml(safe(value)).replace(/\n/g, '<br>');
+        return escapeHtml(safe(value))
+            .replace(/\*\*(.+?)\*\*/g, '<strong class="rich-subhead">$1</strong>')
+            .replace(/\n/g, '<br>');
     }
 
     function normalizeUrl(value) {

@@ -143,8 +143,15 @@ Also capture, when present:
   conditions block exactly as printed in the source for THIS post (feeder grades &
   pay levels, essential and desirable qualifications, experience, and age limit).
   Do NOT paraphrase, summarise, translate, or reorder; preserve the original wording
-  and clause numbering, and you may keep line breaks. One block per post row. Return
-  "" if the ad states no such conditions.
+  and clause numbering. One block per post row.
+  When the source separates these conditions into LABELLED sections (e.g. "Eligibility
+  / Essential Criteria", "Desirable Criteria", "Experience", "Age Limit",
+  "Qualification"), preserve each label as its own subheading line wrapped in double
+  asterisks — e.g. **Essential Criteria** — placed on its own line, immediately
+  followed by that section's verbatim text, with a blank line between sections. Use
+  the source's OWN label wording; do NOT invent headings. If the source is a single
+  unlabelled paragraph, return it as-is without adding any heading. Return "" if the
+  ad states no such conditions.
 If you cannot determine a field, return an empty string "".
 Set confidence to "high" only when the post, level, location and a date are all
 clearly stated; otherwise "medium" or "low".

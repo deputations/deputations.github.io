@@ -4481,3 +4481,16 @@ html:not([data-theme="light"]) .premium-credit {
   background: rgba(2, 132, 199, 0.07);
   border-color: rgba(2, 132, 199, 0.18);
 }
+
+/* Subheadings inside verbatim rich-text blocks (e.g. Detailed Eligibility) */
+.modal-richtext .rich-subhead {
+  display: inline-block;
+  margin-top: 0.7rem;
+  margin-bottom: 0.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+.modal-richtext .rich-subhead:first-child {
+  margin-top: 0;
+}
