@@ -967,7 +967,9 @@ kpiGrid.addEventListener('click', (e) => {
 
    function renderDashboard(resetPageIfNeeded = true) {
   syncExperienceState();
-  const baseFilteredData = getFilteredData({ applyKpiFilter: false });
+  // KPI cards summarise the whole set regardless of the Status dropdown:
+  // "Total Vacancies" = all (Status: All), "Active" = the active subset of them.
+  const baseFilteredData = getFilteredData({ applyKpiFilter: false, applyStatusFilter: false });
   let filteredData = getFilteredData({ applyKpiFilter: true });
 
   filteredData = sortData(filteredData);
@@ -1013,7 +1015,7 @@ kpiGrid.addEventListener('click', (e) => {
     btnCardView.classList.remove('active');
   }
 }
-    function getFilteredData({ applyKpiFilter = true } = {}) {
+    function getFilteredData({ applyKpiFilter = true, applyStatusFilter = true } = {}) {
   const search = searchPost.value.trim().toLowerCase();
   const myPayLevel = filterMyPayLevel.value;
   const myYears = filterExperience ? filterExperience.value : '';
@@ -1049,7 +1051,7 @@ kpiGrid.addEventListener('click', (e) => {
     if (level && itemLevel !== level) return false;
     if (ministry && itemMinistry !== ministry) return false;
     if (locationSet && !locationSet.has(itemLocation)) return false;
-    if (status && itemStatus !== status) return false;
+    if (applyStatusFilter && status && itemStatus !== status) return false;
 
     if (myPayLevel) {
       // Tier-aware eligibility: matches the candidate's level + years-at-level
@@ -1062,7 +1064,7 @@ kpiGrid.addEventListener('click', (e) => {
     }
 
     if (showWatchlistOnly && !watchlist.has(itemId)) return false;
-    if (!Number.isNaN(itemDaysLeft) && status === 'Active' && itemDaysLeft < 0) return false;
+    if (applyStatusFilter && !Number.isNaN(itemDaysLeft) && status === 'Active' && itemDaysLeft < 0) return false;
 
     if (quickFilters.closing7) {
       if (Number.isNaN(itemDaysLeft) || itemDaysLeft < 0 || itemDaysLeft > 7) return false;
