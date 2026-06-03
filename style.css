@@ -4678,7 +4678,9 @@ html:not([data-theme="light"]) .premium-credit {
 }
 .data-table tbody td:last-child::before {
   right: calc(-1 * var(--depth));
-  clip-path: polygon(0 0, 100% 0, calc(100% - var(--depth)) 100%, 0 100%);  /* angled right end */
+  /* fill the full extended width so the light bottom face reaches the corner and
+     meets the dark right side face (no background notch at the bottom-right). */
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
 }
 /* RIGHT side face (last cell only) — solid darker side-face colour (no filter,
    so the per-row --side-face renders true). */
@@ -4749,12 +4751,19 @@ html:not([data-theme="light"]) .premium-credit {
   color: #ffffff;
 }
 
-/* pills/badges stay readable on the coloured hover (same gate) */
-.data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-safe {
-  color: #ffffff; background: rgba(0, 0, 0, 0.18); border-color: #fde047;
+/* Days Left on hover: >15 (safe) -> white to match the plank text; <=15 (closing)
+   -> BOLD RED, except on the RED (10n+3) and PINK (10n+4) planks where red is
+   invisible -> white bold. */
+.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-safe {
+  color: #ffffff !important;
 }
-.data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-closing {
-  color: #ffffff; background: rgba(0, 0, 0, 0.20); border: 1.5px solid #ff6b6b;
+.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-closing {
+  color: #ff2b2b !important;
+  font-weight: 800 !important;
+}
+.data-container.view-table .data-table tbody tr:nth-child(10n + 3):hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-closing,
+.data-container.view-table .data-table tbody tr:nth-child(10n + 4):hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-closing {
+  color: #ffffff !important;
 }
 .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .source-badge {
   color: #ffffff; background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.45);
@@ -4883,20 +4892,34 @@ html:not([data-theme="light"]) .premium-credit {
     border-spacing: 0 10px;          /* floating plank rows with gaps (matches earlier dark look) */
   }
   #dataContainer.view-table .data-table tbody td { border-bottom: none; }
+  /* ALL cell text centred — horizontally + vertically (equidistant from edges) */
   #dataContainer.view-table .data-table th,
   #dataContainer.view-table .data-table td {
     overflow: visible;
     vertical-align: middle;
+    text-align: center;
   }
-  /* smaller Days-Left pill so it always fits its column */
+  #dataContainer.view-table .data-table th .sort-btn { justify-content: center; gap: 6px; }
+
+  /* Days Left: NO circle/pill — just centred coloured text.
+     >15 days = green, <=15 = red (rest state); hover behaviour handled above. */
   #dataContainer.view-table .data-table td:nth-child(7) { text-align: center; white-space: nowrap; }
   #dataContainer.view-table .data-table td:nth-child(7) .days-pill {
-    font-size: 0.72rem;
-    line-height: 1.05;
-    padding: 0.32rem 0.55rem;
+    display: inline;
+    min-height: 0;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    border-radius: 0;
+    font-size: 0.82rem;
+    font-weight: 700;
     white-space: nowrap;
-    display: inline-block;
   }
+  #dataContainer.view-table .data-table td:nth-child(7) .days-pill-safe    { color: #16a34a; }   /* >15  green */
+  #dataContainer.view-table .data-table td:nth-child(7) .days-pill-closing { color: #ef4444; }   /* <=15 red   */
+  #dataContainer.view-table .data-table td:nth-child(7) .days-pill-expired,
+  #dataContainer.view-table .data-table td:nth-child(7) .days-pill-muted   { color: #94a3b8; }
   /* header labels may wrap (so "NOTIFICATION" never clips) */
   #dataContainer.view-table .data-table thead th { white-space: normal; }
 
