@@ -254,6 +254,61 @@ function normalizeTiers(it: any): Array<{ level: number; min_years: number }> {
   return [...byLevel.values()].sort((a, b) => b.level - a.level);
 }
 
+// ---------------------------------------------------------------------------
+// Smart duplicate-merge helpers.
+// NOTE: keysOf/smartMerge are mirrored in admin-ingest.js — keep them in sync.
+// Content columns that participate in the merge/diff (provenance + metadata
+// columns are handled separately). detailed_eligibility rides in raw_extraction.
+// ---------------------------------------------------------------------------
+const CONTENT_FIELDS = [
+  "ministry", "min_code", "department", "organisation", "organisation_type",
+  "post_name", "level", "level_text", "location_city", "location_state",
+  "req_level1", "req_level2", "min_years_experience", "min_years_experience2",
+  "eligibility_tiers", "no_of_posts", "deputation_period_years", "deputation_type",
+  "notification_date", "last_date_to_apply", "official_notification_link",
+  "application_form_link", "source_website", "functional_area",
+  "essential_qualification", "eligible_service", "mode_of_application", "tags_keywords",
+];
+
+const normPart = (s: unknown) =>
+  String(s ?? "").replace(/[^a-zA-Z0-9]+/g, " ").trim().toLowerCase();
+const normLevel = (s: unknown) => String(s ?? "").replace(/[^0-9]/g, "");
+
+// Replicates the generated dedup_key (0002) and match_key (0006) exactly.
+function keysOf(row: any): { dedupKey: string; matchKey: string } {
+  const matchKey = `${normPart(row.organisation)}|${normPart(row.post_name)}|${normPart(row.location_city)}|${normLevel(row.level)}`;
+  return { matchKey, dedupKey: `${matchKey}|${String(row.notification_date ?? "").toLowerCase()}` };
+}
+
+const isEmptyVal = (v: unknown) =>
+  v === null || v === undefined || (Array.isArray(v) ? v.length === 0 : String(v).trim() === "");
+const sameVal = (a: unknown, b: unknown) =>
+  (Array.isArray(a) || Array.isArray(b))
+    ? JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
+    : String(a ?? "").trim() === String(b ?? "").trim();
+
+// Fill blanks + overwrite a field only when the candidate has a non-empty value
+// that differs; never blanks out existing data. Returns the patch of changed
+// fields (not the whole row) so generated columns are never written.
+function smartMerge(existing: any, candidate: any): { patch: any; diff: any; changed: boolean } {
+  const patch: any = {}; const diff: any = {};
+  for (const f of CONTENT_FIELDS) {
+    if (!isEmptyVal(candidate[f]) && !sameVal(candidate[f], existing[f])) {
+      patch[f] = candidate[f]; diff[f] = { old: existing[f] ?? "", new: candidate[f] };
+    }
+  }
+  // An official circular (notification) supersedes EN/tip as the row's provenance.
+  if (candidate.source_type === "notification") {
+    for (const f of ["source_type", "source_category", "source_file_url"]) {
+      if (!isEmptyVal(candidate[f]) && !sameVal(candidate[f], existing[f])) {
+        patch[f] = candidate[f]; diff[f] = { old: existing[f] ?? "", new: candidate[f] };
+      }
+    }
+    if (candidate.raw_extraction) patch.raw_extraction = candidate.raw_extraction;
+  }
+  return { patch, diff, changed: Object.keys(diff).length > 0 };
+}
+
 function minCodeFromMinistry(ministry: string): string {
   const cleaned = (ministry || "")
     .replace(/ministry of|department of|govt\.? of india|government of india/gi, "")
@@ -617,15 +672,83 @@ Deno.serve(async (req) => {
       };
     });
 
+    // ---- Hybrid dedupe + smart merge -------------------------------------
+    // Exact key match -> auto-merge (update draft in place, or queue an update
+    // for an approved/live row). Loose match (same org|post|city|level, other
+    // date) -> a possible-duplicate suggestion. No match -> insert as draft.
+    const keyed = rows.map((r) => ({ r, ...keysOf(r) }));
+    const matchKeys = [...new Set(keyed.map((k) => k.matchKey).filter(Boolean))];
+
+    const selCols = ["id", "status", "dedup_key", "match_key", "source_type",
+      "source_category", "source_file_url", ...CONTENT_FIELDS].join(",");
+    const existing: any[] = [];
+    for (let i = 0; i < matchKeys.length; i += 100) {
+      const { data, error } = await admin.from("vacancies")
+        .select(selCols).in("match_key", matchKeys.slice(i, i + 100));
+      if (error) throw new Error(`match lookup failed: ${error.message}`);
+      if (data) existing.push(...data);
+    }
+    const byDedup = new Map<string, any>();
+    const byMatch = new Map<string, any[]>();
+    for (const e of existing) {
+      if (e.dedup_key) byDedup.set(e.dedup_key, e);
+      if (e.match_key) (byMatch.get(e.match_key) ?? byMatch.set(e.match_key, []).get(e.match_key))!.push(e);
+    }
+
+    const toInsert: any[] = [];
+    const draftPatches: Array<{ id: string; patch: any }> = [];
+    const updateRows: any[] = [];
+    let unchanged = 0;
+
+    for (const { r, dedupKey, matchKey } of keyed) {
+      const exact = byDedup.get(dedupKey);
+      if (exact) {
+        const { patch, diff, changed } = smartMerge(exact, r);
+        if (!changed) { unchanged++; continue; }
+        if (exact.status === "approved") {
+          updateRows.push({
+            target_id: exact.id, kind: "update", proposed: patch, diff,
+            source_type: r.source_type, source_category: r.source_category,
+            source_file_url: r.source_file_url, confidence: r.confidence, ingest_job_id: r.ingest_job_id,
+          });
+        } else {
+          draftPatches.push({ id: exact.id, patch });
+        }
+        continue;
+      }
+      const loose = (byMatch.get(matchKey) ?? [])[0];
+      if (loose) {
+        const { diff } = smartMerge(loose, r);
+        updateRows.push({
+          target_id: loose.id, kind: "duplicate", proposed: r, diff,
+          source_type: r.source_type, source_category: r.source_category,
+          source_file_url: r.source_file_url, confidence: r.confidence, ingest_job_id: r.ingest_job_id,
+        });
+        continue;
+      }
+      toInsert.push(r);
+    }
+
     let inserted = 0;
-    if (rows.length) {
-      // ignoreDuplicates -> ON CONFLICT (dedup_key) DO NOTHING: any vacancy already
-      // present (this batch's run-dedup, or a prior draft/approved row) is skipped.
-      const { data: ins, error: insErr } = await admin.from("vacancies")
-        .upsert(rows, { onConflict: "dedup_key", ignoreDuplicates: true })
+    if (toInsert.length) {
+      const { data, error } = await admin.from("vacancies")
+        .upsert(toInsert, { onConflict: "dedup_key", ignoreDuplicates: true })
         .select("id");
-      if (insErr) throw new Error(`insert failed: ${insErr.message}`);
-      inserted = ins?.length ?? 0;
+      if (error) throw new Error(`insert failed: ${error.message}`);
+      inserted = data?.length ?? 0;
+    }
+    let draftUpdated = 0;
+    for (const { id, patch } of draftPatches) {
+      const { error } = await admin.from("vacancies").update(patch).eq("id", id);
+      if (error) throw new Error(`draft update failed: ${error.message}`);
+      draftUpdated++;
+    }
+    let updatesQueued = 0, duplicatesFlagged = 0;
+    if (updateRows.length) {
+      const { error } = await admin.from("vacancy_updates").insert(updateRows);
+      if (error) throw new Error(`updates insert failed: ${error.message}`);
+      updatesQueued = updateRows.filter((u) => u.kind === "update").length;
+      duplicatesFlagged = updateRows.filter((u) => u.kind === "duplicate").length;
     }
 
     await admin.from("ingest_jobs")
@@ -633,8 +756,15 @@ Deno.serve(async (req) => {
       .eq("id", job.id);
 
     return json({
-      ok: true, rows_extracted: inserted, duplicates_skipped: rows.length - inserted,
-      candidates: items.length, ingest_job_id: job.id, providers: [...used],
+      ok: true,
+      rows_extracted: inserted,
+      draft_updated: draftUpdated,
+      updates_queued: updatesQueued,
+      duplicates_flagged: duplicatesFlagged,
+      unchanged,
+      candidates: items.length,
+      ingest_job_id: job.id,
+      providers: [...used],
     });
   } catch (err) {
     await admin.from("ingest_jobs")

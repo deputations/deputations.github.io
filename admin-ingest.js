@@ -340,9 +340,136 @@ function parsePastedArray(raw) {
   return null;
 }
 
-const dedupKey = (o) => [o.post_name, o.organisation, o.location_city,
-  String(o.level || o.req_level1 || '').replace(/\D/g, ''), (o.notification_date || '')]
-  .map((x) => String(x || '').toLowerCase().trim()).join('|');
+/* ---------------- smart duplicate-merge (mirrors extract/index.ts) ----------------
+ * NOTE: keysOf / smartMerge / CONTENT_FIELDS are duplicated in the extract Edge
+ * Function (Deno). Keep the two copies in sync. */
+const CONTENT_FIELDS = [
+  'ministry', 'min_code', 'department', 'organisation', 'organisation_type',
+  'post_name', 'level', 'level_text', 'location_city', 'location_state',
+  'req_level1', 'req_level2', 'min_years_experience', 'min_years_experience2',
+  'eligibility_tiers', 'no_of_posts', 'deputation_period_years', 'deputation_type',
+  'notification_date', 'last_date_to_apply', 'official_notification_link',
+  'application_form_link', 'source_website', 'functional_area',
+  'essential_qualification', 'eligible_service', 'mode_of_application', 'tags_keywords',
+];
+const normPart = (s) => String(s ?? '').replace(/[^a-zA-Z0-9]+/g, ' ').trim().toLowerCase();
+const normLevel = (s) => String(s ?? '').replace(/[^0-9]/g, '');
+// Replicates the generated dedup_key (0002) and match_key (0006) exactly.
+function keysOf(row) {
+  const matchKey = `${normPart(row.organisation)}|${normPart(row.post_name)}|${normPart(row.location_city)}|${normLevel(row.level)}`;
+  return { matchKey, dedupKey: `${matchKey}|${String(row.notification_date ?? '').toLowerCase()}` };
+}
+const dedupKey = (o) => keysOf(o).dedupKey;
+
+const isEmptyVal = (v) =>
+  v === null || v === undefined || (Array.isArray(v) ? v.length === 0 : String(v).trim() === '');
+const sameVal = (a, b) =>
+  (Array.isArray(a) || Array.isArray(b))
+    ? JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
+    : String(a ?? '').trim() === String(b ?? '').trim();
+
+// Fill blanks + overwrite only with a differing non-empty value; never blanks
+// out existing data. Returns the changed-fields patch (not the whole row).
+function smartMerge(existing, candidate) {
+  const patch = {}; const diff = {};
+  for (const f of CONTENT_FIELDS) {
+    if (!isEmptyVal(candidate[f]) && !sameVal(candidate[f], existing[f])) {
+      patch[f] = candidate[f]; diff[f] = { old: existing[f] ?? '', new: candidate[f] };
+    }
+  }
+  if (candidate.source_type === 'notification') {  // official circular supersedes EN/tip provenance
+    for (const f of ['source_type', 'source_category', 'source_file_url']) {
+      if (!isEmptyVal(candidate[f]) && !sameVal(candidate[f], existing[f])) {
+        patch[f] = candidate[f]; diff[f] = { old: existing[f] ?? '', new: candidate[f] };
+      }
+    }
+    if (candidate.raw_extraction) patch.raw_extraction = candidate.raw_extraction;
+  }
+  return { patch, diff, changed: Object.keys(diff).length > 0 };
+}
+
+function summarizeIngest(r) {
+  const p = [];
+  if (r.inserted) p.push(`${r.inserted} new`);
+  if (r.draftUpdated) p.push(`${r.draftUpdated} draft enriched`);
+  if (r.updatesQueued) p.push(`${r.updatesQueued} update${r.updatesQueued > 1 ? 's' : ''} queued`);
+  if (r.duplicatesFlagged) p.push(`${r.duplicatesFlagged} possible dup${r.duplicatesFlagged > 1 ? 's' : ''}`);
+  if (r.unchanged) p.push(`${r.unchanged} unchanged`);
+  return '✅ ' + (p.length ? p.join(', ') : 'nothing to import');
+}
+
+// Match each candidate against existing vacancies, then insert new drafts,
+// merge into matching drafts, or queue updates / duplicate suggestions.
+async function applyMergeImport(rows) {
+  const sel = ['id', 'status', 'dedup_key', 'match_key', 'source_type',
+    'source_category', 'source_file_url', ...CONTENT_FIELDS].join(',');
+  const keyed = rows.map((r) => ({ r, ...keysOf(r) }));
+  const matchKeys = [...new Set(keyed.map((k) => k.matchKey).filter(Boolean))];
+
+  const existing = [];
+  for (let i = 0; i < matchKeys.length; i += 100) {
+    const enc = matchKeys.slice(i, i + 100).map(encodeURIComponent).join(',');
+    const r = await api(`/rest/v1/vacancies?select=${sel}&match_key=in.(${enc})`);
+    if (!r.ok) throw new Error('Match lookup failed: ' + (await r.text()));
+    existing.push(...await r.json());
+  }
+  const byDedup = new Map(); const byMatch = new Map();
+  for (const e of existing) {
+    if (e.dedup_key) byDedup.set(e.dedup_key, e);
+    if (e.match_key) { const a = byMatch.get(e.match_key) || []; a.push(e); byMatch.set(e.match_key, a); }
+  }
+
+  const toInsert = []; const draftPatches = []; const updateRows = [];
+  let unchanged = 0;
+  for (const { r, dedupKey: dk, matchKey } of keyed) {
+    const exact = byDedup.get(dk);
+    if (exact) {
+      const { patch, diff, changed } = smartMerge(exact, r);
+      if (!changed) { unchanged++; continue; }
+      if (exact.status === 'approved') {
+        updateRows.push({ target_id: exact.id, kind: 'update', proposed: patch, diff, source_type: r.source_type, source_category: r.source_category, source_file_url: r.source_file_url, confidence: r.confidence, ingest_job_id: r.ingest_job_id });
+      } else { draftPatches.push({ id: exact.id, patch }); }
+      continue;
+    }
+    const loose = (byMatch.get(matchKey) || [])[0];
+    if (loose) {
+      const { diff } = smartMerge(loose, r);
+      updateRows.push({ target_id: loose.id, kind: 'duplicate', proposed: r, diff, source_type: r.source_type, source_category: r.source_category, source_file_url: r.source_file_url, confidence: r.confidence, ingest_job_id: r.ingest_job_id });
+      continue;
+    }
+    toInsert.push(r);
+  }
+
+  let inserted = 0;
+  if (toInsert.length) {
+    const ins = await api('/rest/v1/vacancies?on_conflict=dedup_key', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation,resolution=ignore-duplicates' },
+      body: JSON.stringify(toInsert),
+    });
+    if (!ins.ok) throw new Error('Insert failed: ' + (await ins.text()));
+    const ir = await ins.json().catch(() => []);
+    inserted = Array.isArray(ir) ? ir.length : toInsert.length;
+  }
+  let draftUpdated = 0;
+  for (const { id, patch } of draftPatches) {
+    const pr = await api(`/rest/v1/vacancies?id=eq.${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(patch),
+    });
+    if (pr.ok) draftUpdated++;
+  }
+  let updatesQueued = 0; let duplicatesFlagged = 0;
+  if (updateRows.length) {
+    const ur = await api('/rest/v1/vacancy_updates', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(updateRows),
+    });
+    if (!ur.ok) throw new Error('Updates insert failed: ' + (await ur.text()));
+    updatesQueued = updateRows.filter((u) => u.kind === 'update').length;
+    duplicatesFlagged = updateRows.filter((u) => u.kind === 'duplicate').length;
+  }
+  return { inserted, draftUpdated, updatesQueued, duplicatesFlagged, unchanged };
+}
 
 async function importPasted(label, st) {
   const raw = $('pasteJson').value.trim();
@@ -384,25 +511,19 @@ async function importPasted(label, st) {
   const job = (await jobRes.json())[0];
   const year = new Date().getFullYear();
   const rows = items.map((it, i) => mapPasted(it, job.id, label, year, i, enPdfPath));
-  // on_conflict=dedup_key + ignore-duplicates -> rows already stored are skipped;
-  // return=representation lets us count what actually landed.
-  const ins = await api('/rest/v1/vacancies?on_conflict=dedup_key', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Prefer: 'return=representation,resolution=ignore-duplicates' },
-    body: JSON.stringify(rows),
-  });
-  if (!ins.ok) throw new Error('Insert failed: ' + (await ins.text()));
-  const insertedRows = await ins.json().catch(() => []);
-  const inserted = Array.isArray(insertedRows) ? insertedRows.length : rows.length;
-  const skipped = before - inserted;
+  // hybrid dedupe + smart merge: new -> draft; exact match -> enrich draft or
+  // queue an update for a live row; loose match -> a possible-duplicate suggestion.
+  const res = await applyMergeImport(rows);
   await api(`/rest/v1/ingest_jobs?id=eq.${job.id}`, {
     method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-    body: JSON.stringify({ rows_extracted: inserted }),
+    body: JSON.stringify({ rows_extracted: res.inserted }),
   }).catch(() => {});
-  st.textContent = `✅ Imported ${inserted} row(s)` + (skipped > 0 ? ` (skipped ${skipped} duplicate(s))` : '') + ' to the review queue.';
-  toast(`Imported ${inserted} draft(s)` + (skipped > 0 ? `, skipped ${skipped} dup(s)` : ''));
+  const msg = summarizeIngest(res);
+  st.textContent = msg + ' — see the Review & Updates tabs.';
+  toast(msg);
   $('pasteJson').value = '';
   $('enPdf').value = '';
+  refreshUpdatesCount();
   document.querySelector('[data-tab="review"]').click();
 }
 
@@ -460,6 +581,7 @@ async function boot() {
   wireApp();
   loadDrafts();
   refreshFlagCount();
+  refreshUpdatesCount();
 }
 
 /* ---------------- app wiring ---------------- */
@@ -474,14 +596,18 @@ function wireApp() {
       $('paneReview').classList.toggle('hidden', t !== 'review');
       $('paneManage').classList.toggle('hidden', t !== 'manage');
       $('paneFlags').classList.toggle('hidden', t !== 'flags');
+      $('paneUpdates').classList.toggle('hidden', t !== 'updates');
       // leaving Manage by hand clears any flag-comparison context so it doesn't
       // re-trigger on a later manual visit (the flag's Open button re-sets it)
       if (t !== 'manage') ACTIVE_FLAG = null;
       if (t === 'review') loadDrafts();
       if (t === 'manage') loadManage();
       if (t === 'flags') loadFlags();
+      if (t === 'updates') loadUpdates();
     };
   });
+
+  if ($('updRefresh')) $('updRefresh').onclick = loadUpdates;
 
   $('flagRefresh').onclick = loadFlags;
   $('flagStatus').onchange = loadFlags;
@@ -571,10 +697,16 @@ function wireApp() {
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
-      st.textContent = `✅ Extracted ${data.rows_extracted} vacanc${data.rows_extracted === 1 ? 'y' : 'ies'} from ${data.candidates} candidate(s)` +
-        (data.duplicates_skipped ? `, skipped ${data.duplicates_skipped} duplicate(s)` : '') +
-        ((data.providers && data.providers.length) ? ` · via ${data.providers.join(', ')}` : '') + '.';
-      toast(`Added ${data.rows_extracted} draft(s) to the review queue`);
+      const sum = summarizeIngest({
+        inserted: data.rows_extracted || 0, draftUpdated: data.draft_updated || 0,
+        updatesQueued: data.updates_queued || 0, duplicatesFlagged: data.duplicates_flagged || 0,
+        unchanged: data.unchanged || 0,
+      });
+      st.textContent = `${sum} (from ${data.candidates} candidate(s))` +
+        ((data.providers && data.providers.length) ? ` · via ${data.providers.join(', ')}` : '') +
+        ' — see the Review & Updates tabs.';
+      toast(sum);
+      refreshUpdatesCount();
       pickedFile = null; $('fileInput').value = '';
       $('dzText').textContent = 'Click to choose a PDF, or drop it here';
       document.querySelector('[data-tab="review"]').click();
@@ -1105,16 +1237,15 @@ function manageCard(r, isNew) {
       if (isNew) {
         const yr = new Date().getFullYear();
         patch.vacancy_id = `${patch.min_code || 'MAN'}-${yr}-L${(patch.level || 'X')}-${Date.now() % 100000}`;
-        patch.source_type = 'manual';
-        const res = await api('/rest/v1/vacancies?on_conflict=dedup_key', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Prefer: 'return=representation,resolution=ignore-duplicates' },
-          body: JSON.stringify([patch]),
-        });
-        if (!res.ok) throw new Error(await res.text());
-        const ins = await res.json();
-        if (!ins.length) return toast('That vacancy already exists (duplicate) — not added');
-        toast('✅ Added'); el.remove(); loadManage();
+        patch.source_type = patch.source_type || 'manual';
+        if (!patch.status) patch.status = 'approved';
+        // route through the same smart-merge as ingest: a brand-new vacancy is
+        // inserted; a match enriches the existing row or queues an update/duplicate.
+        const res = await applyMergeImport([patch]);
+        refreshUpdatesCount();
+        if (res.inserted) { toast('✅ Added'); el.remove(); }
+        else toast(summarizeIngest(res) + ((res.updatesQueued || res.duplicatesFlagged) ? ' — see Updates tab' : ''));
+        loadManage();
       } else {
         const res = await api(`/rest/v1/vacancies?id=eq.${r.id}`, {
           method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
@@ -1261,6 +1392,107 @@ function flagCard(f) {
   el.querySelector('[data-act="valid"]')?.addEventListener('click', () => setStatus('approved'));
   el.querySelector('[data-act="dismiss"]')?.addEventListener('click', () => setStatus('dismissed'));
   el.querySelector('[data-act="reopen"]')?.addEventListener('click', () => setStatus('open'));
+  return el;
+}
+
+/* ================= Pending updates & duplicate suggestions ================= */
+async function loadUpdates() {
+  const list = $('updatesList');
+  if (list) list.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const r = await api('/rest/v1/vacancy_updates?status=eq.pending&select=*,target:target_id(post_name,organisation,level_text,status,vacancy_id)&order=created_at.desc&limit=500');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    renderUpdates(await r.json());
+  } catch (e) { if (list) list.innerHTML = `<p class="muted">Load error: ${escapeHtml(e.message)}</p>`; }
+}
+
+async function refreshUpdatesCount() {
+  try {
+    const r = await api('/rest/v1/vacancy_updates?status=eq.pending&select=id');
+    if (!r.ok) return;
+    const n = (await r.json()).length;
+    const badge = $('updatesCount'); if (badge) badge.textContent = n ? `(${n})` : '';
+  } catch { /* */ }
+}
+
+function renderUpdates(rows) {
+  const list = $('updatesList');
+  if ($('updatesHdrCount')) $('updatesHdrCount').textContent = `(${rows.length})`;
+  if (!list) return;
+  if (!rows.length) { list.innerHTML = '<p class="muted">No pending updates or duplicate suggestions. 🎉</p>'; return; }
+  list.innerHTML = '';
+  rows.forEach((u) => list.appendChild(updateCard(u)));
+}
+
+function updateCard(u) {
+  const el = document.createElement('div');
+  el.className = 'draft';
+  const t = u.target || {};
+  const diff = u.diff || {};
+  const fmt = (v) => (Array.isArray(v) ? JSON.stringify(v) : String(v ?? ''));
+  const diffHtml = Object.keys(diff).map((f) => {
+    const o = fmt(diff[f].old); const n = fmt(diff[f].new);
+    return `<div class="muted" style="font-size:.82rem;margin:2px 0"><b>${escapeHtml(f)}</b>: <span style="opacity:.6;text-decoration:line-through">${escapeHtml(o) || '—'}</span> → <span style="color:var(--text,#cbd5e1)">${escapeHtml(n) || '—'}</span></div>`;
+  }).join('') || '<div class="muted">No field differences.</div>';
+  const isDup = u.kind === 'duplicate';
+  el.innerHTML = `
+    <div class="head">
+      <div>
+        <b>${escapeHtml(t.post_name || '(unknown post)')}</b>
+        <span class="muted"> · ${escapeHtml(t.organisation || '')}${t.level_text ? ' · ' + escapeHtml(t.level_text) : ''}${t.status ? ' · ' + escapeHtml(t.status) : ''}</span>
+        <span class="pill ${isDup ? '' : 'high'}">${isDup ? 'possible duplicate' : 'update'}</span>
+        <span class="muted"> · from ${escapeHtml(u.source_category || u.source_type || 'ingest')}</span>
+      </div>
+      <div class="acts">
+        ${isDup
+          ? '<button class="good" data-act="merge">Merge into existing</button><button data-act="createnew">Create as new</button><button class="bad" data-act="discard">Discard</button>'
+          : '<button class="good" data-act="apply">Apply update</button><button class="bad" data-act="discard">Discard</button>'}
+      </div>
+    </div>
+    <div style="margin:6px 0">${diffHtml}</div>`;
+
+  const del = () => api(`/rest/v1/vacancy_updates?id=eq.${u.id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+  const patchTarget = async (patch) => {
+    const r = await api(`/rest/v1/vacancies?id=eq.${u.target_id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(patch),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + (await r.text()));
+  };
+
+  el.querySelector('[data-act="apply"]')?.addEventListener('click', async () => {
+    try { await patchTarget(u.proposed || {}); await del(); el.remove(); toast('✅ Update applied to the live vacancy'); refreshUpdatesCount(); scheduleGc(); }
+    catch (e) { toast('Apply failed: ' + e.message); }
+  });
+  el.querySelector('[data-act="merge"]')?.addEventListener('click', async () => {
+    try {
+      const sel = ['id', 'status', 'dedup_key', 'match_key', 'source_type', 'source_category', 'source_file_url', ...CONTENT_FIELDS].join(',');
+      const tr = await api(`/rest/v1/vacancies?id=eq.${u.target_id}&select=${sel}`);
+      const [tgt] = await tr.json();
+      if (!tgt) throw new Error('target vacancy not found');
+      const { patch, changed } = smartMerge(tgt, u.proposed || {});
+      if (changed) await patchTarget(patch);
+      await del(); el.remove(); toast(changed ? '✅ Merged into existing vacancy' : 'Nothing new to merge'); refreshUpdatesCount(); scheduleGc();
+    } catch (e) { toast('Merge failed: ' + e.message); }
+  });
+  el.querySelector('[data-act="createnew"]')?.addEventListener('click', async () => {
+    try {
+      const cand = { ...(u.proposed || {}) }; delete cand.id;
+      const r = await api('/rest/v1/vacancies?on_conflict=dedup_key', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation,resolution=ignore-duplicates' },
+        body: JSON.stringify([cand]),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const ins = await r.json().catch(() => []);
+      await del(); el.remove();
+      toast(ins.length ? '✅ Created as a new draft' : 'Already exists — not created');
+      refreshUpdatesCount();
+    } catch (e) { toast('Create failed: ' + e.message); }
+  });
+  el.querySelector('[data-act="discard"]')?.addEventListener('click', async () => {
+    try { await del(); el.remove(); toast('Discarded'); refreshUpdatesCount(); }
+    catch (e) { toast('Discard failed: ' + e.message); }
+  });
   return el;
 }
 

@@ -112,6 +112,7 @@
         <button id="tabIngest" class="active" data-tab="ingest">⬆️ Ingest</button>
         <button id="tabReview" data-tab="review">📝 Review queue <span id="draftCount"></span></button>
         <button id="tabManage" data-tab="manage">🗂 Manage data</button>
+        <button id="tabUpdates" data-tab="updates">🔀 Updates <span id="updatesCount"></span></button>
         <button id="tabFlags" data-tab="flags">⚑ Flags <span id="flagCount"></span></button>
       </div>
 
@@ -234,6 +235,16 @@
         <p class="muted">Readers flag problems on live vacancies. <b>Open</b> in the manager to fix the vacancy yourself, then mark the flag <b>✓ Valid</b> (keep for the record) or <b>Dismiss</b> (invalid / hide). Sorted by endorsements.</p>
         <div id="flagsList"></div>
       </section>
+
+      <!-- UPDATES (pending merges + duplicate suggestions) -->
+      <section id="paneUpdates" class="card hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">Pending updates &amp; duplicates <span id="updatesHdrCount" class="muted"></span></h2>
+          <button id="updRefresh">↻</button>
+        </div>
+        <p class="muted">A re-upload that matches a <b>live</b> vacancy queues here as an <b>update</b> — <b>Apply</b> to enrich the live row with the new data. A re-upload that looks like the same post on a <b>different date</b> shows as a <b>possible duplicate</b> — <b>Merge into existing</b> (update the live row) or <b>Create as new</b> (keep both). Identical re-uploads are skipped automatically.</p>
+        <div id="updatesList"></div>
+      </section>
     </div>
   </div>
 
@@ -241,6 +252,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb5"></script>
-  <script src="admin-ingest.js?v=sb27"></script>
+  <script src="admin-ingest.js?v=sb28"></script>
 </body>
 </html>
