@@ -1460,12 +1460,39 @@ function updateCard(u) {
         <span class="muted"> · from ${escapeHtml(u.source_category || u.source_type || 'ingest')}</span>
       </div>
       <div class="acts">
+        <button data-act="edit">Edit</button>
         ${isDup
           ? '<button class="good" data-act="merge">Merge into existing</button><button data-act="createnew">Create as new</button><button class="bad" data-act="discard">Discard</button>'
           : '<button class="good" data-act="apply">Apply update</button><button class="bad" data-act="discard">Discard</button>'}
       </div>
     </div>
-    <div style="margin:6px 0">${diffHtml}</div>`;
+    <div style="margin:6px 0">${diffHtml}</div>
+    <div class="editor" style="display:none"></div>`;
+
+  const editor = el.querySelector('.editor');
+  let built = false;
+
+  // Lazy editor pre-filled with the record that WOULD be written: for an update
+  // that's the live row with the proposed changes applied; for a duplicate it's
+  // the incoming candidate. Reuses the Manage/Review field + tiers editor.
+  const buildEditor = async () => {
+    if (built) return;
+    let eff;
+    if (isDup) {
+      eff = { ...(u.proposed || {}) };
+    } else {
+      const tr = await api(`/rest/v1/vacancies?id=eq.${u.target_id}&select=*`);
+      const [tgt] = await tr.json().catch(() => []);
+      eff = { ...(tgt || {}), ...(u.proposed || {}) };
+    }
+    editor.innerHTML = `<div class="row">${FIELDS.map(([k, l]) => fieldHtml(k, l, eff)).join('')}${tiersEditorHtml(eff)}</div>`;
+    wireTiersEditor(editor);
+    built = true;
+  };
+
+  // What to write: edited fields (when the editor was opened) layered over the
+  // proposed values so provenance (source_type/file/raw_extraction) is kept.
+  const effective = () => (built ? { ...(u.proposed || {}), ...collectPatch(editor) } : (u.proposed || {}));
 
   const del = () => api(`/rest/v1/vacancy_updates?id=eq.${u.id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
   const patchTarget = async (patch) => {
@@ -1476,8 +1503,16 @@ function updateCard(u) {
     if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + (await r.text()));
   };
 
+  el.querySelector('[data-act="edit"]').onclick = async (e) => {
+    const btn = e.currentTarget; btn.disabled = true;
+    try { await buildEditor(); } finally { btn.disabled = false; }
+    const showing = editor.style.display !== 'none';
+    editor.style.display = showing ? 'none' : 'block';
+    btn.textContent = showing ? 'Edit' : 'Hide';
+  };
+
   el.querySelector('[data-act="apply"]')?.addEventListener('click', async () => {
-    try { await patchTarget(u.proposed || {}); await del(); el.remove(); toast('✅ Update applied to the live vacancy'); refreshUpdatesCount(); scheduleGc(); }
+    try { await patchTarget(effective()); await del(); el.remove(); toast('✅ Update applied to the live vacancy'); refreshUpdatesCount(); scheduleGc(); }
     catch (e) { toast('Apply failed: ' + e.message); }
   });
   el.querySelector('[data-act="merge"]')?.addEventListener('click', async () => {
@@ -1486,14 +1521,15 @@ function updateCard(u) {
       const tr = await api(`/rest/v1/vacancies?id=eq.${u.target_id}&select=${sel}`);
       const [tgt] = await tr.json();
       if (!tgt) throw new Error('target vacancy not found');
-      const { patch, changed } = smartMerge(tgt, u.proposed || {});
-      if (changed) await patchTarget(patch);
-      await del(); el.remove(); toast(changed ? '✅ Merged into existing vacancy' : 'Nothing new to merge'); refreshUpdatesCount(); scheduleGc();
+      // When edited, write the edited fields directly; otherwise smart-merge.
+      if (built) { await patchTarget(effective()); }
+      else { const { patch, changed } = smartMerge(tgt, u.proposed || {}); if (changed) await patchTarget(patch); }
+      await del(); el.remove(); toast('✅ Merged into existing vacancy'); refreshUpdatesCount(); scheduleGc();
     } catch (e) { toast('Merge failed: ' + e.message); }
   });
   el.querySelector('[data-act="createnew"]')?.addEventListener('click', async () => {
     try {
-      const cand = { ...(u.proposed || {}) }; delete cand.id;
+      const cand = { ...(u.proposed || {}), ...(built ? collectPatch(editor) : {}) }; delete cand.id;
       const r = await api('/rest/v1/vacancies?on_conflict=dedup_key', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation,resolution=ignore-duplicates' },
         body: JSON.stringify([cand]),
