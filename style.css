@@ -5061,3 +5061,84 @@ html:not([data-theme="light"]) .premium-credit {
 [data-theme="dark"] .data-table tbody tr:nth-child(even) td {
   background: linear-gradient(180deg, rgba(27, 39, 60, 0.96), rgba(18, 29, 47, 0.96));
 }
+
+/* ===========================================================================
+   MOBILE (<=768px): the homepage table collapses to stacked "LABEL: value" cards
+   via .responsive-table (thead hidden, tr/td block/flex, td::before=data-label).
+   Several DESKTOP rules are not media-scoped and leak in by source order — they
+   force the <table> to min-width:1100px (horizontal scroll) and paint the 3D
+   plank faces on the stacked cells. This section (appended last) overrides them.
+   Scoped to #dataContainer so the admin page is untouched.
+   =========================================================================== */
+@media (max-width: 768px) {
+  /* free the width so the table fits the viewport and stacks cleanly */
+  #dataContainer .data-table,
+  .data-table.responsive-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+  /* neutralise the desktop per-column min-widths */
+  #dataContainer .data-table td[class$="-col"],
+  #dataContainer .data-table th[class$="-col"],
+  #dataContainer .data-table .save-col,
+  #dataContainer .data-table .table-heart-cell,
+  #dataContainer .data-table .table-link-cell {
+    min-width: 0 !important;
+    width: auto !important;
+    white-space: normal !important;
+  }
+  /* drop the right/bottom padding that was reserved for the desktop 3D faces */
+  .table-wrapper { padding: 0 !important; }
+  /* flatten the plank visuals on the stacked cells (no gradient, no 3D faces) */
+  #dataContainer .data-table tbody td {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  #dataContainer .data-table tbody td::before,
+  #dataContainer .data-table tbody td::after {
+    display: none !important;
+  }
+}
+
+/* ===========================================================================
+   TOUCH: disable the 3D-plank hover so a tap doesn't lift/skew a row or card.
+   id-scoped (#dataContainer) + !important to beat the desktop hover gradient,
+   which is itself declared !important. (hover: none) = phones/tablets at any
+   width; (max-width: 768px) is a fallback for narrow windows.
+   =========================================================================== */
+@media (hover: none), (max-width: 768px) {
+  /* table rows */
+  #dataContainer.view-table .data-table tbody tr:hover {
+    transform: none !important;
+    filter: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  #dataContainer.view-table .data-table tbody tr:hover td {
+    background: transparent !important;
+    color: inherit !important;
+    text-shadow: none !important;
+  }
+  #dataContainer.view-table .data-table tbody tr:hover td::before,
+  #dataContainer.view-table .data-table tbody tr:hover td::after,
+  #dataContainer.view-table .data-table tbody tr:hover td:last-child::after {
+    opacity: 0 !important;
+  }
+  /* don't recolour the Days-Left text on tap */
+  #dataContainer.view-table .data-table tbody tr:hover .days-pill-safe,
+  #dataContainer.view-table .data-table tbody tr:hover .days-pill-closing {
+    color: inherit !important;
+    font-weight: inherit !important;
+  }
+  /* cards */
+  #dataContainer.view-card .job-card:hover {
+    transform: none !important;
+    filter: none !important;
+  }
+  #dataContainer.view-card .job-card:hover::before,
+  #dataContainer.view-card .job-card:hover::after {
+    opacity: 0 !important;
+  }
+}
