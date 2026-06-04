@@ -17,7 +17,10 @@
   >
 
   <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
-  <link rel="stylesheet" href="style.css?v=ms16">
+  <!-- Desktop: latest styles. Mobile (<=768px): the 2-days-ago (June-2) stylesheet,
+       a known-good stacked layout, loaded via media attribute so only one applies. -->
+  <link rel="stylesheet" href="style.css?v=ms16" media="(min-width: 768.01px)">
+  <link rel="stylesheet" href="style-legacy.css?v=1" media="(max-width: 768px)">
   <link rel="stylesheet" href="navbar.css">
 
   <script src="https://unpkg.com/lucide@latest"></script>
