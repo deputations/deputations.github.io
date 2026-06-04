@@ -2203,6 +2203,13 @@ select:disabled {
     color: var(--text-primary);
   }
 
+  /* The toggle has a dark gradient background in BOTH themes, so in light theme
+     the default dark text is unreadable — force white font (and chevron). */
+  [data-theme="light"] .mobile-filter-toggle,
+  [data-theme="light"] .mobile-filter-toggle-label {
+    color: #ffffff;
+  }
+
   .mobile-filter-chevron {
     transition: transform 0.25s ease;
   }
