@@ -4583,4 +4583,23 @@ html:not([data-theme="light"]) .premium-credit {
   /* keep the pill/badge/button text tidy at the new scale */
   #dataContainer .responsive-table .days-pill { font-weight: 700; letter-spacing: 0; }
   #dataContainer .responsive-table .source-badge { font-weight: 600; letter-spacing: 0.01em; }
+
+  /* Bookmark heart: give the button + icon firm sizes so the flex min-width:0
+     shrink (which was collapsing the svg to ~1px) can't hide it. 40px touch target. */
+  #dataContainer .responsive-table td.table-heart-cell .table-heart-btn {
+    flex: 0 0 auto !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: none !important;
+    height: 42px !important;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+  }
+  #dataContainer .responsive-table td.table-heart-cell .table-heart-btn svg {
+    width: 24px !important;
+    height: 24px !important;
+    flex: 0 0 auto !important;
+    max-width: none !important;
+  }
 }
