@@ -4543,4 +4543,44 @@ html:not([data-theme="light"]) .premium-credit {
   #btnCardView { display: none !important; }
   #dataContainer .cards-grid { display: none !important; }
   #dataContainer .table-wrapper { display: block !important; }
+
+  /* ---- modern typography for the stacked mobile cards ----
+     give a real type hierarchy: prominent Post-Name title, refined letter-spaced
+     labels, and crisper weighted values with tabular numerals. */
+  #dataContainer .responsive-table tr {
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  /* labels: small, wide-tracked micro-caps */
+  #dataContainer .responsive-table td::before {
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif !important;
+    font-size: 0.64rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.13em !important;
+    line-height: 1.4 !important;
+    align-self: center;
+  }
+  /* values: medium-bold, slight negative tracking, lined-up numerals */
+  #dataContainer .responsive-table td {
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif !important;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: -0.006em;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+    align-items: center;
+  }
+  /* Post Name = the card's title: large, tight, Sora, prominent */
+  #dataContainer .responsive-table td.post-col { align-items: center; }
+  #dataContainer .responsive-table td.post-col > * {
+    font-family: "Sora", "Plus Jakarta Sans", sans-serif !important;
+    font-size: 1.2rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.022em !important;
+    line-height: 1.18 !important;
+    text-align: right;
+  }
+  /* keep the pill/badge/button text tidy at the new scale */
+  #dataContainer .responsive-table .days-pill { font-weight: 700; letter-spacing: 0; }
+  #dataContainer .responsive-table .source-badge { font-weight: 600; letter-spacing: 0.01em; }
 }
