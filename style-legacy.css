@@ -4481,3 +4481,59 @@ html:not([data-theme="light"]) .premium-credit {
   background: rgba(2, 132, 199, 0.07);
   border-color: rgba(2, 132, 199, 0.18);
 }
+
+/* ===========================================================================
+   MOBILE FIT-TO-SCREEN (this whole sheet is loaded only at <=768px via the
+   <link media> attribute). Two goals:
+   1) make the stacked table actually fit the padded container (it was rendering
+      as display:table at full viewport width -> ~16px right overflow, pushing
+      values off-screen);
+   2) remove the card-view toggle on mobile and always show the stacked table.
+   =========================================================================== */
+@media (max-width: 768px) {
+  /* The <table> must be a block so width:100% honours its padded parent (not the
+     viewport). tbody/tr already become block via .responsive-table. */
+  #dataContainer .data-table,
+  .data-table.responsive-table {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
+  #dataContainer .data-table tbody,
+  #dataContainer .data-table tr {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  /* value side: allow it to shrink and wrap; never overflow the card */
+  #dataContainer .responsive-table td { box-sizing: border-box; gap: 0.6rem; }
+  #dataContainer .responsive-table td::before { flex: 0 0 38%; max-width: 38%; }
+  #dataContainer .responsive-table td > * {
+    min-width: 0;
+    max-width: 62%;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+  }
+  /* Notification cell: let the button + EN source badge wrap and fit, not run off */
+  #dataContainer .responsive-table td.table-link-cell {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  #dataContainer .responsive-table td .table-link-btn,
+  #dataContainer .responsive-table td .source-badge,
+  #dataContainer .responsive-table td .table-source-line {
+    width: auto !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow-wrap: break-word;
+  }
+
+  /* Remove the card view on mobile: hide the toggle and always show the table */
+  #btnCardView { display: none !important; }
+  #dataContainer .cards-grid { display: none !important; }
+  #dataContainer .table-wrapper { display: block !important; }
+}
