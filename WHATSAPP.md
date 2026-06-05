@@ -130,22 +130,43 @@ each. See `.claude/skills/post-whatsapp/SKILL.md`.
 ## C) Admin "Send WhatsApp Update" button — `scripts/whatsapp_bridge.py`
 
 A one-click button in the admin **Manage data** tab. Because a web page can't post
-to a Channel, the button calls a small **local helper** that holds a logged-in
+to a Channel, the button calls a small **local helper** that drives a logged-in
 WhatsApp Web session and does the posting.
 
-### Setup & run
+> **Important — the channel only shows on the owner/admin's established session.**
+> A freshly-linked WhatsApp Web device (an isolated browser the helper launches on
+> its own) does **not** show the channel at all. So the helper must attach to a
+> **real browser already logged into a channel-admin session** — done via CDP.
+> In practice: a WhatsApp **Business** account made an **admin** of the channel,
+> kept logged in, is the dedicated posting session.
+
+### Setup & run (CDP — the working path)
+Easiest: double-click **`scripts/start-whatsapp-poster.cmd`** — it launches Edge
+with the debug port + a dedicated profile and starts the bridge in CDP mode.
+
+Manual equivalent:
+```powershell
+# 1) Launch Edge with a DEDICATED profile + debug port (a non-default --user-data-dir
+#    is REQUIRED — modern Chrome/Edge block debugging on the default profile).
+& "$env:ProgramFiles (x86)\Microsoft\Edge\Application\msedge.exe" `
+    --remote-debugging-port=9222 --user-data-dir="$env:USERPROFILE\edge-wa-business"
+#    → in that window, log into web.whatsapp.com with the channel-ADMIN account and
+#      confirm the channel shows (scan the QR once; the profile persists).
+# 2) Start the bridge attached to it:
+$env:WA_USE_CDP = "1"      # or WA_CDP_URL=http://127.0.0.1:9222
+python scripts/whatsapp_bridge.py
 ```
-python scripts/whatsapp_watcher.py --login     # once, scan the QR
-python scripts/whatsapp_bridge.py              # leave running while you work
-```
-The bridge listens on `http://127.0.0.1:8787` and shares the watcher's browser
-profile (so the one `--login` covers both). Then in admin → **Manage data**, click
-**📣 Send WhatsApp Update**: it checks the helper, shows how many vacancies are
-pending, asks you to confirm, and posts them — marking each in the ledger.
+Then in admin → **Manage data**, click **📣 Send WhatsApp Update**: it checks the
+helper, shows how many vacancies are pending, asks you to confirm, posts them via
+your real browser, and marks each in the ledger.
+
+(Without `WA_USE_CDP`, the bridge falls back to launching its own isolated browser —
+but that session won't show the channel, so CDP is the way.)
 
 ### How the button behaves
 - **Helper not running** → toast tells you to start `whatsapp_bridge.py`.
-- **Not logged in** → toast tells you to run `whatsapp_watcher.py --login`.
+- **Not logged in** → log into web.whatsapp.com in the CDP browser (the Edge
+  window the launcher opened), with the channel-admin account.
 - **Nothing new** → "Nothing new to post."
 - **N pending** → confirm prompt, then posts and reports `Posted N`.
 
@@ -154,6 +175,8 @@ pending, asks you to confirm, and posts them — marking each in the ledger.
 `POST /post` → `{posted, failed, count, requested}`.
 
 ### Config / security
+- `WA_USE_CDP=1` (attach to your real browser via `WA_CDP_URL`, default
+  `http://127.0.0.1:9222`) — the recommended/working mode.
 - `WA_BRIDGE_PORT` (default 8787), `WA_BRIDGE_SOURCE` (default `auto`); reuses
   `WA_CHANNEL_NAME` / `WA_PROFILE_DIR` / `WA_HEADLESS`.
 - Bound to `127.0.0.1` only. CORS is limited to the admin origins (the deployed

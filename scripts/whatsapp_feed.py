@@ -163,6 +163,10 @@ def normalize_from_json(row: dict) -> dict:
         "days_left": days_left,
         "approved": approved,
         "active": (days_left is not None and days_left >= 0) and status.lower() != "inactive",
+        "id": "",  # JSON has no uuid
+        # Collision-proof ledger key: Vacancy_IDs are NOT unique in the data, so
+        # combine with the deadline + post name.
+        "key": f"{norm(row.get('Vacancy_ID'))}|{last_iso}|{norm(row.get('Post_Name'))}",
     }
 
 
@@ -186,6 +190,11 @@ def normalize_from_supabase(row: dict) -> dict:
         "approved": norm(row.get("status")).lower() == "approved",
         # Active = approved AND not past the deadline.
         "active": days_left is not None and days_left >= 0,
+        "id": norm(row.get("id")),  # Supabase uuid — globally unique
+        # Prefer the uuid; fall back to a collision-proof composite (Vacancy_IDs
+        # are NOT unique in the data, so combine with deadline + post name).
+        "key": norm(row.get("id"))
+        or f"{norm(row.get('vacancy_id'))}|{last_iso}|{norm(row.get('post_name'))}",
     }
 
 
@@ -302,21 +311,22 @@ def load_normalized(source: str):
     return [normalize_from_json(r) for r in load_json_rows()], "json"
 
 
-def all_known_ids(source: str):
-    """Every Vacancy_ID we can see anywhere — used to seed the ledger so no
-    historical row (any status) can ever post. Union of JSON + Supabase."""
-    ids = set()
+def all_known_keys(source: str):
+    """Every ledger KEY we can see anywhere — used to seed so no historical row
+    can ever post. Union of JSON (composite keys) + Supabase (uuid keys); both
+    forms are seeded so a later source switch never re-posts."""
+    keys = set()
     for r in load_json_rows():
-        vid = norm(r.get("Vacancy_ID"))
-        if vid:
-            ids.add(vid)
+        k = normalize_from_json(r).get("key", "")
+        if k.strip("|"):
+            keys.add(k)
     if source in ("auto", "supabase"):
         raw = fetch_supabase_approved()
         for r in (raw or []):
-            vid = norm(r.get("vacancy_id"))
-            if vid:
-                ids.add(vid)
-    return ids
+            k = normalize_from_supabase(r).get("key", "")
+            if k.strip("|"):
+                keys.add(k)
+    return keys
 
 
 # ---------------------------------------------------------------------------
@@ -350,13 +360,14 @@ def compute_pending(rows, ledger):
     out = []
     seen = set()
     for nrow in rows:
-        vid = nrow.get("vacancy_id")
         if not is_active_approved(nrow):
             continue
-        if vid in posted or vid in seen:
+        key = nrow.get("key") or nrow.get("vacancy_id")
+        if key in posted or key in seen:
             continue
-        seen.add(vid)
-        out.append({"vacancy_id": vid, "message": format_message(nrow)})
+        seen.add(key)
+        out.append({"vacancy_id": nrow.get("vacancy_id"), "key": key,
+                    "message": format_message(nrow)})
     return out
 
 
@@ -366,7 +377,7 @@ def compute_pending(rows, ledger):
 def cmd_seed(source: str) -> int:
     ledger = load_ledger()
     posted = ledger.setdefault("posted", {})
-    ids = all_known_ids(source)
+    ids = all_known_keys(source)
     added = 0
     for vid in ids:
         if vid not in posted:

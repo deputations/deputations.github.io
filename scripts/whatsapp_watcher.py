@@ -76,12 +76,19 @@ WA = {
         'div[contenteditable="true"][data-tab="3"]',
         'div[role="textbox"][contenteditable="true"]',
     ],
-    # the message compose box at the bottom of an open chat/channel
+    # the left-rail "Channels" nav button (switches to the Channels list)
+    "channels_nav": [
+        'button[aria-label="Channels"]',
+        'header [aria-label="Channels"]',
+        '[aria-label="Channels"]',
+    ],
+    # the message compose box at the bottom of an open chat/channel.
+    # Scoped to <footer> so it never matches the search box (also contenteditable).
     "compose_box": [
         'footer div[contenteditable="true"][data-tab="10"]',
+        'footer div[contenteditable="true"][data-lexical-editor="true"]',
         'footer div[contenteditable="true"]',
-        'div[aria-label="Type a message"]',
-        'div[contenteditable="true"][role="textbox"]',
+        'div[aria-label^="Type a message"]',
     ],
     # optional explicit send button (we try Enter first)
     "send_button": ['button[aria-label="Send"]', 'span[data-icon="send"]'],
@@ -146,9 +153,43 @@ def wait_logged_in(page, timeout_ms: int = 40000) -> bool:
 # ---------------------------------------------------------------------------
 # Open the channel
 # ---------------------------------------------------------------------------
+def _on_target_channel(page, name) -> bool:
+    """Is the open conversation header showing our channel name?"""
+    try:
+        return page.locator(f'header :text("{name}")').first.is_visible()
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def open_channel(page) -> bool:
     """Open the target channel inside web.whatsapp.com. Returns True on success."""
     name = WA["channel_name"]
+
+    # Already open? (common when attached to the real Chrome via CDP, where the
+    # user keeps the channel open). Only accept it if the header is OUR channel.
+    if _first(page, WA["compose_box"], timeout=2500) and _on_target_channel(page, name):
+        log(f"Channel '{name}' already open.")
+        return True
+
+    # Strategy 0: click the left-rail Channels nav, then the channel by name.
+    # This is the reliable path in a real, fully-synced WhatsApp session.
+    nav = _first(page, WA["channels_nav"], timeout=4000)
+    if nav and name:
+        try:
+            nav.click()
+            page.wait_for_timeout(1500)
+            item = page.locator(
+                f'span[title="{name}"], span[title="{name} Channel"], '
+                f'[aria-label="{name}"], [aria-label="{name} Channel"]'
+            ).first
+            item.wait_for(state="visible", timeout=6000)
+            item.click()
+            page.wait_for_timeout(1500)
+            if _first(page, WA["compose_box"], timeout=6000):
+                log(f"Opened channel '{name}' via Channels nav.")
+                return True
+        except Exception as exc:  # noqa: BLE001
+            log(f"Channels-nav open failed ({exc}); trying search.")
 
     # Strategy A: search by name and click the first matching result.
     search = _first(page, WA["search_box"], timeout=6000)
@@ -223,29 +264,36 @@ def send_message(page, message: str, verify_snippet: str) -> bool:
         log(f"Typing/sending failed ({exc}).")
         return False
 
-    # Verify: a distinctive snippet (the post name) now appears in the thread.
+    # Verify: success = the compose box clears after a send (most reliable for
+    # channels), with the snippet appearing in the thread as a fallback.
+    box2 = _first(page, WA["compose_box"], timeout=3000)
+    for _ in range(10):
+        try:
+            if box2 is not None and not (box2.inner_text() or "").strip():
+                log("Send confirmed (compose box cleared).")
+                return True
+        except Exception:  # noqa: BLE001
+            pass
+        page.wait_for_timeout(500)
     try:
         snippet = (verify_snippet or "").strip()[:40]
         if snippet:
-            found = page.locator(
-                f'div.message-out :text("{snippet}"), '
-                f'div[data-id] :text("{snippet}")'
-            ).last
-            found.wait_for(state="visible", timeout=6000)
-        log("Send confirmed on-screen.")
-        return True
+            page.locator(f'[data-id]:has-text("{snippet}")').last.wait_for(
+                state="visible", timeout=4000)
+            log("Send confirmed (snippet in thread).")
+            return True
     except Exception:  # noqa: BLE001
-        # Couldn't positively confirm; treat as failure so we don't mark posted.
-        log("Could not confirm the message appeared; NOT marking as posted.")
-        return False
+        pass
+    log("Could not confirm the message appeared; NOT marking as posted.")
+    return False
 
 
 # ---------------------------------------------------------------------------
 # Ledger helper (reuse the core)
 # ---------------------------------------------------------------------------
-def mark_posted(vacancy_id: str) -> None:
+def mark_posted(key: str) -> None:
     ledger = feed.load_ledger()
-    ledger.setdefault("posted", {})[vacancy_id] = {
+    ledger.setdefault("posted", {})[key] = {
         "posted_at": feed._now_iso(), "seeded": False
     }
     feed.save_ledger(ledger)
@@ -287,8 +335,9 @@ def post_pending(page, pending, dry_run: bool = False) -> dict:
         return result
     for item in pending:
         vid, msg = item["vacancy_id"], item["message"]
+        key = item.get("key") or vid
         if send_message(page, msg, _verify_snippet(msg)):
-            mark_posted(vid)
+            mark_posted(key)
             result["posted"].append(vid)
             log(f"Posted {vid} ({len(result['posted'])}/{len(pending)}).")
             page.wait_for_timeout(2500)  # be gentle between messages

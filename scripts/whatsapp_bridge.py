@@ -47,6 +47,13 @@ except ImportError:
 PORT = int(os.environ.get("WA_BRIDGE_PORT", "8787"))
 SOURCE = os.environ.get("WA_BRIDGE_SOURCE", "auto")
 
+# Attach to your REAL Chrome (where WhatsApp + the channel already work) instead
+# of launching an isolated browser. Set WA_CDP_URL=http://127.0.0.1:9222 after
+# starting Chrome with --remote-debugging-port=9222 (WA_USE_CDP=1 uses that default).
+CDP_URL = os.environ.get("WA_CDP_URL", "")
+if not CDP_URL and os.environ.get("WA_USE_CDP") == "1":
+    CDP_URL = "http://127.0.0.1:9222"
+
 # Only these page origins may call the bridge. The server binds to 127.0.0.1, so
 # this is the surface a local web page could reach. Requiring an allow-listed
 # origin (plus the JSON preflight on /post) blocks a random site from triggering
@@ -63,18 +70,47 @@ for _o in (os.environ.get("WA_BRIDGE_ORIGINS", "") or "").split(","):
     if _o:
         ALLOWED_ORIGINS.add(_o)
 
-_browser = {"pw": None, "ctx": None, "page": None}
+_browser = {"pw": None, "browser": None, "ctx": None, "page": None, "cdp": False}
 
 
 def log(msg: str) -> None:
     print(f"[whatsapp_bridge] {msg}", file=sys.stderr, flush=True)
 
 
+def _find_whatsapp_page(browser):
+    """Find an existing web.whatsapp.com tab across all contexts, else None."""
+    for c in browser.contexts:
+        for pg in c.pages:
+            if "web.whatsapp.com" in (pg.url or ""):
+                return c, pg
+    return (browser.contexts[0] if browser.contexts else None), None
+
+
 def ensure_browser():
-    """Lazily launch (and reuse) the persistent logged-in browser/page."""
+    """Lazily get a logged-in WhatsApp page. In CDP mode, attach to your real
+    Chrome and reuse its WhatsApp tab; otherwise launch an isolated browser."""
     if _browser["page"] is not None:
         return _browser["page"]
     pw = sync_playwright().start()
+
+    if CDP_URL:
+        try:
+            browser = pw.chromium.connect_over_cdp(CDP_URL)
+        except Exception as exc:  # noqa: BLE001
+            pw.stop()
+            raise RuntimeError(
+                f"Could not attach to Chrome at {CDP_URL}. Start Chrome with "
+                f"--remote-debugging-port=9222 first. ({exc})")
+        ctx, page = _find_whatsapp_page(browser)
+        if ctx is None:
+            ctx = browser.new_context()
+        if page is None:
+            page = ctx.new_page()
+            page.goto(ww.WA["url"], wait_until="domcontentloaded")
+        _browser.update(pw=pw, browser=browser, ctx=ctx, page=page, cdp=True)
+        log(f"Attached to your Chrome via CDP ({CDP_URL}); using its WhatsApp tab.")
+        return page
+
     pdir = ww.profile_dir()
     pdir.mkdir(parents=True, exist_ok=True)
     headless = os.environ.get("WA_HEADLESS") == "1"
@@ -86,20 +122,34 @@ def ensure_browser():
     )
     page = ctx.pages[0] if ctx.pages else ctx.new_page()
     page.goto(ww.WA["url"], wait_until="domcontentloaded")
-    _browser.update(pw=pw, ctx=ctx, page=page)
-    log("Browser ready.")
+    _browser.update(pw=pw, browser=None, ctx=ctx, page=page, cdp=False)
+    log("Launched isolated browser.")
     return page
+
+
+def ensure_logged_in(page) -> bool:
+    """Patiently confirm WhatsApp Web is logged in; if the tab has drifted into a
+    non-chat view, reload it once and re-check. Returns True if logged in."""
+    if ww.wait_logged_in(page, timeout_ms=30000):
+        return True
+    try:
+        page.goto(ww.WA["url"], wait_until="domcontentloaded")
+    except Exception:  # noqa: BLE001
+        pass
+    return ww.wait_logged_in(page, timeout_ms=40000)
 
 
 def shutdown_browser():
     try:
-        if _browser["ctx"]:
+        # In CDP mode we're attached to the user's own browser — do NOT close any
+        # context/browser; just stop our Playwright driver (disconnects cleanly).
+        if not _browser["cdp"] and _browser["ctx"]:
             _browser["ctx"].close()
         if _browser["pw"]:
             _browser["pw"].stop()
     except Exception:  # noqa: BLE001
         pass
-    _browser.update(pw=None, ctx=None, page=None)
+    _browser.update(pw=None, browser=None, ctx=None, page=None, cdp=False)
 
 
 def get_pending():
@@ -144,8 +194,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/health":
             try:
                 page = ensure_browser()
-                # Patient check — a cold browser needs ~10-15s before the pane shows.
-                return self._json(200, {"ok": True, "logged_in": ww.wait_logged_in(page)})
+                # Patient check (+ one reload if the tab drifted).
+                return self._json(200, {"ok": True, "logged_in": ensure_logged_in(page)})
             except Exception as exc:  # noqa: BLE001
                 return self._json(200, {"ok": True, "logged_in": False, "error": str(exc)})
         if path == "/pending":
@@ -169,7 +219,7 @@ class Handler(BaseHTTPRequestHandler):
             pass
         try:
             page = ensure_browser()
-            if not ww.wait_logged_in(page):
+            if not ensure_logged_in(page):
                 return self._json(409, {
                     "error": "not_logged_in",
                     "message": "WhatsApp Web isn't logged in. Run: "
@@ -195,8 +245,9 @@ def main():
             pass
 
     srv = HTTPServer(("127.0.0.1", PORT), Handler)
+    mode = f"CDP→{CDP_URL}" if CDP_URL else "isolated browser"
     log(f"listening on http://127.0.0.1:{PORT}  (source={SOURCE}, "
-        f"channel='{ww.WA['channel_name']}')")
+        f"channel='{ww.WA['channel_name']}', mode={mode})")
     log("Leave this running. The admin 'Send WhatsApp Update' button calls it. "
         "Ctrl-C to stop.")
     try:
