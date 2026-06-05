@@ -75,7 +75,7 @@
         radial-gradient(circle at 95% 12%, rgba(139,92,246,.24), transparent 30rem),
         radial-gradient(circle at 45% 105%, rgba(245,158,11,.13), transparent 30rem),
         linear-gradient(135deg, var(--bg), var(--bg-2) 55%, var(--bg));
-      overflow-x: hidden;
+      overflow-x: clip; /* clip ≠ hidden: doesn't create a scroll container, so position:sticky works */
     }
 
     body::before {
