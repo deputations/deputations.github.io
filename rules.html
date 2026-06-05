@@ -1654,7 +1654,7 @@
                 <div class="metric-grid">
                   <div class="metric"><strong id="metricRules">20</strong><span>rules and circular references</span></div>
                   <div class="metric"><strong>15+</strong><span>topic filters for faster lookup</span></div>
-                  <div class="metric"><strong>2010</strong><span>master OM highlighted first</span></div>
+                  <div class="metric"><strong>2024</strong><span>master OM highlighted first</span></div>
                   <div class="metric"><strong>PDF</strong><span>source links attached per entry</span></div>
                 </div>
               </div>
@@ -1690,11 +1690,6 @@
 
         <section id="search" tabindex="-1" class="section search-panel glass">
           <div class="search-mode-header">
-            <div>
-              <span class="section-eyebrow">⌕ Rule search</span>
-              <h2 class="section-title"><span class="gradient-text-app">Search rules, summaries and extracted PDF text</span></h2>
-              <p class="section-description">This is now the main default view. Search terms are matched against visible rule metadata and any full PDF text saved inside each rule object.</p>
-            </div>
             <div class="search-mode-actions">
               <button class="global-detail-toggle" id="searchExpandAll" type="button" aria-label="Show details for all" title="Show details for all">+</button>
               <button class="global-detail-toggle" id="searchCollapseAll" type="button" aria-label="Hide details for all" title="Hide details for all">−</button>
@@ -3148,8 +3143,22 @@ Keywords: deputation, foreign service, central government, DoPT, CSS, Central St
           showOnly(targetId);
         }, true);
 
-        const initial = normalizeTarget(window.location.hash || "search");
-        showOnly(initial, { updateHash: false, instant: true, focus: false });
+        const hashVal = window.location.hash ? normalizeTarget(window.location.hash) : "";
+        if (!hashVal) {
+          const content = $(".content");
+          if (content) {
+            content.classList.add("single-view");
+            $$(".content > .section").forEach(function (section) {
+              const visible = section.id === "hero" || section.id === "search";
+              section.classList.toggle("is-visible", visible);
+              section.setAttribute("aria-hidden", visible ? "false" : "true");
+            });
+            setActiveNav("search");
+          }
+          window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        } else {
+          showOnly(hashVal, { updateHash: false, instant: true, focus: false });
+        }
       }
 
       document.addEventListener("DOMContentLoaded", function () {
