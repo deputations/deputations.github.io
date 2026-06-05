@@ -204,13 +204,23 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"count": len(pending), "items": pending, "source": used})
             except Exception as exc:  # noqa: BLE001
                 return self._json(500, {"error": str(exc)})
+        if path == "/closing":  # preview of the daily "closing tomorrow" digest
+            try:
+                rows, used = feed.load_normalized(SOURCE)
+                target = feed.tomorrow_iso()
+                closing = feed.closing_on(rows, target)
+                msg = feed.format_closing_digest(closing, target) if closing else ""
+                return self._json(200, {"target": target, "count": len(closing),
+                                        "message": msg, "source": used})
+            except Exception as exc:  # noqa: BLE001
+                return self._json(500, {"error": str(exc)})
         return self._json(404, {"error": "not found"})
 
     def do_POST(self):
         path = self.path.split("?", 1)[0]
-        if path != "/post":
+        if path not in ("/post", "/post-closing"):
             return self._json(404, {"error": "not found"})
-        # Drain any body (button sends "{}").
+        # Drain any body (callers send "{}").
         try:
             n = int(self.headers.get("Content-Length", "0") or "0")
             if n:
@@ -222,9 +232,11 @@ class Handler(BaseHTTPRequestHandler):
             if not ensure_logged_in(page):
                 return self._json(409, {
                     "error": "not_logged_in",
-                    "message": "WhatsApp Web isn't logged in. Run: "
-                               "python scripts/whatsapp_watcher.py --login",
+                    "message": "WhatsApp Web isn't logged in — log into the CDP "
+                               "browser with the channel-admin account.",
                 })
+            if path == "/post-closing":
+                return self._post_closing(page)
             pending, _ = get_pending()
             if not pending:
                 return self._json(200, {"posted": [], "failed": [], "count": 0,
@@ -235,6 +247,29 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, res)
         except Exception as exc:  # noqa: BLE001
             return self._json(500, {"error": str(exc)})
+
+    def _post_closing(self, page):
+        """Post the daily 'closing tomorrow' digest (one message). Idempotent per
+        target date so the 9pm task never double-posts."""
+        rows, _ = feed.load_normalized(SOURCE)
+        target = feed.tomorrow_iso()
+        closing = feed.closing_on(rows, target)
+        ledger = feed.load_ledger()
+        digests = ledger.setdefault("digests", {})
+        if target in digests and digests[target].get("count", 0) > 0:
+            return self._json(200, {"posted": False, "skipped": True,
+                                    "target": target, "message": "already posted today"})
+        if not closing:
+            return self._json(200, {"posted": False, "count": 0, "target": target,
+                                    "message": "nothing closing tomorrow"})
+        msg = feed.format_closing_digest(closing, target)
+        if not ww.open_channel(page):
+            return self._json(200, {"posted": False, "error": "could not open channel"})
+        if ww.send_message(page, msg, "Closing Tomorrow"):
+            digests[target] = {"posted_at": feed._now_iso(), "count": len(closing)}
+            feed.save_ledger(ledger)
+            return self._json(200, {"posted": True, "count": len(closing), "target": target})
+        return self._json(200, {"posted": False, "error": "send failed", "target": target})
 
 
 def main():

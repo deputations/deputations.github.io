@@ -30,7 +30,7 @@ import json
 import os
 import re
 import sys
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import quote_plus
 
@@ -161,6 +161,7 @@ def normalize_from_json(row: dict) -> dict:
         "last_date_display": norm(row.get("Last_Date_To_Apply_Display")) or to_display_date(last_iso),
         "official_link": normalize_url(row.get("Official_Notification_Link")),
         "days_left": days_left,
+        "last_date_iso": last_iso,
         "approved": approved,
         "active": (days_left is not None and days_left >= 0) and status.lower() != "inactive",
         "id": "",  # JSON has no uuid
@@ -187,6 +188,7 @@ def normalize_from_supabase(row: dict) -> dict:
         "last_date_display": to_display_date(last_iso),
         "official_link": normalize_url(row.get("official_notification_link")),
         "days_left": days_left,
+        "last_date_iso": last_iso,
         "approved": norm(row.get("status")).lower() == "approved",
         # Active = approved AND not past the deadline.
         "active": days_left is not None and days_left >= 0,
@@ -241,6 +243,73 @@ def format_message(nrow: dict) -> str:
 
     link = f"{SITE_BASE}/?search={quote_plus(post)}"
     lines += ["", f"\U0001F517 {link}", "", "#Deputation #GoI"]
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Daily "closing tomorrow" digest — one message listing every active+approved
+# vacancy whose last date to apply is a given day (used by the 9pm schedule).
+# ---------------------------------------------------------------------------
+def tomorrow_iso() -> str:
+    return (date.today() + timedelta(days=1)).isoformat()
+
+
+def closing_on(rows, target_iso: str):
+    """Active+approved rows whose last date to apply == target_iso, deduped by
+    ledger key, sorted by post name."""
+    out, seen = [], set()
+    for nrow in rows:
+        if not is_active_approved(nrow):
+            continue
+        if nrow.get("last_date_iso") != target_iso:
+            continue
+        key = nrow.get("key") or nrow.get("vacancy_id")
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(nrow)
+    out.sort(key=lambda r: (r.get("post_name") or "").lower())
+    return out
+
+
+def _short_place(organisation: str, ministry: str) -> str:
+    s = norm(organisation) or norm(ministry)
+    m = re.search(r"\(([^)]{2,9})\)\s*$", s)         # trailing acronym, e.g. (IGIDR)
+    if m and re.search(r"[A-Z]", m.group(1)):
+        return m.group(1).strip()
+    return re.sub(r"^(the\s+)?(ministry|department)\s+of\s+", "", s, flags=re.I)
+
+
+def _short_level(nrow: dict) -> str:
+    nums = re.findall(r"\d+", nrow.get("eligibility_text") or "")
+    if len(nums) >= 2 and nums[0] != nums[-1]:
+        return f"L{nums[0]}–{nums[-1]}"      # L13–14
+    if nums:
+        return f"L{nums[0]}"
+    m = re.search(r"\d+", nrow.get("level_text") or "")
+    return f"L{m.group()}" if m else ""
+
+
+def format_closing_digest(rows, target_iso: str) -> str:
+    n = len(rows)
+    lines = [f"⏰ *Closing Tomorrow · {to_display_date(target_iso)}* "
+             f"({n} post{'s' if n != 1 else ''})", ""]
+    for i, nrow in enumerate(rows, 1):
+        post = nrow.get("post_name") or "Deputation post"
+        place = _short_place(nrow.get("organisation"), nrow.get("ministry"))
+        city = (nrow.get("location_label") or "").split(",")[0].strip()
+        if city.lower() in ("not specified", "na", "n/a", "-", ""):
+            city = ""
+        level = _short_level(nrow)
+        meta = ", ".join(b for b in (place, city) if b)
+        line = f"{i}. *{post}*"
+        if meta:
+            line += f" — {meta}"
+        if level:
+            line += f" ({level})"
+        lines.append(line)
+        lines.append(f"   \U0001F517 {SITE_BASE}/?search={quote_plus(post)}")
+    lines += ["", "#Deputation #GoI"]
     return "\n".join(lines)
 
 
@@ -414,6 +483,18 @@ def cmd_mark_posted(ids) -> int:
     return 0
 
 
+def cmd_closing(source: str, target_iso: str) -> int:
+    rows, used = load_normalized(source)
+    closing = closing_on(rows, target_iso)
+    print(f"[whatsapp_feed] source={used} target={target_iso} closing={len(closing)}",
+          file=sys.stderr)
+    if not closing:
+        print(f"(no active+approved vacancies close on {target_iso})")
+        return 0
+    print(format_closing_digest(closing, target_iso))
+    return 0
+
+
 def main(argv=None) -> int:
     # Make emoji-bearing output safe on the Windows console.
     for stream in (sys.stdout, sys.stderr):
@@ -430,6 +511,8 @@ def main(argv=None) -> int:
                        help="Print JSON of approved+active rows not yet posted (default).")
     group.add_argument("--mark-posted", nargs="+", metavar="VACANCY_ID",
                        help="Append IDs to the ledger after a confirmed send.")
+    group.add_argument("--closing", nargs="?", const="", metavar="YYYY-MM-DD",
+                       help="Preview the 'closing tomorrow' digest (optional explicit date).")
     parser.add_argument("--source", choices=["auto", "supabase", "json"], default="auto",
                         help="Where to read vacancies from (default: auto).")
     args = parser.parse_args(argv)
@@ -438,6 +521,8 @@ def main(argv=None) -> int:
         return cmd_seed(args.source)
     if args.mark_posted:
         return cmd_mark_posted(args.mark_posted)
+    if args.closing is not None:
+        return cmd_closing(args.source, args.closing or tomorrow_iso())
     return cmd_list_pending(args.source)
 
 

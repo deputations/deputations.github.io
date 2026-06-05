@@ -190,6 +190,35 @@ The button is a *manual on-demand* trigger; the `--watch` mode (section A) is th
 fully-automatic alternative. They share the same feed + ledger, so they're safe to
 mix (no double-posts).
 
+## D) Daily "closing tomorrow" digest — `scripts/whatsapp_closing_digest.py`
+
+One message a day listing every active+approved vacancy whose **last date to apply
+is tomorrow**. Runs via Windows Task Scheduler (default **11 AM**). It is
+**self-sufficient**: if the Edge business session isn't already up it launches it
+(`%USERPROFILE%\edge-wa-business`, debug port 9222), connects via CDP, posts one
+digest, and records it (idempotent per day — never double-posts; skips empty days).
+
+Preview / test without sending:
+```
+python scripts/whatsapp_feed.py --closing            # message for tomorrow
+python scripts/whatsapp_closing_digest.py --date 2026-06-08 --dry-run
+```
+
+Register the 11 AM job (re-run to change the time):
+```powershell
+$py = (Get-Command python).Source
+$act = New-ScheduledTaskAction -Execute $py -Argument "scripts\whatsapp_closing_digest.py" `
+        -WorkingDirectory "H:\My Drive\Deputation\github\Claude"
+$trg = New-ScheduledTaskTrigger -Daily -At (Get-Date -Hour 11 -Minute 0 -Second 0)
+$set = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
+Register-ScheduledTask -TaskName "Deputations closing-tomorrow digest" `
+        -Action $act -Trigger $trg -Settings $set -Force
+```
+
+**Requirements at run time:** the PC is on and **you are logged on** (Edge must be
+visible — WhatsApp Web won't run headless), and the `edge-wa-business` profile is
+still logged in. The digest tracks itself under `digests` in the ledger.
+
 ## Reseeding / resetting
 
 - Added the poster on a new machine, or want to suppress everything currently

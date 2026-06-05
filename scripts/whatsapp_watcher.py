@@ -172,24 +172,34 @@ def open_channel(page) -> bool:
         return True
 
     # Strategy 0: click the left-rail Channels nav, then the channel by name.
-    # This is the reliable path in a real, fully-synced WhatsApp session.
-    nav = _first(page, WA["channels_nav"], timeout=4000)
-    if nav and name:
+    # Retry a few times — on a COLD browser launch the channel list takes several
+    # seconds to sync, so the channel item isn't there on the first attempt.
+    if not name:
+        name = ""
+    for attempt in range(6):
+        nav = _first(page, WA["channels_nav"], timeout=5000)
+        if not name:
+            break
+        if not nav:                       # left rail not ready yet on a cold load
+            page.wait_for_timeout(3000)
+            continue
         try:
             nav.click()
-            page.wait_for_timeout(1500)
+            page.wait_for_timeout(2500)
             item = page.locator(
                 f'span[title="{name}"], span[title="{name} Channel"], '
                 f'[aria-label="{name}"], [aria-label="{name} Channel"]'
             ).first
-            item.wait_for(state="visible", timeout=6000)
+            item.wait_for(state="visible", timeout=8000)
             item.click()
-            page.wait_for_timeout(1500)
-            if _first(page, WA["compose_box"], timeout=6000):
+            page.wait_for_timeout(1800)
+            if _first(page, WA["compose_box"], timeout=8000):
                 log(f"Opened channel '{name}' via Channels nav.")
                 return True
         except Exception as exc:  # noqa: BLE001
-            log(f"Channels-nav open failed ({exc}); trying search.")
+            log(f"Channels-nav attempt {attempt + 1}/6 failed ({exc}); "
+                "waiting for the list to sync…")
+        page.wait_for_timeout(4000)
 
     # Strategy A: search by name and click the first matching result.
     search = _first(page, WA["search_box"], timeout=6000)
