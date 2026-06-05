@@ -600,6 +600,62 @@ async function boot() {
   refreshUpdatesCount();
 }
 
+/* ---------------- WhatsApp channel poster (local bridge) ---------------- */
+// The admin page can't post to a WhatsApp Channel directly (Channels have no API
+// and a web page can't drive WhatsApp Web). A small local helper
+// (scripts/whatsapp_bridge.py) holds a logged-in WhatsApp Web session and does
+// the posting; this button just triggers it on localhost.
+const WA_BRIDGE = (window.WA_BRIDGE_URL || 'http://127.0.0.1:8787');
+
+async function sendWhatsappUpdate() {
+  const btn = $('mgWaBtn'), st = $('mgWaStatus');
+  const done = (msg) => { if (st) st.textContent = msg || ''; btn.disabled = false; };
+  btn.disabled = true; if (st) st.textContent = 'Checking helper…';
+
+  // 1) Is the local helper running and logged in?
+  let health;
+  try {
+    health = await (await fetch(`${WA_BRIDGE}/health`)).json();
+  } catch {
+    done('');
+    toast('WhatsApp helper not running. Start it: python scripts/whatsapp_bridge.py');
+    return;
+  }
+  if (!health.logged_in) {
+    done('');
+    toast('Helper running, but WhatsApp Web isn’t logged in — run: whatsapp_watcher.py --login');
+    return;
+  }
+
+  // 2) What's pending?
+  let pend;
+  try {
+    pend = await (await fetch(`${WA_BRIDGE}/pending`)).json();
+  } catch (e) { done(''); toast('Helper error: ' + e.message); return; }
+  const n = pend.count || 0;
+  if (n === 0) { done('Nothing new to post.'); toast('Nothing new to post.'); return; }
+
+  // 3) Confirm, then post.
+  if (!confirm(`Post ${n} new vacanc${n === 1 ? 'y' : 'ies'} to the WhatsApp channel now?`)) {
+    done('');
+    return;
+  }
+  if (st) st.textContent = `Posting ${n}…`;
+  try {
+    const r = await fetch(`${WA_BRIDGE}/post`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message || d.error || ('HTTP ' + r.status));
+    const okN = (d.posted || []).length, failN = (d.failed || []).length;
+    done(`Posted ${okN}${failN ? `, ${failN} failed` : ''}.`);
+    toast(`✅ Posted ${okN} to WhatsApp${failN ? ` · ${failN} failed` : ''}`);
+  } catch (e) {
+    done('');
+    toast('Post failed: ' + e.message);
+  }
+}
+
 /* ---------------- app wiring ---------------- */
 function wireApp() {
   // tabs
@@ -637,6 +693,7 @@ function wireApp() {
     const blank = { id: null, status: 'approved', source_type: 'manual' };
     $('manageList').prepend(manageCard(blank, true));
   };
+  if ($('mgWaBtn')) $('mgWaBtn').onclick = sendWhatsappUpdate;
 
   // source type toggle
   $('srcType').onchange = () => {

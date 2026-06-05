@@ -18,3 +18,8 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# WhatsApp auto-poster — local "already posted" ledger (synced via Drive,
+# not committed, so the daily GitHub Actions build never collides with it).
+# The Playwright browser profile lives outside the repo (~/.deputations-wa).
+data/whatsapp_posted.json

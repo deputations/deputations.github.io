@@ -212,6 +212,8 @@
             </select>
             <button id="mgRefresh">↻</button>
             <button id="mgAddBtn" class="primary">+ Add vacancy</button>
+            <button id="mgWaBtn" title="Post newly-approved vacancies to the WhatsApp channel. Needs the local helper running: python scripts/whatsapp_bridge.py">📣 Send WhatsApp Update</button>
+            <span id="mgWaStatus" class="muted"></span>
           </div>
         </div>
         <p class="muted">Edit any field then <b>Save</b>, change <b>Status</b> to publish/unpublish, or <b>Delete</b> a row. Click <b>📄 source</b> if a PDF is attached.</p>
@@ -252,6 +254,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb7"></script>
-  <script src="admin-ingest.js?v=sb32"></script>
+  <script src="admin-ingest.js?v=sb33"></script>
 </body>
 </html>
