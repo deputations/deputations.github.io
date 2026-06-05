@@ -409,6 +409,12 @@
       font-size: .86rem;
       flex: 0 0 auto;
     }
+    .sidebar-theme-btn { width: 32px; height: 32px; font-size: .88rem; }
+    .sidebar { transition: box-shadow .3s ease; }
+    .sidebar.is-floating {
+      box-shadow: 0 8px 40px rgba(0,0,0,.32), 0 2px 0 rgba(84,240,255,.18);
+    }
+
     .sidebar-note {
       margin: 1rem .25rem .2rem;
       padding: .9rem;
@@ -1594,25 +1600,11 @@
   </nav>
 
   <div class="site-shell">
-    <header class="app-header">
-      <a href="#search" data-scroll-target="search" class="brand-lockup" aria-label="Deputation Rules Hub">
-        <span class="brand-mark">⚖</span>
-        <span>
-          <p class="brand-kicker">Central Government</p>
-          <h2 class="brand-title"><span class="gradient-text-app">Deputation Rules Hub</span></h2>
-        </span>
-      </a>
-
-      <div class="header-tools">
-        <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle light or dark theme">☾</button>
-      </div>
-    </header>
-
     <main class="layout">
       <aside class="sidebar glass" aria-label="Page navigation">
         <div class="sidebar-title">
           <span>Navigate</span>
-          <span aria-hidden="true">⌘</span>
+          <button class="icon-btn sidebar-theme-btn" id="themeToggle" type="button" aria-label="Toggle light or dark theme">☾</button>
         </div>
         <ul class="nav-list">
           <li><a href="#search" data-view-target="search" data-scroll-target="search" class="nav-link active"><span class="nav-icon">01</span>Search</a></li>
@@ -1641,11 +1633,7 @@
               <p class="hero-copy">
                 A premium knowledge hub for Fundamental Rules, Supplementary Rules, DoPT Office Memorandums, tenure limits, cooling-off, deputation duty allowance, lien, absorption, and related establishment circulars.
               </p>
-              <div class="hero-actions">
-                <a href="#timeline" data-view-target="timeline" data-scroll-target="timeline" class="btn primary"><span>↳</span><span>View Chronological Rules</span></a>
-                <a href="#search" data-view-target="search" data-scroll-target="search" class="btn"><span>⌕</span><span>Search by Topic</span></a>
-                <a href="#library" data-view-target="library" data-scroll-target="library" class="btn"><span>▣</span><span>Official PDF Library</span></a>
-              </div>
+
             </div>
 
             <div class="hero-mini">
@@ -3161,9 +3149,26 @@ Keywords: deputation, foreign service, central government, DoPT, CSS, Central St
         }
       }
 
+      function setupFloatingSidebar() {
+        var sidebar = document.querySelector('.sidebar');
+        if (!sidebar || !('IntersectionObserver' in window)) return;
+        var layout = document.querySelector('.layout');
+        if (!layout) return;
+        var sentinel = document.createElement('div');
+        sentinel.setAttribute('aria-hidden', 'true');
+        sentinel.style.cssText = 'height:1px;pointer-events:none;visibility:hidden;';
+        layout.prepend(sentinel);
+        var navH = parseInt(getComputedStyle(document.documentElement)
+                      .getPropertyValue('--nav-h'), 10) || 74;
+        new IntersectionObserver(function(entries) {
+          sidebar.classList.toggle('is-floating', !entries[0].isIntersecting);
+        }, { rootMargin: '-' + (navH + 16) + 'px 0px 0px 0px' }).observe(sentinel);
+      }
+
       document.addEventListener("DOMContentLoaded", function () {
         // Let the original renderer build dynamic cards first, then switch mode.
         setTimeout(setupSingleViewNavigation, 0);
+        setupFloatingSidebar();
       });
     })();
   </script>
