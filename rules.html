@@ -3157,7 +3157,7 @@ Keywords: deputation, foreign service, central government, DoPT, CSS, Central St
         var sentinel = document.createElement('div');
         sentinel.setAttribute('aria-hidden', 'true');
         sentinel.style.cssText = 'height:1px;pointer-events:none;visibility:hidden;';
-        layout.prepend(sentinel);
+        layout.before(sentinel);   /* sibling, not child — avoids disturbing grid columns */
         var navH = parseInt(getComputedStyle(document.documentElement)
                       .getPropertyValue('--nav-h'), 10) || 74;
         new IntersectionObserver(function(entries) {
