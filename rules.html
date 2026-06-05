@@ -419,6 +419,41 @@
       font-size: .82rem;
       line-height: 1.55;
     }
+    .sidebar-report {
+      margin: 1rem .25rem .2rem;
+      padding: .9rem;
+      border-radius: 20px;
+      background: rgba(139,92,246,.09);
+      border: 1px solid rgba(139,92,246,.2);
+      font-size: .82rem;
+      line-height: 1.55;
+    }
+    .sidebar-report-title {
+      margin: 0 0 .4rem;
+      color: var(--brand);
+      font-weight: 800;
+      font-size: .84rem;
+    }
+    .sidebar-report p {
+      margin: 0 0 .65rem;
+      color: var(--text-soft);
+    }
+    .sidebar-report-btn {
+      display: block;
+      text-align: center;
+      padding: .45rem .75rem;
+      border-radius: 12px;
+      background: rgba(139,92,246,.18);
+      border: 1px solid rgba(139,92,246,.28);
+      color: var(--text);
+      font-weight: 800;
+      font-size: .81rem;
+      text-decoration: none;
+      transition: background .2s;
+    }
+    .sidebar-report-btn:hover {
+      background: rgba(139,92,246,.3);
+    }
 
     .content {
       display: grid;
@@ -1372,7 +1407,7 @@
         width: 100%;
         max-width: 100%;
       }
-      .sidebar-title, .sidebar-note { display: none; }
+      .sidebar-title, .sidebar-note, .sidebar-report { display: none; }
       .nav-list {
         display: flex;
         overflow-x: auto;
@@ -1587,6 +1622,11 @@
           <li><a href="#map" data-view-target="map" data-scroll-target="map" class="nav-link"><span class="nav-icon">05</span>Relationship Map</a></li>
           <li><a href="#library" data-view-target="library" data-scroll-target="library" class="nav-link"><span class="nav-icon">06</span>PDF Library</a></li>
         </ul>
+        <div class="sidebar-report">
+          <p class="sidebar-report-title">📢 New circular or rule?</p>
+          <p>Know of an update not yet listed here? Help keep this page current.</p>
+          <a href="contact.html?category=New+Rule%2FCircular" class="sidebar-report-btn">Report a notification →</a>
+        </div>
       </aside>
 
       <section class="content">

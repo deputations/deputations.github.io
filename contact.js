@@ -47,7 +47,8 @@
     "Vacancy Correction":   "Please include the vacancy title, organisation, and the correct official source link if available.",
     "Policy Clarification": "We will get back if we can. For faster peer discussion, you may also join the WhatsApp Group above.",
     "WhatsApp Group Issue": "Tell us what happened — spam, harassment, joining problems — and we will look into it.",
-    "Other":                "Tell us what we should know — keep it brief and specific."
+    "Other":                "Tell us what we should know — keep it brief and specific.",
+    "New Rule/Circular":    "Share the OM number, subject line, date, and a link to the official source (DoPT / GoI website) so we can review and add it."
   };
   var categoryEl = $("#ctCategory");
   var hintEl     = $("#ctHint");
@@ -58,6 +59,22 @@
   }
   categoryEl.addEventListener("change", applyHint);
   applyHint();
+
+  /* Pre-select category from URL param e.g. contact.html?category=New+Rule%2FCircular */
+  (function () {
+    try {
+      var cat = new URLSearchParams(window.location.search).get("category");
+      if (cat) {
+        for (var i = 0; i < categoryEl.options.length; i++) {
+          if (categoryEl.options[i].value === cat) {
+            categoryEl.selectedIndex = i;
+            applyHint();
+            break;
+          }
+        }
+      }
+    } catch (e) {}
+  }());
 
   /* ---------- Page / section cascading dropdowns (Add context) ---------- */
   var PAGES = [
