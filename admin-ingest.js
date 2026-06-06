@@ -211,11 +211,37 @@ function buildSelect(k, lbl, val, options, normalizer) {
   return `<div><label>${lbl}</label><select data-k="${k}">${opts}</select></div>`;
 }
 
+// Fields that should use a native date picker (avoids free-text mis-formatting).
+const DATE_FIELDS = new Set(['notification_date', 'last_date_to_apply']);
+
+// Coerce a stored value to the yyyy-mm-dd a <input type="date"> needs.
+// Accepts ISO, dd/mm/yyyy, dd-mm-yyyy (day-first). Returns '' if not coercible.
+function toISODateInput(v) {
+  const t = String(v || '').trim();
+  if (!t) return '';
+  let m;
+  if ((m = t.match(/^(\d{4})-(\d{2})-(\d{2})/))) return `${m[1]}-${m[2]}-${m[3]}`;
+  if ((m = t.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/))) {
+    let [, d, mo, y] = m; if (y.length === 2) y = '20' + y;
+    return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  }
+  return '';
+}
+
 function fieldHtml(k, lbl, r) {
   const val = r[k] || '';
   if (k === 'organisation_type') return buildSelect(k, lbl, val, ORG_TYPES, (s) => String(s || '').toLowerCase().trim());
   if (k === 'ministry') return buildSelect(k, lbl, val, MINISTRY_NAMES, normMinistry);
-  return `<div><label>${lbl}</label><input data-k="${escapeHtml(k)}" value="${escapeHtml(val)}" /></div>`;
+  if (DATE_FIELDS.has(k)) {
+    const iso = toISODateInput(val);
+    // Empty or coercible -> native date picker (stores yyyy-mm-dd).
+    if (iso || !String(val).trim()) {
+      return `<div><label>${escapeHtml(lbl)}</label><input type="date" data-k="${escapeHtml(k)}" value="${escapeHtml(iso)}" /></div>`;
+    }
+    // Un-recognised existing value -> keep an editable text box so it's not lost.
+    return `<div><label>${escapeHtml(lbl)} ⚠</label><input data-k="${escapeHtml(k)}" value="${escapeHtml(val)}" title="Unrecognised date format — re-enter as yyyy-mm-dd" /></div>`;
+  }
+  return `<div><label>${escapeHtml(lbl)}</label><input data-k="${escapeHtml(k)}" value="${escapeHtml(val)}" /></div>`;
 }
 
 // Prompt the admin pastes into Gemini Advanced / Claude Pro along with the EN PDF.
@@ -680,6 +706,7 @@ function wireApp() {
   });
 
   if ($('updRefresh')) $('updRefresh').onclick = loadUpdates;
+  if ($('updSort')) $('updSort').onchange = renderUpdates;   // client-side re-sort, no refetch
 
   $('flagRefresh').onclick = loadFlags;
   $('flagStatus').onchange = loadFlags;
@@ -1527,14 +1554,30 @@ function flagCard(f) {
 }
 
 /* ================= Pending updates & duplicate suggestions ================= */
+let UPDATES_ROWS = [];   // cached so the Sort dropdown can re-order without refetch
+
 async function loadUpdates() {
   const list = $('updatesList');
   if (list) list.innerHTML = '<p class="muted">Loading…</p>';
   try {
     const r = await api('/rest/v1/vacancy_updates?status=eq.pending&select=*,target:target_id(post_name,organisation,level_text,status,vacancy_id)&order=created_at.desc&limit=500');
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    renderUpdates(await r.json());
+    UPDATES_ROWS = await r.json();
+    renderUpdates();
   } catch (e) { if (list) list.innerHTML = `<p class="muted">Load error: ${escapeHtml(e.message)}</p>`; }
+}
+
+// Adapt an update row to the shape sortRows() reads: notification_date comes
+// from the proposed payload (the change being suggested), source from the
+// update's own source_*; created_at is already top-level.
+function _updSortable(u) {
+  return {
+    created_at: u.created_at,
+    notification_date: (u.proposed && u.proposed.notification_date) || '',
+    source_category: u.source_category,
+    source_type: u.source_type,
+    _u: u,
+  };
 }
 
 async function refreshUpdatesCount() {
@@ -1546,13 +1589,30 @@ async function refreshUpdatesCount() {
   } catch { /* */ }
 }
 
-function renderUpdates(rows) {
+function renderUpdates() {
+  const rows = UPDATES_ROWS;
   const list = $('updatesList');
   if ($('updatesHdrCount')) $('updatesHdrCount').textContent = `(${rows.length})`;
   if (!list) return;
   if (!rows.length) { list.innerHTML = '<p class="muted">No pending updates or duplicate suggestions. 🎉</p>'; return; }
+  const mode = ($('updSort') && $('updSort').value) || 'upload';
+  const ordered = sortRows(rows.map(_updSortable), mode).map((s) => s._u);
   list.innerHTML = '';
-  rows.forEach((u) => list.appendChild(updateCard(u)));
+  const showHeaders = mode === 'source';
+  let lastSrc = null;
+  ordered.forEach((u) => {
+    if (showHeaders) {
+      const src = _sourceKey(u);
+      if (src !== lastSrc) {
+        const hdr = document.createElement('div');
+        hdr.className = 'jobhdr';
+        hdr.textContent = `Source: ${u.source_category || u.source_type || 'unknown'}`;
+        list.appendChild(hdr);
+        lastSrc = src;
+      }
+    }
+    list.appendChild(updateCard(u));
+  });
 }
 
 function updateCard(u) {
