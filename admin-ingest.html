@@ -179,6 +179,13 @@
               <label style="display:flex;gap:3px;align-items:center"><input type="checkbox" id="cfMedium" checked> Med</label>
               <label style="display:flex;gap:3px;align-items:center"><input type="checkbox" id="cfLow"> Low</label>
             </span>
+            <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Sort:
+              <select id="draftSort" style="width:auto">
+                <option value="source">Source → notification date</option>
+                <option value="upload">Upload date (newest)</option>
+                <option value="notif">Notification date (newest)</option>
+              </select>
+            </label>
             <button id="approveAllBtn" class="good" title="Approve & publish drafts matching the ticked confidence levels">✓ Approve ticked</button>
             <button id="rejectAllBtn" class="bad" title="Delete every draft in the queue">🗑 Reject all</button>
             <button id="enrichAllBtn" title="Find the official notification PDF for every draft and fill blanks">🔎 Find official PDFs (all)</button>
@@ -210,6 +217,13 @@
               <option value="draft">Draft</option>
               <option value="all">All</option>
             </select>
+            <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Sort:
+              <select id="mgSort" style="width:auto">
+                <option value="upload">Upload date (newest)</option>
+                <option value="notif">Notification date (newest)</option>
+                <option value="source">Source → notification date</option>
+              </select>
+            </label>
             <button id="mgRefresh">↻</button>
             <button id="mgAddBtn" class="primary">+ Add vacancy</button>
             <button id="mgWaBtn" title="Post newly-approved vacancies to the WhatsApp channel. Needs the local helper running: python scripts/whatsapp_bridge.py">📣 Send WhatsApp Update</button>
@@ -254,6 +268,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb7"></script>
-  <script src="admin-ingest.js?v=sb33"></script>
+  <script src="admin-ingest.js?v=sb34"></script>
 </body>
 </html>

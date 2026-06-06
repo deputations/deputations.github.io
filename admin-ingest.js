@@ -687,8 +687,10 @@ function wireApp() {
   $('mgRefresh').onclick = loadManage;
   $('mgStatus').onclick = () => {};
   $('mgStatus').onchange = loadManage;
+  if ($('mgSort')) $('mgSort').onchange = renderManage;   // client-side re-sort, no refetch
   let _mgFilterTimer = null;
   $('mgSearch').oninput = () => { clearTimeout(_mgFilterTimer); _mgFilterTimer = setTimeout(renderManage, 200); };
+  if ($('draftSort')) $('draftSort').onchange = () => { DRAFT_SORT = $('draftSort').value; DRAFT_PAGE = 1; renderDrafts(); };
   $('mgAddBtn').onclick = () => {
     const blank = { id: null, status: 'approved', source_type: 'manual' };
     $('manageList').prepend(manageCard(blank, true));
@@ -879,9 +881,31 @@ function scheduleGc() {
   }, 4000);
 }
 
+/* ---------------- sorting (shared by Review queue + Manage) ---------------- */
+// Modes: 'upload' (newest ingest first), 'notif' (newest notification first),
+// 'source' (group by source, then newest notification within each source).
+// Rows with no date sort last. Used by both renderDrafts() and renderManage().
+function _ymd(s) { const m = String(s || '').match(/(\d{4})-(\d{2})-(\d{2})/); return m ? m[1] + m[2] + m[3] : ''; }
+function _sourceKey(r) { return String(r.source_category || r.source_type || '').toLowerCase(); }
+function sortRows(rows, mode) {
+  const arr = rows.slice();
+  if (mode === 'notif') {
+    arr.sort((a, b) => _ymd(b.notification_date).localeCompare(_ymd(a.notification_date))
+      || String(a.post_name || '').localeCompare(String(b.post_name || '')));
+  } else if (mode === 'source') {
+    arr.sort((a, b) => _sourceKey(a).localeCompare(_sourceKey(b))
+      || _ymd(b.notification_date).localeCompare(_ymd(a.notification_date))
+      || String(a.post_name || '').localeCompare(String(b.post_name || '')));
+  } else { // 'upload'
+    arr.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+  }
+  return arr;
+}
+
 /* ---------------- review queue ---------------- */
 const DRAFT_PAGE_SIZE = 25;
 let DRAFT_PAGE = 1;
+let DRAFT_SORT = 'source';   // default preserves the grouped-by-source view
 let DRAFT_ROWS = [];   // full current draft list (display source for pagination)
 
 async function loadDrafts() {
@@ -900,7 +924,7 @@ async function loadDrafts() {
 // Renders ONLY the current page's summary cards. Grouping headers are shown per
 // page for whichever job-groups the slice spans.
 function renderDrafts() {
-  const rows = DRAFT_ROWS;
+  const rows = sortRows(DRAFT_ROWS, DRAFT_SORT);
   const list = $('draftList');
   const pager = $('draftPager');
   if (!rows.length) {
@@ -914,15 +938,19 @@ function renderDrafts() {
   const slice = rows.slice(start, start + DRAFT_PAGE_SIZE);
 
   list.innerHTML = '';
-  let lastJob = null;
+  // Source headers only make sense when grouped by source.
+  const showHeaders = DRAFT_SORT === 'source';
+  let lastSrc = null;
   slice.forEach((r) => {
-    const job = r.ingest_job_id || 'none';
-    if (job !== lastJob) {
-      const hdr = document.createElement('div');
-      hdr.className = 'jobhdr';
-      hdr.textContent = `Source: ${r.source_category || r.source_type || 'unknown'}`;
-      list.appendChild(hdr);
-      lastJob = job;
+    if (showHeaders) {
+      const src = _sourceKey(r);
+      if (src !== lastSrc) {
+        const hdr = document.createElement('div');
+        hdr.className = 'jobhdr';
+        hdr.textContent = `Source: ${r.source_category || r.source_type || 'unknown'}`;
+        list.appendChild(hdr);
+        lastSrc = src;
+      }
     }
     list.appendChild(draftCard(r));
   });
@@ -1211,14 +1239,30 @@ async function loadManage() {
 
 function renderManage() {
   const q = ($('mgSearch').value || '').toLowerCase().trim();
-  const rows = !q ? MANAGE_ROWS : MANAGE_ROWS.filter((r) =>
+  const filtered = !q ? MANAGE_ROWS : MANAGE_ROWS.filter((r) =>
     [r.post_name, r.organisation, r.ministry, r.location_city, r.vacancy_id]
       .some((f) => String(f || '').toLowerCase().includes(q)));
+  const mode = ($('mgSort') && $('mgSort').value) || 'upload';
+  const rows = sortRows(filtered, mode);
   $('manageCount').textContent = `(${rows.length})`;
   const list = $('manageList');
   list.innerHTML = '';
   if (!rows.length) { list.innerHTML = '<p class="muted">No matching rows.</p>'; return; }
-  rows.forEach((r) => list.appendChild(manageCard(r, false)));
+  const showHeaders = mode === 'source';
+  let lastSrc = null;
+  rows.forEach((r) => {
+    if (showHeaders) {
+      const src = _sourceKey(r);
+      if (src !== lastSrc) {
+        const hdr = document.createElement('div');
+        hdr.className = 'jobhdr';
+        hdr.textContent = `Source: ${r.source_category || r.source_type || 'unknown'}`;
+        list.appendChild(hdr);
+        lastSrc = src;
+      }
+    }
+    list.appendChild(manageCard(r, false));
+  });
 }
 
 // Banner shown atop the editor when this row was opened from a flag. Compares
