@@ -25,6 +25,26 @@
     });
   });
 
+  /* Pre-fill from the site feedback widget's "Tell us more" deep-link (?ref=&tags=) */
+  document.addEventListener("DOMContentLoaded", function () {
+    try {
+      var q = new URLSearchParams(location.search);
+      var ref = q.get("ref"); if (!ref) return;
+      var tags = q.get("tags") || "";
+      var subj = document.getElementById("ctSubject");
+      var msg  = document.getElementById("ctMessage");
+      var cat  = document.getElementById("ctCategory");
+      if (cat && !cat.value) cat.value = "General Feedback";
+      if (subj && !subj.value) subj.value = "Feedback on " + ref;
+      if (msg && !msg.value) {
+        msg.value = "Page: " + ref + "\n" + (tags ? "What could be better: " + tags + "\n" : "") + "\n";
+      }
+      var card = document.getElementById("ctFormCard");
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (msg) setTimeout(function () { msg.focus(); }, 450);
+    } catch (e) {}
+  });
+
   var SB_READY = (typeof window !== "undefined" && window.SUPABASE_READY && window.SUPABASE_READY());
   var API_URL = SB_READY
     ? (window.SUPABASE_URL + "/functions/v1/submit")
