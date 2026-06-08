@@ -259,16 +259,18 @@
     var chips  = wrap.querySelector(".chips");
     var cta    = wrap.querySelector(".cta");
 
-    // Sit just BELOW the page's own top-right controls (header heart/theme
-    // buttons, contact's theme toggle, …) so we never cover them — all viewports.
+    // Pin to the very top-right corner. On desktop the nav links are centred, so
+    // the right of the sticky navbar is empty — sit there (above the page's own
+    // header buttons), z above the nav. On mobile the nav is full, so sit under it.
     (function () {
-      var ctrls = document.querySelectorAll(".header-actions, .ct-theme-btn, .top-actions, [class*='theme-btn'], [class*='theme-toggle']");
-      var maxB = 0;
-      [].forEach.call(ctrls, function (c) {
-        var r = c.getBoundingClientRect();
-        if (r.width && r.height && r.top < 320 && r.right > window.innerWidth - 280) maxB = Math.max(maxB, r.bottom);
-      });
-      wrap.style.top = Math.max(70, Math.round(maxB) + 12) + "px";
+      var nav = document.querySelector(".top-nav, header.site, nav[class*='nav']");
+      var r = nav ? nav.getBoundingClientRect() : null;
+      if (window.innerWidth > 768 && r && r.height) {
+        wrap.style.top = Math.max(6, Math.round(r.top + (r.height - 40) / 2)) + "px";
+        wrap.style.zIndex = "90";
+      } else {
+        wrap.style.top = (r ? Math.round(r.bottom) + 8 : 64) + "px";
+      }
     })();
 
     function setCount(ups) { cntEl.textContent = (ups == null) ? "—" : fmt(ups); }
