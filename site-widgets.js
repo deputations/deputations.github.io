@@ -82,8 +82,8 @@
     "--sw-primary:#0284c7;--sw-accent:#7c3aed;--sw-good:#16a34a;--sw-bad:#e11d48;" +
     "--sw-gold:#b8860b;--sw-shadow:0 16px 40px -14px rgba(15,23,42,.22)}" +
 
-  /* ===== VISITOR COUNTER (bottom-left) ===== */
-  ".sw-counter{left:16px;bottom:16px}" +
+  /* ===== VISITOR COUNTER (bottom-left) — display only, never blocks clicks ===== */
+  ".sw-counter{left:16px;bottom:16px;pointer-events:none}" +
   ".sw-counter .sw-c{display:inline-flex;align-items:stretch;gap:0;" +
     "background:var(--sw-surface);-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);" +
     "border:1px solid var(--sw-border);border-radius:16px;padding:6px;box-shadow:var(--sw-shadow);color:var(--sw-text);" +
@@ -146,8 +146,9 @@
 
   /* ===== mobile ===== */
   "@media (max-width:640px){" +
-    ".sw-counter{left:10px;bottom:10px}" +
-    ".sw-c .cell{padding:6px 11px}.sw-c .num{font-size:1rem}.sw-c .lbl{font-size:.55rem;letter-spacing:.09em}" +
+    /* counter sits at the very bottom of the page (in flow), not floating */
+    ".sw-counter{position:static;left:auto;bottom:auto;margin:26px auto 30px;display:flex;justify-content:center}" +
+    ".sw-c .cell{padding:6px 12px}.sw-c .num{font-size:1.05rem}.sw-c .lbl{font-size:.56rem;letter-spacing:.09em}" +
     ".sw-fb{right:10px}" +
     ".sw-fb .launch .cap{display:none}" +
   "}";
@@ -317,10 +318,12 @@
   }
 
   /* ===================== INIT ===================== */
+  // Feedback widget kept in abeyance for a later upgrade — counter only for now.
+  var ENABLE_FEEDBACK = false;
   function init() {
     injectCSS();
     try { buildCounter(); } catch (e) {}
-    try { buildFeedback(); } catch (e) {}
+    if (ENABLE_FEEDBACK) { try { buildFeedback(); } catch (e) {} }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
