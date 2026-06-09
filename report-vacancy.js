@@ -8,6 +8,22 @@
 (function () {
   "use strict";
 
+  /* ---------- Theme toggle (persisted, unified key) ---------- */
+  var THEME_KEY = "deputation_theme_v1";
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme === "light" ? "light" : "dark");
+  }
+  try { applyTheme(localStorage.getItem(THEME_KEY) || "dark"); } catch (e) {}
+  document.addEventListener("DOMContentLoaded", function () {
+    var tbtn = document.getElementById("rvThemeToggle");
+    if (!tbtn) return;
+    tbtn.addEventListener("click", function () {
+      var next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+      applyTheme(next);
+      try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+    });
+  });
+
   // Submit to the Supabase public `submit` function when configured; else fall
   // back to the legacy Apps Script endpoint.
   var SB_READY = (typeof window !== "undefined" && window.SUPABASE_READY && window.SUPABASE_READY());

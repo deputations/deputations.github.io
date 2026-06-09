@@ -270,6 +270,7 @@ body {
 }
 
 .header-logo h1 {
+  font-family: "Unbounded", "Plus Jakarta Sans", system-ui, sans-serif;
   font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -291,6 +292,38 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* Desktop: centered hero title, matched to Contact & Community.
+   Mobile keeps the compact left-aligned header (index uses legacy CSS;
+   my-deputation keeps its <=640px column header below). */
+@media (min-width: 769px) {
+  .app-header {
+    position: relative;
+    display: block;
+    text-align: center;
+    padding: 1.5rem 0; /* equal top/bottom → title vertically centred in the band */
+  }
+  .header-logo {
+    justify-content: center;
+  }
+  .header-logo i,
+  .header-logo svg {
+    display: none; /* Contact hero has no leading icon */
+  }
+  .header-logo h1 {
+    font-family: "Unbounded", "Plus Jakarta Sans", system-ui, sans-serif;
+    font-size: clamp(1.7rem, 3.6vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+  }
+  .header-actions {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+  }
 }
 
 .icon-btn {

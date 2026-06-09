@@ -33,11 +33,42 @@
   color: var(--rv-text);
 }
 
+/* ---------- Theme toggle (fixed, top-right) ---------- */
+.rv-theme-btn {
+  position: fixed;
+  top: 84px;
+  right: 1rem;
+  z-index: 60;
+  width: 42px; height: 42px;
+  display: inline-grid; place-items: center;
+  border-radius: 999px;
+  background: var(--rv-card);
+  border: 1px solid var(--rv-border-2);
+  color: var(--rv-text);
+  cursor: pointer;
+  backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: 0 14px 40px -16px rgba(0,0,0,.55);
+  transition: transform .18s, color .2s, border-color .2s, background .2s;
+}
+.rv-theme-btn:hover {
+  transform: translateY(-1px);
+  color: var(--rv-primary);
+  border-color: var(--rv-primary);
+}
+.rv-theme-btn svg { width: 18px; height: 18px; }
+.rv-theme-btn .rv-theme-sun  { display: none; }
+.rv-theme-btn .rv-theme-moon { display: block; }
+[data-theme="light"] .rv-theme-btn .rv-theme-sun  { display: block; }
+[data-theme="light"] .rv-theme-btn .rv-theme-moon { display: none; }
+@media (max-width: 640px) {
+  .rv-theme-btn { top: 72px; right: .75rem; width: 38px; height: 38px; }
+}
+
 /* ---------- Hero ---------- */
 .rv-hero { text-align: center; margin-bottom: 2.2rem; }
 .rv-title {
-  font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
-  font-size: clamp(2rem, 4.4vw, 2.8rem);
+  font-family: "Unbounded", "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: clamp(1.7rem, 3.6vw, 2.5rem);
   font-weight: 800;
   letter-spacing: -0.02em;
   margin: 0.4rem 0 0.6rem;
