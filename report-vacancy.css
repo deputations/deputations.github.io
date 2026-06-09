@@ -44,7 +44,7 @@
   line-height: 1.12;
 }
 .rv-grad {
-  background: linear-gradient(120deg, var(--rv-primary) 0%, var(--rv-accent) 70%);
+  background: linear-gradient(to right, #FF6B6B, #6B66FF);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

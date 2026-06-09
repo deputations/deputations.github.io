@@ -156,7 +156,7 @@
     "-webkit-backdrop-filter:blur(16px) saturate(120%);backdrop-filter:blur(16px) saturate(120%)}" +
   ".sw-modal.open{display:flex}" +
   "html[data-theme='light'] .sw-modal{background:radial-gradient(circle at 20% 18%,rgba(2,132,199,.10),transparent 30%),radial-gradient(circle at 82% 82%,rgba(124,58,237,.10),transparent 28%),rgba(226,232,240,.72)}" +
-  ".sw-modal .card{position:relative;width:min(720px,94vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;" +
+  ".sw-modal .card{position:relative;width:min(980px,94vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;" +
     "background:var(--sw-surface);border:1px solid var(--sw-border);border-radius:22px;box-shadow:0 28px 80px -20px rgba(0,0,0,.6);color:var(--sw-text);" +
     "transform:translateY(12px) scale(.984);transition:transform .3s cubic-bezier(.16,1,.3,1)}" +
   ".sw-modal.open .card{transform:none}" +

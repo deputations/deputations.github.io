@@ -83,7 +83,7 @@
   line-height: 1.12;
 }
 .ct-grad {
-  background: linear-gradient(120deg, var(--ct-primary) 0%, var(--ct-accent) 65%, var(--ct-wa) 130%);
+  background: linear-gradient(to right, #FF6B6B, #6B66FF);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
