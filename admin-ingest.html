@@ -192,7 +192,17 @@
             <button id="refreshBtn">↻ Refresh</button>
           </div>
         </div>
-        <p class="muted">Click <b>Edit</b> to change fields, then <b>Approve</b> (publishes live) or <b>Reject</b>. Approve without editing publishes the row as-is. Click <b>📄 source</b> to view the original page beside it.</p>
+        <p class="muted">Click <b>Edit</b> to change fields, then <b>Approve</b> (publishes live) or <b>Reject</b>. Approve without editing publishes the row as-is. Tick the checkboxes to <b>approve / reject in bulk</b>. Click <b>📄 source</b> to view the original page beside it.</p>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0">
+          <label class="muted" style="display:flex;gap:5px;align-items:center;font-size:13px">
+            <input type="checkbox" id="draftSelectAll"> Select all on this page
+          </label>
+          <div id="draftBulkBar" style="display:none;align-items:center;gap:8px">
+            <span class="muted" id="draftBulkCount" style="font-size:13px">0 selected</span>
+            <button id="bulkApproveBtn" class="good">✓ Approve checked</button>
+            <button id="bulkRejectBtn" class="bad">🗑 Reject checked</button>
+          </div>
+        </div>
         <div id="draftPager" class="pager"></div>
         <div id="reviewSplit" style="display:flex;gap:16px;align-items:flex-start">
           <div id="draftList" style="flex:1 1 38%;min-width:0"></div>
@@ -277,6 +287,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb7"></script>
-  <script src="admin-ingest.js?v=sb35"></script>
+  <script src="admin-ingest.js?v=sb36"></script>
 </body>
 </html>

@@ -107,10 +107,9 @@ function tiersFor(obj) {
 
 function tierRowHtml(t) {
   return `<div class="tier-row" style="display:flex;gap:6px;margin-bottom:5px;align-items:center;">
-    <input class="tier-level" type="number" min="1" max="18" placeholder="Level" value="${t ? escapeHtml(t.level) : ''}" style="width:90px;flex:0 0 auto">
-    <span class="muted" style="font-size:.8rem">with</span>
     <input class="tier-years" type="number" min="0" max="40" placeholder="Years" value="${t ? escapeHtml(t.min_years) : ''}" style="width:90px;flex:0 0 auto">
-    <span class="muted" style="font-size:.8rem">yrs</span>
+    <span class="muted" style="font-size:.8rem">years in Level</span>
+    <input class="tier-level" type="number" min="1" max="18" placeholder="Level" value="${t ? escapeHtml(t.level) : ''}" style="width:90px;flex:0 0 auto">
     <button type="button" class="tier-del" title="Remove this tier" style="margin-left:auto">✕</button>
   </div>`;
 }
@@ -821,6 +820,14 @@ function wireApp() {
 
   $('refreshBtn').onclick = loadDrafts;
 
+  // bulk select / approve / reject of checked draft cards
+  if ($('draftSelectAll')) $('draftSelectAll').onchange = (e) => {
+    $('draftList').querySelectorAll('.draft-check').forEach((c) => { c.checked = e.target.checked; });
+    updateBulkBar();
+  };
+  if ($('bulkApproveBtn')) $('bulkApproveBtn').onclick = () => bulkActOnChecked('approve');
+  if ($('bulkRejectBtn')) $('bulkRejectBtn').onclick = () => bulkActOnChecked('reject');
+
   $('viewerClose').onclick = () => { $('viewerFrame').src = 'about:blank'; $('viewerPane').style.display = 'none'; };
 
   $('approveAllBtn').onclick = async () => {
@@ -983,6 +990,66 @@ function renderDrafts() {
   });
 
   renderDraftPager(pages, start, slice.length, rows.length);
+  if ($('draftSelectAll')) $('draftSelectAll').checked = false;
+  updateBulkBar();
+}
+
+/* ---- bulk approve / reject of checked draft cards ---- */
+function checkedDraftCards() {
+  return [...$('draftList').querySelectorAll('.draft')]
+    .filter((el) => el.querySelector('.draft-check')?.checked);
+}
+
+function updateBulkBar() {
+  const n = checkedDraftCards().length;
+  const bar = $('draftBulkBar');
+  if (bar) bar.style.display = n ? 'flex' : 'none';
+  const lbl = $('draftBulkCount');
+  if (lbl) lbl.textContent = `${n} selected`;
+}
+
+async function bulkActOnChecked(action) {
+  const cards = checkedDraftCards();
+  if (!cards.length) return toast('No vacancies checked');
+  const verb = action === 'approve' ? 'Approve & publish' : 'Reject & delete';
+  if (!confirm(`${verb} ${cards.length} checked vacanc${cards.length === 1 ? 'y' : 'ies'}?`)) return;
+  const bar = $('draftBulkBar'); if (bar) bar.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+  let ok = 0, fail = 0;
+  for (const el of cards) {
+    const id = el.dataset.id;
+    try {
+      if (action === 'approve') {
+        // approve as-is, OR with edits if this card's editor was opened
+        const body = el.dataset.built ? { ...collectFromCard(el), status: 'approved' } : { status: 'approved' };
+        const r = await api(`/rest/v1/vacancies?id=eq.${id}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+          body: JSON.stringify(body),
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+      } else {
+        const r = await api(`/rest/v1/vacancies?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+      }
+      el.remove(); ok++; bumpCount(-1);
+    } catch { fail++; }
+  }
+  if (bar) bar.querySelectorAll('button').forEach((b) => { b.disabled = false; });
+  toast(`${action === 'approve' ? 'Approved' : 'Rejected'} ${ok}${fail ? `, ${fail} failed` : ''}`);
+  scheduleGc();
+  afterCardRemoved();   // reloads the page slice if it emptied
+  updateBulkBar();
+}
+
+// Serialise an opened draft card's editor (mirrors the card-local collect()).
+function collectFromCard(el) {
+  const editor = el.querySelector('.editor');
+  const patch = {};
+  editor.querySelectorAll('[data-k]').forEach((inp) => { patch[inp.dataset.k] = (inp.value || '').trim(); });
+  const lvl = (patch.level || '').replace(/\D/g, '');
+  if ('level' in patch) patch.level_text = lvl ? `Level-${lvl}` : '';
+  if (patch.ministry) patch.min_code = MIN_CODE_BY_NAME[patch.ministry] || minCode(patch.ministry);
+  applyTiersToPatch(patch, el);
+  return patch;
 }
 
 function renderDraftPager(pages, start, shown, total) {
@@ -1089,14 +1156,18 @@ function draftCard(r) {
   const conf = (r.confidence || 'medium').toLowerCase();
   const score = draftCompleteness(r);
   const srcPage = String((r.raw_extraction && r.raw_extraction.source_page) || '').replace(/\D/g, '');
+  el.dataset.id = r.id;
   el.innerHTML = `
     <div class="head">
-      <div>
-        <b>${escapeHtml(r.post_name || '(untitled)')}</b>
-        <span class="muted"> · ${escapeHtml(r.organisation || '')}${r.level ? ' · L' + escapeHtml(r.level) : ''}${r.location_city ? ' · ' + escapeHtml(r.location_city) : ''}</span>
-        <span class="pill ${conf}">${conf}</span>
-        <span class="muted"> · ${score}% complete</span>
-        ${linkDomainBadge(r)}
+      <div style="display:flex;align-items:center;gap:8px;min-width:0">
+        <input type="checkbox" class="draft-check" title="Select for bulk approve/reject" style="flex:0 0 auto;width:16px;height:16px">
+        <span style="min-width:0">
+          <b>${escapeHtml(r.post_name || '(untitled)')}</b>
+          <span class="muted"> · ${escapeHtml(r.organisation || '')}${r.level ? ' · L' + escapeHtml(r.level) : ''}${r.location_city ? ' · ' + escapeHtml(r.location_city) : ''}</span>
+          <span class="pill ${conf}">${conf}</span>
+          <span class="muted"> · ${score}% complete</span>
+          ${linkDomainBadge(r)}
+        </span>
       </div>
       <div class="acts">
         ${(r.source_file_url || r.official_notification_link) ? `<button data-act="source">📄 source${srcPage ? ' p.' + srcPage : ''}</button>` : ''}
@@ -1108,6 +1179,7 @@ function draftCard(r) {
       </div>
     </div>
     <div class="editor" style="display:none"></div>`;
+  el.querySelector('.draft-check').addEventListener('change', updateBulkBar);
 
   const editor = el.querySelector('.editor');
 
