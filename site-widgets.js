@@ -72,11 +72,11 @@
   ".sw-counter *,.sw-fb *{box-sizing:border-box}" +
 
   /* palette (dark default) */
-  ".sw-counter,.sw-fb{--sw-surface:rgba(15,23,42,.82);--sw-surface2:rgba(30,41,59,.9);" +
+  ".sw-counter,.sw-fb,.sw-footer,.sw-modal{--sw-surface:rgba(15,23,42,.82);--sw-surface2:rgba(30,41,59,.9);" +
     "--sw-border:rgba(148,163,184,.18);--sw-text:#f8fafc;--sw-muted:#94a3b8;" +
     "--sw-primary:#22d3ee;--sw-accent:#a78bfa;--sw-good:#34d399;--sw-bad:#f87171;" +
     "--sw-gold:#fbbf24;--sw-shadow:0 14px 40px -12px rgba(0,0,0,.6)}" +
-  "html[data-theme='light'] .sw-counter,html[data-theme='light'] .sw-fb{" +
+  "html[data-theme='light'] .sw-counter,html[data-theme='light'] .sw-fb,html[data-theme='light'] .sw-footer,html[data-theme='light'] .sw-modal{" +
     "--sw-surface:rgba(255,255,255,.92);--sw-surface2:rgba(248,250,252,.96);" +
     "--sw-border:rgba(15,23,42,.10);--sw-text:#0f172a;--sw-muted:#64748b;" +
     "--sw-primary:#0284c7;--sw-accent:#7c3aed;--sw-good:#16a34a;--sw-bad:#e11d48;" +
@@ -144,13 +144,48 @@
   ".sw-fb .x:hover{color:var(--sw-text)}" +
   ".sw-fb .panel{position:relative}" +
 
+  /* ===== DISCLAIMER — footer link + modal ===== */
+  ".sw-footer{display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;text-align:center;" +
+    "margin:34px auto 22px;padding:0 16px;font-family:'Plus Jakarta Sans','Inter',system-ui,sans-serif;font-size:.8rem;color:var(--sw-muted)}" +
+  ".sw-footer .sep{opacity:.45}" +
+  ".sw-footer .disc{cursor:pointer;font:inherit;font-weight:700;color:var(--sw-primary);background:none;border:none;" +
+    "padding:4px 4px;border-radius:8px;text-decoration:underline;text-underline-offset:3px}" +
+  ".sw-footer .disc:hover{color:var(--sw-accent)}" +
+  ".sw-modal{position:fixed;inset:0;z-index:10001;display:none;align-items:center;justify-content:center;padding:20px;" +
+    "background:radial-gradient(circle at 20% 18%,rgba(34,211,238,.10),transparent 30%),radial-gradient(circle at 82% 82%,rgba(167,139,250,.12),transparent 28%),rgba(2,4,11,.82);" +
+    "-webkit-backdrop-filter:blur(16px) saturate(120%);backdrop-filter:blur(16px) saturate(120%)}" +
+  ".sw-modal.open{display:flex}" +
+  "html[data-theme='light'] .sw-modal{background:radial-gradient(circle at 20% 18%,rgba(2,132,199,.10),transparent 30%),radial-gradient(circle at 82% 82%,rgba(124,58,237,.10),transparent 28%),rgba(226,232,240,.72)}" +
+  ".sw-modal .card{position:relative;width:min(720px,94vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;" +
+    "background:var(--sw-surface);border:1px solid var(--sw-border);border-radius:22px;box-shadow:0 28px 80px -20px rgba(0,0,0,.6);color:var(--sw-text);" +
+    "transform:translateY(12px) scale(.984);transition:transform .3s cubic-bezier(.16,1,.3,1)}" +
+  ".sw-modal.open .card{transform:none}" +
+  ".sw-modal .hd{display:flex;align-items:center;gap:13px;padding:22px 26px 15px;border-bottom:1px solid var(--sw-border)}" +
+  ".sw-modal .hd .ic{width:40px;height:40px;flex:0 0 auto;border-radius:12px;display:flex;align-items:center;justify-content:center;" +
+    "background:linear-gradient(135deg,var(--sw-primary),var(--sw-accent));color:#fff}" +
+  ".sw-modal .hd .ic svg{width:21px;height:21px}" +
+  ".sw-modal h3{font-family:'Sora','Plus Jakarta Sans',sans-serif;margin:0;font-size:1.26rem;font-weight:800;letter-spacing:-.02em}" +
+  ".sw-modal .hd .sub{margin:3px 0 0;font-size:.76rem;color:var(--sw-muted);font-weight:600;letter-spacing:.01em}" +
+  ".sw-modal .bd{overflow-y:auto;padding:18px 26px 24px;line-height:1.64;font-size:.93rem}" +
+  ".sw-modal .bd p{margin:0 0 14px}" +
+  ".sw-modal .bd p:last-child{margin-bottom:0}" +
+  ".sw-modal .bd strong{color:var(--sw-text);font-weight:800}" +
+  ".sw-modal .bd .lead{color:var(--sw-primary)}" +
+  ".sw-modal .bd .sign{margin-top:4px;color:var(--sw-accent);font-weight:700}" +
+  ".sw-modal .cls{position:absolute;top:15px;right:17px;width:38px;height:38px;border-radius:50%;border:1px solid var(--sw-border);" +
+    "background:var(--sw-surface2);color:var(--sw-text);cursor:pointer;font-size:1.25rem;line-height:1;display:flex;align-items:center;justify-content:center}" +
+  ".sw-modal .cls:hover{border-color:var(--sw-primary);color:var(--sw-primary)}" +
+
   /* ===== mobile ===== */
   "@media (max-width:640px){" +
     /* counter sits at the very bottom of the page (in flow), not floating */
-    ".sw-counter{position:static;left:auto;bottom:auto;margin:26px auto 30px;display:flex;justify-content:center}" +
+    ".sw-counter{position:static;left:auto;bottom:auto;margin:26px auto 14px;display:flex;justify-content:center}" +
     ".sw-c .cell{padding:6px 12px}.sw-c .num{font-size:1.05rem}.sw-c .lbl{font-size:.56rem;letter-spacing:.09em}" +
     ".sw-fb{right:10px}" +
     ".sw-fb .launch .cap{display:none}" +
+    ".sw-footer{margin:16px auto 26px;font-size:.76rem}" +
+    ".sw-modal{padding:0}.sw-modal .card{width:100%;max-height:100%;height:100%;border-radius:0}" +
+    ".sw-modal .hd{padding:18px 18px 13px}.sw-modal h3{font-size:1.12rem}.sw-modal .bd{padding:16px 18px 26px;font-size:.92rem}" +
   "}";
 
   function injectCSS() {
@@ -165,6 +200,7 @@
   var SVG_DOWN = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M17 14V3'/><path d='M9 18.1 10 14H4.4a2 2 0 0 1-2-2.3l1.4-8A2 2 0 0 1 5.8 2H17v12l-4 9a2.5 2.5 0 0 1-4-1.9z'/></svg>";
   var SVG_CHECK= "<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>";
   var SVG_ARROW= "<svg width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14'/><path d='m13 6 6 6-6 6'/></svg>";
+  var SVG_SHIELD = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/><path d='m9 12 2 2 4-4'/></svg>";
 
   /* path back to site root from this page (handles /Rules/faq.html) */
   function rootPrefix() {
@@ -318,11 +354,56 @@
   }
 
   /* ===================== INIT ===================== */
+  /* ===================== DISCLAIMER (footer link + modal) ===================== */
+  function buildDisclaimer() {
+    var foot = document.createElement("div");
+    foot.className = "sw-footer";
+    foot.innerHTML =
+      "<span>© Deputations — independent, AI-assisted, human-reviewed</span>" +
+      "<span class='sep'>·</span>" +
+      "<button type='button' class='disc'>Disclaimer</button>";
+    document.body.appendChild(foot);
+
+    var paras = [
+      "Hello — I'm <strong>Vivek Vishal, Section Officer</strong>, and I built <strong>Deputations</strong> in my personal capacity, on my own time, for one reason: finding and pursuing a Central Government deputation is harder than it should be, and I wanted to make it simpler for fellow officers and officials like you.",
+      "<strong class='lead'>This is not an official website.</strong> Deputations is an independent, non-official information portal. It is not the website of the Government of India or of any Ministry, Department, Organisation, Cadre Controlling Authority or public authority, and it is not affiliated with, endorsed, sponsored or authorised by any of them. Nothing here is an official circular, instruction, clarification, recommendation, approval, legal opinion or administrative direction — please don't treat it as one.",
+      "<strong class='lead'>What I've tried to build.</strong> Every part of this portal — the searchable vacancy dashboard, the pay-level and eligibility filters, the “days-left” and source tags, the DeFeX index, the report and feedback tools, and the personal <em>My Deputation</em> tracker — has been planned and refined for one thing: clarity and practical usefulness for someone actually trying to go on deputation. It has gone through <strong>281+ revisions over about two months</strong>, and I keep improving it.",
+      "<strong class='lead'>How information gets here — trust the process, but still verify.</strong> I compile vacancies from publicly available official sources: Employment News, official notifications and Office Memorandums, departmental websites, and user-reported official links. I lean heavily on modern AI-assisted tools and automation to read, structure and organise this material — but <strong>AI is only an assistant</strong>. Every vacancy, every correction, every user submission and every community input is <strong>reviewed and approved by me before it appears</strong>; nothing is published automatically. Even so, deadlines, eligibility, rules and policies change, expire or get superseded. So before acting on anything here — eligibility, pay level, tenure, application and forwarding procedure, vigilance/NOC requirements, last date, mode of application — <strong>please verify it against the original official circular, the concerned official website, or the competent authority.</strong>",
+      "<strong class='lead'>About DeFeX (Deputation Friendliness Index).</strong> DeFeX is my own original concept and naming — an attempt to indicate how convenient, supportive, rational and predictable it is to proceed on deputation from a given Ministry, Department, Organisation or Cadre Controlling Authority. It is currently in <strong>beta</strong>, built on a deputation survey I ran in <strong>October–December 2025</strong>, available official documents and moderated feedback, and it will keep evolving. It is meant to be <strong>constructive</strong> — to help you choose better, and to give organisations a feedback-oriented view that may improve officer experience and procedural fairness. It makes <strong>no allegations</strong>, names no individual officers, and is <strong>not</strong> an official rating, audit, vigilance finding or legal determination. Where data is thin, an organisation is simply shown as unrated.",
+      "<strong class='lead'>This works best as a community effort.</strong> Keeping deputation information accurate needs many eyes. If you spot a new vacancy, a broken or wrong link, an outdated circular, a missing detail, a factual correction or a rule update — please tell me through the report and feedback tools. Your inputs genuinely make this better for the whole deputation community.",
+      "<strong class='lead'>On names and references.</strong> Government, ministry, department, designation, vacancy, link and rule references are used only for identification, classification and public-interest information; their use implies no official association, approval or endorsement.",
+      "By using this site you acknowledge that <strong>Deputations is an independent, AI-assisted, human-reviewed, community-supported information aid</strong>, and that final reliance must always rest on the original official sources and the competent authority.",
+      "<span class='sign'>— Vivek Vishal, Section Officer</span>"
+    ];
+    var modal = document.createElement("div");
+    modal.className = "sw-modal";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-label", "Declaration and disclaimer");
+    modal.innerHTML =
+      "<div class='card'>" +
+        "<button class='cls' aria-label='Close'>×</button>" +
+        "<div class='hd'><span class='ic'>" + SVG_SHIELD + "</span>" +
+          "<div><h3>Declaration &amp; Disclaimer</h3>" +
+          "<p class='sub'>Deputations — an independent, non-official portal</p></div></div>" +
+        "<div class='bd'>" + paras.map(function (p) { return "<p>" + p + "</p>"; }).join("") + "</div>" +
+      "</div>";
+    document.body.appendChild(modal);
+
+    function open() { modal.classList.add("open"); }
+    function close() { modal.classList.remove("open"); }
+    foot.querySelector(".disc").addEventListener("click", open);
+    modal.querySelector(".cls").addEventListener("click", close);
+    modal.addEventListener("click", function (e) { if (e.target === modal) close(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+  }
+
   // Feedback widget kept in abeyance for a later upgrade — counter only for now.
   var ENABLE_FEEDBACK = false;
   function init() {
     injectCSS();
     try { buildCounter(); } catch (e) {}
+    try { buildDisclaimer(); } catch (e) {}
     if (ENABLE_FEEDBACK) { try { buildFeedback(); } catch (e) {} }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
