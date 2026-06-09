@@ -186,7 +186,18 @@
     ".sw-footer{margin:16px auto 26px;font-size:.76rem}" +
     ".sw-modal{padding:0}.sw-modal .card{width:100%;max-height:100%;height:100%;border-radius:0}" +
     ".sw-modal .hd{padding:18px 18px 13px}.sw-modal h3{font-size:1.12rem}.sw-modal .bd{padding:16px 18px 26px;font-size:.92rem}" +
-  "}";
+  "}" +
+
+  /* ---- header title: typewriter on load → continuous gradient flow ---- */
+  ".tw-caret{-webkit-text-fill-color:#6B66FF;color:#6B66FF;font-weight:400;margin-left:.02em}" +
+  ".tw-caret.on{animation:tw-blink 1s steps(1) infinite}" +
+  "@keyframes tw-blink{50%{opacity:0}}" +
+  ".gradient-text.tw-flow,.ct-grad.tw-flow,.rv-grad.tw-flow{" +
+    "background-image:linear-gradient(90deg,#FF6B6B,#6B66FF,#FF6B6B);background-size:200% auto;" +
+    "-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;" +
+    "animation:tw-flow 3.5s linear infinite}" +
+  "@keyframes tw-flow{to{background-position:200% center}}" +
+  "@media (prefers-reduced-motion: reduce){.tw-flow{animation:none!important}.tw-caret{display:none}}";
 
   function injectCSS() {
     var s = document.createElement("style");
@@ -399,10 +410,41 @@
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
   }
 
+  /* ---- header title animation: type it out, then flow the gradient ------- */
+  function buildTypewriter() {
+    var els = document.querySelectorAll("[data-tw]");
+    if (!els.length) return;
+    els.forEach(function (el) {
+      var full = (el.textContent || "").trim();
+      if (!full) return;
+      if (REDUCED) { el.classList.add("tw-flow"); return; } // static (animation disabled by media query)
+      el.textContent = "";
+      var txt = document.createElement("span");
+      var caret = document.createElement("span");
+      caret.className = "tw-caret on";
+      caret.textContent = "▏"; // ▏
+      el.appendChild(txt);
+      el.appendChild(caret);
+      var i = 0;
+      (function tick() {
+        if (i <= full.length) {
+          txt.textContent = full.slice(0, i);
+          i++;
+          setTimeout(tick, 150);
+        } else {
+          // finished: drop the caret and let the gradient flow
+          el.textContent = full;
+          el.classList.add("tw-flow");
+        }
+      })();
+    });
+  }
+
   // Feedback widget kept in abeyance for a later upgrade — counter only for now.
   var ENABLE_FEEDBACK = false;
   function init() {
     injectCSS();
+    try { buildTypewriter(); } catch (e) {}
     try { buildCounter(); } catch (e) {}
     try { buildDisclaimer(); } catch (e) {}
     if (ENABLE_FEEDBACK) { try { buildFeedback(); } catch (e) {} }
