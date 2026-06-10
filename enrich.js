@@ -19,9 +19,23 @@
     return String(v).replace(/ /g, ' ').trim().replace(/\s+/g, ' ');
   }
 
+  // Pay-Matrix levels are integers 1–18 plus the exceptional "13A" which sits
+  // BETWEEN 13 and 14. We model a level as:
+  //   • rank  — number used for ALL comparing/sorting: "13A" → 13.5, so
+  //             equality (13.5 ≠ 13 ≠ 14) and ordering (13 < 13A < 14) work
+  //             everywhere with no special-casing;
+  //   • token — canonical display string: "13", "13A".
+  // The A suffix requires a word boundary so "Level 13 and above" stays 13.
+  const LEVEL_RX = /(\d+)([\s-]*A\b)?/;
+
   function parseLevel(v) {
-    const m = norm(v).match(/(\d+)/);
-    return m ? parseInt(m[1], 10) : null;
+    const m = norm(v).toUpperCase().match(LEVEL_RX);
+    return m ? parseInt(m[1], 10) + (m[2] ? 0.5 : 0) : null;
+  }
+
+  function levelToken(v) {
+    const m = norm(v).toUpperCase().match(LEVEL_RX);
+    return m ? m[1] + (m[2] ? 'A' : '') : '';
   }
 
   // Accepts ISO (yyyy-mm-dd), dd/mm/yyyy, dd-mm-yyyy, "03 Mar 2026". Day-first.
@@ -103,13 +117,15 @@
   }
 
   function formatEligibilityText(r1, r2) {
+    // ranks decide the ordering; tokens are what we display ("13A", not 13.5)
     const a = parseLevel(r1), b = parseLevel(r2);
+    const ta = levelToken(r1), tb = levelToken(r2);
     if (a !== null && b !== null) {
-      if (a === b) return `Level ${a}`;
-      return `Level ${Math.min(a,b)} to Level ${Math.max(a,b)}`;
+      if (a === b) return `Level ${ta}`;
+      return a < b ? `Level ${ta} to Level ${tb}` : `Level ${tb} to Level ${ta}`;
     }
-    if (a !== null) return `Level ${a}`;
-    if (b !== null) return `Level ${b}`;
+    if (a !== null) return `Level ${ta}`;
+    if (b !== null) return `Level ${tb}`;
     return 'Not specified';
   }
 
@@ -124,7 +140,9 @@
   // ---- Eligibility tiers (level + years-of-experience) --------------------
   // A deputation post is open to officers from one or more feeder grades, each
   // with its own minimum service. We model that as an array of tiers:
-  //   [{ level: 11, min_years: 0 }, { level: 10, min_years: 3 }, ...]
+  //   [{ level: 11, label: '11', min_years: 0 }, { level: 13.5, label: '13A', ... }]
+  // `level` is the comparable RANK; `label` the display token. Stored jsonb may
+  // hold the level as an int (legacy) or a token string ("13A") — both parse.
   // Source of truth = the `eligibility_tiers` column if present; otherwise we
   // backfill from the legacy req_level1/min_years_experience (+ …2) columns.
   function parseYears(v) {
@@ -151,6 +169,7 @@
     if (Array.isArray(raw) && raw.length) {
       const tiers = raw.map(t => ({
         level: parseLevel(t && t.level),
+        label: levelToken(t && t.level),
         min_years: (t && t.min_years != null) ? (parseInt(t.min_years, 10) || 0) : 0
       }));
       const cleaned = dedupeTiers(tiers);
@@ -159,9 +178,9 @@
     // 2) Backfill from legacy flat columns
     const tiers = [];
     const l1 = parseLevel(row && row.req_level1);
-    if (l1 !== null) tiers.push({ level: l1, min_years: parseYears(row && row.min_years_experience) });
+    if (l1 !== null) tiers.push({ level: l1, label: levelToken(row && row.req_level1), min_years: parseYears(row && row.min_years_experience) });
     const l2 = parseLevel(row && row.req_level2);
-    if (l2 !== null) tiers.push({ level: l2, min_years: parseYears(row && row.min_years_experience2) });
+    if (l2 !== null) tiers.push({ level: l2, label: levelToken(row && row.req_level2), min_years: parseYears(row && row.min_years_experience2) });
     return dedupeTiers(tiers);
   }
 
@@ -181,14 +200,28 @@
     // Eligible only if the officer's level matches one of the post's feeder
     // grades AND meets that tier's minimum service. A higher-grade officer is
     // NOT eligible for a lower post (it would be a reversion), and an in-between
-    // grade with no matching tier is not eligible either.
-    return tiers.some(t => t.level === lvl && (yrs === null || yrs >= t.min_years));
+    // grade with no matching tier is not eligible either. Tier levels may be
+    // enriched ranks (numbers, incl. 13.5) or raw jsonb values (int / "13A") —
+    // normalise the raw forms; never re-parse a number (13.5 would become 13).
+    return tiers.some(t => {
+      const tl = (typeof t.level === 'number') ? t.level : parseLevel(t.level);
+      return tl === lvl && (yrs === null || yrs >= t.min_years);
+    });
+  }
+
+  // rank → token for display when no label is carried (13.5 → "13A")
+  function rankLabel(level) {
+    if (typeof level !== 'number') return String(level ?? '');
+    return (level % 1) ? `${Math.floor(level)}A` : String(level);
   }
 
   // "L11 · L10 (3y) · L8 (5y)" — compact human summary of the tiers.
   function formatTiers(tiers) {
     if (!tiers || !tiers.length) return '';
-    return tiers.map(t => t.min_years > 0 ? `L${t.level} (${t.min_years}y)` : `L${t.level}`).join(' · ');
+    return tiers.map(t => {
+      const lbl = t.label || rankLabel(t.level);
+      return t.min_years > 0 ? `L${lbl} (${t.min_years}y)` : `L${lbl}`;
+    }).join(' · ');
   }
 
   function inferStatus(raw, daysLeft) {
@@ -336,7 +369,7 @@
       Organisation_Type: norm(row.organisation_type),
       Post_Name: norm(row.post_name),
       Level: norm(row.level),
-      Level_Text: norm(row.level_text) || (parseLevel(row.level) !== null ? `Level-${parseLevel(row.level)}` : ''),
+      Level_Text: norm(row.level_text) || (levelToken(row.level) ? `Level-${levelToken(row.level)}` : ''),
       Location_City: norm(row.location_city),
       Location_State: norm(row.location_state),
       Region: norm(row.region),
@@ -413,5 +446,5 @@
     });
   }
 
-  global.DepEnrich = { enrichRecord, enrichAll, parseTiers, isEligible, formatTiers, acronymFor, withAcronym };
+  global.DepEnrich = { enrichRecord, enrichAll, parseTiers, isEligible, formatTiers, levelToken, acronymFor, withAcronym };
 })(window);

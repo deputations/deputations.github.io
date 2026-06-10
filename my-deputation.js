@@ -570,7 +570,7 @@
         </div>
         <div class="row">
           <div><label>Keyword</label><input class="md-input" name="search" value="${U.escapeHtml(f.search || '')}" placeholder="post, dept, keywords"></div>
-          <div><label>My pay level</label><input class="md-input" name="myPayLevel" type="number" min="1" max="18" value="${U.escapeHtml(f.myPayLevel || '')}"></div>
+          <div><label>My pay level</label><input class="md-input" name="myPayLevel" type="text" inputmode="numeric" pattern="\\d{1,2}A?" maxlength="3" placeholder="1–18 or 13A" value="${U.escapeHtml(f.myPayLevel || '')}"></div>
         </div>
         <div class="row">
           <div><label>My years at level</label><input class="md-input" name="experience" type="number" min="0" max="40" value="${U.escapeHtml(f.experience || '')}" placeholder="e.g. 3"></div>
@@ -1237,7 +1237,13 @@
           <label>Current pay level</label>
           <select name="payLevel">
             <option value="">Select…</option>
-            ${[...Array(18)].map((_, i) => `<option value="${i + 1}" ${String(p.payLevel) === String(i + 1) ? 'selected' : ''}>Level ${i + 1}</option>`).join('')}
+            ${[...Array(18)].map((_, i) => {
+              const n = i + 1;
+              let opts = `<option value="${n}" ${String(p.payLevel) === String(n) ? 'selected' : ''}>Level ${n}</option>`;
+              // the exceptional 13A grade sits between 13 and 14
+              if (n === 13) opts += `<option value="13A" ${String(p.payLevel).toUpperCase() === '13A' ? 'selected' : ''}>Level 13A</option>`;
+              return opts;
+            }).join('')}
           </select>
         </div>
         <div class="md-field">
@@ -1406,7 +1412,8 @@
     const factors = { level: 0, ministry: 0, location: 0, deadline: 0, experience: 0 };
     if (!vacancy) return { score: 0, factors };
 
-    const userLevel = Number(profile.payLevel);
+    // payLevel may be "13A", so test for a value rather than Number() (NaN)
+    const userLevel = String(profile.payLevel || '').trim();
     if (userLevel) {
       // Tier-aware: full marks if the officer's level + years-at-level satisfy
       // one of the vacancy's eligibility tiers; partial if level set but the

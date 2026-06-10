@@ -114,11 +114,13 @@ Dates MUST be ISO format yyyy-mm-dd. If only a closing date is given, fill
 last_date_to_apply. If the ad says applications are due "within N days" / "N days
 from the date of this notification/advertisement", COMPUTE last_date_to_apply by
 adding N days to notification_date and return the computed ISO date.
-"level" and "req_level1" are the Pay Matrix level NUMBER as a string (e.g. "12").
+"level" and "req_level1" are the Pay Matrix level as a string — digits with an
+optional A suffix where the matrix says so (e.g. "12", "13A"). No other text.
 "eligibility_tiers" is the list of feeder grades the post is open to. A deputation
 post is usually open to officers from one OR MORE pay levels, each with its own
 minimum service. Return one entry per feeder grade as {"level","min_years"} where
-level is the Pay Matrix level NUMBER (string) and min_years is the required years
+level is the Pay Matrix level string ("10", or "13A" where the matrix says so)
+and min_years is the required years
 of regular service AT THAT LEVEL (string, "0" for an analogous-post / no-minimum
 tier). Example — a Level-11 post worded "(i) analogous; OR (ii) Level-10 with 3
 years; OR (iii) Level-8 with 5 years" becomes:
@@ -228,30 +230,46 @@ async function splitPdfToBase64(bytes: Uint8Array, pagesPerChunk: number): Promi
   return chunks;
 }
 
-// Normalise the model's eligibility_tiers into a clean [{level:int, min_years:int}]
-// array. Falls back to the legacy req_level1/2 + min_years fields when the model
-// didn't return tiers. One tier per level (lowest min_years wins), sorted desc.
-function normalizeTiers(it: any): Array<{ level: number; min_years: number }> {
-  const toInt = (v: unknown) => {
+// Pay levels: 1–18 plus the exceptional "13A" (between 13 and 14).
+//   levelTok  → canonical token string: "13", "13A" (what we STORE)
+//   levelRank → comparable number: "13A" → 13.5 (what we SORT/COMPARE by)
+// The A suffix needs a word boundary so "13 and above" stays "13".
+const LEVEL_RX = /(\d+)([\s-]*A\b)?/;
+const levelTok = (v: unknown): string => {
+  const m = String(v ?? "").trim().toUpperCase().match(LEVEL_RX);
+  return m ? m[1] + (m[2] ? "A" : "") : "";
+};
+const levelRank = (v: unknown): number | null => {
+  const m = String(v ?? "").trim().toUpperCase().match(LEVEL_RX);
+  return m ? parseInt(m[1], 10) + (m[2] ? 0.5 : 0) : null;
+};
+
+// Normalise the model's eligibility_tiers into a clean [{level, min_years}]
+// array — level stored as the TOKEN string ("13A") so nothing is mangled.
+// Falls back to the legacy req_level1/2 + min_years fields when the model
+// didn't return tiers. One tier per level (lowest min_years wins), sorted by
+// rank descending.
+function normalizeTiers(it: any): Array<{ level: string; min_years: number }> {
+  const toYears = (v: unknown) => {
     const m = String(v ?? "").match(/\d+/);
-    return m ? parseInt(m[0], 10) : null;
+    return m ? parseInt(m[0], 10) : 0;
   };
   let raw: any[] = Array.isArray(it?.eligibility_tiers) ? it.eligibility_tiers : [];
   let tiers = raw
-    .map((t) => ({ level: toInt(t?.level), min_years: toInt(t?.min_years) ?? 0 }))
-    .filter((t) => t.level !== null) as Array<{ level: number; min_years: number }>;
+    .map((t) => ({ level: levelTok(t?.level), min_years: toYears(t?.min_years) }))
+    .filter((t) => t.level);
   if (!tiers.length) {
-    const l1 = toInt(it?.req_level1) ?? toInt(it?.level);
-    if (l1 !== null) tiers.push({ level: l1, min_years: toInt(it?.min_years_experience) ?? 0 });
-    const l2 = toInt(it?.req_level2);
-    if (l2 !== null) tiers.push({ level: l2, min_years: toInt(it?.min_years_experience2) ?? 0 });
+    const l1 = levelTok(it?.req_level1) || levelTok(it?.level);
+    if (l1) tiers.push({ level: l1, min_years: toYears(it?.min_years_experience) });
+    const l2 = levelTok(it?.req_level2);
+    if (l2) tiers.push({ level: l2, min_years: toYears(it?.min_years_experience2) });
   }
-  const byLevel = new Map<number, { level: number; min_years: number }>();
+  const byLevel = new Map<string, { level: string; min_years: number }>();
   for (const t of tiers) {
     const prev = byLevel.get(t.level);
     if (!prev || t.min_years < prev.min_years) byLevel.set(t.level, t);
   }
-  return [...byLevel.values()].sort((a, b) => b.level - a.level);
+  return [...byLevel.values()].sort((a, b) => (levelRank(b.level) ?? 0) - (levelRank(a.level) ?? 0));
 }
 
 // ---------------------------------------------------------------------------
@@ -272,7 +290,9 @@ const CONTENT_FIELDS = [
 
 const normPart = (s: unknown) =>
   String(s ?? "").replace(/[^a-zA-Z0-9]+/g, " ").trim().toLowerCase();
-const normLevel = (s: unknown) => String(s ?? "").replace(/[^0-9]/g, "");
+// Keeps the A of "13A" (lowercased) — MUST stay byte-identical to the SQL in
+// migrations 0002/0006/0008: lower(regexp_replace(level, '[^0-9Aa]', '', 'g'))
+const normLevel = (s: unknown) => String(s ?? "").replace(/[^0-9Aa]/g, "").toLowerCase();
 
 // Replicates the generated dedup_key (0002) and match_key (0006) exactly.
 //   matchKey  = org|post|city|level   (= DB match_key)
@@ -640,7 +660,7 @@ Deno.serve(async (req) => {
     const year = new Date().getFullYear();
     const rows = kept.map((it, i) => {
       const min_code = minCodeFromMinistry(it.ministry || "");
-      const level = (it.level || it.req_level1 || "").toString().replace(/\D/g, "");
+      const level = levelTok(it.level || it.req_level1 || "");   // keeps "13A"
       const seq = String(i + 1).padStart(3, "0");
       return {
         vacancy_id: `${min_code}-${year}-L${level || "X"}-${seq}`,
@@ -653,8 +673,8 @@ Deno.serve(async (req) => {
         level_text: level ? `Level-${level}` : "",
         location_city: it.location_city || "",
         location_state: it.location_state || "",
-        req_level1: (it.req_level1 || level || "").toString().replace(/\D/g, ""),
-        req_level2: (it.req_level2 || "").toString().replace(/\D/g, ""),
+        req_level1: levelTok(it.req_level1 || level || ""),
+        req_level2: levelTok(it.req_level2 || ""),
         min_years_experience: it.min_years_experience || "",
         min_years_experience2: it.min_years_experience2 || "",
         eligibility_tiers: normalizeTiers(it),

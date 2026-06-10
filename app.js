@@ -670,6 +670,13 @@ function renderTable(data) {
             opt.value = String(i);
             opt.textContent = `Level ${i}`;
             filterMyPayLevel.appendChild(opt);
+            // the exceptional 13A grade sits between 14 and 13 (descending list)
+            if (i === 14) {
+                const a = document.createElement('option');
+                a.value = '13A';
+                a.textContent = 'Level 13A';
+                filterMyPayLevel.appendChild(a);
+            }
         }
 
         if (filterExperience) {
@@ -2186,13 +2193,24 @@ function applyTheme(theme) {
         return city || state || '';
     }
 
+    // Rank-based level parsing: "13A" → 13.5 (sits between 13 and 14), so all
+    // comparisons/sorts below need no special-casing. levelLabel gives the
+    // display token ("13A"). A suffix needs a word boundary ("13 and…" → 13).
+    const LEVEL_RX = /(\d+)([\s-]*A\b)?/;
+
     function parseLevelValue(value) {
         if (value == null) return null;
-        const str = String(value).trim();
+        const str = String(value).trim().toUpperCase();
         if (!str) return null;
 
-        const match = str.match(/\d+/);
-        return match ? Number(match[0]) : null;
+        const match = str.match(LEVEL_RX);
+        return match ? Number(match[1]) + (match[2] ? 0.5 : 0) : null;
+    }
+
+    function levelLabel(value) {
+        if (value == null) return '';
+        const match = String(value).trim().toUpperCase().match(LEVEL_RX);
+        return match ? match[1] + (match[2] ? 'A' : '') : '';
     }
 
     function parseNumericSafe(value, fallback = 0) {
@@ -2201,18 +2219,21 @@ function applyTheme(theme) {
     }
 
     function formatEligibility(item) {
+        // ranks order the pair; tokens are displayed (so "13A", never 13.5)
         const req1 = parseLevelValue(item.Req_Level1);
         const req2 = parseLevelValue(item.Req_Level2);
+        const lbl1 = levelLabel(item.Req_Level1);
+        const lbl2 = levelLabel(item.Req_Level2);
 
         if (req1 !== null && req2 !== null) {
-            if (req1 === req2) return `Level ${req1}`;
-            const minReq = Math.min(req1, req2);
-            const maxReq = Math.max(req1, req2);
-            return `Level ${minReq} to Level ${maxReq}`;
+            if (req1 === req2) return `Level ${lbl1}`;
+            return req1 < req2
+                ? `Level ${lbl1} to Level ${lbl2}`
+                : `Level ${lbl2} to Level ${lbl1}`;
         }
 
-        if (req1 !== null) return `Level ${req1}`;
-        if (req2 !== null) return `Level ${req2}`;
+        if (req1 !== null) return `Level ${lbl1}`;
+        if (req2 !== null) return `Level ${lbl2}`;
         return 'Not specified';
     }
 

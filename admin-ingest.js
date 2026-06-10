@@ -96,20 +96,34 @@ const FIELDS = [
 // Replaces the old flat req_level1/2 + min_years fields with an unbounded
 // repeater. Each tier = a feeder grade the post is open to. parseTiers (from
 // enrich.js) reads either the eligibility_tiers jsonb or the legacy columns.
+// Pay levels: 1–18 plus the exceptional "13A" (between 13 and 14).
+//   levelTok(v)  → canonical display token: "13", "13A", '' if none
+//   levelRank(v) → comparable number: "13A" → 13.5 (so sort/equality just work)
+// The A suffix needs a word boundary so "13 and above" stays 13.
+const LEVEL_RX = /(\d+)([\s-]*A\b)?/;
+function levelTok(v) {
+  const m = String(v ?? '').trim().toUpperCase().match(LEVEL_RX);
+  return m ? m[1] + (m[2] ? 'A' : '') : '';
+}
+function levelRank(v) {
+  const m = String(v ?? '').trim().toUpperCase().match(LEVEL_RX);
+  return m ? parseInt(m[1], 10) + (m[2] ? 0.5 : 0) : null;
+}
+
 function tiersFor(obj) {
   if (window.DepEnrich && window.DepEnrich.parseTiers) return window.DepEnrich.parseTiers(obj);
-  const num = (v) => { const m = String(v ?? '').match(/\d+/); return m ? parseInt(m[0], 10) : null; };
   const out = [];
-  const l1 = num(obj && obj.req_level1); if (l1 !== null) out.push({ level: l1, min_years: num(obj && obj.min_years_experience) || 0 });
-  const l2 = num(obj && obj.req_level2); if (l2 !== null) out.push({ level: l2, min_years: num(obj && obj.min_years_experience2) || 0 });
+  const l1 = levelRank(obj && obj.req_level1); if (l1 !== null) out.push({ level: l1, label: levelTok(obj && obj.req_level1), min_years: levelRank(obj && obj.min_years_experience) || 0 });
+  const l2 = levelRank(obj && obj.req_level2); if (l2 !== null) out.push({ level: l2, label: levelTok(obj && obj.req_level2), min_years: levelRank(obj && obj.min_years_experience2) || 0 });
   return out;
 }
 
 function tierRowHtml(t) {
+  const lvlDisplay = t ? (t.label || levelTok(t.level) || t.level) : '';
   return `<div class="tier-row" style="display:flex;gap:6px;margin-bottom:5px;align-items:center;">
     <input class="tier-years" type="number" min="0" max="40" placeholder="Years" value="${t ? escapeHtml(t.min_years) : ''}" style="width:90px;flex:0 0 auto">
     <span class="muted" style="font-size:.8rem">years in Level</span>
-    <input class="tier-level" type="number" min="1" max="18" placeholder="Level" value="${t ? escapeHtml(t.level) : ''}" style="width:90px;flex:0 0 auto">
+    <input class="tier-level" type="text" inputmode="numeric" pattern="\\d{1,2}A?" maxlength="3" placeholder="Level (e.g. 12, 13A)" value="${escapeHtml(lvlDisplay)}" style="width:110px;flex:0 0 auto">
     <button type="button" class="tier-del" title="Remove this tier" style="margin-left:auto">✕</button>
   </div>`;
 }
@@ -139,21 +153,23 @@ function wireTiersEditor(scopeEl) {
   });
 }
 
-// Read tier rows -> clean [{level,min_years}] (deduped, sorted desc). Returns
-// [] when the editor is present but empty, or null when there's no editor.
+// Read tier rows -> clean [{level,min_years}] (deduped, sorted by rank desc).
+// `level` is stored as the TOKEN string ("13", "13A") — jsonb-friendly and
+// readable by enrich.js parseTiers. Returns [] when the editor is present but
+// empty, or null when there's no editor.
 function collectTiers(scopeEl) {
   const ed = scopeEl.querySelector('[data-tiers]');
   if (!ed) return null;
   const tiers = [];
   ed.querySelectorAll('.tier-row').forEach((row) => {
-    const lvl = parseInt(String(row.querySelector('.tier-level').value || '').replace(/\D/g, ''), 10);
-    if (!Number.isFinite(lvl)) return;
+    const tok = levelTok(row.querySelector('.tier-level').value);
+    if (!tok) return;
     const yrs = parseInt(String(row.querySelector('.tier-years').value || '').replace(/\D/g, ''), 10) || 0;
-    tiers.push({ level: lvl, min_years: yrs });
+    tiers.push({ level: tok, min_years: yrs, _rank: levelRank(tok) });
   });
   const byLevel = new Map();
   tiers.forEach((t) => { const p = byLevel.get(t.level); if (!p || t.min_years < p.min_years) byLevel.set(t.level, t); });
-  return [...byLevel.values()].sort((a, b) => b.level - a.level);
+  return [...byLevel.values()].sort((a, b) => b._rank - a._rank).map(({ level, min_years }) => ({ level, min_years }));
 }
 
 // Merge collected tiers into a patch object: writes eligibility_tiers AND
@@ -283,7 +299,7 @@ Return ONLY a JSON array — no prose, no markdown fences. Each object uses EXAC
 ## Field Rules
 - ministry: standard GoI ministry name WITHOUT the "Ministry of" / "Department of" prefix (e.g. "Agriculture and Farmers Welfare", "Home Affairs", "Personnel, Public Grievances and Pensions").
 - organisation_type: EXACTLY one of — Ministry; Department; Attached and Subordinate Offices; Constitutional Bodies; Statutory Bodies; Autonomous Bodies; Central Public Sector Enterprises (CPSEs).
-- level, req_level1: Pay Matrix level NUMBER only, as a string (e.g. "12").
+- level, req_level1: Pay Matrix level as a string — digits with an optional A suffix where the matrix says so (e.g. "12", "13A"). No other text.
 - eligibility_tiers: array of {"level","min_years"} (both number-strings) = the feeder grades the post is open to. Include the analogous tier (the post's own level, "min_years":"0") when "analogous posts" is mentioned, plus each lower grade with its required years. Also still fill req_level1/req_level2 + min_years_experience/min_years_experience2 with the first two tiers. Example for a Level-11 post open to "(i) analogous; (ii) L10+3y; (iii) L8+5y": [{"level":"11","min_years":"0"},{"level":"10","min_years":"3"},{"level":"8","min_years":"5"}]
 - notification_date, last_date_to_apply: ISO yyyy-mm-dd. If a deadline is "within N days of the notification/advertisement", compute last_date_to_apply = notification_date + N days.
 - official_notification_link: official sources ONLY — the DIRECT ".pdf" link or the specific circular/notification page that opens this vacancy. NEVER a generic homepage, a careers/"current vacancies" listing, or a third-party aggregator. If unsure a link is real, leave it empty. Never invent a URL.
@@ -309,7 +325,7 @@ Output ONLY a JSON array. Each object must use EXACTLY these keys (use "" when u
 Rules:
 - official_notification_link must be the ACTUAL notification document (direct ".pdf" preferred), or the specific circular page — NEVER a generic homepage / listing / aggregator. Leave empty if not found. Never invent a URL.
 - Dates ISO yyyy-mm-dd; if "within N days of the notification", compute last_date_to_apply = notification_date + N days.
-- "level"/"req_level1" = Pay Matrix level NUMBER only (e.g. "12").
+- "level"/"req_level1" = Pay Matrix level as a string — digits with an optional A suffix where the matrix says so (e.g. "12", "13A"). No other text.
 - "eligibility_tiers" = feeder grades as [{"level","min_years"}] (NUMBER strings). Include the analogous tier (post's own level, "0" years) plus each lower grade with its required years; e.g. [{"level":"11","min_years":"0"},{"level":"10","min_years":"3"},{"level":"8","min_years":"5"}]. Also still fill req_level1/2 + min_years_experience/2 from the first two tiers.
 - ministry = standard GoI name WITHOUT the "Ministry of"/"Department of" prefix.
 - organisation_type: EXACTLY one of — Ministry; Department; Attached and Subordinate Offices; Constitutional Bodies; Statutory Bodies; Autonomous Bodies; Central Public Sector Enterprises (CPSEs).
@@ -333,7 +349,7 @@ function fileToBase64(file) {
 }
 
 function mapPasted(it, jobId, label, year, i, sourceFileUrl) {
-  const lvl = String(it.level || it.req_level1 || '').replace(/\D/g, '');
+  const lvl = levelTok(it.level || it.req_level1 || '');   // keeps "13A"
   const mc = minCode(it.ministry);
   return {
     vacancy_id: `${mc}-${year}-L${lvl || 'X'}-${String(i + 1).padStart(3, '0')}`,
@@ -341,9 +357,10 @@ function mapPasted(it, jobId, label, year, i, sourceFileUrl) {
     organisation_type: it.organisation_type || '', post_name: it.post_name || '',
     level: lvl, level_text: lvl ? `Level-${lvl}` : '',
     location_city: it.location_city || '', location_state: it.location_state || '',
-    req_level1: String(it.req_level1 || lvl || '').replace(/\D/g, ''), req_level2: String(it.req_level2 || '').replace(/\D/g, ''),
+    req_level1: levelTok(it.req_level1 || lvl || ''), req_level2: levelTok(it.req_level2 || ''),
     min_years_experience: String(it.min_years_experience || ''), min_years_experience2: String(it.min_years_experience2 || ''),
-    eligibility_tiers: tiersFor(it),
+    // store tiers with TOKEN levels ("13A") — ranks (13.5) would mangle on re-parse
+    eligibility_tiers: tiersFor(it).map((t) => ({ level: t.label || String(t.level), min_years: t.min_years })),
     no_of_posts: String(it.no_of_posts || ''), deputation_period_years: String(it.deputation_period_years || ''),
     deputation_type: it.deputation_type || '', notification_date: it.notification_date || '', last_date_to_apply: it.last_date_to_apply || '',
     official_notification_link: it.official_notification_link || '', application_form_link: it.application_form_link || '',
@@ -378,7 +395,10 @@ const CONTENT_FIELDS = [
   'essential_qualification', 'eligible_service', 'mode_of_application', 'tags_keywords',
 ];
 const normPart = (s) => String(s ?? '').replace(/[^a-zA-Z0-9]+/g, ' ').trim().toLowerCase();
-const normLevel = (s) => String(s ?? '').replace(/[^0-9]/g, '');
+// Keeps the A of "13A" (lowercased) so 13 and 13A posts get distinct keys.
+// MUST stay byte-identical to the SQL in migrations 0002/0006/0008:
+//   lower(regexp_replace(coalesce(level,''), '[^0-9Aa]', '', 'g'))
+const normLevel = (s) => String(s ?? '').replace(/[^0-9Aa]/g, '').toLowerCase();
 // Replicates the generated dedup_key (0002) and match_key (0006) exactly.
 //   matchKey = org|post|city|level (= DB match_key), emptyKey = org|post|city|
 //   (empty-level twin), prefix = org|post|city (level-free grouping).
@@ -972,8 +992,11 @@ function scheduleGc() {
 function _ymd(s) { const m = String(s || '').match(/(\d{4})-(\d{2})-(\d{2})/); return m ? m[1] + m[2] + m[3] : ''; }
 function _sourceKey(r) { return String(r.source_category || r.source_type || '').toLowerCase(); }
 function _levelNum(r) {
-  const m = String(r.level || r.level_text || r.req_level1 || '').match(/\d+/);
-  return m ? parseInt(m[0], 10) : null;
+  // rank: "13A" → 13.5, so sorting places it between 13 and 14
+  return levelRank(r.level || r.level_text || r.req_level1 || '');
+}
+function _levelTok(r) {
+  return levelTok(r.level || r.level_text || r.req_level1 || '');
 }
 const _byPost = (a, b) => String(a.post_name || '').localeCompare(String(b.post_name || ''));
 // Compare a date field; desc=newest first. Missing dates always sort last.
@@ -1039,14 +1062,20 @@ async function loadDrafts() {
 }
 
 // Fill the Level filter with the distinct pay levels present in the current
-// draft set (numeric, descending), preserving the current selection if still valid.
+// draft set (sorted by rank desc, so 13A lands between 14 and 13), preserving
+// the current selection if still valid. Option values are TOKENS ("13A").
 function populateDraftLevelFilter() {
   const sel = $('draftLevel');
   if (!sel) return;
   const prev = sel.value;
-  const levels = [...new Set(DRAFT_ROWS.map(_levelNum).filter((n) => n != null))].sort((a, b) => b - a);
-  sel.innerHTML = '<option value="">All</option>' + levels.map((n) => `<option value="${n}">Level ${n}</option>`).join('');
-  if (prev && levels.includes(parseInt(prev, 10))) sel.value = prev; // keep selection across refresh
+  const byTok = new Map(); // token -> rank
+  DRAFT_ROWS.forEach((r) => {
+    const tok = _levelTok(r);
+    if (tok && !byTok.has(tok)) byTok.set(tok, _levelNum(r));
+  });
+  const toks = [...byTok.keys()].sort((a, b) => byTok.get(b) - byTok.get(a));
+  sel.innerHTML = '<option value="">All</option>' + toks.map((t) => `<option value="${t}">Level ${t}</option>`).join('');
+  if (prev && byTok.has(prev)) sel.value = prev; // keep selection across refresh
 }
 
 // Renders ONLY the current page's summary cards. Grouping headers are shown per
@@ -1055,7 +1084,7 @@ function renderDrafts() {
   const q = ($('draftSearch') && $('draftSearch').value || '').toLowerCase().trim();
   const lvl = ($('draftLevel') && $('draftLevel').value || '').trim();
   let filtered = DRAFT_ROWS;
-  if (lvl) filtered = filtered.filter((r) => String(_levelNum(r) ?? '') === lvl);
+  if (lvl) filtered = filtered.filter((r) => _levelTok(r) === lvl);
   if (q) filtered = filtered.filter((r) =>
     [r.post_name, r.organisation, r.ministry, r.location_city, r.vacancy_id]
       .some((f) => String(f || '').toLowerCase().includes(q)));
@@ -1146,8 +1175,8 @@ function collectFromCard(el) {
   const editor = el.querySelector('.editor');
   const patch = {};
   editor.querySelectorAll('[data-k]').forEach((inp) => { patch[inp.dataset.k] = (inp.value || '').trim(); });
-  const lvl = (patch.level || '').replace(/\D/g, '');
-  if ('level' in patch) patch.level_text = lvl ? `Level-${lvl}` : '';
+  const lvl = levelTok(patch.level);                         // keeps "13A"
+  if ('level' in patch) { patch.level = lvl; patch.level_text = lvl ? `Level-${lvl}` : ''; }
   if (patch.ministry) patch.min_code = MIN_CODE_BY_NAME[patch.ministry] || minCode(patch.ministry);
   applyTiersToPatch(patch, el);
   return patch;
@@ -1298,8 +1327,8 @@ function draftCard(r) {
   const collect = () => {
     const patch = {};
     editor.querySelectorAll('[data-k]').forEach((inp) => { patch[inp.dataset.k] = (inp.value || '').trim(); });
-    const lvl = (patch.level || '').replace(/\D/g, '');
-    if ('level' in patch) patch.level_text = lvl ? `Level-${lvl}` : '';
+    const lvl = levelTok(patch.level);                       // keeps "13A"
+    if ('level' in patch) { patch.level = lvl; patch.level_text = lvl ? `Level-${lvl}` : ''; }
     if (patch.ministry) patch.min_code = MIN_CODE_BY_NAME[patch.ministry] || minCode(patch.ministry);
     applyTiersToPatch(patch, el);
     return patch;
@@ -1418,7 +1447,8 @@ let MANAGE_ROWS = [];
 function collectPatch(scopeEl) {
   const patch = {};
   scopeEl.querySelectorAll('[data-k]').forEach((inp) => { patch[inp.dataset.k] = (inp.value || '').trim(); });
-  const lvl = (patch.level || '').replace(/\D/g, '');
+  const lvl = levelTok(patch.level);                         // keeps "13A"
+  if ('level' in patch) patch.level = lvl;
   patch.level_text = lvl ? `Level-${lvl}` : '';
   if (patch.ministry) patch.min_code = MIN_CODE_BY_NAME[patch.ministry] || minCode(patch.ministry);
   applyTiersToPatch(patch, scopeEl);

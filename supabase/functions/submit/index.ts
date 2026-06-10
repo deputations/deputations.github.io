@@ -115,11 +115,14 @@ Deno.serve(async (req) => {
   }
 
   const ministry = String(body.ministry || "");
-  const level = String(body.payLevel || "").replace(/\D/g, "");
+  // Pay level kept as a TOKEN ("12", "13A" — the exceptional grade between 13
+  // and 14); A needs a word boundary so "13 and above" stays "13".
+  const lvlMatch = String(body.payLevel || "").toUpperCase().match(/(\d+)([\s-]*A\b)?/);
+  const level = lvlMatch ? lvlMatch[1] + (lvlMatch[2] ? "A" : "") : "";
   const minYears = String(body.minYears || "").replace(/\D/g, "");
   // Public tips are single-tier (the analogous grade); admin refines on review.
   const eligibility_tiers = level
-    ? [{ level: parseInt(level, 10), min_years: minYears ? parseInt(minYears, 10) : 0 }]
+    ? [{ level, min_years: minYears ? parseInt(minYears, 10) : 0 }]
     : [];
   const notes = [
     body.submitterName ? `Submitter: ${body.submitterName}` : "",

@@ -35,23 +35,37 @@
     return city || state || '';
   }
 
+  // Pay levels are 1–18 plus the exceptional "13A" (between 13 and 14).
+  // parseLevelValue returns a comparable RANK ("13A" → 13.5); levelLabel the
+  // display token ("13A"). The A suffix needs a word boundary so phrases like
+  // "Level 13 and above" still parse as 13.
+  const LEVEL_RX = /(\d+)([\s-]*A\b)?/;
+
   function parseLevelValue(value) {
     if (value == null) return null;
-    const str = String(value).trim();
+    const str = String(value).trim().toUpperCase();
     if (!str) return null;
-    const match = str.match(/\d+/);
-    return match ? Number(match[0]) : null;
+    const match = str.match(LEVEL_RX);
+    return match ? Number(match[1]) + (match[2] ? 0.5 : 0) : null;
+  }
+
+  function levelLabel(value) {
+    if (value == null) return '';
+    const match = String(value).trim().toUpperCase().match(LEVEL_RX);
+    return match ? match[1] + (match[2] ? 'A' : '') : '';
   }
 
   function formatEligibility(item) {
     const a = parseLevelValue(item && item.Req_Level1);
     const b = parseLevelValue(item && item.Req_Level2);
+    const ta = levelLabel(item && item.Req_Level1);
+    const tb = levelLabel(item && item.Req_Level2);
     if (a !== null && b !== null) {
-      if (a === b) return `Level ${a}`;
-      return `Level ${Math.min(a, b)} to Level ${Math.max(a, b)}`;
+      if (a === b) return `Level ${ta}`;
+      return a < b ? `Level ${ta} to Level ${tb}` : `Level ${tb} to Level ${ta}`;
     }
-    if (a !== null) return `Level ${a}`;
-    if (b !== null) return `Level ${b}`;
+    if (a !== null) return `Level ${ta}`;
+    if (b !== null) return `Level ${tb}`;
     return 'Not specified';
   }
 
@@ -136,7 +150,7 @@
 
   window.DepUtils = {
     safe, hasMeaningfulValue, normalizeText, escapeHtml,
-    formatLocation, parseLevelValue, formatEligibility,
+    formatLocation, parseLevelValue, levelLabel, formatEligibility,
     formatDaysLeft, getDaysLeftTone, formatDisplayDate, getDaysUntilDate,
     normalizeUrl, getFirstNonEmpty, isDelhiNcrLocation, fuzzyIncludes, uid
   };

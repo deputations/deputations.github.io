@@ -62,9 +62,25 @@ def norm(v) -> str:
     return re.sub(r"\s+", " ", str(v).replace(" ", " ")).strip()
 
 
+# Pay levels are 1–18 plus the exceptional "13A" (between 13 and 14).
+# level_token → display string ("13", "13A"); level_rank → comparable number
+# ("13A" → 13.5). The A suffix needs a word boundary so "13 and above" → 13.
+_LEVEL_RX = re.compile(r"(\d+)([\s-]*A\b)?", re.IGNORECASE)
+
+
+def level_token(v):
+    m = _LEVEL_RX.search(norm(v).upper())
+    return (m.group(1) + ("A" if m.group(2) else "")) if m else None
+
+
+def level_rank(v):
+    m = _LEVEL_RX.search(norm(v).upper())
+    return (int(m.group(1)) + (0.5 if m.group(2) else 0)) if m else None
+
+
 def parse_level(v):
-    m = re.search(r"(\d+)", norm(v))
-    return int(m.group(1)) if m else None
+    # kept for back-compat: returns the display token ("13A"), not an int
+    return level_token(v)
 
 
 def parse_date_iso(v) -> str:
@@ -111,13 +127,17 @@ def build_location_label(city: str, state: str) -> str:
 
 
 def format_eligibility_text(r1, r2) -> str:
-    a, b = parse_level(r1), parse_level(r2)
-    if a is not None and b is not None:
-        return f"Level {a}" if a == b else f"Level {min(a, b)} to Level {max(a, b)}"
-    if a is not None:
-        return f"Level {a}"
-    if b is not None:
-        return f"Level {b}"
+    # ranks decide the ordering; tokens are what we display ("13A", not 13.5)
+    ra, rb = level_rank(r1), level_rank(r2)
+    ta, tb = level_token(r1), level_token(r2)
+    if ra is not None and rb is not None:
+        if ra == rb:
+            return f"Level {ta}"
+        return f"Level {ta} to Level {tb}" if ra < rb else f"Level {tb} to Level {ta}"
+    if ra is not None:
+        return f"Level {ta}"
+    if rb is not None:
+        return f"Level {tb}"
     return ""
 
 
