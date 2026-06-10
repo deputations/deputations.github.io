@@ -882,7 +882,18 @@ function wireApp() {
       count = parseInt(((cr.headers.get('content-range') || '/0').split('/')[1]) || '0', 10) || 0;
     } catch { /* */ }
     if (!count) return toast('No drafts match the ticked confidence');
-    if (!confirm(`Approve & publish ${count} draft(s) with confidence: ${levels.join(', ')}?\n(Unsaved inline edits aren't included — Save those first if needed.)`)) return;
+    // Strong confirm: this acts on the WHOLE queue by confidence, NOT the row
+    // checkboxes — the easy-to-make mistake. For large batches require typing the
+    // count so it can't be fired by a stray Enter/click.
+    const warn = `⚠ Approve & PUBLISH ${count} draft(s) across the ENTIRE queue with confidence: ${levels.join(', ')}.\n\n`
+      + `This is NOT the row checkboxes — for those use “✓ Approve checked”.\n`
+      + `Unsaved inline edits aren't included — Save those first if needed.`;
+    if (count >= 50) {
+      const typed = prompt(`${warn}\n\nThis is a large batch. Type the number ${count} to confirm:`);
+      if (String(typed || '').trim() !== String(count)) return toast('Cancelled — number did not match');
+    } else if (!confirm(warn)) {
+      return;
+    }
     const b = $('approveAllBtn'); b.disabled = true;
     try {
       const r = await api(`/rest/v1/vacancies?status=eq.draft&${filt}`, {
