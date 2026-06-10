@@ -300,8 +300,10 @@
     const groups = String(name || '').match(/\(([^)]{2,})\)/g);
     if (!groups) return '';
     for (const g of groups) {
-      const t = g.slice(1, -1).trim();
-      if (/^[A-Z][A-Z0-9.&/-]{1,9}$/.test(t)) return t;
+      // first whitespace token inside the parens — "(DRDO HQ)" → DRDO,
+      // "(CRCS)" → CRCS, "(DRAT)" → DRAT; skips prose / mixed-case like "(MoF)".
+      const first = g.slice(1, -1).trim().split(/\s+/)[0];
+      if (/^[A-Z][A-Z0-9.&/-]{1,9}$/.test(first)) return first;
     }
     return '';
   }
@@ -320,6 +322,7 @@
   }
   function withAcronym(name) {                // "Full Name (ACR)" for display
     const s = norm(name); if (!s) return '';
+    if (explicitAcr(s)) return s;             // name already shows an acronym in parens — leave it
     const acr = acronymFor(s); if (!acr) return s;
     if (acrNorm(s) === acr.toLowerCase()) return s;                 // name IS the acronym
     if (new RegExp('\\(\\s*' + acr + '\\s*\\)', 'i').test(s)) return s; // already shown
@@ -361,6 +364,17 @@
       return `${parseInt(day, 10)}${MONTHS[mon.slice(0,3).toLowerCase()]}${year.slice(-2)}`;
     }
     return s.replace(/^employment news\s*/i, '').replace(/^EN\s*/i, '') || s;
+  }
+  // Normalise a page reference, preserving ranges: "58-59" → "58-59",
+  // "1, 2" → "1-2", "1, 2, 3" → "1-3", "24" → "24". (Previously every
+  // non-digit was stripped, collapsing "58-59" into "5859".)
+  function normPage(raw) {
+    const nums = norm(raw).match(/\d+/g);
+    if (!nums || !nums.length) return '';
+    if (nums.length === 1) return nums[0];
+    const ints = nums.map(Number);
+    const consecutive = ints.every((n, i) => i === 0 || n === ints[i - 1] + 1);
+    return consecutive ? `${ints[0]}-${ints[ints.length - 1]}` : nums.join(', ');
   }
   function sourceRef(type, cat, page) {
     const isEN = String(type || '').toLowerCase() === 'employment_news' ||
@@ -453,7 +467,7 @@
     o.search_text = buildSearchText(o);
     o.completeness_score = completenessScore(o);
     o.data_quality_flag = qualityFlag(o.completeness_score);
-    o.Source_Page = norm(row.raw_extraction && row.raw_extraction.source_page).replace(/\D/g, '');
+    o.Source_Page = normPage(row.raw_extraction && row.raw_extraction.source_page);
     o.Source_Ref = sourceRef(o._source_type, o['Source Category'], o.Source_Page);
     o.Source_Ref_Long = sourceRefLong(o._source_type, o['Source Category'], o.Source_Page);
     o.Detailed_Eligibility = row.raw_extraction && row.raw_extraction.detailed_eligibility
