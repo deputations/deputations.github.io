@@ -713,23 +713,61 @@ function wireApp() {
   $('mgRefresh').onclick = loadManage;
   $('mgStatus').onclick = () => {};
   $('mgStatus').onchange = loadManage;
+  // Populate all three sort dropdowns from the shared option list (keeps them
+  // in sync). Review queue defaults to 'source'; Manage/Updates to 'upload'.
+  if ($('draftSort')) $('draftSort').innerHTML = sortOptionsHtml(DRAFT_SORT);
+  if ($('mgSort')) $('mgSort').innerHTML = sortOptionsHtml('upload');
+  if ($('updSort')) $('updSort').innerHTML = sortOptionsHtml('upload');
   if ($('mgSort')) $('mgSort').onchange = renderManage;   // client-side re-sort, no refetch
   let _mgFilterTimer = null;
   $('mgSearch').oninput = () => { clearTimeout(_mgFilterTimer); _mgFilterTimer = setTimeout(renderManage, 200); };
   if ($('draftSort')) $('draftSort').onchange = () => { DRAFT_SORT = $('draftSort').value; DRAFT_PAGE = 1; renderDrafts(); };
+  let _draftFilterTimer = null;
+  if ($('draftSearch')) $('draftSearch').oninput = () => { clearTimeout(_draftFilterTimer); _draftFilterTimer = setTimeout(() => { DRAFT_PAGE = 1; renderDrafts(); }, 200); };
   $('mgAddBtn').onclick = () => {
     const blank = { id: null, status: 'approved', source_type: 'manual' };
     $('manageList').prepend(manageCard(blank, true));
   };
   if ($('mgWaBtn')) $('mgWaBtn').onclick = sendWhatsappUpdate;
 
+  // Mount a fresh "new vacancy" editor in the Ingest > Manual block. Reuses the
+  // same manageCard(blank,true) editor as Manage's "+ Add vacancy". After a
+  // successful Create the card removes itself, so we re-mount a blank one (via a
+  // MutationObserver) to let the admin keep adding rows.
+  function mountManualCard() {
+    const host = $('manualHost');
+    if (!host) return;
+    host.innerHTML = '';
+    const card = manageCard({ id: null, status: 'draft', source_type: 'manual' }, true);
+    card.querySelector('[data-act="cancel"]')?.remove();   // no list to return to here
+    host.appendChild(card);
+    // when this card is removed (Create succeeded), offer a fresh one
+    const obs = new MutationObserver(() => {
+      if (!host.contains(card)) {
+        obs.disconnect();
+        if (!$('manualBlock').classList.contains('hidden')) mountManualCard();
+      }
+    });
+    obs.observe(host, { childList: true });
+  }
+
   // source type toggle
   $('srcType').onchange = () => {
     const t = $('srcType').value;
+    const manual = t === 'manual';
     $('urlBlock').classList.toggle('hidden', t !== 'url');
     $('pasteBlock').classList.toggle('hidden', t !== 'paste');
-    $('fileBlock').classList.toggle('hidden', t === 'url' || t === 'paste');
-    $('ingestBtn').textContent = t === 'paste' ? 'Import rows' : 'Extract vacancies';
+    $('fileBlock').classList.toggle('hidden', t === 'url' || t === 'paste' || manual);
+    // Manual entry: hide the label + extract button, show an inline editor card
+    // (the same full editor used by Manage's "+ Add vacancy").
+    if ($('manualBlock')) $('manualBlock').classList.toggle('hidden', !manual);
+    if ($('labelBlock')) $('labelBlock').classList.toggle('hidden', manual);
+    if ($('ingestActions')) $('ingestActions').classList.toggle('hidden', manual);
+    if (manual) {
+      mountManualCard();
+    } else {
+      $('ingestBtn').textContent = t === 'paste' ? 'Import rows' : 'Extract vacancies';
+    }
   };
 
   $('providerStatusBtn').onclick = async () => {
@@ -916,24 +954,56 @@ function scheduleGc() {
 }
 
 /* ---------------- sorting (shared by Review queue + Manage) ---------------- */
-// Modes: 'upload' (newest ingest first), 'notif' (newest notification first),
-// 'source' (group by source, then newest notification within each source).
-// Rows with no date sort last. Used by both renderDrafts() and renderManage().
+// Modes: upload | source | notif/notif_asc | lastdate/lastdate_asc |
+//        level/level_asc. Rows missing the sort value sort LAST regardless of
+// direction. Used by renderDrafts(), renderManage(), and renderUpdates().
 function _ymd(s) { const m = String(s || '').match(/(\d{4})-(\d{2})-(\d{2})/); return m ? m[1] + m[2] + m[3] : ''; }
 function _sourceKey(r) { return String(r.source_category || r.source_type || '').toLowerCase(); }
+function _levelNum(r) {
+  const m = String(r.level || r.level_text || r.req_level1 || '').match(/\d+/);
+  return m ? parseInt(m[0], 10) : null;
+}
+const _byPost = (a, b) => String(a.post_name || '').localeCompare(String(b.post_name || ''));
+// Compare a date field; desc=newest first. Missing dates always sort last.
+function _cmpDate(a, b, field, desc) {
+  const x = _ymd(a[field]); const y = _ymd(b[field]);
+  if (!x && !y) return 0; if (!x) return 1; if (!y) return -1;
+  return desc ? y.localeCompare(x) : x.localeCompare(y);
+}
+// Compare pay level; desc=high first. Missing level always sorts last.
+function _cmpLevel(a, b, desc) {
+  const x = _levelNum(a); const y = _levelNum(b);
+  if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
+  return desc ? y - x : x - y;
+}
 function sortRows(rows, mode) {
   const arr = rows.slice();
-  if (mode === 'notif') {
-    arr.sort((a, b) => _ymd(b.notification_date).localeCompare(_ymd(a.notification_date))
-      || String(a.post_name || '').localeCompare(String(b.post_name || '')));
-  } else if (mode === 'source') {
-    arr.sort((a, b) => _sourceKey(a).localeCompare(_sourceKey(b))
-      || _ymd(b.notification_date).localeCompare(_ymd(a.notification_date))
-      || String(a.post_name || '').localeCompare(String(b.post_name || '')));
-  } else { // 'upload'
-    arr.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+  switch (mode) {
+    case 'notif':       arr.sort((a, b) => _cmpDate(a, b, 'notification_date', true) || _byPost(a, b)); break;
+    case 'notif_asc':   arr.sort((a, b) => _cmpDate(a, b, 'notification_date', false) || _byPost(a, b)); break;
+    case 'lastdate':    arr.sort((a, b) => _cmpDate(a, b, 'last_date_to_apply', true) || _byPost(a, b)); break;
+    case 'lastdate_asc':arr.sort((a, b) => _cmpDate(a, b, 'last_date_to_apply', false) || _byPost(a, b)); break;
+    case 'level':       arr.sort((a, b) => _cmpLevel(a, b, true) || _byPost(a, b)); break;
+    case 'level_asc':   arr.sort((a, b) => _cmpLevel(a, b, false) || _byPost(a, b)); break;
+    case 'source':      arr.sort((a, b) => _sourceKey(a).localeCompare(_sourceKey(b)) || _cmpDate(a, b, 'notification_date', true) || _byPost(a, b)); break;
+    default:            arr.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || ''))); // 'upload'
   }
   return arr;
+}
+
+// Shared <option> list so Review/Manage/Updates sort dropdowns stay in sync.
+const SORT_OPTIONS = [
+  ['upload', 'Upload date (newest)'],
+  ['source', 'Source → notification date'],
+  ['notif', 'Notification date (newest)'],
+  ['notif_asc', 'Notification date (oldest)'],
+  ['lastdate', 'Last date (newest)'],
+  ['lastdate_asc', 'Last date (oldest)'],
+  ['level', 'Pay level (high → low)'],
+  ['level_asc', 'Pay level (low → high)'],
+];
+function sortOptionsHtml(selected) {
+  return SORT_OPTIONS.map(([v, l]) => `<option value="${v}"${v === selected ? ' selected' : ''}>${l}</option>`).join('');
 }
 
 /* ---------------- review queue ---------------- */
@@ -958,11 +1028,15 @@ async function loadDrafts() {
 // Renders ONLY the current page's summary cards. Grouping headers are shown per
 // page for whichever job-groups the slice spans.
 function renderDrafts() {
-  const rows = sortRows(DRAFT_ROWS, DRAFT_SORT);
+  const q = ($('draftSearch') && $('draftSearch').value || '').toLowerCase().trim();
+  const filtered = !q ? DRAFT_ROWS : DRAFT_ROWS.filter((r) =>
+    [r.post_name, r.organisation, r.ministry, r.location_city, r.vacancy_id]
+      .some((f) => String(f || '').toLowerCase().includes(q)));
+  const rows = sortRows(filtered, DRAFT_SORT);
   const list = $('draftList');
   const pager = $('draftPager');
   if (!rows.length) {
-    list.innerHTML = '<p class="muted">No drafts awaiting review. 🎉</p>';
+    list.innerHTML = `<p class="muted">${q ? 'No drafts match your search.' : 'No drafts awaiting review. 🎉'}</p>`;
     if (pager) pager.innerHTML = '';
     return;
   }

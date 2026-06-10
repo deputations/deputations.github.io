@@ -129,6 +129,7 @@
           <option value="employment_news">Employment News PDF — finds deputation ads only</option>
           <option value="url">URL of a notification page</option>
           <option value="paste">Paste rows from your own AI chat (Gemini / Claude) — best for Employment News</option>
+          <option value="manual">Add manually — fill the vacancy fields yourself</option>
         </select>
 
         <div id="fileBlock">
@@ -159,10 +160,17 @@
           <p class="muted">No API quota used — your chat does the extraction. For a big issue you can paste in <b>batches</b> (e.g. ask the chat page-range by page-range) and Import each; duplicates are skipped automatically.</p>
         </div>
 
-        <label>Label (optional — helps you find these rows later)</label>
-        <input id="srcLabel" placeholder="e.g. Employment News 28 Mar 2026" />
+        <div id="manualBlock" class="hidden">
+          <p class="muted">Fill the fields below and click <b>Create</b>. Choose <b>Status → draft</b> to send it to the Review queue, or <b>approved</b> to publish live immediately.</p>
+          <div id="manualHost"></div>
+        </div>
 
-        <div style="margin-top:16px">
+        <div id="labelBlock">
+          <label>Label (optional — helps you find these rows later)</label>
+          <input id="srcLabel" placeholder="e.g. Employment News 28 Mar 2026" />
+        </div>
+
+        <div style="margin-top:16px" id="ingestActions">
           <button id="ingestBtn" class="primary">Extract vacancies</button>
           <span id="ingestStatus" class="muted" style="margin-left:10px"></span>
         </div>
@@ -173,6 +181,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center">
           <h2 style="margin:0">Review queue</h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input id="draftSearch" placeholder="Search post / org / ministry / city…" style="width:240px" />
             <span class="muted" style="display:flex;align-items:center;gap:8px;font-size:13px">
               approve:
               <label style="display:flex;gap:3px;align-items:center"><input type="checkbox" id="cfHigh" checked> High</label>
@@ -180,11 +189,7 @@
               <label style="display:flex;gap:3px;align-items:center"><input type="checkbox" id="cfLow"> Low</label>
             </span>
             <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Sort:
-              <select id="draftSort" style="width:auto">
-                <option value="source">Source → notification date</option>
-                <option value="upload">Upload date (newest)</option>
-                <option value="notif">Notification date (newest)</option>
-              </select>
+              <select id="draftSort" style="width:auto"></select>
             </label>
             <button id="approveAllBtn" class="good" title="Approve & publish drafts matching the ticked confidence levels">✓ Approve ticked</button>
             <button id="rejectAllBtn" class="bad" title="Delete every draft in the queue">🗑 Reject all</button>
@@ -228,11 +233,7 @@
               <option value="all">All</option>
             </select>
             <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Sort:
-              <select id="mgSort" style="width:auto">
-                <option value="upload">Upload date (newest)</option>
-                <option value="notif">Notification date (newest)</option>
-                <option value="source">Source → notification date</option>
-              </select>
+              <select id="mgSort" style="width:auto"></select>
             </label>
             <button id="mgRefresh">↻</button>
             <button id="mgAddBtn" class="primary">+ Add vacancy</button>
@@ -268,11 +269,7 @@
           <h2 style="margin:0">Pending updates &amp; duplicates <span id="updatesHdrCount" class="muted"></span></h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Sort:
-              <select id="updSort" style="width:auto">
-                <option value="upload">Upload date (newest)</option>
-                <option value="notif">Notification date (newest)</option>
-                <option value="source">Source → notification date</option>
-              </select>
+              <select id="updSort" style="width:auto"></select>
             </label>
             <button id="updRefresh">↻</button>
           </div>
@@ -287,6 +284,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb7"></script>
-  <script src="admin-ingest.js?v=sb36"></script>
+  <script src="admin-ingest.js?v=sb37"></script>
 </body>
 </html>
