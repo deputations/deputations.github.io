@@ -292,13 +292,28 @@
     if (words.length >= 2 && words.length <= 8) out.add(words.map(w => w[0]).join('').toUpperCase());   // all initials
     return [...out].filter(a => a.length >= 2 && a.length <= 10);
   }
+  // Prefer an acronym already written in the name's parentheses, e.g.
+  // "…Cooperative Societies (CRCS)" → CRCS, "…Tribunal (DRAT), Mumbai…" → DRAT,
+  // "…of India (FSSAI)" → FSSAI. Returns the FIRST parenthesised all-caps/short
+  // token; ignores prose like "(Mumbai & DRTs…)" and mixed-case "(MoF)".
+  function explicitAcr(name) {
+    const groups = String(name || '').match(/\(([^)]{2,})\)/g);
+    if (!groups) return '';
+    for (const g of groups) {
+      const t = g.slice(1, -1).trim();
+      if (/^[A-Z][A-Z0-9.&/-]{1,9}$/.test(t)) return t;
+    }
+    return '';
+  }
   function acronymFor(name) {                 // best single acronym (display)
+    const ex = explicitAcr(name); if (ex) return ex;
     const n = acrNorm(name); if (!n) return '';
     if (ACRONYM_MAP[n]) return ACRONYM_MAP[n];
     const a = autoAcr(name); return a.length ? a[0] : '';
   }
   function acronymVariants(name) {            // all searchable variants
     const n = acrNorm(name); const set = new Set();
+    const ex = explicitAcr(name); if (ex) set.add(ex);
     if (ACRONYM_MAP[n]) set.add(ACRONYM_MAP[n]);
     autoAcr(name).forEach(a => set.add(a));
     return [...set];
