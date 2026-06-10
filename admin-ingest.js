@@ -743,6 +743,7 @@ function wireApp() {
   $('mgSearch').oninput = () => { clearTimeout(_mgFilterTimer); _mgFilterTimer = setTimeout(renderManage, 200); };
   if ($('draftSort')) $('draftSort').onchange = () => { DRAFT_SORT = $('draftSort').value; DRAFT_PAGE = 1; renderDrafts(); };
   if ($('draftLevel')) $('draftLevel').onchange = () => { DRAFT_PAGE = 1; renderDrafts(); };
+  if ($('draftSource')) $('draftSource').onchange = () => { DRAFT_PAGE = 1; renderDrafts(); };
   let _draftFilterTimer = null;
   if ($('draftSearch')) $('draftSearch').oninput = () => { clearTimeout(_draftFilterTimer); _draftFilterTimer = setTimeout(() => { DRAFT_PAGE = 1; renderDrafts(); }, 200); };
   $('mgAddBtn').onclick = () => {
@@ -1054,6 +1055,7 @@ async function loadDrafts() {
     const data = await r.json();
     CURRENT_DRAFT_IDS = data.map((x) => x.id);   // whole queue — bulk ops use this
     DRAFT_ROWS = data;
+    populateDraftSourceFilter();
     DRAFT_PAGE = 1;
     $('draftCount').textContent = data.length ? `(${data.length})` : '';
     populateDraftLevelFilter();
@@ -1078,13 +1080,28 @@ function populateDraftLevelFilter() {
   if (prev && byTok.has(prev)) sel.value = prev; // keep selection across refresh
 }
 
+// Fill the Source filter with the distinct source labels (e.g. "Employment News
+// 18-24 April 2026") present in the current draft set, preserving the current
+// selection if still valid.
+function populateDraftSourceFilter() {
+  const sel = $('draftSource');
+  if (!sel) return;
+  const prev = sel.value;
+  const srcs = [...new Set(DRAFT_ROWS.map((r) => String(r.source_category || r.source_type || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">All</option>' + srcs.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  if (prev && srcs.includes(prev)) sel.value = prev; // keep selection across refresh
+}
+
 // Renders ONLY the current page's summary cards. Grouping headers are shown per
 // page for whichever job-groups the slice spans.
 function renderDrafts() {
   const q = ($('draftSearch') && $('draftSearch').value || '').toLowerCase().trim();
   const lvl = ($('draftLevel') && $('draftLevel').value || '').trim();
+  const src = ($('draftSource') && $('draftSource').value || '').trim();
   let filtered = DRAFT_ROWS;
   if (lvl) filtered = filtered.filter((r) => _levelTok(r) === lvl);
+  if (src) filtered = filtered.filter((r) => String(r.source_category || r.source_type || '').trim() === src);
   if (q) filtered = filtered.filter((r) =>
     [r.post_name, r.organisation, r.ministry, r.location_city, r.vacancy_id]
       .some((f) => String(f || '').toLowerCase().includes(q)));
@@ -1092,7 +1109,7 @@ function renderDrafts() {
   const list = $('draftList');
   const pager = $('draftPager');
   if (!rows.length) {
-    list.innerHTML = `<p class="muted">${q ? 'No drafts match your search.' : 'No drafts awaiting review. 🎉'}</p>`;
+    list.innerHTML = `<p class="muted">${(q || src || lvl) ? 'No drafts match the current filters.' : 'No drafts awaiting review. 🎉'}</p>`;
     if (pager) pager.innerHTML = '';
     return;
   }
