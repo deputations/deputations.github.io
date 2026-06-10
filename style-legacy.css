@@ -510,6 +510,22 @@ body {
 .ms-opt .ms-opt-check svg { width: 12px; height: 12px; opacity: 0; transform: scale(0.6); transition: 200ms ease; }
 .ms-opt .ms-opt-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Single-select (Pay Level): name + a little gap + gradient "(N vacancies)" */
+.ss-panel { padding: 0.3rem; max-height: 340px; display: flex; flex-direction: column; z-index: 90; }
+.ss-list { max-height: 332px; }
+.ss-opt { gap: 0.5rem; }
+.ss-opt-name { white-space: nowrap; }
+.ss-opt-count {
+  font-weight: 700;
+  background: linear-gradient(90deg, #FF6B6B, #6B66FF);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+.ms-trigger-label .ss-opt-count { margin-left: 8px; }
+.ms-trigger--disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+.filters-sidebar.ms-elevated { z-index: 200; }
+.ms-panel.ms-open-up { top: auto; bottom: calc(100% + 6px); }
+
 /* Selected = glow */
 .ms-opt.is-selected {
   background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(167, 139, 250, 0.10));

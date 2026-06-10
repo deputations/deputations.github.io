@@ -1,3 +1,27 @@
+// Shared open/close positioning for the filter dropdowns.
+//  • elevates the (sticky → own stacking context) sidebar so the open panel
+//    paints OVER the page content and the visitor counter, not behind them;
+//  • flips the panel upward when there isn't room below (desktop only).
+function flipIfNeeded(root, trigger, panel) {
+  const desktop = window.innerWidth > 768;
+  const sb = root && root.closest && root.closest('.filters-sidebar');
+  if (sb && desktop) sb.classList.add('ms-elevated');
+  if (!desktop) { panel.classList.remove('ms-open-up'); return; }
+  const tr = trigger.getBoundingClientRect();
+  const ph = panel.getBoundingClientRect().height;
+  const spaceBelow = window.innerHeight - tr.bottom;
+  panel.classList.toggle('ms-open-up', spaceBelow < ph + 12 && tr.top > spaceBelow);
+}
+function dropElevation() {
+  // remove elevation once nothing is open (defer so the just-closed panel counts as hidden)
+  setTimeout(() => {
+    if (!document.querySelector('.ms-panel:not([hidden])')) {
+      document.querySelectorAll('.filters-sidebar.ms-elevated')
+        .forEach(s => s.classList.remove('ms-elevated'));
+    }
+  }, 0);
+}
+
 // ----- Multi-select widget (popover + checkbox list) ---------------------
 // Returns a controller that mirrors enough of a <select>'s surface area
 // (`.value`, `.value = ''`, `addEventListener('change', …)`) plus multi-value
@@ -20,10 +44,15 @@ function createMultiSelect(root, opts = {}) {
 
   let items = [];
   let selected = new Set();
+  let countMap = {};   // optional { value: number } → renders a gradient "(N)"
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g,
       m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
+  }
+  function countHTML(v) {
+    const c = countMap[v];
+    return c == null ? '' : `<span class="ss-opt-count">(${c})</span>`;
   }
 
   function renderList(filter = '') {
@@ -40,7 +69,7 @@ function createMultiSelect(root, opts = {}) {
           <span class="ms-opt-check" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
           </span>
-          <span class="ms-opt-label">${esc(v)}</span>
+          <span class="ms-opt-label">${esc(v)}</span>${countHTML(v)}
         </button></li>`).join('');
     }
     syncCount();
@@ -76,11 +105,13 @@ function createMultiSelect(root, opts = {}) {
     panel.hidden = false;
     trigger.setAttribute('aria-expanded', 'true');
     search.value = ''; renderList();
+    flipIfNeeded(root, trigger, panel);
     setTimeout(() => search.focus(), 0);
   }
   function close() {
     panel.hidden = true;
     trigger.setAttribute('aria-expanded', 'false');
+    dropElevation();
   }
 
   trigger.addEventListener('click', () => panel.hidden ? open() : close());
@@ -112,8 +143,9 @@ function createMultiSelect(root, opts = {}) {
   doneBtns.forEach(b => b.addEventListener('click', close));
 
   const api = {
-    populate(arr) {
+    populate(arr, counts) {
       items = (arr || []).slice();
+      countMap = counts || {};
       // drop selections that are no longer present
       [...selected].forEach(v => { if (!items.includes(v)) selected.delete(v); });
       renderList(); syncTrigger();
@@ -139,6 +171,98 @@ function createMultiSelect(root, opts = {}) {
   return api;
 }
 
+/* Themed single-select dropdown (used for Pay Level). Reuses the .ms-* panel
+   styling but renders each option as a name + a gradient-coloured "(N …)"
+   count. Exposes the same `.value` / change shims as a native <select>. */
+function createSingleSelect(root, opts = {}) {
+  const trigger = root.querySelector('.ms-trigger');
+  const label   = root.querySelector('.ms-trigger-label');
+  const panel   = root.querySelector('.ms-panel');
+  const list    = root.querySelector('.ms-list');
+  let placeholder = opts.placeholder || 'All';
+  const fmtCount = opts.countFormat || ((n) => String(n));   // text inside "(…)"
+  const changeListeners = [];
+
+  let items = [];   // [{ value, name, count }]  (count null = no count shown)
+  let selected = '';
+  let disabled = false;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g,
+      m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
+  }
+  function countHTML(it) {
+    if (it.count == null) return '';
+    return `<span class="ss-opt-count">(${esc(fmtCount(it.count))})</span>`;
+  }
+  function renderList() {
+    list.innerHTML = items.map(it => {
+      const sel = it.value === selected;
+      return `<li><button type="button" class="ms-opt ss-opt${sel ? ' is-selected' : ''}"
+            role="option" aria-selected="${sel}" data-value="${esc(it.value)}">
+          <span class="ss-opt-name">${esc(it.name)}</span>${countHTML(it)}
+        </button></li>`;
+    }).join('');
+  }
+  function syncTrigger() {
+    const it = items.find(i => i.value === selected);
+    if (!selected) {
+      // Empty = the "All / Any" default → show the placeholder, no active glow.
+      label.innerHTML = esc(placeholder);
+      trigger.classList.remove('ms-trigger--active');
+    } else if (!it) {
+      label.innerHTML = esc(selected);
+      trigger.classList.add('ms-trigger--active');
+    } else {
+      label.innerHTML = `${esc(it.name)}${countHTML(it)}`;
+      trigger.classList.add('ms-trigger--active');
+    }
+  }
+  function emitChange() {
+    changeListeners.forEach(fn => { try { fn({ type: 'change', target: api }); } catch (e) { console.warn(e); } });
+  }
+  function open() {
+    panel.hidden = false;
+    trigger.setAttribute('aria-expanded', 'true');
+    flipIfNeeded(root, trigger, panel);
+  }
+  function close() { panel.hidden = true; trigger.setAttribute('aria-expanded', 'false'); dropElevation(); }
+
+  trigger.addEventListener('click', () => { if (disabled) return; panel.hidden ? open() : close(); });
+  document.addEventListener('click', (e) => { if (!root.contains(e.target) && !panel.hidden) close(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) { close(); trigger.focus(); } });
+  list.addEventListener('click', (e) => {
+    const btn = e.target.closest('.ss-opt');
+    if (!btn) return;
+    selected = btn.dataset.value;
+    renderList(); syncTrigger(); close(); emitChange();
+  });
+
+  const api = {
+    populate(arr) {
+      items = (arr || []).slice();
+      if (selected && !items.some(i => i.value === selected)) selected = '';
+      renderList(); syncTrigger();
+    },
+    get value() { return selected; },
+    set value(v) { selected = v || ''; renderList(); syncTrigger(); },
+    addEventListener(name, fn) { if (name === 'change') changeListeners.push(fn); },
+    // Native-<select> compatibility shims used by legacy call-sites.
+    get options() { return items.map(it => ({ value: it.value, textContent: it.name })); },
+    dispatchEvent(evt) { if (evt && evt.type === 'change') emitChange(); return true; },
+    has(v) { return items.some(it => it.value === v); },
+    get disabled() { return disabled; },
+    set disabled(b) {
+      disabled = !!b;
+      trigger.classList.toggle('ms-trigger--disabled', disabled);
+      trigger.setAttribute('aria-disabled', String(disabled));
+      if (disabled) close();
+    },
+    setPlaceholder(p) { placeholder = p; if (!selected) syncTrigger(); },
+  };
+  return api;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Deputation dashboard started');
 
@@ -155,16 +279,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const THEME_KEY = 'deputation_theme_v1';
 
     const searchPost = document.getElementById('searchPost');
-    const filterMyPayLevel = document.getElementById('filterMyPayLevel');
-    const filterExperience = document.getElementById('filterExperience');
-    const filterLevel = document.getElementById('filterLevel');
-    const filterMinistry = document.getElementById('filterMinistry');
+    const filterMyPayLevel = createSingleSelect(document.getElementById('filterMyPayLevelSS'), {
+      placeholder: 'Any Level',
+    });
+    const filterExperience = createSingleSelect(document.getElementById('filterExperienceSS'), {
+      placeholder: 'Any',
+    });
+    const filterLevel = createSingleSelect(document.getElementById('filterLevelSS'), {
+      placeholder: 'All Levels',
+      countFormat: (n) => `${n} ${n === 1 ? 'vacancy' : 'vacancies'}`,
+    });
+    const filterMinistry = createSingleSelect(document.getElementById('filterMinistrySS'), {
+      placeholder: 'All Ministries',
+    });
     const filterLocation = createMultiSelect(document.getElementById('filterLocationMS'), {
       placeholder: 'All Locations',
       singularPattern: (v) => v,
       multiPattern: (n) => `${n} locations`,
     });
-    const filterStatus = document.getElementById('filterStatus');
+    const filterStatus = createSingleSelect(document.getElementById('filterStatusSS'), {
+      placeholder: 'All',
+    });
 
     const clearFiltersBtn = document.getElementById('clearFiltersBtn');
     const btnTableView = document.getElementById('btnTableView');
@@ -664,43 +799,85 @@ function renderTable(data) {
 }
     
     function populateFilters() {
-        filterMyPayLevel.innerHTML = '<option value="">Any Level</option>';
-        for (let i = 18; i >= 1; i--) {
-            const opt = document.createElement('option');
-            opt.value = String(i);
-            opt.textContent = `Level ${i}`;
-            filterMyPayLevel.appendChild(opt);
-            // the exceptional 13A grade sits between 14 and 13 (descending list)
-            if (i === 14) {
-                const a = document.createElement('option');
-                a.value = '13A';
-                a.textContent = 'Level 13A';
-                filterMyPayLevel.appendChild(a);
+        // Counts everywhere are based on the ACTIVE subset, so each "(N)" matches
+        // what you see when that option is picked (the list defaults to Active).
+        // These are a fixed property of the dataset (they don't change as the user
+        // changes filters), so we tally them ONCE here — in a single pass — rather
+        // than recomputing per filter change.
+        const activeRows = [];
+        const levelCounts = {}, ministryCounts = {}, locationCounts = {};
+        let inactiveCount = 0;
+        rawData.forEach(i => {
+            const st = safe(i.Status);
+            if (st === 'Active') {
+                activeRows.push(i);
+                const lv = safe(i.Level_Text);   if (lv)  levelCounts[lv]    = (levelCounts[lv]    || 0) + 1;
+                const mn = safe(i.Ministry);      if (mn)  ministryCounts[mn] = (ministryCounts[mn] || 0) + 1;
+                const loc = formatLocation(i);    if (loc) locationCounts[loc] = (locationCounts[loc] || 0) + 1;
+            } else if (st === 'Inactive') {
+                inactiveCount++;
             }
-        }
+        });
+        const isEligibleFn = (window.DepEnrich && window.DepEnrich.isEligible)
+            ? window.DepEnrich.isEligible : null;
 
+        // MY PAY LEVEL — all grades 18…1 (13A between 14 & 13); "(N)" = active
+        // vacancies you'd be eligible for at that level (experience-independent).
+        const myLevelValues = [];
+        for (let i = 18; i >= 1; i--) { myLevelValues.push(String(i)); if (i === 14) myLevelValues.push('13A'); }
+        const myPayLevelItems = [{ value: '', name: 'Any Level', count: null }].concat(
+            myLevelValues.map(v => ({
+                value: v,
+                name: `Level ${v}`,
+                count: isEligibleFn ? activeRows.filter(it => isEligibleFn(it, v, '')).length : null,
+            }))
+        );
+        filterMyPayLevel.populate(myPayLevelItems);
+
+        // MY YEARS OF EXPERIENCE — themed look, no count (only meaningful with a level).
         if (filterExperience) {
-            filterExperience.innerHTML = '<option value="">Any</option>';
+            const expItems = [{ value: '', name: 'Any', count: null }];
             for (let y = 0; y <= 10; y++) {
-                const opt = document.createElement('option');
-                opt.value = String(y);
-                opt.textContent = y === 10 ? '10+ years' : (y === 1 ? '1 year' : `${y} years`);
-                filterExperience.appendChild(opt);
+                expItems.push({
+                    value: String(y),
+                    name: y === 10 ? '10+ years' : (y === 1 ? '1 year' : `${y} years`),
+                    count: null,
+                });
             }
+            filterExperience.populate(expItems);
             syncExperienceState();
         }
 
-        filterLevel.innerHTML = '<option value="">All Levels</option>';
-        filterMinistry.innerHTML = '<option value="">All Ministries</option>';
-        // (no-op for the multi-select; items populated below)
+        // PAY LEVEL — active vacancies per level, high → low, only levels with ≥1 active.
+        const levels = Object.keys(levelCounts).sort((a, b) => {
+            const va = parseLevelValue(a), vb = parseLevelValue(b);
+            if (va == null && vb == null) return a.localeCompare(b);
+            if (va == null) return 1;
+            if (vb == null) return -1;
+            if (vb !== va) return vb - va;            // higher pay level first
+            return a.localeCompare(b);
+        });
+        filterLevel.populate([{ value: '', name: 'All Levels', count: null }].concat(
+            levels.map(value => ({ value, name: value, count: levelCounts[value] }))
+        ));
 
-        const levels = uniqueSorted(rawData.map(i => i.Level_Text));
-        const ministries = uniqueSorted(rawData.map(i => i.Ministry));
-        const locations = uniqueSorted(rawData.map(i => formatLocation(i)).filter(Boolean));
+        // MINISTRY — active vacancies per ministry (only ministries with ≥1 active).
+        const ministries = Object.keys(ministryCounts).sort((a, b) => a.localeCompare(b));
+        filterMinistry.populate([{ value: '', name: 'All Ministries', count: null }].concat(
+            ministries.map(m => ({ value: m, name: m, count: ministryCounts[m] }))
+        ));
 
-        addOptions(filterLevel, levels);
-        addOptions(filterMinistry, ministries);
-        filterLocation.populate(locations);
+        // STATUS — count per status. Preserve the default "Active" selection.
+        filterStatus.populate([
+            { value: '', name: 'All', count: null },
+            { value: 'Active', name: 'Active', count: activeRows.length },
+            { value: 'Inactive', name: 'Inactive', count: inactiveCount },
+        ]);
+        if (!filterStatus.value) filterStatus.value = 'Active';
+
+        // LOCATION — active vacancies per location (gradient "(N)" on each option).
+        const locations = Object.keys(locationCounts).sort((a, b) => a.localeCompare(b));
+        filterLocation.populate(locations, locationCounts);
         if (filterLocation.__pendingValues) {
             filterLocation.setValues(filterLocation.__pendingValues);
             delete filterLocation.__pendingValues;
@@ -952,14 +1129,13 @@ kpiGrid.addEventListener('click', (e) => {
     // autoselect) keeps it in sync.
     function syncExperienceState() {
         if (!filterExperience) return;
-        const placeholder = filterExperience.querySelector('option[value=""]');
         if (filterMyPayLevel.value) {
             filterExperience.disabled = false;
-            if (placeholder) placeholder.textContent = 'Any';
+            filterExperience.setPlaceholder('Any');
         } else {
             if (filterExperience.value) filterExperience.value = '';
             filterExperience.disabled = true;
-            if (placeholder) placeholder.textContent = 'Select Pay Level first';
+            filterExperience.setPlaceholder('Select Pay Level first');
         }
     }
 

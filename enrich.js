@@ -38,6 +38,16 @@
     return m ? m[1] + (m[2] ? 'A' : '') : '';
   }
 
+  // Canonicalise a level label so "Level-07" / "Level 07" / "LEVEL-7" all
+  // become "Level-7" (and "Level-13 A" → "Level-13A"). Non-standard strings
+  // (ranges, pay-band text, etc.) are returned untouched.
+  function canonLevelText(v) {
+    const s = norm(v);
+    if (!s) return '';
+    const m = s.match(/^level[\s-]*0*(\d+)\s*(A)?\s*$/i);
+    return m ? 'Level-' + m[1] + (m[2] ? 'A' : '') : s;
+  }
+
   // Accepts ISO (yyyy-mm-dd), dd/mm/yyyy, dd-mm-yyyy, "03 Mar 2026". Day-first.
   function parseDateISO(v) {
     const t = norm(v);
@@ -369,7 +379,7 @@
       Organisation_Type: norm(row.organisation_type),
       Post_Name: norm(row.post_name),
       Level: norm(row.level),
-      Level_Text: norm(row.level_text) || (levelToken(row.level) ? `Level-${levelToken(row.level)}` : ''),
+      Level_Text: canonLevelText(norm(row.level_text) || (levelToken(row.level) ? `Level-${levelToken(row.level)}` : '')),
       Location_City: norm(row.location_city),
       Location_State: norm(row.location_state),
       Region: norm(row.region),

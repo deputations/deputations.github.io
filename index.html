@@ -19,8 +19,8 @@
   <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
   <!-- Desktop: latest styles. Mobile (<=768px): the 2-days-ago (June-2) stylesheet,
        a known-good stacked layout, loaded via media attribute so only one applies. -->
-  <link rel="stylesheet" href="style.css?v=ms19" media="(min-width: 768.01px)">
-  <link rel="stylesheet" href="style-legacy.css?v=6" media="(max-width: 768px)">
+  <link rel="stylesheet" href="style.css?v=ms25" media="(min-width: 768.01px)">
+  <link rel="stylesheet" href="style-legacy.css?v=9" media="(max-width: 768px)">
   <link rel="stylesheet" href="navbar.css">
 
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -77,32 +77,63 @@
         </div>
 
         <div class="filter-group">
-          <label for="filterMyPayLevel">My Pay Level</label>
-          <select id="filterMyPayLevel">
-            <option value="">Any Level</option>
-          </select>
+          <label id="filterMyPayLevelLbl">My Pay Level</label>
+          <div class="ms ss" id="filterMyPayLevelSS">
+            <button type="button" class="ms-trigger" id="filterMyPayLevelBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterMyPayLevelLbl">
+              <span class="ms-trigger-label">Any Level</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="ms-panel ss-panel" id="filterMyPayLevelPanel" hidden role="listbox" aria-label="Select your pay level">
+              <ul class="ms-list ss-list" id="filterMyPayLevelList" role="listbox"></ul>
+            </div>
+          </div>
         </div>
 
         <div class="filter-group">
-          <label for="filterExperience">My Years of Experience</label>
-          <select id="filterExperience">
-            <option value="">Any</option>
-          </select>
+          <label id="filterExperienceLbl">My Years of Experience</label>
+          <div class="ms ss" id="filterExperienceSS">
+            <button type="button" class="ms-trigger" id="filterExperienceBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterExperienceLbl">
+              <span class="ms-trigger-label">Select Pay Level first</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="ms-panel ss-panel" id="filterExperiencePanel" hidden role="listbox" aria-label="Select years of experience">
+              <ul class="ms-list ss-list" id="filterExperienceList" role="listbox"></ul>
+            </div>
+          </div>
           <p style="margin:0.4rem 0 0;font-size:0.72rem;line-height:1.3;color:var(--text-muted);text-transform:none;letter-spacing:0;font-weight:400;">Years at your current level. Refines "My Pay Level" to posts you're eligible for.</p>
         </div>
 
         <div class="filter-group">
-          <label for="filterLevel">Pay Level</label>
-          <select id="filterLevel">
-            <option value="">All Levels</option>
-          </select>
+          <label id="filterLevelLbl">Pay Level</label>
+          <div class="ms ss" id="filterLevelSS">
+            <button type="button" class="ms-trigger" id="filterLevelBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterLevelLbl">
+              <span class="ms-trigger-label">All Levels</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true"
+                   fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m6 9 6 6 6-6"/>
+              </svg>
+            </button>
+            <div class="ms-panel ss-panel" id="filterLevelPanel" hidden role="listbox" aria-label="Select pay level">
+              <ul class="ms-list ss-list" id="filterLevelList" role="listbox"></ul>
+            </div>
+          </div>
         </div>
 
         <div class="filter-group">
-          <label for="filterMinistry">Ministry</label>
-          <select id="filterMinistry">
-            <option value="">All Ministries</option>
-          </select>
+          <label id="filterMinistryLbl">Ministry</label>
+          <div class="ms ss" id="filterMinistrySS">
+            <button type="button" class="ms-trigger" id="filterMinistryBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterMinistryLbl">
+              <span class="ms-trigger-label">All Ministries</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="ms-panel ss-panel" id="filterMinistryPanel" hidden role="listbox" aria-label="Select ministry">
+              <ul class="ms-list ss-list" id="filterMinistryList" role="listbox"></ul>
+            </div>
+          </div>
         </div>
 
         <div class="filter-group">
@@ -144,12 +175,17 @@
         </div>
 
         <div class="filter-group">
-          <label for="filterStatus">Status</label>
-          <select id="filterStatus">
-            <option value="">All</option>
-            <option value="Active" selected>Active</option>
-            <option value="Inactive">Inactive</option>
-          </select>
+          <label id="filterStatusLbl">Status</label>
+          <div class="ms ss" id="filterStatusSS">
+            <button type="button" class="ms-trigger ms-trigger--active" id="filterStatusBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterStatusLbl">
+              <span class="ms-trigger-label">Active</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="ms-panel ss-panel" id="filterStatusPanel" hidden role="listbox" aria-label="Select status">
+              <ul class="ms-list ss-list" id="filterStatusList" role="listbox"></ul>
+            </div>
+          </div>
         </div>
 
       </aside>
@@ -190,8 +226,8 @@
   </div>
 
   <script src="config.js?v=sb1"></script>
-  <script src="enrich.js?v=sb8"></script>
-  <script src="app.js?v=ms18"></script>
+  <script src="enrich.js?v=sb9"></script>
+  <script src="app.js?v=ms24"></script>
   <script defer src="site-widgets.js?v=12"></script>
 </body>
 </html>
