@@ -722,6 +722,7 @@ function wireApp() {
   let _mgFilterTimer = null;
   $('mgSearch').oninput = () => { clearTimeout(_mgFilterTimer); _mgFilterTimer = setTimeout(renderManage, 200); };
   if ($('draftSort')) $('draftSort').onchange = () => { DRAFT_SORT = $('draftSort').value; DRAFT_PAGE = 1; renderDrafts(); };
+  if ($('draftLevel')) $('draftLevel').onchange = () => { DRAFT_PAGE = 1; renderDrafts(); };
   let _draftFilterTimer = null;
   if ($('draftSearch')) $('draftSearch').oninput = () => { clearTimeout(_draftFilterTimer); _draftFilterTimer = setTimeout(() => { DRAFT_PAGE = 1; renderDrafts(); }, 200); };
   $('mgAddBtn').onclick = () => {
@@ -1032,15 +1033,30 @@ async function loadDrafts() {
     DRAFT_ROWS = data;
     DRAFT_PAGE = 1;
     $('draftCount').textContent = data.length ? `(${data.length})` : '';
+    populateDraftLevelFilter();
     renderDrafts();
   } catch (e) { toast('Load error: ' + e.message); }
+}
+
+// Fill the Level filter with the distinct pay levels present in the current
+// draft set (numeric, descending), preserving the current selection if still valid.
+function populateDraftLevelFilter() {
+  const sel = $('draftLevel');
+  if (!sel) return;
+  const prev = sel.value;
+  const levels = [...new Set(DRAFT_ROWS.map(_levelNum).filter((n) => n != null))].sort((a, b) => b - a);
+  sel.innerHTML = '<option value="">All</option>' + levels.map((n) => `<option value="${n}">Level ${n}</option>`).join('');
+  if (prev && levels.includes(parseInt(prev, 10))) sel.value = prev; // keep selection across refresh
 }
 
 // Renders ONLY the current page's summary cards. Grouping headers are shown per
 // page for whichever job-groups the slice spans.
 function renderDrafts() {
   const q = ($('draftSearch') && $('draftSearch').value || '').toLowerCase().trim();
-  const filtered = !q ? DRAFT_ROWS : DRAFT_ROWS.filter((r) =>
+  const lvl = ($('draftLevel') && $('draftLevel').value || '').trim();
+  let filtered = DRAFT_ROWS;
+  if (lvl) filtered = filtered.filter((r) => String(_levelNum(r) ?? '') === lvl);
+  if (q) filtered = filtered.filter((r) =>
     [r.post_name, r.organisation, r.ministry, r.location_city, r.vacancy_id]
       .some((f) => String(f || '').toLowerCase().includes(q)));
   const rows = sortRows(filtered, DRAFT_SORT);

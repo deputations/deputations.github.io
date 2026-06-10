@@ -182,6 +182,9 @@
           <h2 style="margin:0">Review queue</h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <input id="draftSearch" placeholder="Search post / org / ministry / city…" style="width:240px" />
+            <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Level:
+              <select id="draftLevel" style="width:auto"><option value="">All</option></select>
+            </label>
             <span class="muted" style="display:flex;align-items:center;gap:8px;font-size:13px">
               approve:
               <label style="display:flex;gap:3px;align-items:center"><input type="checkbox" id="cfHigh" checked> High</label>
@@ -284,6 +287,6 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb7"></script>
-  <script src="admin-ingest.js?v=sb38"></script>
+  <script src="admin-ingest.js?v=sb39"></script>
 </body>
 </html>
