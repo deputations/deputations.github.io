@@ -886,13 +886,20 @@ function wireApp() {
   let _draftFilterTimer = null;
   if ($('draftSearch')) $('draftSearch').oninput = () => { clearTimeout(_draftFilterTimer); _draftFilterTimer = setTimeout(() => { saveUI({ draftSearch: $('draftSearch').value }); DRAFT_PAGE = 1; renderDrafts(); }, 200); };
 
-  // quick-filter chips (Review): High/Med/Low OR-combine; the rest AND-combine
+  // quick-filter chips (Review): High/Med/Low OR-combine; the rest AND-combine.
+  // active ↔ expired are opposites, so turning one on turns the other off.
   if ($('draftQuick')) $('draftQuick').querySelectorAll('button').forEach((b) => {
     b.classList.toggle('on', DRAFT_QUICK.has(b.dataset.q));
     b.onclick = () => {
       const k = b.dataset.q;
-      if (DRAFT_QUICK.has(k)) DRAFT_QUICK.delete(k); else DRAFT_QUICK.add(k);
-      b.classList.toggle('on', DRAFT_QUICK.has(k));
+      if (DRAFT_QUICK.has(k)) {
+        DRAFT_QUICK.delete(k);
+      } else {
+        DRAFT_QUICK.add(k);
+        const opp = { active: 'expired', expired: 'active' }[k];
+        if (opp) DRAFT_QUICK.delete(opp);
+      }
+      $('draftQuick').querySelectorAll('button').forEach((x) => x.classList.toggle('on', DRAFT_QUICK.has(x.dataset.q)));
       saveUI({ draftQuick: [...DRAFT_QUICK] });
       DRAFT_PAGE = 1; renderDrafts();
     };
@@ -1308,6 +1315,8 @@ function applyDraftFilters(rows) {
     if (DRAFT_QUICK.has('nolink')) filtered = filtered.filter((r) => !String(r.official_notification_link || '').trim());
     if (DRAFT_QUICK.has('nodate')) filtered = filtered.filter((r) => !String(r.last_date_to_apply || '').trim());
     if (DRAFT_QUICK.has('incomplete')) filtered = filtered.filter((r) => draftCompleteness(r) < 60);
+    // active = not past the last date; rows with no/unparseable date stay visible
+    if (DRAFT_QUICK.has('active')) filtered = filtered.filter((r) => { const d = _daysLeft(r); return d == null || d >= 0; });
     if (DRAFT_QUICK.has('closing')) filtered = filtered.filter((r) => { const d = _daysLeft(r); return d != null && d >= 0 && d <= 7; });
     if (DRAFT_QUICK.has('expired')) filtered = filtered.filter((r) => { const d = _daysLeft(r); return d != null && d < 0; });
   }
