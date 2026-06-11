@@ -714,8 +714,10 @@ Deno.serve(async (req) => {
       "source_category", "source_file_url", ...CONTENT_FIELDS].join(",");
     const existing: any[] = [];
     for (let i = 0; i < lookupKeys.length; i += 100) {
+      // rejected rows must NOT be merge targets (they'd silently absorb
+      // re-imports while staying invisible) — mirrored in admin-ingest.js
       const { data, error } = await admin.from("vacancies")
-        .select(selCols).in("match_key", lookupKeys.slice(i, i + 100));
+        .select(selCols).neq("status", "rejected").in("match_key", lookupKeys.slice(i, i + 100));
       if (error) throw new Error(`match lookup failed: ${error.message}`);
       if (data) existing.push(...data);
     }

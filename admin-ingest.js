@@ -21,7 +21,33 @@ const toast = (msg) => {
   const t = $('toast'); t.textContent = msg; t.classList.add('show');
   clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 3500);
 };
+// Toast with an ↩ Undo button. onUndo runs if clicked within ttl; onExpire runs
+// once afterwards if it wasn't (used to defer the source-PDF GC past the undo
+// window, so an undone reject still has its PDF).
+const toastUndo = (msg, onUndo, opts = {}) => {
+  const t = $('toast');
+  clearTimeout(toast._t);
+  t.innerHTML = `${escapeHtml(msg)} <button type="button" class="toast-undo">↩ Undo</button>`;
+  t.classList.add('show');
+  const btn = t.querySelector('.toast-undo');
+  let done = false;
+  const expireTimer = setTimeout(() => {
+    if (!done) { done = true; if (t.contains(btn)) { t.classList.remove('show'); t.textContent = ''; } if (opts.onExpire) opts.onExpire(); }
+  }, opts.ttl || 6000);
+  btn.onclick = async () => {
+    if (done) return; done = true;
+    clearTimeout(expireTimer);
+    t.classList.remove('show'); t.textContent = '';
+    try { await onUndo(); } catch (e) { toast('Undo failed: ' + e.message); }
+  };
+};
 const nowSec = () => Math.floor(Date.now() / 1000);
+
+/* ---------------- UI state persistence ---------------- */
+// Filters / sort / page / active tab survive a reload (one key, plain JSON).
+const UI_KEY = 'dep_admin_ui_v1';
+function loadUI() { try { return JSON.parse(localStorage.getItem(UI_KEY) || '{}') || {}; } catch { return {}; } }
+function saveUI(patch) { try { localStorage.setItem(UI_KEY, JSON.stringify({ ...loadUI(), ...patch })); } catch { /* quota/private mode */ } }
 
 /* ---------------- session helpers ---------------- */
 function loadSess() { try { return JSON.parse(localStorage.getItem(SS_KEY) || 'null'); } catch { return null; } }
@@ -77,6 +103,31 @@ function api(path, opts = {}) {
     ...opts,
     headers: { apikey: ANON, Authorization: `Bearer ${TOKEN}`, ...(opts.headers || {}) },
   });
+}
+
+// Count-only query (no rows transferred) via the content-range header.
+async function countOf(pathFilter) {
+  try {
+    const r = await api(`/rest/v1/${pathFilter}${pathFilter.includes('?') ? '&' : '?'}select=id&limit=1`, { headers: { Prefer: 'count=exact' } });
+    return parseInt(((r.headers.get('content-range') || '/0').split('/')[1]) || '0', 10) || 0;
+  } catch { return 0; }
+}
+
+// Undo toast for approve/reject status changes: Undo restores the rows to
+// draft and reloads the queue. The source-PDF GC waits for the window to pass.
+function undoableStatus(ids, msg) {
+  if (!ids.length) return;
+  toastUndo(msg, async () => {
+    for (let i = 0; i < ids.length; i += 100) {
+      const r = await api(`/rest/v1/vacancies?id=in.(${ids.slice(i, i + 100).join(',')})`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: 'draft' }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+    }
+    toast(`↩ Restored ${ids.length} row(s) to the Review queue`);
+    loadDrafts();
+  }, { onExpire: scheduleGc });
 }
 
 /* ---------------- editable fields on each draft card ---------------- */
@@ -294,7 +345,7 @@ Output ONE object per (post × location/bench × pay level). Never collapse mult
 
 ## Output Format
 Return ONLY a JSON array — no prose, no markdown fences. Each object uses EXACTLY these keys (use "" when unknown):
-{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
+{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","detailed_eligibility","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
 
 ## Field Rules
 - ministry: standard GoI ministry name WITHOUT the "Ministry of" / "Department of" prefix (e.g. "Agriculture and Farmers Welfare", "Home Affairs", "Personnel, Public Grievances and Pensions").
@@ -303,6 +354,7 @@ Return ONLY a JSON array — no prose, no markdown fences. Each object uses EXAC
 - eligibility_tiers: array of {"level","min_years"} (both number-strings) = the feeder grades the post is open to. Include the analogous tier (the post's own level, "min_years":"0") when "analogous posts" is mentioned, plus each lower grade with its required years. Also still fill req_level1/req_level2 + min_years_experience/min_years_experience2 with the first two tiers. Example for a Level-11 post open to "(i) analogous; (ii) L10+3y; (iii) L8+5y": [{"level":"11","min_years":"0"},{"level":"10","min_years":"3"},{"level":"8","min_years":"5"}]
 - notification_date, last_date_to_apply: ISO yyyy-mm-dd. If a deadline is "within N days of the notification/advertisement", compute last_date_to_apply = notification_date + N days.
 - official_notification_link: official sources ONLY — the DIRECT ".pdf" link or the specific circular/notification page that opens this vacancy. NEVER a generic homepage, a careers/"current vacancies" listing, or a third-party aggregator. If unsure a link is real, leave it empty. Never invent a URL.
+- detailed_eligibility: COPY VERBATIM the complete eligibility / qualification conditions block exactly as printed in the source for THIS post (feeder grades & pay levels, essential and desirable qualifications, experience, age limit). Do NOT paraphrase, summarise, or reorder. "" if the ad states none.
 - functional_area: short summary of duties / job description.
 - source_page: the PDF page number of the ad in the issue, as a string (for side-by-side verification).
 - confidence: "high" ONLY if details came from the official notification AND post, level, location and a date are all clear; otherwise "medium" or "low".
@@ -320,7 +372,7 @@ const NOTIF_PROMPT = `You are extracting Government of India DEPUTATION vacancie
 4) You may use web search to confirm the organisation's official website or any field the PDF leaves ambiguous.
 
 Output ONLY a JSON array. Each object must use EXACTLY these keys (use "" when unknown):
-{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
+{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","detailed_eligibility","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
 
 Rules:
 - official_notification_link must be the ACTUAL notification document (direct ".pdf" preferred), or the specific circular page — NEVER a generic homepage / listing / aggregator. Leave empty if not found. Never invent a URL.
@@ -329,6 +381,7 @@ Rules:
 - "eligibility_tiers" = feeder grades as [{"level","min_years"}] (NUMBER strings). Include the analogous tier (post's own level, "0" years) plus each lower grade with its required years; e.g. [{"level":"11","min_years":"0"},{"level":"10","min_years":"3"},{"level":"8","min_years":"5"}]. Also still fill req_level1/2 + min_years_experience/2 from the first two tiers.
 - ministry = standard GoI name WITHOUT the "Ministry of"/"Department of" prefix.
 - organisation_type: EXACTLY one of — Ministry; Department; Attached and Subordinate Offices; Constitutional Bodies; Statutory Bodies; Autonomous Bodies; Central Public Sector Enterprises (CPSEs).
+- detailed_eligibility = COPY VERBATIM the complete eligibility / qualification conditions block exactly as printed for THIS post (feeder grades & pay levels, qualifications, experience, age limit). Do NOT paraphrase or summarise. "" if none stated.
 - source_page = PDF page number of the post (string).
 - confidence: "high" only if post, level, location AND a date are all clear.`;
 
@@ -447,6 +500,7 @@ function summarizeIngest(r) {
   if (r.updatesQueued) p.push(`${r.updatesQueued} update${r.updatesQueued > 1 ? 's' : ''} queued`);
   if (r.duplicatesFlagged) p.push(`${r.duplicatesFlagged} possible dup${r.duplicatesFlagged > 1 ? 's' : ''}`);
   if (r.unchanged) p.push(`${r.unchanged} unchanged`);
+  if (r.skipped) p.push(`${r.skipped} skipped (already exist or rejected)`);
   return '✅ ' + (p.length ? p.join(', ') : 'nothing to import');
 }
 
@@ -462,7 +516,9 @@ async function applyMergeImport(rows) {
   const existing = [];
   for (let i = 0; i < lookupKeys.length; i += 100) {
     const enc = lookupKeys.slice(i, i + 100).map(encodeURIComponent).join(',');
-    const r = await api(`/rest/v1/vacancies?select=${sel}&match_key=in.(${enc})`);
+    // rejected rows must NOT be merge targets (they'd silently absorb re-imports
+    // while staying invisible) — mirrored in extract/index.ts, keep in sync
+    const r = await api(`/rest/v1/vacancies?select=${sel}&status=neq.rejected&match_key=in.(${enc})`);
     if (!r.ok) throw new Error('Match lookup failed: ' + (await r.text()));
     existing.push(...await r.json());
   }
@@ -511,6 +567,9 @@ async function applyMergeImport(rows) {
     const ir = await ins.json().catch(() => []);
     inserted = Array.isArray(ir) ? ir.length : toInsert.length;
   }
+  // rows the DB silently skipped on dedup_key conflict — usually a vacancy that
+  // was already imported, or one previously REJECTED (remembered rejection)
+  const skipped = Math.max(0, toInsert.length - inserted);
   let draftUpdated = 0;
   for (const { id, patch } of draftPatches) {
     const pr = await api(`/rest/v1/vacancies?id=eq.${id}`, {
@@ -529,7 +588,7 @@ async function applyMergeImport(rows) {
     updatesQueued = updateRows.filter((u) => u.kind === 'update').length;
     duplicatesFlagged = updateRows.filter((u) => u.kind === 'duplicate').length;
   }
-  return { inserted, draftUpdated, updatesQueued, duplicatesFlagged, unchanged };
+  return { inserted, skipped, draftUpdated, updatesQueued, duplicatesFlagged, unchanged };
 }
 
 async function importPasted(label, st) {
@@ -640,9 +699,17 @@ async function boot() {
   $('loginCard').classList.add('hidden');
   $('app').classList.remove('hidden');
   wireApp();
-  loadDrafts();
-  refreshFlagCount();
-  refreshUpdatesCount();
+  loadDrafts();          // also fills the Review badge + the bulk-op id list
+  loadOverview();        // overview chips + tab badges (count-only queries)
+  // restore the last active tab (Review's data is already loading above)
+  const savedTab = loadUI().tab;
+  if (savedTab && savedTab !== 'ingest' && savedTab !== 'review') {
+    document.querySelector(`.tabs button[data-tab="${savedTab}"]`)?.click();
+  } else if (savedTab === 'review') {
+    document.querySelectorAll('.tabs button').forEach((x) => x.classList.toggle('active', x.dataset.tab === 'review'));
+    $('paneIngest').classList.add('hidden');
+    $('paneReview').classList.remove('hidden');
+  }
 }
 
 /* ---------------- WhatsApp channel poster (local bridge) ---------------- */
@@ -701,14 +768,86 @@ async function sendWhatsappUpdate() {
   }
 }
 
+/* ---------------- overview strip (Ingest tab) ---------------- */
+// Count-only chips (drafts / updates / flags / closing soon) that double as
+// shortcuts to their tabs, the last few ingest jobs (incl. errors), and the
+// WhatsApp pending count when the local bridge is up.
+async function loadOverview() {
+  const strip = $('ovStrip');
+  if (!strip) return;
+  const iso = (d) => d.toISOString().slice(0, 10);
+  const [drafts, updates, flags, closing] = await Promise.all([
+    countOf('vacancies?status=eq.draft'),
+    countOf('vacancy_updates?status=eq.pending'),
+    countOf('vacancy_flags?status=eq.open'),
+    countOf(`vacancies?status=eq.approved&last_date_to_apply=gte.${iso(new Date())}&last_date_to_apply=lte.${iso(new Date(Date.now() + 7 * 86400000))}`),
+  ]);
+  const chip = (n, label, tab, tone) => `<button type="button" class="ov${n && tone ? ' ' + tone : ''}" data-goto="${tab}"><b>${n}</b> ${label}</button>`;
+  strip.innerHTML =
+    chip(drafts, 'drafts to review', 'review', 'warn') +
+    chip(updates, 'pending updates', 'updates', 'warn') +
+    chip(flags, 'open flags', 'flags', 'bad') +
+    chip(closing, 'live, closing ≤7d', 'manage', '');
+  strip.querySelectorAll('[data-goto]').forEach((b) => {
+    b.onclick = () => document.querySelector(`.tabs button[data-tab="${b.dataset.goto}"]`)?.click();
+  });
+  // keep the tab badges in sync from the same counts
+  if ($('draftCount')) $('draftCount').textContent = drafts ? `(${drafts})` : '';
+  if ($('updatesCount')) $('updatesCount').textContent = updates ? `(${updates})` : '';
+  if ($('flagCount')) $('flagCount').textContent = flags ? `(${flags})` : '';
+  loadRecentJobs();
+  loadWaOverview();
+}
+
+async function loadRecentJobs() {
+  const host = $('ovJobs');
+  if (!host) return;
+  try {
+    const r = await api('/rest/v1/ingest_jobs?select=source_label,source_type,status,error,rows_extracted,created_at&order=created_at.desc&limit=5');
+    if (!r.ok) return;
+    const jobs = await r.json();
+    if (!jobs.length) { host.innerHTML = ''; return; }
+    host.innerHTML = '<b style="font-size:13px;color:var(--txt)">Recent ingests</b>' + jobs.map((j) => {
+      const ic = j.status === 'done' ? '✅' : (j.status === 'error' ? '❌' : '⏳');
+      const when = String(j.created_at || '').slice(0, 16).replace('T', ' ');
+      return `<div style="margin-top:3px">${ic} ${escapeHtml(j.source_label || j.source_type || 'job')} · ${escapeHtml(when)} · ${j.rows_extracted ?? 0} row(s)${j.error ? ` · <span style="color:var(--bad)">${escapeHtml(String(j.error).slice(0, 140))}</span>` : ''}</div>`;
+    }).join('');
+  } catch { /* best effort */ }
+}
+
+// WhatsApp pending line on the overview — silent when the bridge is down.
+async function loadWaOverview() {
+  const el = $('ovWa');
+  if (!el) return;
+  el.textContent = '';
+  await refreshWaPending();
+  if (WA_PENDING === null) return;
+  el.innerHTML = WA_PENDING.size
+    ? `📣 <b>${WA_PENDING.size}</b> approved vacanc${WA_PENDING.size === 1 ? 'y' : 'ies'} not yet posted to WhatsApp — see Manage data`
+    : '📣 WhatsApp channel is up to date';
+}
+
 /* ---------------- app wiring ---------------- */
 function wireApp() {
+  // restore persisted UI state (filters / sort / quick chips); the dynamic
+  // Level/Source dropdowns are restored one-shot inside populateDraft*Filter
+  const ui = loadUI();
+  if (ui.draftSort) DRAFT_SORT = ui.draftSort;
+  DRAFT_QUICK = new Set(Array.isArray(ui.draftQuick) ? ui.draftQuick : []);
+  RESTORE_LEVEL = ui.draftLevel || '';
+  RESTORE_SOURCE = ui.draftSource || '';
+  if ($('draftSearch')) $('draftSearch').value = ui.draftSearch || '';
+  if ($('mgSearch')) $('mgSearch').value = ui.mgSearch || '';
+  if (ui.mgStatus && $('mgStatus')) $('mgStatus').value = ui.mgStatus;
+  if (ui.flagStatus && $('flagStatus')) $('flagStatus').value = ui.flagStatus;
+
   // tabs
   document.querySelectorAll('.tabs button').forEach((b) => {
     b.onclick = () => {
       document.querySelectorAll('.tabs button').forEach((x) => x.classList.remove('active'));
       b.classList.add('active');
       const t = b.dataset.tab;
+      saveUI({ tab: t });
       $('paneIngest').classList.toggle('hidden', t !== 'ingest');
       $('paneReview').classList.toggle('hidden', t !== 'review');
       $('paneManage').classList.toggle('hidden', t !== 'manage');
@@ -717,6 +856,7 @@ function wireApp() {
       // leaving Manage by hand clears any flag-comparison context so it doesn't
       // re-trigger on a later manual visit (the flag's Open button re-sets it)
       if (t !== 'manage') ACTIVE_FLAG = null;
+      if (t === 'ingest') loadOverview();
       if (t === 'review') loadDrafts();
       if (t === 'manage') loadManage();
       if (t === 'flags') loadFlags();
@@ -725,27 +865,54 @@ function wireApp() {
   });
 
   if ($('updRefresh')) $('updRefresh').onclick = loadUpdates;
-  if ($('updSort')) $('updSort').onchange = renderUpdates;   // client-side re-sort, no refetch
+  if ($('updSort')) $('updSort').onchange = () => { saveUI({ updSort: $('updSort').value }); renderUpdates(); };   // client-side re-sort, no refetch
 
   $('flagRefresh').onclick = loadFlags;
-  $('flagStatus').onchange = loadFlags;
+  $('flagStatus').onchange = () => { saveUI({ flagStatus: $('flagStatus').value }); loadFlags(); };
 
   $('mgRefresh').onclick = loadManage;
-  $('mgStatus').onclick = () => {};
-  $('mgStatus').onchange = loadManage;
+  $('mgStatus').onchange = () => { saveUI({ mgStatus: $('mgStatus').value }); loadManage(); };
   // Populate all three sort dropdowns from the shared option list (keeps them
   // in sync). Review queue defaults to 'source'; Manage/Updates to 'upload'.
   if ($('draftSort')) $('draftSort').innerHTML = sortOptionsHtml(DRAFT_SORT);
-  if ($('mgSort')) $('mgSort').innerHTML = sortOptionsHtml('upload');
-  if ($('updSort')) $('updSort').innerHTML = sortOptionsHtml('upload');
-  if ($('mgSort')) $('mgSort').onchange = renderManage;   // client-side re-sort, no refetch
+  if ($('mgSort')) $('mgSort').innerHTML = sortOptionsHtml(ui.mgSort || 'upload');
+  if ($('updSort')) $('updSort').innerHTML = sortOptionsHtml(ui.updSort || 'upload');
+  if ($('mgSort')) $('mgSort').onchange = () => { saveUI({ mgSort: $('mgSort').value }); renderManage(); };   // client-side re-sort, no refetch
   let _mgFilterTimer = null;
-  $('mgSearch').oninput = () => { clearTimeout(_mgFilterTimer); _mgFilterTimer = setTimeout(renderManage, 200); };
-  if ($('draftSort')) $('draftSort').onchange = () => { DRAFT_SORT = $('draftSort').value; DRAFT_PAGE = 1; renderDrafts(); };
-  if ($('draftLevel')) $('draftLevel').onchange = () => { DRAFT_PAGE = 1; renderDrafts(); };
-  if ($('draftSource')) $('draftSource').onchange = () => { DRAFT_PAGE = 1; renderDrafts(); };
+  $('mgSearch').oninput = () => { clearTimeout(_mgFilterTimer); _mgFilterTimer = setTimeout(() => { saveUI({ mgSearch: $('mgSearch').value }); renderManage(); }, 200); };
+  if ($('draftSort')) $('draftSort').onchange = () => { DRAFT_SORT = $('draftSort').value; saveUI({ draftSort: DRAFT_SORT }); DRAFT_PAGE = 1; renderDrafts(); };
+  if ($('draftLevel')) $('draftLevel').onchange = () => { saveUI({ draftLevel: $('draftLevel').value }); DRAFT_PAGE = 1; renderDrafts(); };
+  if ($('draftSource')) $('draftSource').onchange = () => { saveUI({ draftSource: $('draftSource').value }); DRAFT_PAGE = 1; renderDrafts(); };
   let _draftFilterTimer = null;
-  if ($('draftSearch')) $('draftSearch').oninput = () => { clearTimeout(_draftFilterTimer); _draftFilterTimer = setTimeout(() => { DRAFT_PAGE = 1; renderDrafts(); }, 200); };
+  if ($('draftSearch')) $('draftSearch').oninput = () => { clearTimeout(_draftFilterTimer); _draftFilterTimer = setTimeout(() => { saveUI({ draftSearch: $('draftSearch').value }); DRAFT_PAGE = 1; renderDrafts(); }, 200); };
+
+  // quick-filter chips (Review): High/Med/Low OR-combine; the rest AND-combine
+  if ($('draftQuick')) $('draftQuick').querySelectorAll('button').forEach((b) => {
+    b.classList.toggle('on', DRAFT_QUICK.has(b.dataset.q));
+    b.onclick = () => {
+      const k = b.dataset.q;
+      if (DRAFT_QUICK.has(k)) DRAFT_QUICK.delete(k); else DRAFT_QUICK.add(k);
+      b.classList.toggle('on', DRAFT_QUICK.has(k));
+      saveUI({ draftQuick: [...DRAFT_QUICK] });
+      DRAFT_PAGE = 1; renderDrafts();
+    };
+  });
+
+  // keyboard triage on the Review queue — see kbHelp overlay (?)
+  document.addEventListener('keydown', onReviewKeydown);
+
+  if ($('mgPurgeBtn')) $('mgPurgeBtn').onclick = async () => {
+    const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
+    const filt = `vacancies?status=eq.rejected&updated_at=lt.${encodeURIComponent(cutoff)}`;
+    const n = await countOf(filt);
+    if (!n) return toast('No rejected rows older than 30 days');
+    if (!confirm(`Permanently delete ${n} rejected row(s) older than 30 days?\nThis cannot be undone.`)) return;
+    try {
+      const r = await api(`/rest/v1/${filt}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      toast(`🧹 Purged ${n} rejected row(s)`); loadManage();
+    } catch (e) { toast('Purge failed: ' + e.message); }
+  };
   $('mgAddBtn').onclick = () => {
     const blank = { id: null, status: 'approved', source_type: 'manual' };
     $('manageList').prepend(manageCard(blank, true));
@@ -897,12 +1064,20 @@ function wireApp() {
     if ($('cfLow').checked) levels.push('low');
     if (!levels.length) return toast('Tick at least one confidence level');
     const filt = `confidence=in.(${levels.join(',')})`;
-    // count how many match
-    let count = 0;
+    // fetch the matching rows up-front: exact count for the confirm + dates for
+    // the expired warning (the PATCH itself re-applies the filter, so a race
+    // just means a freshly-arrived draft also gets approved — same as before)
+    const rows = [];
     try {
-      const cr = await api(`/rest/v1/vacancies?status=eq.draft&${filt}&select=id`, { headers: { Prefer: 'count=exact' } });
-      count = parseInt(((cr.headers.get('content-range') || '/0').split('/')[1]) || '0', 10) || 0;
+      for (let from = 0; ; from += 1000) {
+        const cr = await api(`/rest/v1/vacancies?status=eq.draft&${filt}&select=id,last_date_to_apply&order=id.asc&limit=1000&offset=${from}`);
+        if (!cr.ok) break;
+        const chunk = await cr.json();
+        rows.push(...chunk);
+        if (chunk.length < 1000) break;
+      }
     } catch { /* */ }
+    const count = rows.length;
     if (!count) return toast('No drafts match the ticked confidence');
     // Strong confirm: this acts on the WHOLE queue by confidence, NOT the row
     // checkboxes — the easy-to-make mistake. For large batches require typing the
@@ -916,26 +1091,35 @@ function wireApp() {
     } else if (!confirm(warn)) {
       return;
     }
+    if (!confirmNotExpired(rows)) return;
     const b = $('approveAllBtn'); b.disabled = true;
     try {
-      const r = await api(`/rest/v1/vacancies?status=eq.draft&${filt}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      // one PATCH; return=representation gives the exact ids for Undo
+      const r = await api(`/rest/v1/vacancies?status=eq.draft&${filt}&select=id`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
         body: JSON.stringify({ status: 'approved' }),
       });
       if (!r.ok) throw new Error(await r.text());
-      toast(`✅ Approved ${count} ${levels.join('/')} draft(s)`); loadDrafts(); scheduleGc();
+      const ids = (await r.json().catch(() => [])).map((x) => x.id);
+      undoableStatus(ids, `✅ Approved ${ids.length} ${levels.join('/')} draft(s)`);
+      loadDrafts();
     } catch (e) { toast('Approve failed: ' + e.message); } finally { b.disabled = false; }
   };
 
   $('rejectAllBtn').onclick = async () => {
     const n = CURRENT_DRAFT_IDS.length;
     if (!n) return toast('No drafts to reject');
-    if (!confirm(`Delete ALL ${n} draft(s)? This cannot be undone.`)) return;
+    if (!confirm(`Reject ALL ${n} draft(s)?\nThey move to Manage → Rejected (and you can Undo for a few seconds).`)) return;
     const b = $('rejectAllBtn'); b.disabled = true;
     try {
-      const r = await api('/rest/v1/vacancies?status=eq.draft', { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+      const r = await api('/rest/v1/vacancies?status=eq.draft&select=id', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify({ status: 'rejected' }),
+      });
       if (!r.ok) throw new Error('HTTP ' + r.status);
-      toast(`Deleted ${n} draft(s)`); loadDrafts(); scheduleGc();
+      const ids = (await r.json().catch(() => [])).map((x) => x.id);
+      undoableStatus(ids, `Rejected ${ids.length} draft(s)`);
+      loadDrafts();
     } catch (e) { toast('Reject all failed: ' + e.message); } finally { b.disabled = false; }
   };
 
@@ -1047,6 +1231,11 @@ const DRAFT_PAGE_SIZE = 25;
 let DRAFT_PAGE = 1;
 let DRAFT_SORT = 'source';   // default preserves the grouped-by-source view
 let DRAFT_ROWS = [];   // full current draft list (display source for pagination)
+let DRAFT_QUICK = new Set();   // active quick-filter chips (confidence / gaps / deadline)
+// one-shot restore for the dynamic Level/Source dropdowns (their options only
+// exist after the first loadDrafts) — consumed by populateDraft*Filter below
+let RESTORE_LEVEL = '';
+let RESTORE_SOURCE = '';
 
 async function loadDrafts() {
   try {
@@ -1069,7 +1258,7 @@ async function loadDrafts() {
 function populateDraftLevelFilter() {
   const sel = $('draftLevel');
   if (!sel) return;
-  const prev = sel.value;
+  const prev = sel.value || RESTORE_LEVEL; RESTORE_LEVEL = '';
   const byTok = new Map(); // token -> rank
   DRAFT_ROWS.forEach((r) => {
     const tok = _levelTok(r);
@@ -1086,30 +1275,56 @@ function populateDraftLevelFilter() {
 function populateDraftSourceFilter() {
   const sel = $('draftSource');
   if (!sel) return;
-  const prev = sel.value;
+  const prev = sel.value || RESTORE_SOURCE; RESTORE_SOURCE = '';
   const srcs = [...new Set(DRAFT_ROWS.map((r) => String(r.source_category || r.source_type || '').trim()).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b));
   sel.innerHTML = '<option value="">All</option>' + srcs.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
   if (prev && srcs.includes(prev)) sel.value = prev; // keep selection across refresh
 }
 
-// Renders ONLY the current page's summary cards. Grouping headers are shown per
-// page for whichever job-groups the slice spans.
-function renderDrafts() {
+// Multi-word AND search when DepUtils is available (e.g. "registrar nclt"),
+// plain substring otherwise.
+function rowMatchesQuery(r, q) {
+  const hay = [r.post_name, r.organisation, r.ministry, r.location_city, r.vacancy_id]
+    .map((f) => String(f || '')).join(' ');
+  return window.DepUtils ? DepUtils.fuzzyIncludes(q, hay) : hay.toLowerCase().includes(q);
+}
+
+const _daysLeft = (r) => (window.DepUtils ? DepUtils.getDaysUntilDate(r.last_date_to_apply) : null);
+
+// The full Review filter chain (search + level + source + quick chips) — used
+// by renderDrafts and by dropFromQueue's pager refresh.
+function applyDraftFilters(rows) {
   const q = ($('draftSearch') && $('draftSearch').value || '').toLowerCase().trim();
   const lvl = ($('draftLevel') && $('draftLevel').value || '').trim();
   const src = ($('draftSource') && $('draftSource').value || '').trim();
-  let filtered = DRAFT_ROWS;
+  let filtered = rows;
   if (lvl) filtered = filtered.filter((r) => _levelTok(r) === lvl);
   if (src) filtered = filtered.filter((r) => String(r.source_category || r.source_type || '').trim() === src);
-  if (q) filtered = filtered.filter((r) =>
-    [r.post_name, r.organisation, r.ministry, r.location_city, r.vacancy_id]
-      .some((f) => String(f || '').toLowerCase().includes(q)));
-  const rows = sortRows(filtered, DRAFT_SORT);
+  if (q) filtered = filtered.filter((r) => rowMatchesQuery(r, q));
+  if (DRAFT_QUICK.size) {
+    const conf = ['high', 'medium', 'low'].filter((c) => DRAFT_QUICK.has(c));
+    if (conf.length) filtered = filtered.filter((r) => conf.includes(String(r.confidence || 'medium').toLowerCase()));
+    if (DRAFT_QUICK.has('nolink')) filtered = filtered.filter((r) => !String(r.official_notification_link || '').trim());
+    if (DRAFT_QUICK.has('nodate')) filtered = filtered.filter((r) => !String(r.last_date_to_apply || '').trim());
+    if (DRAFT_QUICK.has('incomplete')) filtered = filtered.filter((r) => draftCompleteness(r) < 60);
+    if (DRAFT_QUICK.has('closing')) filtered = filtered.filter((r) => { const d = _daysLeft(r); return d != null && d >= 0 && d <= 7; });
+    if (DRAFT_QUICK.has('expired')) filtered = filtered.filter((r) => { const d = _daysLeft(r); return d != null && d < 0; });
+  }
+  return filtered;
+}
+
+// Renders ONLY the current page's summary cards. Grouping headers are shown per
+// page for whichever job-groups the slice spans.
+function renderDrafts() {
+  const q = ($('draftSearch') && $('draftSearch').value || '').trim();
+  const lvl = ($('draftLevel') && $('draftLevel').value || '').trim();
+  const src = ($('draftSource') && $('draftSource').value || '').trim();
+  const rows = sortRows(applyDraftFilters(DRAFT_ROWS), DRAFT_SORT);
   const list = $('draftList');
   const pager = $('draftPager');
   if (!rows.length) {
-    list.innerHTML = `<p class="muted">${(q || src || lvl) ? 'No drafts match the current filters.' : 'No drafts awaiting review. 🎉'}</p>`;
+    list.innerHTML = `<p class="muted">${(q || src || lvl || DRAFT_QUICK.size) ? 'No drafts match the current filters.' : 'No drafts awaiting review. 🎉'}</p>`;
     if (pager) pager.innerHTML = '';
     return;
   }
@@ -1139,6 +1354,7 @@ function renderDrafts() {
   renderDraftPager(pages, start, slice.length, rows.length);
   if ($('draftSelectAll')) $('draftSelectAll').checked = false;
   updateBulkBar();
+  kbAfterRender();
 }
 
 /* ---- bulk approve / reject of checked draft cards ---- */
@@ -1158,32 +1374,46 @@ function updateBulkBar() {
 async function bulkActOnChecked(action) {
   const cards = checkedDraftCards();
   if (!cards.length) return toast('No vacancies checked');
-  const verb = action === 'approve' ? 'Approve & publish' : 'Reject & delete';
+  const status = action === 'approve' ? 'approved' : 'rejected';
+  const verb = action === 'approve' ? 'Approve & publish' : 'Reject';
   if (!confirm(`${verb} ${cards.length} checked vacanc${cards.length === 1 ? 'y' : 'ies'}?`)) return;
+  if (action === 'approve') {
+    const byId = new Map(DRAFT_ROWS.map((r) => [String(r.id), r]));
+    if (!confirmNotExpired(cards.map((el) => byId.get(el.dataset.id)).filter(Boolean))) return;
+  }
   const bar = $('draftBulkBar'); if (bar) bar.querySelectorAll('button').forEach((b) => { b.disabled = true; });
   let ok = 0, fail = 0;
-  for (const el of cards) {
+  const okIds = [];
+  // untouched rows → ONE id=in.() PATCH for the whole set
+  const plain = cards.filter((el) => !el.dataset.built);
+  if (plain.length) {
+    const ids = plain.map((el) => el.dataset.id);
+    try {
+      const r = await api(`/rest/v1/vacancies?id=in.(${ids.join(',')})`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ status }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      plain.forEach((el) => el.remove());
+      ok += ids.length; okIds.push(...ids);
+    } catch { fail += ids.length; }
+  }
+  // edited rows keep a per-card PATCH so their edits are saved too
+  for (const el of cards.filter((x) => x.dataset.built)) {
     const id = el.dataset.id;
     try {
-      if (action === 'approve') {
-        // approve as-is, OR with edits if this card's editor was opened
-        const body = el.dataset.built ? { ...collectFromCard(el), status: 'approved' } : { status: 'approved' };
-        const r = await api(`/rest/v1/vacancies?id=eq.${id}`, {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-          body: JSON.stringify(body),
-        });
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-      } else {
-        const r = await api(`/rest/v1/vacancies?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-      }
-      el.remove(); ok++; bumpCount(-1);
+      const r = await api(`/rest/v1/vacancies?id=eq.${id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ ...collectFromCard(el), status }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      el.remove(); ok++; okIds.push(id);
     } catch { fail++; }
   }
   if (bar) bar.querySelectorAll('button').forEach((b) => { b.disabled = false; });
-  toast(`${action === 'approve' ? 'Approved' : 'Rejected'} ${ok}${fail ? `, ${fail} failed` : ''}`);
-  scheduleGc();
-  afterCardRemoved();   // reloads the page slice if it emptied
+  const msg = `${action === 'approve' ? 'Approved' : 'Rejected'} ${ok}${fail ? `, ${fail} failed` : ''}`;
+  if (okIds.length) undoableStatus(okIds, msg); else toast(msg);
+  dropFromQueue(okIds);
   updateBulkBar();
 }
 
@@ -1214,20 +1444,92 @@ function renderDraftPager(pages, start, shown, total) {
   pager.querySelector('[data-pg="next"]')?.addEventListener('click', () => { if (DRAFT_PAGE < pages) { DRAFT_PAGE++; renderDrafts(); window.scrollTo(0, 0); } });
 }
 
-// After a card is approved/rejected (and removed from the DOM), drop it from the
-// in-memory list and re-render if the current page emptied out.
-function afterCardRemoved() {
-  const before = DRAFT_ROWS.length;
-  // Re-derive from remaining cards in the DOM would be fragile; instead trust
-  // CURRENT_DRAFT_IDS isn't authoritative here — just re-render when the visible
-  // page has no cards left so the pager/headers stay correct.
+// After cards are approved/rejected (and removed from the DOM): drop the rows
+// from the cached queue, fix the count badge + pager, and re-render from cache
+// only when the visible page emptied — open editors/checkboxes survive.
+function dropFromQueue(ids) {
+  if (!ids || !ids.length) return;
+  const set = new Set(ids.map(String));
+  DRAFT_ROWS = DRAFT_ROWS.filter((r) => !set.has(String(r.id)));
+  CURRENT_DRAFT_IDS = CURRENT_DRAFT_IDS.filter((id) => !set.has(String(id)));
+  $('draftCount').textContent = DRAFT_ROWS.length ? `(${DRAFT_ROWS.length})` : '';
+  const total = applyDraftFilters(DRAFT_ROWS).length;
+  const pages = Math.max(1, Math.ceil(total / DRAFT_PAGE_SIZE));
+  if (DRAFT_PAGE > pages) DRAFT_PAGE = pages;
   const visible = $('draftList').querySelectorAll('.draft').length;
-  if (visible === 0 && before > 0) {
-    // rebuild DRAFT_ROWS from a fresh fetch is heavy; cheaper: step back a page
-    // and re-render from the cached list minus removed ones is complex, so do a
-    // light reload of the queue (counts + slice) only when a page empties.
-    loadDrafts();
+  if (visible === 0 || total === 0) renderDrafts();   // next slice / empty-state
+  else renderDraftPager(pages, (DRAFT_PAGE - 1) * DRAFT_PAGE_SIZE, visible, total);
+}
+
+/* ---- keyboard triage (Review queue) ----
+ * j/k move · x or Space tick · a approve · r reject · e edit · s source ·
+ * g google · ? help. The highlight ring is .kb-focus; KB_ID survives
+ * re-renders ('__first__'/'__last__' are page-flip sentinels). */
+let KB_ID = null;
+const kbCards = () => [...$('draftList').querySelectorAll('.draft')];
+function kbApply() {
+  kbCards().forEach((el) => el.classList.toggle('kb-focus', el.dataset.id === KB_ID));
+}
+function kbAfterRender() {
+  const cards = kbCards();
+  if (!cards.length) { KB_ID = null; return; }
+  if (KB_ID === '__first__') KB_ID = cards[0].dataset.id;
+  else if (KB_ID === '__last__') KB_ID = cards[cards.length - 1].dataset.id;
+  else if (KB_ID && !cards.some((el) => el.dataset.id === KB_ID)) KB_ID = null;
+  kbApply();
+}
+function kbMove(delta) {
+  const cards = kbCards();
+  if (!cards.length) return;
+  const i = cards.findIndex((el) => el.dataset.id === KB_ID);
+  const next = (i === -1) ? (delta > 0 ? 0 : cards.length - 1) : i + delta;
+  if (next < 0) {
+    const prevBtn = $('draftPager') && $('draftPager').querySelector('[data-pg="prev"]');
+    if (prevBtn && !prevBtn.disabled) { KB_ID = '__last__'; prevBtn.click(); }
+    return;
   }
+  if (next >= cards.length) {
+    const nextBtn = $('draftPager') && $('draftPager').querySelector('[data-pg="next"]');
+    if (nextBtn && !nextBtn.disabled) { KB_ID = '__first__'; nextBtn.click(); }
+    return;
+  }
+  KB_ID = cards[next].dataset.id;
+  kbApply();
+  cards[next].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+function onReviewKeydown(e) {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const tgt = (e.target && e.target.closest) ? e.target : null;
+  if (tgt && tgt.closest('input, textarea, select, [contenteditable]')) return;
+  if (!$('paneReview') || $('paneReview').classList.contains('hidden')) return;
+  const k = e.key;
+  // let a focused button keep its native Space/Enter activation
+  if ((k === ' ' || k === 'Enter') && tgt && tgt.closest('button')) return;
+  if (k === '?') { e.preventDefault(); $('kbHelp') && $('kbHelp').classList.toggle('hidden'); return; }
+  const kl = String(k).toLowerCase();
+  if (kl === 'j') { e.preventDefault(); kbMove(1); return; }
+  if (kl === 'k') { e.preventDefault(); kbMove(-1); return; }
+  const cur = KB_ID && $('draftList').querySelector(`.draft[data-id="${KB_ID}"]`);
+  if (!cur) return;
+  if (kl === 'x' || k === ' ') {
+    e.preventDefault();
+    const cb = cur.querySelector('.draft-check');
+    if (cb) { cb.checked = !cb.checked; updateBulkBar(); }
+    return;
+  }
+  const act = { a: 'approve', r: 'reject', e: 'edit', s: 'source', g: 'gsearch' }[kl];
+  if (!act) return;
+  e.preventDefault();
+  if (act === 'approve' || act === 'reject') {
+    // hand the highlight to the neighbour before this card disappears
+    const cards = kbCards(); const i = cards.indexOf(cur);
+    const nxt = cards[i + 1] || cards[i - 1];
+    if (nxt) KB_ID = nxt.dataset.id;
+    cur.querySelector(`[data-act="${act}"]`)?.click();
+    setTimeout(kbApply, 250);
+    return;
+  }
+  cur.querySelector(`[data-act="${act}"]`)?.click();
 }
 
 // ---- Link sanity badge -----------------------------------------------------
@@ -1293,6 +1595,41 @@ function draftCompleteness(r) {
   return Math.round((filled / f.length) * 100);
 }
 
+// "closes in Nd / EXPIRED" pill from last_date_to_apply ('' when blank or
+// unparseable). Tones come from DepUtils.getDaysLeftTone.
+function deadlineBadge(r) {
+  const d = _daysLeft(r);
+  if (d == null) return '';
+  const tone = DepUtils.getDaysLeftTone(d);   // safe|soon|closing|critical|expired
+  const txt = d < 0 ? 'EXPIRED' : (d === 0 ? 'closes today' : `closes in ${d}d`);
+  return `<span class="dl dl-${tone}" title="Last date: ${escapeHtml(r.last_date_to_apply)}">${txt}</span>`;
+}
+
+// Chips for the missing fields that hurt the public listing most.
+function gapChips(r) {
+  const gaps = [];
+  if (!String(r.official_notification_link || '').trim()) gaps.push('no link');
+  if (!String(r.last_date_to_apply || '').trim()) gaps.push('no last date');
+  if (!levelTok(r.level || r.req_level1 || '')) gaps.push('no level');
+  return gaps.map((g) => `<span class="gap">${g}</span>`).join('');
+}
+
+// true = proceed. Warns when any of the rows about to be approved is already
+// past its last date — publishing expired posts is almost always a mistake.
+function confirmNotExpired(rows) {
+  if (!window.DepUtils) return true;
+  const exp = rows.filter((r) => { const d = _daysLeft(r || {}); return d != null && d < 0; }).length;
+  if (!exp) return true;
+  return confirm(`⚠ ${exp} of these vacanc${exp === 1 ? 'y is' : 'ies are'} already past the last date to apply (EXPIRED).\n\nApprove & publish anyway?`);
+}
+
+// Read-only verbatim eligibility text captured from the source PDF (rides in
+// raw_extraction.detailed_eligibility) — lets the reviewer check tiers/levels
+// against the source wording without opening the PDF.
+function verbatimHtml(text) {
+  return `<details class="verbatim"><summary>📜 Verbatim source eligibility text</summary><pre>${escapeHtml(String(text))}</pre></details>`;
+}
+
 // Review-queue card. Renders ONLY a lightweight summary up-front (no FIELDS,
 // no 34-option selects, no tiers editor); the heavy editor is built lazily by
 // buildDraftEditor() the first time "Edit" is clicked. This keeps the queue
@@ -1313,7 +1650,7 @@ function draftCard(r) {
           <span class="muted"> · ${escapeHtml(r.organisation || '')}${r.level ? ' · L' + escapeHtml(r.level) : ''}${r.location_city ? ' · ' + escapeHtml(r.location_city) : ''}</span>
           <span class="pill ${conf}">${conf}</span>
           <span class="muted"> · ${score}% complete</span>
-          ${linkDomainBadge(r)}
+          ${linkDomainBadge(r)}${deadlineBadge(r)}${gapChips(r)}
         </span>
       </div>
       <div class="acts">
@@ -1333,7 +1670,8 @@ function draftCard(r) {
   // Build the heavy editor once, on demand.
   const buildEditor = () => {
     if (el.dataset.built) return;
-    editor.innerHTML = `<div class="row">
+    const de = r.raw_extraction && r.raw_extraction.detailed_eligibility;
+    editor.innerHTML = `${de ? verbatimHtml(de) : ''}<div class="row">
       ${FIELDS.map(([k, lbl]) => fieldHtml(k, lbl, r)).join('')}
       ${tiersEditorHtml(r)}
     </div>`;
@@ -1383,16 +1721,16 @@ function draftCard(r) {
   el.querySelector('[data-act="approve"]').onclick = async () => {
     // Only serialise the editor if it was actually opened; otherwise approve as-is.
     const body = el.dataset.built ? { ...collect(), status: 'approved' } : { status: 'approved' };
-    try { await patchRow(body); el.remove(); toast('✅ Approved & published'); bumpCount(-1); afterCardRemoved(); scheduleGc(); }
+    if (!confirmNotExpired([{ ...r, ...body }])) return;
+    try { await patchRow(body); el.remove(); undoableStatus([r.id], '✅ Approved & published'); dropFromQueue([r.id]); }
     catch (e) { toast('Approve failed: ' + e.message); }
   };
   el.querySelector('[data-act="reject"]').onclick = async () => {
     try {
-      // delete outright (not status='rejected') so its dedup_key is freed and the
-      // same vacancy can be re-added later if it genuinely re-appears
-      const r2 = await api(`/rest/v1/vacancies?id=eq.${r.id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
-      if (!r2.ok) throw new Error('HTTP ' + r2.status);
-      el.remove(); toast('Rejected & removed'); bumpCount(-1); afterCardRemoved(); scheduleGc();
+      // soft reject: the row stays (hidden) under Manage → Rejected, so it's
+      // undoable and an identical re-import is remembered as already rejected
+      await patchRow({ status: 'rejected' });
+      el.remove(); undoableStatus([r.id], 'Rejected'); dropFromQueue([r.id]);
     } catch (e) { toast('Reject failed: ' + e.message); }
   };
   el.querySelector('[data-act="enrich"]').onclick = async (e) => {
@@ -1453,10 +1791,6 @@ async function openSource(r, page) {
   else window.open(url, '_blank');
 }
 
-function bumpCount(d) {
-  const cur = parseInt(($('draftCount').textContent.match(/\d+/) || [0])[0], 10) + d;
-  $('draftCount').textContent = cur > 0 ? `(${cur})` : '';
-}
 
 /* ---------------- manage (full CRUD over all rows) ---------------- */
 let MANAGE_ROWS = [];
@@ -1472,10 +1806,25 @@ function collectPatch(scopeEl) {
   return patch;
 }
 
+// vacancy_ids approved but not yet posted to the WhatsApp channel (from the
+// local bridge's /pending). null = bridge unreachable → no badges, no errors.
+let WA_PENDING = null;
+async function refreshWaPending() {
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 1500);
+    const p = await (await fetch(`${WA_BRIDGE}/pending`, { signal: ctl.signal })).json();
+    clearTimeout(t);
+    WA_PENDING = new Set((p.items || []).map((x) => x.vacancy_id).filter(Boolean));
+    if ($('mgWaStatus') && !$('mgWaStatus').textContent) $('mgWaStatus').textContent = WA_PENDING.size ? `${WA_PENDING.size} pending` : '';
+  } catch { WA_PENDING = null; }
+}
+
 async function loadManage() {
   const status = $('mgStatus').value;
   let url = '/rest/v1/vacancies?select=*&order=created_at.desc&limit=2000';
   if (status !== 'all') url += `&status=eq.${status}`;
+  // non-blocking: 📣 badges pop in when the local bridge answers
+  refreshWaPending().then(() => { if (WA_PENDING && !$('paneManage').classList.contains('hidden')) renderManage(); });
   try {
     const r = await api(url);
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -1486,9 +1835,7 @@ async function loadManage() {
 
 function renderManage() {
   const q = ($('mgSearch').value || '').toLowerCase().trim();
-  const filtered = !q ? MANAGE_ROWS : MANAGE_ROWS.filter((r) =>
-    [r.post_name, r.organisation, r.ministry, r.location_city, r.vacancy_id]
-      .some((f) => String(f || '').toLowerCase().includes(q)));
+  const filtered = !q ? MANAGE_ROWS : MANAGE_ROWS.filter((r) => rowMatchesQuery(r, q));
   const mode = ($('mgSort') && $('mgSort').value) || 'upload';
   const rows = sortRows(filtered, mode);
   $('manageCount').textContent = `(${rows.length})`;
@@ -1549,7 +1896,8 @@ function manageCard(r, isNew) {
         <b>${escapeHtml(isNew ? 'New vacancy' : (r.post_name || '(untitled)'))}</b>
         ${isNew ? '' : `<span class="muted"> · ${escapeHtml(r.organisation || '')}${r.level ? ' · L' + escapeHtml(r.level) : ''}${r.location_city ? ' · ' + escapeHtml(r.location_city) : ''}</span>`}
         <span class="pill">${escapeHtml(isNew ? 'new' : (r.status || ''))}</span>
-        ${isNew ? '' : linkDomainBadge(r)}
+        ${isNew ? '' : linkDomainBadge(r)}${isNew ? '' : deadlineBadge(r)}
+        ${(!isNew && r.status === 'approved' && WA_PENDING && WA_PENDING.has(r.vacancy_id)) ? '<span class="pill" style="color:#34d399;border-color:rgba(52,211,153,.5)" title="Approved but not yet posted to the WhatsApp channel">📣 not posted</span>' : ''}
         ${flagged ? '<span class="pill" style="background:rgba(244,63,94,.15);border-color:rgba(244,63,94,.4);color:#fda4af">⚑ flagged</span>' : ''}
       </div>
       <div class="acts">
@@ -1560,6 +1908,7 @@ function manageCard(r, isNew) {
     </div>
     <div class="editor" style="${(isNew || flagged) ? '' : 'display:none'}">
       ${flagBannerHtml(r)}
+      ${(!isNew && r.raw_extraction && r.raw_extraction.detailed_eligibility) ? verbatimHtml(r.raw_extraction.detailed_eligibility) : ''}
       <div class="row">
         ${FIELDS.map(([k, lbl]) => fieldHtml(k, lbl, r)).join('')}
         ${tiersEditorHtml(r)}
@@ -1567,6 +1916,7 @@ function manageCard(r, isNew) {
           <select data-k="status">
             <option value="approved"${r.status === 'approved' ? ' selected' : ''}>approved (live)</option>
             <option value="draft"${r.status === 'draft' ? ' selected' : ''}>draft</option>
+            <option value="rejected"${r.status === 'rejected' ? ' selected' : ''}>rejected (hidden)</option>
           </select>
         </div>
       </div>
@@ -1633,7 +1983,10 @@ function manageCard(r, isNew) {
           const t = await res.text();
           throw new Error(/duplicate|unique/i.test(t) ? 'Would duplicate an existing entry' : t);
         }
-        toast('✅ Saved'); loadManage();
+        toast('✅ Saved');
+        // update the cached row + swap just this card — no full-list reload
+        Object.assign(r, patch);
+        el.replaceWith(manageCard(r, false));
       }
     } catch (e) { toast('Save failed: ' + e.message); }
   };
@@ -1721,7 +2074,8 @@ function flagCard(f) {
   const el = document.createElement('div');
   el.className = 'draft';
   const when = (f.created_at || '').slice(0, 10);
-  const sv = f.suggested_value || '';
+  const sv = (f.suggested_value || '').trim();
+  const col = FLAG_FIELD_TO_COLUMN[f.field] || '';
   el.innerHTML = `
     <div class="head">
       <div>
@@ -1731,6 +2085,7 @@ function flagCard(f) {
         <span class="muted"> · 👍 ${Number(f.endorsements) || 0} · ${escapeHtml(when)}</span>
       </div>
       <div class="acts">
+        ${(f.status === 'open' && col && sv) ? '<button class="good" data-act="applyresolve" title="Write the suggested value to the vacancy and mark this flag ✓ Valid — one click">⚡ Apply &amp; resolve</button>' : ''}
         <button data-act="open">🗂 Open in manager</button>
         ${f.status === 'open' ? '<button class="good" data-act="valid">✓ Valid</button><button class="bad" data-act="dismiss">Dismiss</button>' : '<button data-act="reopen">Re-open</button>'}
       </div>
@@ -1770,6 +2125,44 @@ function flagCard(f) {
   el.querySelector('[data-act="valid"]')?.addEventListener('click', () => setStatus('approved'));
   el.querySelector('[data-act="dismiss"]')?.addEventListener('click', () => setStatus('dismissed'));
   el.querySelector('[data-act="reopen"]')?.addEventListener('click', () => setStatus('open'));
+
+  // One-click: write the suggested value to the vacancy, then mark the flag
+  // valid. Only when the field maps to a single column AND the vacancy_id
+  // resolves to exactly one row — anything murkier goes via Open in manager.
+  el.querySelector('[data-act="applyresolve"]')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget; btn.disabled = true;
+    try {
+      const vr = await api(`/rest/v1/vacancies?vacancy_id=eq.${encodeURIComponent(f.vacancy_id)}&select=id,status`);
+      if (!vr.ok) throw new Error('HTTP ' + vr.status);
+      let rows = await vr.json();
+      const live = rows.filter((x) => x.status === 'approved');
+      if (live.length) rows = live;
+      if (rows.length !== 1) {
+        toast(rows.length ? 'Several rows share this vacancy_id — use 🗂 Open in manager' : 'Vacancy not found — it may have been deleted');
+        btn.disabled = false; return;
+      }
+      // normalise the suggestion the same way the editors do
+      const patch = {};
+      if (col === 'level') {
+        const tok = levelTok(sv);
+        if (!tok) throw new Error('the suggestion has no recognisable level');
+        patch.level = tok; patch.level_text = `Level-${tok}`;
+      } else if (col === 'last_date_to_apply') {
+        const iso = toISODateInput(sv);
+        if (!iso) throw new Error('the suggestion is not a recognisable date');
+        patch[col] = iso;
+      } else {
+        patch[col] = sv;
+      }
+      const pr = await api(`/rest/v1/vacancies?id=eq.${rows[0].id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify(patch),
+      });
+      if (!pr.ok) throw new Error('HTTP ' + pr.status);
+      await setStatus('approved');
+      toast('⚡ Suggestion applied & flag resolved');
+    } catch (err) { toast('Apply failed: ' + err.message); btn.disabled = false; }
+  });
   return el;
 }
 
@@ -1881,7 +2274,8 @@ function updateCard(u) {
       const [tgt] = await tr.json().catch(() => []);
       eff = { ...(tgt || {}), ...(u.proposed || {}) };
     }
-    editor.innerHTML = `<div class="row">${FIELDS.map(([k, l]) => fieldHtml(k, l, eff)).join('')}${tiersEditorHtml(eff)}</div>`;
+    const de = eff.raw_extraction && eff.raw_extraction.detailed_eligibility;
+    editor.innerHTML = `${de ? verbatimHtml(de) : ''}<div class="row">${FIELDS.map(([k, l]) => fieldHtml(k, l, eff)).join('')}${tiersEditorHtml(eff)}</div>`;
     wireTiersEditor(editor);
     built = true;
   };

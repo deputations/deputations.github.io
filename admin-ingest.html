@@ -49,7 +49,9 @@
     .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
       background:var(--panel);border:1px solid var(--line);padding:12px 18px;border-radius:10px;
       box-shadow:0 8px 30px rgba(0,0,0,.4);font-size:14px;opacity:0;transition:.2s;pointer-events:none}
-    .toast.show{opacity:1}
+    .toast.show{opacity:1;pointer-events:auto}
+    .toast .toast-undo{margin-left:10px;padding:4px 12px;font-size:13px;font-weight:600;
+      background:var(--accent);border-color:var(--accent);color:#fff;border-radius:999px}
     .dropzone{border:2px dashed var(--line);border-radius:12px;padding:26px;text-align:center;color:var(--muted)}
     .spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--line);
       border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-3px}
@@ -79,6 +81,35 @@
     .pager{display:flex;gap:12px;align-items:center;margin:10px 0;flex-wrap:wrap}
     .pager button[disabled]{opacity:.4;cursor:not-allowed}
     .draft .editor{margin-top:10px}
+    /* deadline badge (closes in Nd / EXPIRED) */
+    .dl{display:inline-block;font-size:11px;padding:2px 7px;border-radius:999px;margin-left:6px;
+      border:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+    .dl-safe{color:var(--good);border-color:rgba(34,197,94,.5)}
+    .dl-soon{color:#a3e635;border-color:rgba(163,230,53,.5)}
+    .dl-closing{color:var(--warn);border-color:rgba(245,158,11,.55)}
+    .dl-critical{color:#fb923c;border-color:rgba(251,146,60,.6);background:rgba(251,146,60,.08)}
+    .dl-expired{color:var(--bad);border-color:rgba(239,68,68,.6);background:rgba(239,68,68,.1);font-weight:600}
+    /* missing-critical-field chips */
+    .gap{display:inline-block;font-size:11px;padding:2px 7px;border-radius:999px;margin-left:6px;
+      border:1px dashed rgba(251,191,36,.6);color:#fbbf24;vertical-align:middle;white-space:nowrap}
+    /* quick-filter chips */
+    .quick{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}
+    .quick button{font-size:12px;padding:3px 12px;border-radius:999px}
+    .quick button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+    /* keyboard triage */
+    .draft.kb-focus{outline:2px solid var(--accent);outline-offset:1px}
+    kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;
+      padding:1px 6px;font-family:inherit;font-size:12px}
+    /* verbatim source eligibility text */
+    .verbatim{margin:2px 0 10px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--panel)}
+    .verbatim summary{cursor:pointer;font-size:13px;color:var(--muted)}
+    .verbatim pre{white-space:pre-wrap;font-size:12.5px;line-height:1.55;margin:8px 0 2px;color:var(--txt);font-family:inherit}
+    /* overview strip (Ingest tab) */
+    #ovStrip{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+    button.ov{border-radius:999px;font-size:13px;padding:6px 13px}
+    button.ov b{font-size:14px}
+    button.ov.warn b{color:var(--warn)}
+    button.ov.bad b{color:var(--bad)}
   </style>
 </head>
 <body>
@@ -118,6 +149,9 @@
 
       <!-- INGEST -->
       <section id="paneIngest" class="card">
+        <div id="ovStrip"></div>
+        <div id="ovWa" class="muted" style="margin:-4px 0 10px"></div>
+        <div id="ovJobs" class="muted" style="margin:0 0 16px"></div>
         <h2 style="margin-top:0">Add a source</h2>
         <div style="display:flex;align-items:center;gap:10px;margin:-6px 0 14px;flex-wrap:wrap">
           <button type="button" id="providerStatusBtn">🔌 Check AI providers</button>
@@ -203,7 +237,17 @@
             <button id="refreshBtn">↻ Refresh</button>
           </div>
         </div>
-        <p class="muted">Click <b>Edit</b> to change fields, then <b>Approve</b> (publishes live) or <b>Reject</b>. Approve without editing publishes the row as-is. Tick the checkboxes to <b>approve / reject in bulk</b>. Click <b>📄 source</b> to view the original page beside it.</p>
+        <p class="muted">Click <b>Edit</b> to change fields, then <b>Approve</b> (publishes live) or <b>Reject</b> (moves to Manage → Rejected; undoable). Approve without editing publishes the row as-is. Tick the checkboxes to <b>approve / reject in bulk</b>. Click <b>📄 source</b> to view the original page beside it. Press <kbd>?</kbd> for keyboard shortcuts.</p>
+        <div id="draftQuick" class="quick">
+          <button type="button" data-q="high">High</button>
+          <button type="button" data-q="medium">Med</button>
+          <button type="button" data-q="low">Low</button>
+          <button type="button" data-q="nolink">no link</button>
+          <button type="button" data-q="nodate">no last date</button>
+          <button type="button" data-q="incomplete">&lt;60% complete</button>
+          <button type="button" data-q="closing">closing ≤7d</button>
+          <button type="button" data-q="expired">expired</button>
+        </div>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0">
           <label class="muted" style="display:flex;gap:5px;align-items:center;font-size:13px">
             <input type="checkbox" id="draftSelectAll"> Select all on this page
@@ -236,12 +280,14 @@
             <select id="mgStatus" style="width:auto">
               <option value="approved">Approved (live)</option>
               <option value="draft">Draft</option>
+              <option value="rejected">Rejected</option>
               <option value="all">All</option>
             </select>
             <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Sort:
               <select id="mgSort" style="width:auto"></select>
             </label>
             <button id="mgRefresh">↻</button>
+            <button id="mgPurgeBtn" class="bad" title="Permanently delete rejected rows older than 30 days (their source PDFs were already cleaned up)">🧹 Purge old rejected</button>
             <button id="mgAddBtn" class="primary">+ Add vacancy</button>
             <button id="mgWaBtn" title="Post newly-approved vacancies to the WhatsApp channel. Needs the local helper running: python scripts/whatsapp_bridge.py">📣 Send WhatsApp Update</button>
             <span id="mgWaStatus" class="muted"></span>
@@ -288,8 +334,18 @@
 
   <div class="toast" id="toast"></div>
 
+  <div id="kbHelp" class="hidden" style="position:fixed;right:18px;bottom:18px;z-index:60;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;box-shadow:0 8px 30px rgba(0,0,0,.5);font-size:13px;max-width:340px">
+    <b>Review-queue keyboard shortcuts</b>
+    <div class="muted" style="margin-top:6px;line-height:2">
+      <kbd>j</kbd> / <kbd>k</kbd> next / previous card<br>
+      <kbd>x</kbd> tick for bulk &nbsp; <kbd>a</kbd> approve &nbsp; <kbd>r</kbd> reject<br>
+      <kbd>e</kbd> edit &nbsp; <kbd>s</kbd> source PDF &nbsp; <kbd>g</kbd> Google &nbsp; <kbd>?</kbd> close
+    </div>
+  </div>
+
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb8"></script>
-  <script src="admin-ingest.js?v=sb41"></script>
+  <script src="shared/vacancy-utils.js?v=sb3"></script>
+  <script src="admin-ingest.js?v=sb42"></script>
 </body>
 </html>
