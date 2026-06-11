@@ -86,20 +86,29 @@
   ".sw-counter{left:16px;bottom:16px;pointer-events:none}" +
   ".sw-counter .sw-c{display:inline-flex;align-items:stretch;gap:0;" +
     "background:var(--sw-surface);-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);" +
-    "border:1px solid var(--sw-border);border-radius:16px;padding:6px;box-shadow:var(--sw-shadow);color:var(--sw-text);" +
+    "border:1px solid var(--sw-border);border-radius:14px;padding:5px;box-shadow:var(--sw-shadow);color:var(--sw-text);" +
     "transform:translateY(8px);opacity:0;transition:transform .5s cubic-bezier(.16,1,.3,1),opacity .5s ease}" +
   ".sw-counter.sw-in .sw-c{transform:none;opacity:1}" +
-  ".sw-c .cell{padding:7px 16px;text-align:center;position:relative}" +
+  ".sw-c .cell{padding:5px 12px;text-align:center;position:relative}" +
   ".sw-c .cell+.cell::before{content:'';position:absolute;left:0;top:22%;bottom:22%;width:1px;background:var(--sw-border)}" +
-  ".sw-c .num{font-family:'Sora','Plus Jakarta Sans',sans-serif;font-weight:700;font-size:1.18rem;line-height:1;" +
+  ".sw-c .num{font-family:'Sora','Plus Jakarta Sans',sans-serif;font-weight:700;font-size:.98rem;line-height:1;" +
     "font-variant-numeric:tabular-nums;letter-spacing:.3px;display:inline-flex;align-items:center}" +
   ".sw-c .cell.total .num{color:var(--sw-primary)}" +
   ".sw-c .cell.today .num{color:var(--sw-accent)}" +
   ".sw-c .cell.online .num{color:var(--sw-gold)}" +
-  ".sw-c .lbl{display:block;margin-top:5px;font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--sw-muted);font-weight:600;white-space:nowrap}" +
+  ".sw-c .lbl{display:block;margin-top:4px;font-size:.56rem;text-transform:uppercase;letter-spacing:.11em;color:var(--sw-muted);font-weight:600;white-space:nowrap}" +
   ".sw-c .dot{width:7px;height:7px;border-radius:50%;background:var(--sw-gold);margin-right:6px;box-shadow:0 0 0 0 var(--sw-gold);animation:swPulse 1.8s ease-in-out infinite}" +
   "@keyframes swPulse{0%,100%{opacity:1}50%{opacity:.3}}" +
-  ".sw-counter .sw-min{display:none}" +
+  /* collapsed → tiny chip (used when the pill would cover page UI); hover to peek */
+  ".sw-counter .sw-min{display:none;pointer-events:auto;align-items:center;gap:7px;" +
+    "background:var(--sw-surface);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);" +
+    "border:1px solid var(--sw-border);border-radius:999px;padding:6px 11px;box-shadow:var(--sw-shadow);" +
+    "color:var(--sw-muted);font-size:.68rem;font-weight:700;letter-spacing:.05em;white-space:nowrap;cursor:default}" +
+  ".sw-min .num{color:var(--sw-primary);font-variant-numeric:tabular-nums;font-weight:800}" +
+  ".sw-counter.sw-collapsed .sw-c{display:none}" +
+  ".sw-counter.sw-collapsed .sw-min{display:inline-flex}" +
+  ".sw-counter.sw-collapsed:hover .sw-c{display:inline-flex;transform:none;opacity:1}" +
+  ".sw-counter.sw-collapsed:hover .sw-min{display:none}" +
 
   /* ===== FEEDBACK (top-right) ===== */
   ".sw-fb{top:76px;right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:10px}" +
@@ -230,17 +239,53 @@
         "<div class='cell total'><span class='num' data-k='total'>0</span><span class='lbl'>Total visits</span></div>" +
         "<div class='cell today'><span class='num' data-k='today'>0</span><span class='lbl'>Today</span></div>" +
         "<div class='cell online'><span class='num'><span class='dot'></span><span data-k='online'>0</span></span><span class='lbl'>Online now</span></div>" +
-      "</div>";
+      "</div>" +
+      "<div class='sw-min' title='Visitor stats — hover to expand'><span class='dot'></span><span class='num' data-k='total-min'>0</span><span>VISITS</span></div>";
     document.body.appendChild(wrap);
     requestAnimationFrame(function () { wrap.classList.add("sw-in"); });
+
+    // Collapse to the mini chip whenever the full pill would overlap real page
+    // UI (filter sidebar, pagination, load-more). rAF-throttled; desktop only —
+    // on <=640px the counter is static, in flow, at the page bottom.
+    (function guardOverlap() {
+      var ticking = false;
+      function check() {
+        ticking = false;
+        if (window.innerWidth <= 640) { wrap.classList.remove("sw-collapsed"); return; }
+        var pill = wrap.querySelector(".sw-c");
+        var probe = (wrap.classList.contains("sw-collapsed") ? wrap : pill);
+        if (!probe) return;
+        // measure where the FULL pill would sit (fixed bottom-left)
+        var w = pill ? pill.offsetWidth || 260 : 260;
+        var h = pill ? pill.offsetHeight || 54 : 54;
+        var rect = { left: 16, right: 16 + w, bottom: window.innerHeight - 16, top: window.innerHeight - 16 - h };
+        var hit = false;
+        document.querySelectorAll(".filters-sidebar, .pagination-bar, .load-more-bar").forEach(function (el) {
+          if (hit || !el.offsetParent) return;
+          var r = el.getBoundingClientRect();
+          if (r.left < rect.right && r.right > rect.left && r.top < rect.bottom && r.bottom > rect.top) hit = true;
+        });
+        wrap.classList.toggle("sw-collapsed", hit);
+      }
+      function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(check); } }
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll);
+      setTimeout(check, 400);
+      setInterval(check, 2500); // catches layout changes (filters re-render etc.)
+    })();
 
     var elTotal = wrap.querySelector("[data-k='total']");
     var elToday = wrap.querySelector("[data-k='today']");
     var elOnline = wrap.querySelector("[data-k='online']");
+    var elTotalMin = wrap.querySelector("[data-k='total-min']");
 
     if (!SB_OK) { wrap.style.display = "none"; return; }
 
-    function show(total, today) { countUp(elTotal, total); countUp(elToday, today); }
+    function show(total, today) {
+      countUp(elTotal, total);
+      countUp(elToday, today);
+      if (elTotalMin) elTotalMin.textContent = fmt(total);
+    }
 
     // count one VISIT per browser session; cache so navigations don't re-bump.
     var cached = ss(true, "sw_visit");
@@ -440,10 +485,24 @@
     });
   }
 
+  /* ---- navbar: keep the active pill visible inside the mobile scroller ---- */
+  function enhanceNav() {
+    var links = document.querySelector(".top-nav .nav-links");
+    if (!links) return;
+    var active = links.querySelector("a.active");
+    if (!active) return;
+    // centre via scrollLeft (scrollIntoView would also scroll the page vertically)
+    var target = active.offsetLeft - (links.clientWidth - active.offsetWidth) / 2;
+    if (links.scrollWidth > links.clientWidth + 4) {
+      links.scrollLeft = Math.max(0, target);
+    }
+  }
+
   // Feedback widget kept in abeyance for a later upgrade — counter only for now.
   var ENABLE_FEEDBACK = false;
   function init() {
     injectCSS();
+    try { enhanceNav(); } catch (e) {}
     try { buildTypewriter(); } catch (e) {}
     try { buildCounter(); } catch (e) {}
     try { buildDisclaimer(); } catch (e) {}

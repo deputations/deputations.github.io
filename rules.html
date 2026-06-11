@@ -11,6 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="navbar.css?v=2" />
 
   <style>
     :root {
@@ -200,44 +201,7 @@
       color: var(--brand);
     }
 
-    .top-nav {
-      position: sticky;
-      top: 0;
-      z-index: 80;
-      min-height: var(--nav-h);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: .35rem;
-      padding: .75rem 1rem;
-      border-bottom: 1px solid var(--line);
-      backdrop-filter: var(--blur);
-      background: linear-gradient(180deg, rgba(7,17,31,.78), rgba(7,17,31,.45));
-    }
-
-    html[data-theme="light"] .top-nav {
-      background: linear-gradient(180deg, rgba(255,255,255,.82), rgba(255,255,255,.62));
-    }
-
-    .top-nav a {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 42px;
-      padding: .72rem 1rem;
-      border-radius: 999px;
-      color: var(--text-soft);
-      font-weight: 700;
-      font-size: .92rem;
-      transition: transform .22s ease, color .22s ease, background .22s ease;
-      white-space: nowrap;
-    }
-    .top-nav a:hover { transform: translateY(-1px); color: var(--text); background: var(--panel); }
-    .top-nav a.active {
-      color: #05111d;
-      background: linear-gradient(135deg, var(--brand), #a7f3d0);
-      box-shadow: 0 14px 35px rgba(84,240,255,.22);
-    }
+    /* .top-nav styles now come from the shared navbar.css */
 
     .site-shell {
       width: min(var(--max), calc(100% - 2rem));
@@ -1590,13 +1554,23 @@
   <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
   <nav class="top-nav" aria-label="Primary site navigation">
-    <a href="/index.html">Home</a>
-    <a href="/rules.html" class="active">Rules</a>
-    <a href="/Rules/faq.html">FAQs</a>
-    <a href="/defex.html">DeFeX</a>
-    <a href="/report-vacancy.html">Report Vacancy</a>
-    <a href="/contact.html">Contact</a>
-    <a href="/my-deputation.html">My Deputation</a>
+    <a class="nav-brand" href="/index.html" aria-label="Deputations — home">
+      <svg class="nav-brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <defs><linearGradient id="nbGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+        <rect width="32" height="32" rx="9" fill="url(#nbGrad)"/>
+        <path d="M12 9.5h4.4a6.5 6.5 0 0 1 0 13H12z" fill="none" stroke="#04111c" stroke-width="2.6" stroke-linejoin="round"/>
+      </svg>
+      <span class="nav-brand-name">Deputations</span>
+    </a>
+    <div class="nav-links">
+      <a href="/index.html">Home</a>
+      <a href="/rules.html" class="active">Rules</a>
+      <a href="/Rules/faq.html">FAQs</a>
+      <a href="/defex.html">DeFeX</a>
+      <a href="/report-vacancy.html">Report Vacancy</a>
+      <a href="/contact.html">Contact</a>
+      <a href="/my-deputation.html">My Deputation</a>
+    </div>
   </nav>
 
   <div class="site-shell">
@@ -3174,6 +3148,6 @@ Keywords: deputation, foreign service, central government, DoPT, CSS, Central St
   </script>
 
   <script src="config.js"></script>
-  <script defer src="site-widgets.js?v=12"></script>
+  <script defer src="site-widgets.js?v=13"></script>
 </body>
 </html>

@@ -1,31 +1,73 @@
 /* =========================================================
    Shared Top Navigation (standardised across all pages)
-   Visual reference: rules.html
+   Brand mark pinned left · pill links · mobile: snap-scroll
+   row with edge fades (no hidden, unreachable links).
    ========================================================= */
 .top-nav {
   position: sticky;
   top: 0;
   z-index: 80;
-  min-height: 74px;
+  min-height: 66px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: .35rem;
-  padding: .75rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, .13);
+  gap: .75rem;
+  padding: .6rem clamp(.8rem, 2.5vw, 1.4rem);
+  border-bottom: 1px solid rgba(255, 255, 255, .12);
   backdrop-filter: blur(22px) saturate(155%);
   -webkit-backdrop-filter: blur(22px) saturate(155%);
-  background: linear-gradient(180deg, rgba(7, 17, 31, .78), rgba(7, 17, 31, .45));
+  background: linear-gradient(180deg, rgba(7, 17, 31, .82), rgba(7, 17, 31, .5));
   flex-wrap: nowrap;
   font-family: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
 }
 
-.top-nav a {
+/* ---- brand ---- */
+.nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  flex: none;
+  text-decoration: none;
+  border-radius: 12px;
+  padding: .3rem .45rem .3rem .3rem;
+}
+.nav-brand:hover .nav-brand-name { color: #ffffff; }
+
+.nav-brand-mark {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 9px;
+  box-shadow: 0 6px 18px -6px rgba(34, 211, 238, .55);
+}
+
+.nav-brand-name {
+  font-family: "Sora", "Plus Jakarta Sans", sans-serif;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #eef6ff;
+  white-space: nowrap;
+  transition: color .2s ease;
+}
+
+/* ---- links ---- */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  margin: 0 auto;
+  min-width: 0;
+}
+
+/* support pages that haven't been migrated to .nav-links yet */
+.top-nav > a { flex: none; }
+
+.top-nav a:not(.nav-brand) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 42px;
-  padding: .72rem 1rem;
+  padding: .68rem 1rem;
   border-radius: 999px;
   color: #b7c5d8;
   font-weight: 700;
@@ -34,47 +76,90 @@
   text-decoration: none;
   transition: transform .22s ease, color .22s ease, background .22s ease;
   white-space: nowrap;
+  scroll-snap-align: center;
 }
 
-.top-nav a:hover {
+.top-nav a:not(.nav-brand):hover {
   transform: translateY(-1px);
   color: #eef6ff;
   background: rgba(255, 255, 255, .075);
 }
 
-.top-nav a.active {
+.top-nav a:not(.nav-brand).active {
   color: #05111d;
   background: linear-gradient(135deg, #54f0ff, #a7f3d0);
   box-shadow: 0 14px 35px rgba(84, 240, 255, .22);
 }
 
+/* ---- light theme ---- */
 html[data-theme="light"] .top-nav,
 [data-theme="light"] .top-nav {
-  background: linear-gradient(180deg, rgba(255, 255, 255, .82), rgba(255, 255, 255, .62));
+  background: linear-gradient(180deg, rgba(255, 255, 255, .88), rgba(255, 255, 255, .66));
   border-bottom-color: rgba(15, 23, 42, .12);
 }
 
-html[data-theme="light"] .top-nav a,
-[data-theme="light"] .top-nav a {
+html[data-theme="light"] .nav-brand-name,
+[data-theme="light"] .nav-brand-name { color: #0b1628; }
+html[data-theme="light"] .nav-brand:hover .nav-brand-name,
+[data-theme="light"] .nav-brand:hover .nav-brand-name { color: #000; }
+
+html[data-theme="light"] .top-nav a:not(.nav-brand),
+[data-theme="light"] .top-nav a:not(.nav-brand) {
   color: #42526a;
 }
 
-html[data-theme="light"] .top-nav a:hover,
-[data-theme="light"] .top-nav a:hover {
+html[data-theme="light"] .top-nav a:not(.nav-brand):hover,
+[data-theme="light"] .top-nav a:not(.nav-brand):hover {
   color: #0b1628;
   background: rgba(15, 23, 42, .06);
 }
 
-html[data-theme="light"] .top-nav a.active,
-[data-theme="light"] .top-nav a.active {
+html[data-theme="light"] .top-nav a:not(.nav-brand).active,
+[data-theme="light"] .top-nav a:not(.nav-brand).active {
   color: #05111d;
+}
+
+/* ---- mobile: brand stays put, links scroll with snap + edge fade ---- */
+@media (max-width: 980px) {
+  .nav-links { margin: 0; }
 }
 
 @media (max-width: 860px) {
   .top-nav {
     justify-content: flex-start;
+    gap: .4rem;
+    min-height: 60px;
+    padding: .5rem .6rem;
+    /* legacy pages where links are direct children of .top-nav */
     overflow-x: auto;
     scrollbar-width: none;
   }
   .top-nav::-webkit-scrollbar { display: none; }
+
+  /* migrated pages: the .nav-links row is the scroller, with fade hints */
+  .top-nav:has(.nav-links) { overflow: visible; }
+  .nav-links {
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 26px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 26px), transparent 100%);
+    padding: 2px 10px 2px 2px;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+
+  .nav-brand { padding: .25rem; gap: .5rem; }
+  .nav-brand-name { display: none; }
+  .nav-brand-mark { width: 30px; height: 30px; }
+
+  .top-nav a:not(.nav-brand) {
+    min-height: 38px;
+    padding: .55rem .85rem;
+    font-size: .88rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .top-nav a:not(.nav-brand) { transition: none; }
 }

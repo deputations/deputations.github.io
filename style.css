@@ -1928,86 +1928,16 @@ select:disabled {
   }
 }
 
-/* MOBILE TABLE -> STACKED CARDS */
+/* MOBILE TABLE -> plain side-scroll table (card view is the mobile default) */
 @media (max-width: 768px) {
   .table-wrapper {
-    overflow: visible;
-    background: transparent;
-    border: none;
-    box-shadow: none;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0;
   }
-
   .responsive-table {
-    min-width: 0;
+    min-width: 900px;
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-  }
-
-  .responsive-table thead {
-    display: none;
-  }
-
-  .responsive-table tbody {
-    display: block;
-  }
-
-  .responsive-table tr {
-    display: block;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-glass);
-    margin-bottom: 1rem;
-    padding: 0.5rem 0;
-    overflow: hidden;
-  }
-
-  .responsive-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    width: 100%;
-    padding: 0.8rem 1rem;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.08);
-    white-space: normal;
-  }
-
-  .responsive-table td:last-child {
-    border-bottom: none;
-  }
-
-  .responsive-table td::before {
-    content: attr(data-label);
-    flex: 0 0 42%;
-    max-width: 42%;
-    color: var(--text-muted);
-    font-size: 0.76rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    line-height: 1.35;
-  }
-
-  .responsive-table td > * {
-    max-width: 58%;
-  }
-
-  .responsive-table td.table-heart-cell {
-    justify-content: flex-start;
-    align-items: center;
-  }
-
-  .responsive-table td.table-heart-cell::before {
-    content: attr(data-label);
-    flex: 0 0 auto;
-    max-width: none;
-    margin-right: 0.75rem;
-  }
-
-  .responsive-table td.table-heart-cell > * {
-    max-width: none;
   }
 }
 
@@ -2929,11 +2859,8 @@ select:disabled {
 /* ===== LIGHT THEME PREMIUM REFINEMENT ===== */
 
 [data-theme="light"] body {
-  background:
-    radial-gradient(circle at 14% 18%, rgba(34, 211, 238, 0.10), transparent 28%),
-    radial-gradient(circle at 86% 82%, rgba(167, 139, 250, 0.10), transparent 24%),
-    linear-gradient(180deg, #edf3fa 0%, #f7f9fc 100%);
-  color: #0f172a;
+  background: var(--bg-main);
+  color: var(--text-primary);
 }
 
 /* surfaces */
@@ -3413,29 +3340,27 @@ html:not([data-theme="light"]) .data-table tbody tr:hover {
 /* ===== LIGHT THEME: FLUORESCENT CYAN + PURPLE ===== */
 
 [data-theme="light"] {
-  --bg-main: #eef6ff;
-  --bg-surface: rgba(255, 255, 255, 0.84);
-  --bg-surface-hover: rgba(255, 255, 255, 0.98);
-  --bg-surface-solid: rgba(255, 255, 255, 0.94);
-  --border-color: rgba(109, 40, 217, 0.12);
-  --border-highlight: rgba(34, 211, 238, 0.24);
-  --text-primary: #141b34;
-  --text-secondary: #5a6784;
-  --text-muted: #73819d;
-  --primary-color: #00cfff;
-  --accent-color: #8b5cf6;
-  --success-color: #12b76a;
-  --warning-color: #d97706;
-  --danger-color: #e11d48;
-  --shadow-glass: 0 14px 34px -12px rgba(76, 29, 149, 0.18);
+  --bg-main: #f6f7f9;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #f4f7fa;
+  --bg-surface-solid: #ffffff;
+  --border-color: rgba(13, 23, 44, 0.11);
+  --border-highlight: rgba(14, 116, 144, 0.40);
+  --text-primary: #0c1322;
+  --text-secondary: #46556e;
+  --text-muted: #6e7d96;
+  --primary-color: #0e7490;
+  --accent-color: #6d28d9;
+  --success-color: #0f9d58;
+  --warning-color: #b45309;
+  --danger-color: #dc2626;
+  --shadow-glass: 0 10px 30px -14px rgba(15, 23, 42, 0.16);
 }
 
 [data-theme="light"] body {
   background:
-    radial-gradient(circle at 12% 18%, rgba(0, 255, 255, 0.18), transparent 28%),
-    radial-gradient(circle at 86% 82%, rgba(168, 85, 247, 0.18), transparent 26%),
-    radial-gradient(circle at 50% 55%, rgba(34, 211, 238, 0.08), transparent 30%),
-    linear-gradient(180deg, #edf7ff 0%, #f7f6ff 100%);
+    radial-gradient(1100px 480px at 50% -240px, rgba(14, 116, 144, 0.05), transparent 70%),
+    var(--bg-main);
   color: var(--text-primary);
 }
 
@@ -4437,10 +4362,6 @@ html:not([data-theme="light"]) .job-highlight-row .highlight-box:first-child:has
   min-width: 52px;
 }
 
-And in your existing active-filters click handler, add:
-
-if (filterName === 'kpi') kpiFilter = 'all';
-
 .kpi-clickable {
   cursor: pointer;
 }
@@ -5144,26 +5065,16 @@ html:not([data-theme="light"]) .premium-credit {
    Scoped to #dataContainer so the admin page is untouched.
    =========================================================================== */
 @media (max-width: 768px) {
-  /* free the width so the table fits the viewport and stacks cleanly */
+  /* mobile table scrolls sideways inside its wrapper (no stacked transform) */
   #dataContainer .data-table,
   .data-table.responsive-table {
-    min-width: 0 !important;
+    min-width: 900px !important;
     width: 100% !important;
     border-collapse: separate !important;
     border-spacing: 0 !important;
   }
-  /* neutralise the desktop per-column min-widths */
-  #dataContainer .data-table td[class$="-col"],
-  #dataContainer .data-table th[class$="-col"],
-  #dataContainer .data-table .save-col,
-  #dataContainer .data-table .table-heart-cell,
-  #dataContainer .data-table .table-link-cell {
-    min-width: 0 !important;
-    width: auto !important;
-    white-space: normal !important;
-  }
   /* drop the right/bottom padding that was reserved for the desktop 3D faces */
-  .table-wrapper { padding: 0 !important; }
+  .table-wrapper { padding: 0 !important; overflow-x: auto !important; }
   /* flatten the plank visuals on the stacked cells (no gradient, no 3D faces) */
   #dataContainer .data-table tbody td {
     background: transparent !important;
@@ -5214,4 +5125,639 @@ html:not([data-theme="light"]) .premium-credit {
   #dataContainer.view-card .job-card:hover::after {
     opacity: 0 !important;
   }
+}
+
+/* ===========================================================================
+   APPROVED REDESIGN ADDITIONS (appended on top of the original stylesheet)
+   The homepage look above is untouched — these rules only add the approved
+   features: sprite icons, card view v2 + grouping, sort dropdown, load-more,
+   condensed pagination, native dialog + share, skeletons, focus rings,
+   paper-light support bits, and the mobile perf budget.
+   ======================================================================== */
+
+/* ---- sprite icon utility (no icon CDN) ---- */
+.icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  display: inline-block;
+  vertical-align: -0.18em;
+  color: inherit;
+  fill: none;
+}
+
+/* keyboard focus (item 29) */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary-color) 60%, transparent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* hint text under the Experience filter (markup moved off inline styles) */
+.filter-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+/* light theme: on the coloured plank-hover rows, the organisation subtext under
+   Post Name must flip to white like the rest of the row (the generic light-mode
+   ".table-subtext { color:#475569 !important }" otherwise wins and vanishes
+   against the plank colour) */
+[data-theme="light"] .data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) td .table-subtext {
+  color: rgba(255, 255, 255, 0.92) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+}
+
+/* Days Left column: the actual last date in small type under the days count;
+   flips to readable white on the coloured plank-hover rows */
+.days-date-sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-date-sub {
+  color: rgba(255, 255, 255, 0.88) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+}
+
+/* sprite-friendly heart/bookmark fills (shadow-DOM paths inherit the svg fill) */
+.table-heart-btn.saved svg,
+.card-heart-btn.saved svg { fill: #ff334f !important; }
+.icon-btn.has-saved svg { fill: currentColor; }
+.save-col-heading.has-saved svg { fill: #ff334f; color: #ff334f !important; }
+
+/* keep open dropdown panels above the (stacking-context) cards below */
+.filters-sidebar { z-index: 10; }
+.top-toolbar { position: relative; z-index: 6; }
+
+/* visitor-pill overlap is handled by the pill's own collapse-on-collision
+   guard in site-widgets.js — no overflow clipping on the sidebar, so the wide
+   Location panel can spread over the content like on the live site */
+
+/* ---- toolbar: joined view toggle (item 8) + sort dropdown (item 7) ---- */
+.view-toggles {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 11px;
+  overflow: hidden;
+  background: var(--bg-surface-solid);
+}
+.view-btn {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-muted);
+}
+.view-btn + .view-btn { border-left: 1px solid var(--border-color); }
+.view-btn:hover { color: var(--text-primary); }
+.view-btn.active {
+  color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 11%, transparent);
+  box-shadow: inset 0 -2px 0 var(--primary-color);
+}
+.view-btn .icon { width: 17px; height: 17px; }
+
+.toolbar-sort { width: 175px; flex: none; }
+.toolbar-sort .ms-trigger { padding: 0.42rem 0.65rem; font-size: 0.83rem; border-radius: 10px; }
+.toolbar-sort .ms-panel { min-width: 205px; }
+.toolbar-sort[hidden] { display: none !important; }
+
+/* condensed pagination ellipsis (item 19) */
+.page-ellipsis { color: var(--text-muted); padding: 0 2px; font-weight: 700; }
+
+/* ---- load more (item 14) ---- */
+.load-more-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 1.1rem;
+}
+.load-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.65rem 1.6rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 35%, transparent);
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.load-more-btn:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 24px -6px color-mix(in srgb, var(--primary-color) 45%, transparent);
+  transform: translateY(-1px);
+}
+.load-more-note { font-size: 0.74rem; color: var(--text-muted); font-weight: 600; }
+
+/* ---- CARD VIEW v2 (items 10–16) — table view keeps the original design ---- */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.view-table .cards-grid { display: none; }
+
+.vx-card {
+  container-type: inline-size;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  background: linear-gradient(165deg, var(--bg-surface), rgba(15, 23, 42, 0.35));
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.05rem 1.05rem 0.9rem;
+  box-shadow: var(--shadow-glass);
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+}
+[data-theme="light"] .vx-card { background: #ffffff; }
+.vx-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-highlight);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--primary-color) 14%, transparent),
+    0 20px 44px -16px rgba(0, 0, 0, 0.55);
+}
+[data-theme="light"] .vx-card:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--primary-color) 18%, transparent),
+    0 18px 40px -18px rgba(15, 23, 42, 0.22);
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .vx-card {
+      animation: vx-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 48%;
+    }
+  }
+}
+@keyframes vx-in {
+  from { opacity: 0.2; transform: translateY(16px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.vx-head { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+.vx-head-spacer { flex: 1; }
+
+.vx-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.26rem 0.62rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.vx-pill-level {
+  color: var(--primary-color);
+  border-color: color-mix(in srgb, var(--primary-color) 30%, transparent);
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+
+.vx-new {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.24rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #04111c;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--primary-color) 60%, transparent);
+}
+[data-theme="light"] .vx-new { color: #ffffff; }
+
+/* the card heart keeps the classic glassy look but sits in the header row */
+.vx-heart { position: static !important; top: auto; right: auto; width: 34px !important; height: 34px !important; }
+
+.vx-title {
+  font-family: "Sora", "Plus Jakarta Sans", sans-serif;
+  font-size: 1.13rem;
+  font-weight: 800;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  text-wrap: balance;
+  padding-right: 0.25rem;
+}
+
+.vx-org { font-size: 0.84rem; color: var(--text-secondary); line-height: 1.4; margin-top: -0.3rem; }
+
+.vx-meta { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+.vx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 0.28rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: rgba(15, 23, 42, 0.35);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+[data-theme="light"] .vx-chip { background: #f4f7fa; }
+.vx-chip .icon { width: 13px; height: 13px; color: var(--text-muted); }
+.vx-chip span { overflow: hidden; text-overflow: ellipsis; }
+.vx-date { font-variant-numeric: tabular-nums; }
+
+.vx-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.vx-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.42rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 28%, transparent);
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  color: var(--primary-color);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+.vx-link:hover { border-color: var(--primary-color); filter: brightness(1.08); }
+.vx-link .icon { width: 13px; height: 13px; }
+.vx-link.vx-link-muted { border-color: var(--border-color); background: transparent; color: var(--text-secondary); }
+.vx-link.vx-link-muted:hover { color: var(--text-primary); border-color: var(--border-highlight); }
+
+.vx-share {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.vx-share:hover { color: var(--primary-color); border-color: var(--border-highlight); }
+.vx-share .icon { width: 15px; height: 15px; }
+
+.vx-src {
+  margin-left: auto;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vx-count-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent-color);
+}
+.vx-count-line .icon { width: 14px; height: 14px; }
+
+.vx-locs { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.vx-loc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.26rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.vx-loc-chip:hover {
+  color: var(--text-primary);
+  border-color: var(--border-highlight);
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+.vx-loc-chip.tone-closing { border-color: color-mix(in srgb, var(--danger-color) 40%, transparent); color: var(--danger-color); }
+.vx-loc-more { font-size: 0.72rem; color: var(--text-muted); font-weight: 700; }
+
+.vx-expand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.vx-expand:hover { color: var(--text-primary); border-color: var(--border-highlight); }
+.vx-expand .icon { width: 14px; height: 14px; transition: transform 0.2s ease; }
+.vx-expand[aria-expanded="true"] .icon { transform: rotate(180deg); }
+
+.vx-members {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 0.2rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed var(--border-color);
+}
+.vx-members[hidden] { display: none; }
+.vx-member {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+}
+.vx-member:hover {
+  background: color-mix(in srgb, var(--primary-color) 9%, transparent);
+  border-color: color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+.vx-member-loc {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vx-member-loc .icon { width: 13px; height: 13px; color: var(--text-muted); margin-right: 5px; }
+.vx-member .days-pill { font-size: 0.7rem; min-height: 0; min-width: 0; padding: 0.18rem 0.5rem; }
+.vx-member .table-heart-btn { width: 30px; height: 30px; }
+
+@container (max-width: 360px) {
+  .vx-src { display: none; }
+  .vx-title { font-size: 1.05rem; }
+}
+
+/* ---- native detail dialog (items 21–25); inner .modal-content keeps the
+       original premium styling defined above ---- */
+dialog.vxd {
+  border: none;
+  padding: 0;
+  margin: auto;
+  background: transparent;
+  width: min(94vw, 1080px);
+  max-height: 94dvh;
+  overflow: visible;
+  color: var(--text-primary);
+}
+dialog.vxd:not([open]) { display: none; }
+dialog.vxd::backdrop {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(34, 211, 238, 0.08), transparent 28%),
+    radial-gradient(circle at 80% 80%, rgba(167, 139, 250, 0.10), transparent 24%),
+    rgba(2, 4, 11, 0.82);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  backdrop-filter: blur(18px) saturate(120%);
+}
+[data-theme="light"] dialog.vxd::backdrop {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(14, 116, 144, 0.08), transparent 28%),
+    radial-gradient(circle at 80% 80%, rgba(109, 40, 217, 0.08), transparent 24%),
+    rgba(226, 232, 240, 0.72);
+}
+dialog.vxd .modal-content { width: 100%; max-height: 94dvh; }
+dialog.vxd[open] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity 0.28s ease, transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@starting-style {
+  dialog.vxd[open] { opacity: 0; transform: translateY(14px) scale(0.978); }
+}
+body:has(dialog.vxd[open]) { overflow: hidden; }
+body.vxd-open { overflow: hidden; }
+
+/* WhatsApp share button (item 23) */
+.card-action-btn.share-wa {
+  border-color: rgba(37, 211, 102, 0.4);
+  background: rgba(37, 211, 102, 0.1);
+  color: #25d366;
+}
+.card-action-btn.share-wa:hover { border-color: #25d366; }
+[data-theme="light"] .card-action-btn.share-wa {
+  color: #128c4b;
+  background: rgba(18, 140, 75, 0.08);
+  border-color: rgba(18, 140, 75, 0.3);
+}
+.card-action-btn .icon { width: 15px; height: 15px; }
+
+/* toast can sit above the open dialog (popover top layer) */
+.home-toast:popover-open { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.home-toast[popover] { inset: auto; left: 50%; bottom: 24px; margin: 0; }
+
+/* ---- loading skeleton v2 (item 40) ---- */
+.sk-strip { height: 180px; border-radius: var(--radius-lg); }
+.sk-toolbar { height: 56px; border-radius: var(--radius-lg); }
+.sk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+.sk-card { height: 215px; border-radius: var(--radius-lg); }
+.sk-strip, .sk-toolbar, .sk-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+}
+
+/* ---- mobile additions (items 30–33) ---- */
+@media (max-width: 768px) {
+  /* perf budget: no animated blobs / blur layers on phones (item 31) */
+  .shape { display: none !important; animation: none !important; }
+  body {
+    background:
+      radial-gradient(900px 480px at 18% -160px, rgba(34, 211, 238, 0.12), transparent 60%),
+      radial-gradient(700px 420px at 105% 105%, rgba(167, 139, 250, 0.10), transparent 60%),
+      var(--bg-main);
+  }
+  [data-theme="light"] body { background: var(--bg-main); }
+  .ms-panel, .modal, .filters-sidebar, .toolbar-line {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .cards-grid { grid-template-columns: 1fr; gap: 0.85rem; }
+  .vx-card { padding: 0.95rem 0.95rem 0.8rem; }
+  .vx-card:nth-child(n + 7) {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 230px;
+  }
+  .toolbar-sort { width: auto; flex: 1; max-width: 200px; }
+
+  /* full-screen detail sheet (item 33) */
+  dialog.vxd { width: 100vw; max-width: none; height: 100dvh; max-height: 100dvh; margin: 0; }
+  dialog.vxd .modal-content {
+    width: 100vw;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    border: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vx-card { animation: none !important; transition: none !important; }
+  .vx-card:hover { transform: none; }
+  dialog.vxd[open] { transition: none; }
+}
+
+/* ===========================================================================
+   EXPERIMENT: collapsible desktop filters.
+   Default (body.filters-collapsed): a compact filter card sits BESIDE the four
+   KPI cards showing only "My Pay Level" + a "Show more filters" button, and
+   the toolbar + table below take the FULL page width (Post Name gets the
+   extra room). Clicking the button removes the body class → the original
+   left sidebar layout returns, with the same button reading "Hide filters".
+   Mobile (≤768px) is untouched — the Show Filters accordion works as before.
+   To revert the whole experiment: remove the body class + the toggle button
+   from index.html and the initDesktopFilterCollapse() call in app.js.
+   ======================================================================== */
+.filters-more-btn { display: none; }
+
+@media (min-width: 769px) {
+  .filters-more-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    width: 100%;
+    margin-top: 0.4rem;
+    padding: 0.62rem 0.9rem;
+    border-radius: var(--radius-md, 14px);
+    border: 1px solid color-mix(in srgb, var(--primary-color) 26%, transparent);
+    background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+    color: var(--primary-color);
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease;
+  }
+  .filters-more-btn:hover {
+    border-color: var(--primary-color);
+    background: color-mix(in srgb, var(--primary-color) 13%, transparent);
+  }
+  .filters-more-btn .icon { width: 16px; height: 16px; }
+  .filters-more-caret { transition: transform 0.2s ease; }
+  .filters-more-btn[aria-expanded="true"] .filters-more-caret { transform: rotate(180deg); }
+
+  /* expanded sidebar: "Hide filters" sits at the top, right below the
+     Filters / Clear All header */
+  .filters-sidebar { display: flex; flex-direction: column; }
+  .filters-sidebar .filters-header { order: -2; }
+  .filters-sidebar .filters-more-btn { order: -1; margin: 0 0 1.1rem; }
+
+  /* smooth (slower) morph when the filter panel expands / collapses */
+  .filters-sidebar { view-transition-name: vt-filters-panel; }
+  .kpi-grid { view-transition-name: vt-kpis; }
+  .top-toolbar { view-transition-name: vt-toolbar; }
+  .data-container { view-transition-name: vt-rows; }
+}
+html.vt-filters::view-transition-group(*),
+html.vt-filters::view-transition-old(*),
+html.vt-filters::view-transition-new(*) { animation-duration: 0.5s; }
+
+@media (min-width: 769px) {
+
+  /* ---- collapsed state ---- */
+  body.filters-collapsed .main-layout {
+    grid-template-columns: 300px minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      "filters kpis"
+      "toolbar toolbar"
+      "data    data";
+    gap: 1rem 1.5rem;
+  }
+  /* lift the dashboard children into the outer grid so the toolbar + rows can
+     span the full width while the KPIs stay beside the compact filter card */
+  body.filters-collapsed .dashboard-content { display: contents; }
+  body.filters-collapsed .filters-sidebar {
+    grid-area: filters;
+    position: static;
+    max-height: none;
+    overflow: visible;
+    align-self: stretch;
+  }
+  body.filters-collapsed .kpi-grid { grid-area: kpis; margin-bottom: 0; align-self: stretch; }
+  body.filters-collapsed .kpi-card { min-height: 0; }
+  body.filters-collapsed .top-toolbar { grid-area: toolbar; margin-bottom: 0; }
+  body.filters-collapsed .data-container { grid-area: data; }
+
+  body.filters-collapsed .filters-sidebar .filter-group:not(.fg-primary) { display: none; }
+  body.filters-collapsed .filters-sidebar .fg-primary { margin-bottom: 0; }
+  /* collapsed card: button back at the bottom of the compact card */
+  body.filters-collapsed .filters-sidebar .filters-more-btn { order: 0; margin: auto 0 0; }
+
+  /* full-width rows: hand the freed space to Post Name (sums to 100%) */
+  body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(1),
+  body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(1) { width: 20%; }
+  body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(2),
+  body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(2) { width: 6%; }
+  body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(3),
+  body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(3) { width: 10%; }
+  body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(4),
+  body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(4) { width: 14%; }
+  body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(5),
+  body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(5) { width: 7%; }
+  body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(6),
+  body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(6) { width: 10%; }
+  body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(7),
+  body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(7) { width: 8%; }
+  body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(8),
+  body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(8) { width: 8%; }
+  body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(9),
+  body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(9) { width: 12%; }
+  body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(10),
+  body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(10) { width: 5%; }
 }

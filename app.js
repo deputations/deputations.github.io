@@ -22,6 +22,11 @@ function dropElevation() {
   }, 0);
 }
 
+// Inline SVG sprite reference (symbols live in index.html — no icon CDN).
+function svgIcon(name, cls = '') {
+  return `<svg class="icon${cls ? ' ' + cls : ''}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+}
+
 // ----- Multi-select widget (popover + checkbox list) ---------------------
 // Returns a controller that mirrors enough of a <select>'s surface area
 // (`.value`, `.value = ''`, `addEventListener('change', …)`) plus multi-value
@@ -301,6 +306,30 @@ document.addEventListener('DOMContentLoaded', () => {
       placeholder: 'All',
     });
 
+    // Card-view sort dropdown (toolbar). Reuses the themed single-select and
+    // maps straight onto the existing sortState used by the table headers.
+    const CARD_SORTS = {
+      closing: { key: 'Days_Left', direction: 'asc', name: 'Closing soon' },
+      newest: { key: 'Notification_Date', direction: 'desc', name: 'Newest first' },
+      level: { key: 'Level_Text', direction: 'desc', name: 'Highest level' },
+      post: { key: 'Post_Name', direction: 'asc', name: 'Post name A–Z' },
+    };
+    const cardSortRoot = document.getElementById('cardSortSS');
+    const cardSort = cardSortRoot ? createSingleSelect(cardSortRoot, { placeholder: 'Sort' }) : null;
+    if (cardSort) {
+      cardSort.populate(Object.entries(CARD_SORTS).map(([value, s]) => ({ value, name: s.name, count: null })));
+      cardSort.value = 'closing';
+      cardSort.addEventListener('change', () => {
+        const s = CARD_SORTS[cardSort.value] || CARD_SORTS.closing;
+        sortState.key = s.key;
+        sortState.direction = s.direction;
+        pagination.currentPage = 1;
+        pagination.pagesShown = 1;
+        vtDiscrete = true;
+        renderDashboard();
+      });
+    }
+
     const clearFiltersBtn = document.getElementById('clearFiltersBtn');
     const btnTableView = document.getElementById('btnTableView');
     const btnCardView = document.getElementById('btnCardView');
@@ -326,8 +355,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let pagination = {
         currentPage: 1,
-        pageSize: 10
+        pageSize: 10,
+        pagesShown: 1          // card view "Load more" window
     };
+
+    // Card view groups sibling posts; remember which groups the user expanded
+    // so heart-toggle re-renders don't collapse them.
+    let expandedGroups = new Set();
+
+    // One-shot flag: the next renderDashboard came from a discrete click
+    // (view toggle / sort / quick filter / load-more) → animate via the
+    // View Transitions API. Never set for search keystrokes.
+    let vtDiscrete = false;
 
     let quickFilters = {
         closing7: false,
@@ -341,6 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
    initializeEnhancements();
 initializeMobileFilterAccordion();
+initDesktopFilterCollapse();
 initializeModal();
 updateWatchlistUI();
 setLoadingUI();
@@ -398,6 +438,9 @@ function showHomeToast(html) {
     t.className = 'home-toast';
     t.setAttribute('role', 'status');
     t.setAttribute('aria-live', 'polite');
+    // Manual popover → renders in the top layer, so toasts stay visible above
+    // the open <dialog> (plain z-index always loses to the top layer).
+    if (typeof t.showPopover === 'function') t.setAttribute('popover', 'manual');
     t.innerHTML = `
       <span class="home-toast-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
@@ -406,14 +449,21 @@ function showHomeToast(html) {
       <button type="button" class="home-toast-close" aria-label="Dismiss">×</button>`;
     document.body.appendChild(t);
     t.querySelector('.home-toast-close').addEventListener('click', () => {
-      t.classList.remove('show');
+      hideToastEl(t);
       try { sessionStorage.setItem('payLevelToastDismissed', '1'); } catch (e) {}
     });
   }
   t.querySelector('.home-toast-msg').innerHTML = html;
+  try { if (t.hasAttribute('popover') && !t.matches(':popover-open')) t.showPopover(); } catch (e) {}
   // Allow the element to be in the DOM before transitioning.
   setTimeout(() => t.classList.add('show'), 30);
-  setTimeout(() => t.classList.remove('show'), 6500);
+  clearTimeout(t.__hideTimer);
+  t.__hideTimer = setTimeout(() => hideToastEl(t), 6500);
+}
+
+function hideToastEl(t) {
+  t.classList.remove('show');
+  setTimeout(() => { try { if (t.hasAttribute('popover')) t.hidePopover(); } catch (e) {} }, 280);
 }
 
  function getCurrentPageSize() {
@@ -434,7 +484,8 @@ function loadDataFromJSON() {
             updateQuickFiltersBar();
             applyMobileDefaultView();
             renderDashboard();
-            lucide.createIcons();
+            openVacancyFromUrl();
+            injectJsonLd();
 
             console.log('✅ Loaded', rawData.length, 'vacancies');
         })
@@ -512,6 +563,108 @@ function hydrateFiltersFromUrl() {
     }
 }
 
+/* ---------------- Permalinks (?v=<Vacancy_ID>) ---------------- */
+
+function getUrlVacancyId() {
+    try { return new URLSearchParams(window.location.search).get('v') || ''; } catch (e) { return ''; }
+}
+
+// Clean canonical share link — never leaks the user's personal filter params.
+function buildShareUrl(vacancyId) {
+    return `${window.location.origin}/?v=${encodeURIComponent(safe(vacancyId))}`;
+}
+
+// Open the detail view for a ?v= deep link on cold load (data just rendered).
+function openVacancyFromUrl() {
+    const id = getUrlVacancyId();
+    if (!id) return;
+    if (getItemById(id)) {
+        openVacancyModal(id, { push: false });
+    } else {
+        showHomeToast('That vacancy is no longer listed.');
+        const url = new URL(window.location.href);
+        url.searchParams.delete('v');
+        history.replaceState(null, '', url);
+    }
+}
+
+// Best-effort structured data for the top active vacancies. Injected client-side,
+// which only Google's renderer reliably reads — harmless elsewhere.
+function injectJsonLd() {
+    try {
+        const old = document.getElementById('vxJsonLd');
+        if (old) old.remove();
+        const items = rawData
+            .filter(i => safe(i.Status) === 'Active')
+            .slice(0, 25)
+            .map((i, idx) => ({
+                '@type': 'ListItem',
+                position: idx + 1,
+                name: `${safe(i.Post_Name)} — ${safe(i.Ministry)}`,
+                url: buildShareUrl(i.Vacancy_ID),
+            }));
+        if (!items.length) return;
+        const s = document.createElement('script');
+        s.type = 'application/ld+json';
+        s.id = 'vxJsonLd';
+        s.textContent = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: 'Central Government Deputation Vacancies',
+            itemListElement: items,
+        });
+        document.head.appendChild(s);
+    } catch (e) { /* non-fatal */ }
+}
+
+/* ---------------- Share helpers ---------------- */
+
+function buildShareText(item) {
+    const lines = [`📢 ${safe(item.Post_Name) || 'Deputation vacancy'} — ${withAcronym(item.Ministry) || ''}`.trim()];
+    const lvl = safe(item.Level_Text);
+    const elig = safe(item.eligibility_tiers_text) || formatEligibility(item);
+    if (lvl) lines.push(`Level: ${lvl}${elig && elig !== 'Not specified' ? ` · Eligible: ${elig}` : ''}`);
+    const loc = formatLocation(item);
+    if (loc) lines.push(`Location: ${loc}`);
+    const daysLeft = parseInt(item.Days_Left, 10);
+    const closing = formatDisplayDate(safe(item.Last_Date_To_Apply));
+    if (closing && closing !== 'Not specified') {
+        lines.push(`Closes: ${closing}${!Number.isNaN(daysLeft) && daysLeft >= 0 ? ` (${formatDaysLeft(daysLeft)})` : ''}`);
+    }
+    lines.push(buildShareUrl(item.Vacancy_ID));
+    return lines.join('\n');
+}
+
+function copyTextToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+    }
+    return new Promise((resolve, reject) => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy') ? resolve() : reject(new Error('copy failed')); }
+        catch (e) { reject(e); }
+        finally { ta.remove(); }
+    });
+}
+
+function shareVacancy(vacancyId) {
+    const item = getItemById(vacancyId);
+    if (!item) return;
+    const text = buildShareText(item);
+    const url = buildShareUrl(vacancyId);
+    if (navigator.share) {
+        navigator.share({ title: safe(item.Post_Name), text, url }).catch(() => {});
+        return;
+    }
+    copyTextToClipboard(`${text}`)
+        .then(() => showHomeToast('Vacancy details &amp; link copied — paste anywhere.'))
+        .catch(() => showHomeToast('Could not copy — long-press the address bar to share.'));
+}
+
 function getDateSortValue(value) {
   const raw = safe(value);
   if (!raw) return 0;
@@ -550,11 +703,11 @@ function getDateSortValue(value) {
         toggleBtn.setAttribute('aria-expanded', 'false');
         toggleBtn.innerHTML = `
             <span class="mobile-filter-toggle-left">
-                <i data-lucide="sliders-horizontal"></i>
+                ${svgIcon('sliders')}
                 <span class="mobile-filter-toggle-label">Show Filters</span>
             </span>
             <span class="mobile-filter-toggle-right">
-                <i data-lucide="chevron-down" class="mobile-filter-chevron"></i>
+                ${svgIcon('chevron-down', 'mobile-filter-chevron')}
             </span>
         `;
         filtersSidebar.insertBefore(toggleBtn, filtersSidebar.firstChild);
@@ -565,12 +718,45 @@ function getDateSortValue(value) {
 
         filtersSidebar.classList.toggle('collapsed');
         updateMobileFilterToggle();
-        lucide.createIcons();
     });
 
     applyMobileFilterDefaultState();
     window.addEventListener('resize', applyMobileFilterDefaultState);
-    lucide.createIcons();
+}
+
+// EXPERIMENT: collapsible desktop filters — a compact "My Pay Level"-only card
+// sits beside the KPIs by default (body.filters-collapsed, set in the markup so
+// there's no flash); "Show more filters" restores the full left sidebar.
+// Mobile (≤768px) keeps its own Show Filters accordion untouched.
+function initDesktopFilterCollapse() {
+  const btn = document.getElementById('desktopFilterToggle');
+  if (!btn) return;
+  const label = btn.querySelector('span');
+
+  const apply = (expanded) => {
+    document.body.classList.toggle('filters-collapsed', !expanded);
+    btn.setAttribute('aria-expanded', String(expanded));
+    if (label) label.textContent = expanded ? 'Hide filters' : 'Show more filters';
+  };
+
+  // Always load collapsed — expanding is a per-visit choice, not remembered.
+  let expanded = false;
+  apply(expanded);
+
+  btn.addEventListener('click', () => {
+    expanded = !expanded;
+
+    // Animate the layout morph (slower, scoped via html.vt-filters) where the
+    // View Transitions API exists; instant elsewhere / for reduced motion.
+    const motionOk = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (typeof document.startViewTransition === 'function' && motionOk) {
+      document.documentElement.classList.add('vt-filters');
+      const t = document.startViewTransition(() => apply(expanded));
+      t.finished.finally(() => document.documentElement.classList.remove('vt-filters'));
+    } else {
+      apply(expanded);
+    }
+  });
 }
 
 function applyMobileFilterDefaultState() {
@@ -606,27 +792,42 @@ function updateMobileFilterToggle() {
 }
 
     function setLoadingUI() {
+        // Mirrors the loaded layout (strip → toolbar → cards) so there is no
+        // layout shift when real content arrives.
         dataContainer.innerHTML = `
-            <div class="loading-shell">
-                <div class="loading-header-skeleton shimmer"></div>
-
-                <div class="loading-kpi-row">
-                    <div class="loading-kpi-card shimmer"></div>
-                    <div class="loading-kpi-card shimmer"></div>
-                    <div class="loading-kpi-card shimmer"></div>
-                    <div class="loading-kpi-card shimmer"></div>
-                </div>
-
-                <div class="loading-table-shell">
-                    <div class="loading-table-toolbar shimmer"></div>
-                    <div class="loading-row shimmer"></div>
-                    <div class="loading-row shimmer"></div>
-                    <div class="loading-row shimmer"></div>
-                    <div class="loading-row shimmer"></div>
-                    <div class="loading-row shimmer"></div>
+            <div class="loading-shell" aria-hidden="true">
+                <div class="sk-strip shimmer"></div>
+                <div class="sk-toolbar shimmer"></div>
+                <div class="sk-grid">
+                    ${'<div class="sk-card shimmer"></div>'.repeat(6)}
                 </div>
             </div>
         `;
+    }
+
+    // ---- dialog ↔ history bookkeeping (permalink ?v=) ----
+    let modalPushed = false;          // we added a history entry on open
+    let suppressHistoryClose = false; // close came FROM popstate — don't go back again
+
+    function syncUrlOnClose() {
+        if (suppressHistoryClose) {
+            suppressHistoryClose = false;
+            modalPushed = false;
+            return;
+        }
+        if (modalPushed) {
+            modalPushed = false;
+            history.back(); // restores the pre-open URL (filters intact)
+            return;
+        }
+        // cold-loaded dialog (?v= arrived in the address bar): just strip v
+        try {
+            const url = new URL(window.location.href);
+            if (url.searchParams.has('v')) {
+                url.searchParams.delete('v');
+                history.replaceState(null, '', url);
+            }
+        } catch (e) {}
     }
 
     function initializeModal() {
@@ -646,8 +847,30 @@ function updateMobileFilterToggle() {
 
   if (modal) {
     modal.addEventListener('click', (e) => {
+      // a click on the <dialog> element itself = the backdrop padding area
       if (e.target === modal) {
         closeVacancyModal();
+        return;
+      }
+
+      const shareWa = e.target.closest('[data-modal-action="share-wa"]');
+      if (shareWa) {
+        const item = getItemById(shareWa.getAttribute('data-id'));
+        if (item) window.open(`https://wa.me/?text=${encodeURIComponent(buildShareText(item))}`, '_blank', 'noopener');
+        return;
+      }
+
+      const copyLink = e.target.closest('[data-modal-action="copy-link"]');
+      if (copyLink) {
+        copyTextToClipboard(buildShareUrl(copyLink.getAttribute('data-id')))
+          .then(() => showHomeToast('Link copied — share it anywhere.'))
+          .catch(() => showHomeToast('Could not copy the link.'));
+        return;
+      }
+
+      const shareNative = e.target.closest('[data-modal-action="share-native"]');
+      if (shareNative) {
+        shareVacancy(shareNative.getAttribute('data-id'));
         return;
       }
 
@@ -667,16 +890,33 @@ function updateMobileFilterToggle() {
       if (showWatchlistOnly && alreadySaved) {
         closeVacancyModal();
       } else {
-        openVacancyModal(vacancyId);
+        openVacancyModal(vacancyId, { push: false });
       }
+    });
+
+    // Native close (Esc → `cancel` → close, the X button, backdrop click):
+    // clear the body and reconcile the URL/history exactly once, here.
+    modal.addEventListener('close', () => {
+      if (modalBody) modalBody.innerHTML = '';
+      document.body.classList.remove('vxd-open');
+      syncUrlOnClose();
     });
   }
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
-      closeVacancyModal();
+  // Back/forward buttons open or close the dialog to match ?v= in the URL.
+  window.addEventListener('popstate', () => {
+    const id = getUrlVacancyId();
+    if (id && getItemById(id)) {
+      openVacancyModal(id, { push: false });
+    } else if (modal && modal.open) {
+      suppressHistoryClose = true;
+      modal.close();
     }
   });
+}
+
+function orgDisplayName(item) {
+  return safe(item.Organisation) || safe(item.Department) || safe(item.Department_Organisation) || '';
 }
 
 function renderTable(data) {
@@ -686,9 +926,7 @@ function renderTable(data) {
     const vacancyId = safe(item.Vacancy_ID);
     const saved = watchlist.has(vacancyId);
     const daysLeft = parseInt(item.Days_Left, 10);
-    const closingSoon = !Number.isNaN(daysLeft) && daysLeft >= 0 && daysLeft <= 15;
     const notificationLink = normalizeUrl(safe(item.Official_Notification_Link));
-    const applyLink = normalizeUrl(safe(item.Application_Form_Link));
 
     const notificationDateDisplay = formatDisplayDate(safe(item.Notification_Date));
     const notificationDateText =
@@ -701,7 +939,7 @@ function renderTable(data) {
         <td class="post-col" data-label="Post Name">
           <strong>${escapeHtml(safe(item.Post_Name) || '—')}</strong>
           <div class="table-subtext">
-            ${escapeHtml(safe(item.Department_Organisation) || '')}
+            ${escapeHtml(safe(item.Department_Organisation) || orgDisplayName(item) || '')}
           </div>
         </td>
 
@@ -729,6 +967,10 @@ function renderTable(data) {
           <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}">
             ${escapeHtml(formatDaysLeft(daysLeft))}
           </span>
+          ${(() => {
+            const d = safe(item.Last_Date_To_Apply_Display) || formatDisplayDate(safe(item.Last_Date_To_Apply));
+            return d && d !== 'Not specified' ? `<span class="days-date-sub">${escapeHtml(d)}</span>` : '';
+          })()}
         </td>
 
         <td class="notification-date-col" data-label="Notification Date">
@@ -762,7 +1004,7 @@ function renderTable(data) {
             aria-label="${saved ? 'Remove bookmarked vacancy' : 'Bookmark the Vacancy'}"
             aria-pressed="${saved ? 'true' : 'false'}"
           >
-            <i data-lucide="heart"></i>
+            ${svgIcon('heart')}
           </button>
         </td>
       </tr>
@@ -788,7 +1030,7 @@ function renderTable(data) {
               title="${hasSavedAny ? 'Bookmarks saved' : 'No bookmarks yet'}"
               aria-label="Bookmark"
             >
-              <i data-lucide="bookmark"></i>
+              ${svgIcon('bookmark')}
             </th>
           </tr>
         </thead>
@@ -936,7 +1178,9 @@ function renderTable(data) {
 
       quickFilters[key] = !quickFilters[key];
       pagination.currentPage = 1;
+      pagination.pagesShown = 1;
       updateQuickFiltersBar();
+      vtDiscrete = true;
       renderDashboard();
     });
   }
@@ -959,7 +1203,9 @@ function renderTable(data) {
     };
 
     pagination.currentPage = 1;
+    pagination.pagesShown = 1;
     updateQuickFiltersBar();
+    vtDiscrete = true;
     renderDashboard();
   });
 
@@ -974,6 +1220,8 @@ function renderTable(data) {
   favBtn.addEventListener('click', () => {
     showWatchlistOnly = !showWatchlistOnly;
     pagination.currentPage = 1;
+    pagination.pagesShown = 1;
+    vtDiscrete = true;
     renderDashboard();
   });
 
@@ -998,6 +1246,8 @@ function renderTable(data) {
     if (filterName === 'kpi') kpiFilter = 'all';
 
     pagination.currentPage = 1;
+    pagination.pagesShown = 1;
+    vtDiscrete = true;
     renderDashboard();
   });
 
@@ -1005,6 +1255,8 @@ kpiGrid.addEventListener('click', (e) => {
   const card = e.target.closest('[data-kpi-filter]');
   if (!card) return;
 
+  vtDiscrete = true;
+  pagination.pagesShown = 1;
   const nextFilter = card.getAttribute('data-kpi-filter') || 'all';
 
   if (nextFilter === 'ministries') {
@@ -1051,11 +1303,20 @@ kpiGrid.addEventListener('click', (e) => {
       return;
     }
 
+    const loadMoreBtn = e.target.closest('[data-load-more]');
+    if (loadMoreBtn) {
+      pagination.pagesShown++;
+      vtDiscrete = true;
+      renderDashboard(false);
+      return;
+    }
+
     const pageBtn = e.target.closest('[data-page]');
     if (pageBtn) {
       const page = Number(pageBtn.getAttribute('data-page'));
       if (!Number.isNaN(page)) {
         pagination.currentPage = page;
+        vtDiscrete = true;
         renderDashboard(false);
       }
       return;
@@ -1076,6 +1337,7 @@ kpiGrid.addEventListener('click', (e) => {
         pagination.currentPage = totalPages;
       }
 
+      vtDiscrete = true;
       renderDashboard(false);
       return;
     }
@@ -1091,6 +1353,19 @@ kpiGrid.addEventListener('click', (e) => {
         toggleWatchlist(vacancyId);
         renderDashboard(false);
         if (!wasSaved) animateBookmarkButton(vacancyId);
+      } else if (action === 'share') {
+        shareVacancy(vacancyId);
+      } else if (action === 'expand') {
+        // Toggle in place — no re-render, no scroll jump.
+        const key = cardAction.getAttribute('data-group') || '';
+        const card = cardAction.closest('.vx-card');
+        const membersEl = card && card.querySelector('.vx-members');
+        const nowExpanded = membersEl ? membersEl.hidden : false;
+        if (membersEl) membersEl.hidden = !nowExpanded;
+        cardAction.setAttribute('aria-expanded', String(nowExpanded));
+        const total = card ? card.querySelectorAll('.vx-member').length : 0;
+        cardAction.innerHTML = `${svgIcon('chevron-down')} ${nowExpanded ? 'Hide' : 'Show'} all ${total}`;
+        if (nowExpanded) expandedGroups.add(key); else expandedGroups.delete(key);
       }
       return;
     }
@@ -1119,6 +1394,7 @@ kpiGrid.addEventListener('click', (e) => {
 
     function onFilterChange() {
         pagination.currentPage = 1;
+        pagination.pagesShown = 1;
         renderDashboard();
     }
 
@@ -1154,38 +1430,95 @@ kpiGrid.addEventListener('click', (e) => {
   // KPI cards summarise the whole set regardless of the Status dropdown:
   // "Total Vacancies" = all (Status: All), "Active" = the active subset of them.
   const baseFilteredData = getFilteredData({ applyKpiFilter: false, applyStatusFilter: false });
-  let filteredData = getFilteredData({ applyKpiFilter: true });
+  const filteredData = sortData(getFilteredData({ applyKpiFilter: true }));
 
-  filteredData = sortData(filteredData);
+  // Animate only discrete-click re-renders (never search keystrokes).
+  const useVT = vtDiscrete
+    && typeof document.startViewTransition === 'function'
+    && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  vtDiscrete = false;
 
-  const pageSize = getCurrentPageSize();
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
+  const paint = () => {
+    renderKPIs(baseFilteredData);
+    renderActiveFilterChips();
 
-  if (resetPageIfNeeded) {
-    pagination.currentPage = Math.min(pagination.currentPage, totalPages);
-  } else if (pagination.currentPage > totalPages) {
-    pagination.currentPage = totalPages;
-  }
+    if (currentView === 'card') {
+      // Cards group sibling posts (same org + post + level + notification),
+      // then page through GROUPS with a Load-more window.
+      const groups = groupVacancies(filteredData);
+      const pageSize = getCurrentPageSize();
+      const shown = groups.slice(0, pageSize * pagination.pagesShown);
+      const shownRows = shown.reduce((n, g) => n + g.items.length, 0);
 
-  const pagedData = paginateData(filteredData, pageSize);
+      renderCardResults(shown, groups.length, filteredData.length, shownRows);
 
-  renderKPIs(baseFilteredData);
-  renderActiveFilterChips();
-  renderResults(pagedData, filteredData.length, totalPages);
-  updateWatchlistUI();
-  updateQuickFiltersBar();
+      resultsCount.textContent = filteredData.length
+        ? (groups.length === filteredData.length
+            ? `Showing ${shownRows} of ${filteredData.length} vacancies`
+            : `Showing ${shownRows} of ${filteredData.length} vacancies · ${groups.length} cards`)
+        : '0 vacancies';
+    } else {
+      const pageSize = getCurrentPageSize();
+      const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
 
-  const start = filteredData.length === 0
-    ? 0
-    : ((pagination.currentPage - 1) * pageSize) + 1;
+      if (resetPageIfNeeded) {
+        pagination.currentPage = Math.min(pagination.currentPage, totalPages);
+      } else if (pagination.currentPage > totalPages) {
+        pagination.currentPage = totalPages;
+      }
 
-  const end = Math.min(pagination.currentPage * pageSize, filteredData.length);
+      const pagedData = paginateData(filteredData, pageSize);
+      renderTableResults(pagedData, filteredData.length, totalPages);
 
-  resultsCount.textContent = filteredData.length
-    ? `${start}-${end} of ${filteredData.length} vacancies`
-    : '0 vacancies';
+      const start = filteredData.length === 0
+        ? 0
+        : ((pagination.currentPage - 1) * pageSize) + 1;
+      const end = Math.min(pagination.currentPage * pageSize, filteredData.length);
 
-  lucide.createIcons();
+      resultsCount.textContent = filteredData.length
+        ? `${start}-${end} of ${filteredData.length} vacancies`
+        : '0 vacancies';
+    }
+
+    updateWatchlistUI();
+    updateQuickFiltersBar();
+  };
+
+  if (useVT) document.startViewTransition(paint);
+  else paint();
+}
+
+/* ---- grouping (card view): same org + post + level + source notification ---- */
+function groupKeyFor(item) {
+  const org = safe(item.Organisation) || safe(item.Department) || safe(item.Ministry);
+  return [
+    normalizeText(org),
+    normalizeText(item.Post_Name),
+    normalizeText(item.Level_Text),
+    normalizeText(safe(item['Source Category']) || safe(item.Source_Category)),
+  ].join('|');
+}
+
+function groupVacancies(rows) {
+  const map = new Map(); // insertion order = current sort order
+  rows.forEach((item) => {
+    const key = groupKeyFor(item);
+    let g = map.get(key);
+    if (!g) { g = { key, items: [] }; map.set(key, g); }
+    g.items.push(item);
+  });
+  return [...map.values()];
+}
+
+// "New this week" — derived from Notification_Date (present in both the
+// Supabase-enriched and committed-JSON paths).
+function isNewVacancy(item) {
+  const m = safe(item.Notification_Date).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return false;
+  const dt = new Date(+m[1], +m[2] - 1, +m[3]);
+  if (Number.isNaN(dt.getTime())) return false;
+  const days = (Date.now() - dt.getTime()) / 86400000;
+  return days >= 0 && days <= 7;
 }
 
    function applyMobileDefaultView() {
@@ -1198,6 +1531,7 @@ kpiGrid.addEventListener('click', (e) => {
     btnTableView.classList.add('active');
     btnCardView.classList.remove('active');
   }
+  syncCardSortUI();
 }
     function getFilteredData({ applyKpiFilter = true, applyStatusFilter = true } = {}) {
   const search = searchPost.value.trim().toLowerCase();
@@ -1367,9 +1701,9 @@ kpiGrid.addEventListener('click', (e) => {
 
   kpiGrid.innerHTML = `
     ${buildKpiCard('Total Vacancies', current.total, 'briefcase', 'cyan', totalDelta, 'all')}
-    ${buildKpiCard('Active', current.active, 'check-circle-2', 'green', activeDelta, 'active')}
-    ${buildKpiCard('Closing Soon', current.closingSoon, 'clock-3', 'red', closingSoonDelta, 'closingSoon')}
-   ${buildKpiCard('Ministries', current.ministries, 'building-2', 'purple', ministriesDelta, 'ministries')}
+    ${buildKpiCard('Active', current.active, 'check-circle', 'green', activeDelta, 'active')}
+    ${buildKpiCard('Closing Soon', current.closingSoon, 'clock', 'red', closingSoonDelta, 'closingSoon')}
+   ${buildKpiCard('Ministries', current.ministries, 'building', 'purple', ministriesDelta, 'ministries')}
   `;
 
   animateKpiCounters();
@@ -1391,7 +1725,7 @@ kpiGrid.addEventListener('click', (e) => {
       title="Filter by ${title}"
     >
       <div class="kpi-icon">
-        <i data-lucide="${icon}"></i>
+        ${svgIcon(icon)}
       </div>
       <div class="kpi-title">${title}</div>
       <div class="kpi-value" data-count="${value}">0</div>
@@ -1404,9 +1738,16 @@ kpiGrid.addEventListener('click', (e) => {
 
     function animateKpiCounters() {
         const counters = kpiGrid.querySelectorAll('.kpi-value[data-count]');
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         counters.forEach(counter => {
             const target = Number(counter.getAttribute('data-count')) || 0;
+
+            if (reduced || document.hidden) {
+                counter.textContent = target.toLocaleString();
+                return;
+            }
+
             const duration = 700;
             const startTime = performance.now();
 
@@ -1425,6 +1766,8 @@ kpiGrid.addEventListener('click', (e) => {
             }
 
             requestAnimationFrame(update);
+            // rAF stalls in background tabs — make sure the number always lands.
+            setTimeout(() => { counter.textContent = target.toLocaleString(); }, duration + 150);
         });
     }
 
@@ -1496,43 +1839,35 @@ function applyTheme(theme) {
     localStorage.setItem(THEME_KEY, theme);
 
     if (themeToggle) {
-        themeToggle.innerHTML =
-            theme === 'light'
-                ? '<i data-lucide="sun"></i>'
-                : '<i data-lucide="moon"></i>';
-
+        themeToggle.innerHTML = theme === 'light' ? svgIcon('sun') : svgIcon('moon');
         themeToggle.title =
             theme === 'light'
                 ? 'Switch to dark mode'
                 : 'Switch to light mode';
     }
-
-    lucide.createIcons();
 }
 
-    function renderResults(data, totalCount, totalPages) {
-        if (!totalCount) {
-            const message = showWatchlistOnly
-                ? (watchlist.size
-                    ? 'No saved vacancies match the current filters.'
-                    : 'No saved vacancies yet. Click the heart on any vacancy to save it.')
-                : 'No vacancies match the current filters.';
+    function emptyStateHtml() {
+        const message = showWatchlistOnly
+            ? (watchlist.size
+                ? 'No saved vacancies match the current filters.'
+                : 'No saved vacancies yet. Click the heart on any vacancy to save it.')
+            : 'No vacancies match the current filters.';
+        return `<div class="empty-state">${escapeHtml(message)}</div>`;
+    }
 
-            dataContainer.className = `data-container view-${currentView}`;
-            dataContainer.innerHTML = `
-                <div class="empty-state">
-                    ${escapeHtml(message)}
-                </div>
-            `;
-            return;
-        }
+    function renderTableResults(rows, totalCount, totalPages) {
+        dataContainer.className = 'data-container view-table';
+        dataContainer.innerHTML = totalCount
+            ? `${renderTable(rows)}${renderPagination(totalPages)}`
+            : emptyStateHtml();
+    }
 
-        dataContainer.className = `data-container view-${currentView}`;
-        dataContainer.innerHTML = `
-            ${renderTable(data)}
-            ${renderCards(data)}
-            ${renderPagination(totalPages)}
-        `;
+    function renderCardResults(groups, totalGroups, totalRows, shownRows) {
+        dataContainer.className = 'data-container view-card';
+        dataContainer.innerHTML = totalRows
+            ? `${renderCards(groups)}${renderLoadMore(groups.length, totalGroups, shownRows, totalRows)}`
+            : emptyStateHtml();
     }
 
 
@@ -1554,187 +1889,209 @@ function applyTheme(theme) {
   `;
 }
 
-   function renderCards(data) {
-  const cards = data.map((item) => {
-    const vacancyId = safe(item.Vacancy_ID);
-    const saved = watchlist.has(vacancyId);
-    const daysLeft = parseInt(item.Days_Left, 10);
-    const expired = !Number.isNaN(daysLeft) && daysLeft < 0;
+   function cardHeartBtn(item, extraClass = 'card-heart-btn vx-heart') {
+  const vacancyId = safe(item.Vacancy_ID);
+  const saved = watchlist.has(vacancyId);
+  return `
+    <button
+      type="button"
+      class="${extraClass} ${saved ? 'saved' : ''}"
+      data-card-action="watchlist"
+      data-id="${escapeHtml(vacancyId)}"
+      title="Bookmark the Vacancy"
+      aria-label="${saved ? 'Remove bookmarked vacancy' : 'Bookmark the Vacancy'}"
+      aria-pressed="${saved ? 'true' : 'false'}"
+    >${svgIcon('heart')}</button>`;
+}
 
-    const detailedNotificationLink = normalizeUrl(safe(item.Official_Notification_Link));
-    const applyLink = normalizeUrl(safe(item.Application_Form_Link));
+function cardOrgLine(item) {
+  const ministry = withAcronym(item.Ministry);
+  const org = orgDisplayName(item);
+  const orgShown = org && normalizeText(org) !== normalizeText(safe(item.Ministry)) ? withAcronym(org) : '';
+  const parts = [ministry, orgShown].filter(Boolean);
+  return parts.join(' — ') || '—';
+}
 
-    const notificationDateDisplay = formatDisplayDate(safe(item.Notification_Date));
-    const notificationDateText =
-      notificationDateDisplay && notificationDateDisplay !== 'Not specified'
-        ? notificationDateDisplay
-        : 'Not specified';
+function cardEligibilityText(item) {
+  return safe(item.eligibility_tiers_text) || formatEligibility(item);
+}
 
+function cardMetaChips(item, { withLocation = true } = {}) {
+  const chips = [];
+  if (withLocation) {
+    const loc = formatLocation(item);
+    if (loc) chips.push(`<span class="vx-chip" title="Location">${svgIcon('map-pin')}<span>${escapeHtml(loc)}</span></span>`);
+  }
+  const elig = cardEligibilityText(item);
+  if (elig && elig !== 'Not specified') {
+    chips.push(`<span class="vx-chip" title="Eligible feeder grades">${svgIcon('layers')}<span>${escapeHtml(elig)}</span></span>`);
+  }
+  const notif = formatDisplayDate(safe(item.Notification_Date));
+  if (notif && notif !== 'Not specified') {
+    chips.push(`<span class="vx-chip" title="Notification date">${svgIcon('calendar')}<span class="vx-date">${escapeHtml(notif)}</span></span>`);
+  }
+  return chips.join('');
+}
+
+function cardFootHtml(item) {
+  const pdf = normalizeUrl(safe(item.Official_Notification_Link));
+  const src = item.Source_Ref_Long || item.Source_Ref || '';
+  return `
+    <div class="vx-foot">
+      ${pdf ? `
+        <a class="vx-link" href="${escapeHtml(pdf)}" target="_blank" rel="noopener noreferrer"
+           title="Open the official notification PDF" onclick="event.stopPropagation();">
+          ${svgIcon('external')} Notification PDF
+        </a>` : `
+        <span class="vx-link vx-link-muted" title="Open full details">View details</span>`}
+      <button type="button" class="vx-share" data-card-action="share" data-id="${escapeHtml(safe(item.Vacancy_ID))}"
+              title="Share this vacancy" aria-label="Share this vacancy">
+        ${svgIcon('share')}
+      </button>
+      ${src ? `<span class="vx-src" title="${escapeHtml(safe(item['Source Category']))}">${escapeHtml(src)}</span>` : ''}
+    </div>`;
+}
+
+function cardHeadHtml(item, daysLeft) {
+  return `
+    <div class="vx-head">
+      <span class="vx-pill vx-pill-level">${escapeHtml(safe(item.Level_Text) || '—')}</span>
+      ${isNewVacancy(item) ? '<span class="vx-new">NEW</span>' : ''}
+      <span class="vx-head-spacer"></span>
+      <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}">${escapeHtml(formatDaysLeft(daysLeft))}</span>
+      ${cardHeartBtn(item)}
+    </div>`;
+}
+
+function renderVacancyCard(item) {
+  const vacancyId = safe(item.Vacancy_ID);
+  const daysLeft = parseInt(item.Days_Left, 10);
+
+  return `
+    <article class="vx-card clickable-card" data-open-details="${escapeHtml(vacancyId)}">
+      ${cardHeadHtml(item, daysLeft)}
+      <h3 class="vx-title">${escapeHtml(safe(item.Post_Name) || '—')}</h3>
+      <div class="vx-org">${escapeHtml(cardOrgLine(item))}</div>
+      <div class="vx-meta">${cardMetaChips(item)}</div>
+      ${cardFootHtml(item)}
+    </article>
+  `;
+}
+
+function renderGroupCard(group) {
+  const rep = group.items[0];
+  const expanded = expandedGroups.has(group.key);
+  const minDays = group.items.reduce((min, it) => {
+    const d = parseInt(it.Days_Left, 10);
+    return Number.isNaN(d) ? min : Math.min(min, d);
+  }, Number.MAX_SAFE_INTEGER);
+  const daysLeft = minDays === Number.MAX_SAFE_INTEGER ? NaN : minDays;
+
+  const locations = group.items.map(it => ({ id: safe(it.Vacancy_ID), loc: formatLocation(it) || '—', days: parseInt(it.Days_Left, 10) }));
+  const chipMax = 4;
+  const locChips = locations.slice(0, chipMax).map(l => `
+    <button type="button" class="vx-loc-chip ${!Number.isNaN(l.days) && l.days >= 0 && l.days <= 15 ? 'tone-closing' : ''}"
+            data-open-details="${escapeHtml(l.id)}" title="Open ${escapeHtml(l.loc)}">
+      ${escapeHtml(l.loc)}
+    </button>`).join('');
+  const moreCount = locations.length - chipMax;
+
+  const totalPosts = group.items.reduce((n, it) => n + (parseInt(it.No_of_Posts, 10) || 1), 0);
+  const savedCount = group.items.filter(it => watchlist.has(safe(it.Vacancy_ID))).length;
+
+  const members = group.items.map(it => {
+    const d = parseInt(it.Days_Left, 10);
     return `
-      <div class="job-card premium-card clickable-card" data-open-details="${escapeHtml(vacancyId)}">
-        <button
-          type="button"
-          class="card-heart-btn ${saved ? 'saved' : ''}"
-          data-card-action="watchlist"
-          data-id="${escapeHtml(vacancyId)}"
-          title="Bookmark the Vacancy"
-          aria-label="${saved ? 'Remove bookmarked vacancy' : 'Bookmark the Vacancy'}"
-          aria-pressed="${saved ? 'true' : 'false'}"
-        >
-          <i data-lucide="heart"></i>
-        </button>
-
-        <div class="job-card-top">
-          <div class="job-meta-row">
-            <span class="meta-pill meta-pill-level">
-              ${escapeHtml(safe(item.Level_Text) || '—')}
-            </span>
-            <span class="meta-pill meta-pill-eligibility">
-              Eligible: ${escapeHtml(formatEligibility(item))}
-            </span>
-          </div>
-
-          <div class="job-title-block">
-            <div class="job-title">${escapeHtml(safe(item.Post_Name) || '—')}</div>
-            <div class="job-org">
-              ${escapeHtml(withAcronym(item.Ministry) || withAcronym(item.Department_Organisation) || '—')}
-            </div>
-          </div>
-        </div>
-
-        <div class="job-highlight-row">
-          <div class="highlight-box ${expired ? 'highlight-expired' : 'highlight-normal'}">
-            <div class="highlight-label">Days Left</div>
-            <div class="highlight-value">
-              <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}">
-                ${escapeHtml(formatDaysLeft(daysLeft))}
-              </span>
-            </div>
-          </div>
-
-          <div class="highlight-box">
-            <div class="highlight-label">Notification Date</div>
-            <div class="highlight-value">
-              <span class="notification-date-chip">
-                ${escapeHtml(notificationDateText)}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div class="job-details premium-details">
-          <div class="detail-item">
-            <span class="detail-label">Location</span>
-            <span class="detail-value">${escapeHtml(formatLocation(item) || '—')}</span>
-          </div>
-
-          <div class="detail-item">
-            <span class="detail-label">Organisation</span>
-            <span class="detail-value">${escapeHtml(orgAcronym(item) || safe(item.Department_Organisation) || '—')}</span>
-          </div>
-
-          <div class="detail-item">
-            <span class="detail-label">Level</span>
-            <span class="detail-value">${escapeHtml(safe(item.Level_Text) || '—')}</span>
-          </div>
-
-          <div class="detail-item">
-            <span class="detail-label">Eligibility</span>
-            <span class="detail-value">${escapeHtml(formatEligibility(item))}</span>
-          </div>
-        </div>
-
-        ${(detailedNotificationLink || item.Source_Ref) ? `
-          <div class="job-card-footer">
-            ${detailedNotificationLink ? `
-              <a
-                class="card-action-btn secondary"
-                href="${escapeHtml(detailedNotificationLink)}"
-                target="_blank"
-                rel="noopener noreferrer"
-                onclick="event.stopPropagation();"
-              >
-                Notification
-              </a>
-            ` : ''}
-
-            ${item.Source_Ref ? `
-              <span class="card-source-badge" title="${escapeHtml(safe(item['Source Category']))}">
-                ${escapeHtml(item.Source_Ref_Long || item.Source_Ref)}
-              </span>
-            ` : ''}
-          </div>
-        ` : ''}
-      </div>
-    `;
+      <div class="vx-member" data-open-details="${escapeHtml(safe(it.Vacancy_ID))}" role="button" tabindex="0">
+        <span class="vx-member-loc">${svgIcon('map-pin')}${escapeHtml(formatLocation(it) || '—')}</span>
+        <span class="days-pill days-pill-${getDaysLeftTone(d)}">${escapeHtml(formatDaysLeft(d))}</span>
+        ${cardHeartBtn(it, 'table-heart-btn')}
+      </div>`;
   }).join('');
 
-  return `<div class="cards-grid premium-cards-grid">${cards}</div>`;
+  const gid = 'grp-' + group.key.replace(/[^a-z0-9]+/gi, '-').slice(0, 60);
+
+  return `
+    <article class="vx-card vx-group clickable-card" data-open-details="${escapeHtml(safe(rep.Vacancy_ID))}">
+      <div class="vx-head">
+        <span class="vx-pill vx-pill-level">${escapeHtml(safe(rep.Level_Text) || '—')}</span>
+        ${group.items.some(isNewVacancy) ? '<span class="vx-new">NEW</span>' : ''}
+        <span class="vx-head-spacer"></span>
+        <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}" title="Soonest closing among these posts">${escapeHtml(formatDaysLeft(daysLeft))}</span>
+      </div>
+      <h3 class="vx-title">${escapeHtml(safe(rep.Post_Name) || '—')}</h3>
+      <div class="vx-org">${escapeHtml(cardOrgLine(rep))}</div>
+      <div class="vx-count-line">${svgIcon('layers')}${totalPosts} post${totalPosts === 1 ? '' : 's'} · ${locations.length} location${locations.length === 1 ? '' : 's'}${savedCount ? ` · ${savedCount} saved` : ''}</div>
+      <div class="vx-meta">${cardMetaChips(rep, { withLocation: false })}</div>
+      <div class="vx-locs">
+        ${locChips}
+        ${moreCount > 0 ? `<span class="vx-loc-more">+${moreCount} more</span>` : ''}
+      </div>
+      <div class="vx-foot">
+        <button type="button" class="vx-expand" data-card-action="expand" data-group="${escapeHtml(group.key)}"
+                aria-expanded="${expanded ? 'true' : 'false'}" aria-controls="${escapeHtml(gid)}">
+          ${svgIcon('chevron-down')} ${expanded ? 'Hide' : 'Show'} all ${locations.length}
+        </button>
+        <button type="button" class="vx-share" data-card-action="share" data-id="${escapeHtml(safe(rep.Vacancy_ID))}"
+                title="Share this vacancy" aria-label="Share this vacancy">
+          ${svgIcon('share')}
+        </button>
+        ${rep.Source_Ref_Long || rep.Source_Ref ? `<span class="vx-src" title="${escapeHtml(safe(rep['Source Category']))}">${escapeHtml(rep.Source_Ref_Long || rep.Source_Ref)}</span>` : ''}
+      </div>
+      <div class="vx-members" id="${escapeHtml(gid)}" ${expanded ? '' : 'hidden'}>${members}</div>
+    </article>
+  `;
+}
+
+function renderCards(groups) {
+  const cards = groups
+    .map(g => (g.items.length === 1 ? renderVacancyCard(g.items[0]) : renderGroupCard(g)))
+    .join('');
+  return `<div class="cards-grid">${cards}</div>`;
 }
 
     function renderPagination(totalPages) {
   if (totalPages <= 1) return '';
 
-  const pages = [];
   const current = pagination.currentPage;
+  const pageBtn = (i) => `
+      <button type="button" class="page-btn ${i === current ? 'active' : ''}" data-page="${i}"
+              ${i === current ? 'aria-current="page"' : ''}>${i}</button>`;
+  const ell = '<span class="page-ellipsis" aria-hidden="true">…</span>';
 
-  for (let i = 1; i <= totalPages; i++) {
-    pages.push(`
-      <button
-        type="button"
-        class="page-btn ${i === current ? 'active' : ''}"
-        data-page="${i}"
-      >
-        ${i}
-      </button>
-    `);
-  }
+  // Windowed numbers: 1 … (current±2) … last — never two wrapped rows of 24.
+  const lo = Math.max(1, current - 2);
+  const hi = Math.min(totalPages, current + 2);
+  const parts = [];
+  if (lo > 1) { parts.push(pageBtn(1)); if (lo > 2) parts.push(ell); }
+  for (let i = lo; i <= hi; i++) parts.push(pageBtn(i));
+  if (hi < totalPages) { if (hi < totalPages - 1) parts.push(ell); parts.push(pageBtn(totalPages)); }
 
   return `
     <div class="pagination-bar">
-      <button
-        type="button"
-        class="page-nav-btn"
-        data-page-nav="first"
-        data-total-pages="${totalPages}"
-        ${current === 1 ? 'disabled' : ''}
-      >
-        First
-      </button>
+      <button type="button" class="page-nav-btn" data-page-nav="prev"
+              data-total-pages="${totalPages}" ${current === 1 ? 'disabled' : ''}>Prev</button>
 
-      <button
-        type="button"
-        class="page-nav-btn"
-        data-page-nav="prev"
-        data-total-pages="${totalPages}"
-        ${current === 1 ? 'disabled' : ''}
-      >
-        Prev
-      </button>
+      <div class="page-numbers">${parts.join('')}</div>
 
-      <div class="page-numbers">
-        ${pages.join('')}
-      </div>
+      <button type="button" class="page-nav-btn" data-page-nav="next"
+              data-total-pages="${totalPages}" ${current === totalPages ? 'disabled' : ''}>Next</button>
+    </div>
+  `;
+}
 
-      <button
-        type="button"
-        class="page-nav-btn"
-        data-page-nav="next"
-        data-total-pages="${totalPages}"
-        ${current === totalPages ? 'disabled' : ''}
-      >
-        Next
+function renderLoadMore(shownGroups, totalGroups, shownRows, totalRows) {
+  if (totalGroups <= shownGroups) {
+    return totalRows > getCurrentPageSize()
+      ? `<div class="load-more-bar"><span class="load-more-note">All ${totalRows} vacancies shown</span></div>`
+      : '';
+  }
+  return `
+    <div class="load-more-bar">
+      <button type="button" class="load-more-btn" data-load-more>
+        ${svgIcon('chevron-down')} Load more
       </button>
-
-      <button
-        type="button"
-        class="page-nav-btn"
-        data-page-nav="last"
-        data-total-pages="${totalPages}"
-        ${current === totalPages ? 'disabled' : ''}
-      >
-        Last
-      </button>
+      <span class="load-more-note">Showing ${shownRows} of ${totalRows} vacancies</span>
     </div>
   `;
 }
@@ -1744,28 +2101,72 @@ function applyTheme(theme) {
 
   if (resetPage) {
     pagination.currentPage = 1;
+    pagination.pagesShown = 1;
   }
 
   btnTableView.classList.toggle('active', view === 'table');
   btnCardView.classList.toggle('active', view === 'card');
+  syncCardSortUI();
 
+  vtDiscrete = true;
   renderDashboard(false);
 }
 
-    function openVacancyModal(vacancyId) {
+// The sort dropdown belongs to card view; table view sorts via its headers.
+// Entering card view re-applies the dropdown's sort so the label is honest.
+function syncCardSortUI() {
+  if (cardSortRoot) cardSortRoot.hidden = currentView !== 'card';
+  if (currentView === 'card' && cardSort) {
+    const s = CARD_SORTS[cardSort.value] || CARD_SORTS.closing;
+    sortState.key = s.key;
+    sortState.direction = s.direction;
+  }
+}
+
+    function openVacancyModal(vacancyId, { push = true } = {}) {
         const item = getItemById(vacancyId);
         if (!item || !modal || !modalBody) return;
 
         modalBody.innerHTML = buildModalContent(item);
-        modal.style.display = 'flex';
-        lucide.createIcons();
+
+        if (typeof modal.showModal === 'function') {
+            if (!modal.open) modal.showModal();
+        } else {
+            modal.setAttribute('open', ''); // ancient-browser fallback
+        }
+        document.body.classList.add('vxd-open');
+        if (modal.scrollTop) modal.scrollTop = 0;
+        const content = modal.querySelector('.modal-content');
+        if (content) content.scrollTop = 0;
+
+        // URL: one history entry per dialog session (replace on in-dialog switches)
+        try {
+            const id = safe(vacancyId);
+            if (getUrlVacancyId() !== id) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('v', id);
+                if (push && !modalPushed) {
+                    history.pushState({ vx: id }, '', url);
+                    modalPushed = true;
+                } else {
+                    history.replaceState(modalPushed ? { vx: id } : history.state, '', url);
+                }
+            }
+        } catch (e) {}
+
         wireFlagUI(vacancyId);
     }
 
     function closeVacancyModal() {
         if (!modal || !modalBody) return;
-        modal.style.display = 'none';
-        modalBody.innerHTML = '';
+        if (typeof modal.close === 'function' && modal.open) {
+            modal.close(); // `close` event does the cleanup + URL sync
+        } else {
+            modal.removeAttribute('open');
+            modalBody.innerHTML = '';
+            document.body.classList.remove('vxd-open');
+            syncUrlOnClose();
+        }
     }
 
     function buildModalContent(item) {
@@ -1900,17 +2301,25 @@ function applyTheme(theme) {
                         data-modal-action="watchlist"
                         data-id="${escapeHtml(vacancyId)}"
                     >
-                        ${saved ? 'Remove from Watchlist' : 'Save to Watchlist'}
+                        ${svgIcon('heart')} ${saved ? 'Remove from Watchlist' : 'Save to Watchlist'}
                     </button>
 
                     ${detailedNotificationLink ? `
                         <a class="card-action-btn secondary" href="${escapeHtml(detailedNotificationLink)}" target="_blank" rel="noopener noreferrer">
-                            Detailed Notification
+                            ${svgIcon('external')} Official Notification PDF
                         </a>
                     ` : ''}
 
+                    <button type="button" class="card-action-btn share-wa" data-modal-action="share-wa" data-id="${escapeHtml(vacancyId)}">
+                        ${svgIcon('whatsapp')} Share on WhatsApp
+                    </button>
+
+                    <button type="button" class="card-action-btn secondary" data-modal-action="copy-link" data-id="${escapeHtml(vacancyId)}">
+                        ${svgIcon('link')} Copy link
+                    </button>
+
                     <button type="button" class="card-action-btn ghost flag-open-btn" data-flag-open="${escapeHtml(vacancyId)}">
-                        <i data-lucide="flag"></i> Report an issue
+                        ${svgIcon('flag')} Report an issue
                     </button>
                 </div>
 
@@ -1993,7 +2402,7 @@ function applyTheme(theme) {
                 ${sv ? `<div class="flag-suggest"><span>Suggested correction:</span> ${escapeHtml(sv)}</div>` : ''}
                 <div class="flag-card-foot">
                     <button type="button" class="flag-endorse-btn${endorsed ? ' done' : ''}" data-endorse="${escapeHtml(f.id)}" ${endorsed ? 'disabled' : ''}>
-                        <i data-lucide="thumbs-up"></i> ${endorsed ? 'Endorsed' : 'Endorse'} · <span class="flag-count">${Number(f.endorsements) || 0}</span>
+                        ${svgIcon('thumbs-up')} ${endorsed ? 'Endorsed' : 'Endorse'} · <span class="flag-count">${Number(f.endorsements) || 0}</span>
                     </button>
                 </div>
             </div>`;
@@ -2004,7 +2413,6 @@ function applyTheme(theme) {
         listEl.innerHTML = flags.length
             ? flags.map(flagCardHtml).join('')
             : '<div class="flag-status">No issues reported yet. Spotted something wrong? Use “Report an issue”.</div>';
-        if (window.lucide) lucide.createIcons();
     }
 
     function flagFormHtml(vacancyId) {
@@ -2072,7 +2480,6 @@ function applyTheme(theme) {
                 if (showing) { wrap.hidden = true; wrap.innerHTML = ''; return; }
                 wrap.innerHTML = flagFormHtml(vacancyId);
                 wrap.hidden = false;
-                if (window.lucide) lucide.createIcons();
                 const form = document.getElementById('flagForm');
                 form?.querySelector('[data-flag-cancel]')?.addEventListener('click', () => { wrap.hidden = true; wrap.innerHTML = ''; });
                 form?.addEventListener('submit', (e) => submitFlagForm(e, vacancyId));
