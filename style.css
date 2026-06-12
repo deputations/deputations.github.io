@@ -5720,7 +5720,7 @@ body.vxd-open { overflow: hidden; }
 }
 html.vt-filters::view-transition-group(*),
 html.vt-filters::view-transition-old(*),
-html.vt-filters::view-transition-new(*) { animation-duration: 0.5s; }
+html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
 
 @media (min-width: 769px) {
 
