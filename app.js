@@ -792,17 +792,33 @@ function updateMobileFilterToggle() {
 }
 
     function setLoadingUI() {
-        // Mirrors the loaded layout (strip → toolbar → cards) so there is no
-        // layout shift when real content arrives.
-        dataContainer.innerHTML = `
-            <div class="loading-shell" aria-hidden="true">
-                <div class="sk-strip shimmer"></div>
-                <div class="sk-toolbar shimmer"></div>
-                <div class="sk-grid">
-                    ${'<div class="sk-card shimmer"></div>'.repeat(6)}
-                </div>
+        // The page renders its FULL real structure immediately — proper KPI
+        // cards with placeholder values and correctly shaped row/card shimmers
+        // — so the first paint never looks empty; data drops in when it lands.
+        kpiGrid.innerHTML = [
+            ['Total Vacancies', 'briefcase', 'cyan'],
+            ['Active', 'check-circle', 'green'],
+            ['Closing Soon', 'clock', 'red'],
+            ['Ministries', 'building', 'purple'],
+        ].map(([title, icon, tone]) => `
+            <div class="kpi-card kpi-${tone} kpi-skeleton shimmer" aria-hidden="true">
+                <div class="kpi-icon">${svgIcon(icon)}</div>
+                <div class="kpi-title">${title}</div>
+                <div class="kpi-value">—</div>
+                <div class="kpi-trend flat">Loading…</div>
             </div>
-        `;
+        `).join('');
+
+        const cardsLikely = window.innerWidth <= 768 || currentView === 'card';
+        dataContainer.innerHTML = cardsLikely
+            ? `
+            <div class="sk-grid" aria-hidden="true">
+                ${'<div class="sk-card shimmer"></div>'.repeat(6)}
+            </div>`
+            : `
+            <div class="loading-table-shell" aria-hidden="true">
+                ${'<div class="loading-row shimmer"></div>'.repeat(8)}
+            </div>`;
     }
 
     // ---- dialog ↔ history bookkeeping (permalink ?v=) ----

@@ -5610,6 +5610,21 @@ body.vxd-open { overflow: hidden; }
   border: 1px solid var(--border-color);
 }
 
+/* first paint: real KPI cards with placeholder values until the data lands */
+.kpi-card.kpi-skeleton { pointer-events: none; }
+.kpi-skeleton .kpi-trend { opacity: 0.6; }
+
+/* the legacy shimmer rows were dark-only — paper-light variants */
+[data-theme="light"] .loading-table-shell {
+  background: #ffffff;
+  border-color: rgba(13, 23, 44, 0.10);
+}
+[data-theme="light"] .loading-table-toolbar,
+[data-theme="light"] .loading-row {
+  background: #eef1f6;
+  border-color: rgba(13, 23, 44, 0.07);
+}
+
 /* ---- mobile additions (items 30–33) ---- */
 @media (max-width: 768px) {
   /* perf budget: no animated blobs / blur layers on phones (item 31) */
