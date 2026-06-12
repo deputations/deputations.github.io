@@ -750,9 +750,21 @@ function initDesktopFilterCollapse() {
     // View Transitions API exists; instant elsewhere / for reduced motion.
     const motionOk = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (typeof document.startViewTransition === 'function' && motionOk) {
+      // Reveal-class for the staggered fade-ins (only on EXPAND — collapsing
+      // the panel would reveal *less* content, so the cascade is meaningless)
+      const sidebar = document.getElementById('filtersSidebar');
+      const data    = document.getElementById('dataContainer');
+      if (expanded) {
+        sidebar && sidebar.classList.add('is-fx-revealing');
+        data    && data.classList.add('is-fx-revealing');
+      }
       document.documentElement.classList.add('vt-filters');
       const t = document.startViewTransition(() => apply(expanded));
-      t.finished.finally(() => document.documentElement.classList.remove('vt-filters'));
+      t.finished.finally(() => {
+        document.documentElement.classList.remove('vt-filters');
+        sidebar && sidebar.classList.remove('is-fx-revealing');
+        data    && data.classList.remove('is-fx-revealing');
+      });
     } else {
       apply(expanded);
     }

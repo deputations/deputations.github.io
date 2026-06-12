@@ -5718,9 +5718,58 @@ body.vxd-open { overflow: hidden; }
   .top-toolbar { view-transition-name: vt-toolbar; }
   .data-container { view-transition-name: vt-rows; }
 }
-html.vt-filters::view-transition-group(*),
+html.vt-filters::view-transition-group(*)   { animation-duration: 520ms; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
 html.vt-filters::view-transition-old(*),
-html.vt-filters::view-transition-new(*) { animation-duration: 0.5s; }
+html.vt-filters::view-transition-new(*)     { animation-duration: 520ms; }
+
+/* The filter panel feels like it has weight — a tiny scale pulse on the old frame */
+html.vt-filters::view-transition-old(vt-filters-panel) {
+  animation: vt-filter-pulse-out 520ms cubic-bezier(.2, .8, .2, 1);
+}
+@keyframes vt-filter-pulse-out {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* Button caret — match the panel timing */
+.filters-more-caret { transition: transform 220ms cubic-bezier(.2, .8, .2, 1); }
+
+/* On expand: hidden filter groups cascade in */
+.is-fx-revealing .filter-group {
+  animation: vx-filter-group-in 360ms cubic-bezier(.2, .8, .2, 1) both;
+}
+.is-fx-revealing .filter-group:nth-child(2) { animation-delay:  60ms; }
+.is-fx-revealing .filter-group:nth-child(3) { animation-delay: 100ms; }
+.is-fx-revealing .filter-group:nth-child(4) { animation-delay: 140ms; }
+.is-fx-revealing .filter-group:nth-child(5) { animation-delay: 180ms; }
+.is-fx-revealing .filter-group:nth-child(6) { animation-delay: 220ms; }
+.is-fx-revealing .filter-group:nth-child(7) { animation-delay: 260ms; }
+@keyframes vx-filter-group-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* On expand: table rows re-settle with a subtle cascade, capped at 12 rows */
+.is-fx-revealing #dataContainer.view-table .data-table tbody tr {
+  animation: vx-row-settle 320ms cubic-bezier(.2, .8, .2, 1) both;
+}
+.is-fx-revealing #dataContainer.view-table .data-table tbody tr:nth-child(1)  { animation-delay:   0ms; }
+.is-fx-revealing #dataContainer.view-table .data-table tbody tr:nth-child(2)  { animation-delay:  20ms; }
+.is-fx-revealing #dataContainer.view-table .data-table tbody tr:nth-child(3)  { animation-delay:  40ms; }
+.is-fx-revealing #dataContainer.view-table .data-table tbody tr:nth-child(4)  { animation-delay:  60ms; }
+.is-fx-revealing #dataContainer.view-table .data-table tbody tr:nth-child(5)  { animation-delay:  80ms; }
+.is-fx-revealing #dataContainer.view-table .data-table tbody tr:nth-child(6)  { animation-delay: 100ms; }
+.is-fx-revealing #dataContainer.view-table .data-table tbody tr:nth-child(7)  { animation-delay: 120ms; }
+.is-fx-revealing #dataContainer.view-table .data-table tbody tr:nth-child(8)  { animation-delay: 140ms; }
+.is-fx-revealing #dataContainer.view-table .data-table tbody tr:nth-child(9)  { animation-delay: 160ms; }
+.is-fx-revealing #dataContainer.view-table .data-table tbody tr:nth-child(10) { animation-delay: 180ms; }
+.is-fx-revealing #dataContainer.view-table .data-table tbody tr:nth-child(11) { animation-delay: 200ms; }
+.is-fx-revealing #dataContainer.view-table .data-table tbody tr:nth-child(12) { animation-delay: 220ms; }
+@keyframes vx-row-settle {
+  from { opacity: 0.55; transform: translateY(6px); }
+  to   { opacity: 1;    transform: translateY(0); }
+}
 
 @media (min-width: 769px) {
 
