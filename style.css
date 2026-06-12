@@ -5775,4 +5775,52 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
   body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(9) { width: 12%; }
   body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(10),
   body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(10) { width: 5%; }
+
+  /* ---- sequenced toggle: rows-first-then-filters / filters-fold-first ----
+     Two transient body classes gate the filter content while the VT morphs
+     the grid layout. filters-pending-reveal keeps groups hidden after expand
+     until the VT finishes; filters-folding hides them before collapse VT runs.
+     The .filter-group baseline transition drives both fold and reveal. */
+  .filters-sidebar .filter-group {
+    max-height: 1200px;
+    transition:
+      max-height 0.32s ease,
+      opacity 0.28s ease,
+      margin 0.32s ease,
+      padding 0.32s ease;
+  }
+  /* overflow:hidden is applied ONLY while gated so resting-state dropdowns
+     (multi-select chip menus, etc.) aren't clipped inside the filter group. */
+  body.filters-pending-reveal .filters-sidebar .filter-group:not(.fg-primary),
+  body.filters-folding         .filters-sidebar .filter-group:not(.fg-primary) {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  /* Reveal stagger — top groups first (cascading drop into the new column) */
+  .filters-sidebar .filter-group:nth-child(1) { transition-delay: 0ms; }
+  .filters-sidebar .filter-group:nth-child(2) { transition-delay: 60ms; }
+  .filters-sidebar .filter-group:nth-child(3) { transition-delay: 120ms; }
+  .filters-sidebar .filter-group:nth-child(4) { transition-delay: 180ms; }
+  .filters-sidebar .filter-group:nth-child(5) { transition-delay: 240ms; }
+  .filters-sidebar .filter-group:nth-child(n+6) { transition-delay: 300ms; }
+  /* Fold stagger — bottom groups first, so the panel rolls up from the base */
+  body.filters-folding .filters-sidebar .filter-group:nth-child(n+6) { transition-delay: 0ms; }
+  body.filters-folding .filters-sidebar .filter-group:nth-child(5)   { transition-delay: 60ms; }
+  body.filters-folding .filters-sidebar .filter-group:nth-child(4)   { transition-delay: 120ms; }
+  body.filters-folding .filters-sidebar .filter-group:nth-child(3)   { transition-delay: 180ms; }
+  body.filters-folding .filters-sidebar .filter-group:nth-child(2)   { transition-delay: 240ms; }
+  body.filters-folding .filters-sidebar .filter-group:nth-child(1)   { transition-delay: 300ms; }
+
+  /* During the folding phase the sidebar still occupies the left column.
+     During pending-reveal the layout is already in expanded form — the
+     gating class only hides content, never re-flows the grid. */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filters-sidebar .filter-group { transition: none !important; }
 }

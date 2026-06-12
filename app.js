@@ -732,29 +732,89 @@ function initDesktopFilterCollapse() {
   const btn = document.getElementById('desktopFilterToggle');
   if (!btn) return;
   const label = btn.querySelector('span');
+  const sidebar = document.querySelector('.filters-sidebar');
 
-  const apply = (expanded) => {
-    document.body.classList.toggle('filters-collapsed', !expanded);
+  const applyLabel = (expanded) => {
     btn.setAttribute('aria-expanded', String(expanded));
     if (label) label.textContent = expanded ? 'Hide filters' : 'Show more filters';
+  };
+  const applyLayout = (expanded) => {
+    document.body.classList.toggle('filters-collapsed', !expanded);
   };
 
   // Always load collapsed — expanding is a per-visit choice, not remembered.
   let expanded = false;
-  apply(expanded);
+  applyLayout(expanded);
+  applyLabel(expanded);
 
-  btn.addEventListener('click', () => {
-    expanded = !expanded;
+  // Sequenced morph: rows shift before the filter content drops in (expand),
+  // filter content folds before the rows expand back (collapse). Reuses the
+  // existing vt-filters View Transition for the grid-template swap.
+  let busy = false;
+  const FOLD_MS = 380;       // matches CSS .filter-group transition + stagger
+  const REVEAL_DELAY = 40;   // let the VT settle before content unfurls
 
-    // Animate the layout morph (slower, scoped via html.vt-filters) where the
-    // View Transitions API exists; instant elsewhere / for reduced motion.
+  const waitFold = () => new Promise((resolve) => {
+    if (!sidebar) return resolve();
+    const groups = sidebar.querySelectorAll('.filter-group:not(.fg-primary)');
+    if (!groups.length) return resolve();
+    let done = false;
+    const last = groups[groups.length - 1];
+    const onEnd = (e) => {
+      if (e.propertyName !== 'max-height') return;
+      done = true;
+      last.removeEventListener('transitionend', onEnd);
+      resolve();
+    };
+    last.addEventListener('transitionend', onEnd);
+    // Fallback in case transitionend doesn't fire (display:none ancestors, etc.)
+    setTimeout(() => { if (!done) { last.removeEventListener('transitionend', onEnd); resolve(); } }, FOLD_MS + 120);
+  });
+
+  btn.addEventListener('click', async () => {
+    if (busy) return;
     const motionOk = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (typeof document.startViewTransition === 'function' && motionOk) {
-      document.documentElement.classList.add('vt-filters');
-      const t = document.startViewTransition(() => apply(expanded));
-      t.finished.finally(() => document.documentElement.classList.remove('vt-filters'));
-    } else {
-      apply(expanded);
+    const canVT = typeof document.startViewTransition === 'function';
+    const next = !expanded;
+
+    if (!motionOk || !canVT) {
+      expanded = next;
+      applyLayout(expanded);
+      applyLabel(expanded);
+      return;
+    }
+
+    busy = true;
+    applyLabel(next); // flip label/aria immediately so spam-clicks see latest
+
+    try {
+      if (next) {
+        // EXPAND: phase 1 — rows shift right (VT layout morph, sidebar empty);
+        // phase 2 — filter groups cascade into the freed column.
+        document.body.classList.add('filters-pending-reveal');
+        document.documentElement.classList.add('vt-filters');
+        const t = document.startViewTransition(() => applyLayout(true));
+        await t.finished.catch(() => {});
+        document.documentElement.classList.remove('vt-filters');
+        // small beat, then drop the gate → CSS reveal kicks in with stagger
+        await new Promise((r) => setTimeout(r, REVEAL_DELAY));
+        document.body.classList.remove('filters-pending-reveal');
+      } else {
+        // COLLAPSE: phase 1 — fold filter groups while sidebar still occupies
+        // the left column; phase 2 — VT morphs rows back to full width.
+        document.body.classList.add('filters-folding');
+        await waitFold();
+        document.documentElement.classList.add('vt-filters');
+        const t = document.startViewTransition(() => {
+          applyLayout(false);
+          document.body.classList.remove('filters-folding');
+        });
+        await t.finished.catch(() => {});
+        document.documentElement.classList.remove('vt-filters');
+      }
+      expanded = next;
+    } finally {
+      busy = false;
     }
   });
 }
