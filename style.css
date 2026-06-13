@@ -5372,6 +5372,23 @@ html:not([data-theme="light"]) .premium-credit {
 }
 [data-theme="light"] .vx-new { color: #ffffff; }
 
+/* Table row "NEW" pill — sits inline after the post name, with a soft pulse
+   so fresh listings stand out (signals the data isn't stale). */
+.post-col .vx-new.table-new {
+  font-size: 0.58rem;
+  padding: 0.14rem 0.42rem;
+  margin-left: 0.45rem;
+  vertical-align: 0.12em;
+  letter-spacing: 0.07em;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .post-col .vx-new.table-new { animation: tableNewPulse 2.6s ease-in-out infinite; }
+}
+@keyframes tableNewPulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary-color) 55%, transparent); }
+  55%      { box-shadow: 0 0 0 5px color-mix(in srgb, var(--primary-color) 0%, transparent); }
+}
+
 /* the card heart keeps the classic glassy look but sits in the header row */
 .vx-heart { position: static !important; top: auto; right: auto; width: 34px !important; height: 34px !important; }
 

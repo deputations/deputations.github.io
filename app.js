@@ -1159,7 +1159,7 @@ function renderTable(data) {
     return `
       <tr class="clickable-row ${saved ? 'row-bookmarked' : ''}" data-open-details="${escapeHtml(vacancyId)}">
         <td class="post-col" data-label="Post Name">
-          <strong>${escapeHtml(safe(item.Post_Name) || '—')}</strong>
+          <strong>${escapeHtml(safe(item.Post_Name) || '—')}</strong>${isNewVacancy(item) ? ' <span class="vx-new table-new" title="Added in the last 7 days">NEW</span>' : ''}
           <div class="table-subtext">
             ${escapeHtml(safe(item.Department_Organisation) || orgDisplayName(item) || '')}
           </div>
