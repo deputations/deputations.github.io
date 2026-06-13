@@ -476,8 +476,8 @@ function hideToastEl(t) {
 }   
 
 function loadDataFromJSON() {
-    Promise.all([fetchVacancies(), loadLinkPreviews()])
-        .then(([data, previews]) => {
+    Promise.all([fetchVacancies(), loadLinkPreviews(), loadMeta()])
+        .then(([data, previews, meta]) => {
             rawData = data;
             linkPreviews = previews;
 
@@ -493,6 +493,7 @@ function loadDataFromJSON() {
             openVacancyFromUrl();
             injectJsonLd();
             initLinkPreview();
+            setDataUpdated(meta);
 
             console.log('✅ Loaded', rawData.length, 'vacancies');
         })
@@ -542,6 +543,28 @@ function loadLinkPreviews() {
     return fetch('data/link_previews.json')
         .then(res => (res.ok ? res.json() : {}))
         .catch(() => ({}));
+}
+
+// Build metadata (data/meta.json, written by the daily build). Never rejects;
+// a missing file just leaves the "Updated on" chip hidden.
+function loadMeta() {
+    return fetch('data/meta.json')
+        .then(res => (res.ok ? res.json() : null))
+        .catch(() => null);
+}
+
+// "Updated <date>" chip in the results bar — the daily data-refresh date from
+// meta.generated_at_utc. Self-contained (no dependency on the nested date
+// helpers) so it can run from the top-level load flow.
+function setDataUpdated(meta) {
+    const el = document.getElementById('dataUpdated');
+    if (!el || !meta || !meta.generated_at_utc) return;
+    const dt = new Date(meta.generated_at_utc);
+    if (Number.isNaN(dt.getTime())) return;
+    el.textContent = 'Updated ' + dt.toLocaleDateString('en-IN', {
+        day: '2-digit', month: 'short', year: 'numeric'
+    });
+    el.hidden = false;
 }
 
 // Returns a data-link-preview="<path>" attribute for an item's notification
