@@ -17,6 +17,8 @@ const ANON = window.SUPABASE_ANON_KEY;
 const SS_KEY = 'dep_admin_sess_v1';
 
 const $ = (id) => document.getElementById(id);
+// single shared implementation — shared/vacancy-utils.js loads before this file
+const escapeHtml = (s) => window.DepUtils.escapeHtml(s);
 const toast = (msg) => {
   const t = $('toast'); t.textContent = msg; t.classList.add('show');
   clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 3500);
@@ -98,11 +100,28 @@ async function refreshIfNeeded(sess) {
 
 /* ---------------- authed REST helper ---------------- */
 let TOKEN = '';
-function api(path, opts = {}) {
-  return fetch(`${SB}${path}`, {
+// A JWT lasts ~1h and a long triage session outlives it. On 401, refresh the
+// session once (a single in-flight refresh shared by concurrent calls) and
+// retry the request; if the refresh fails, fall back to the login card.
+let _refreshing = null;
+async function api(path, opts = {}) {
+  const go = () => fetch(`${SB}${path}`, {
     ...opts,
     headers: { apikey: ANON, Authorization: `Bearer ${TOKEN}`, ...(opts.headers || {}) },
   });
+  let r = await go();
+  if (r.status === 401 && TOKEN) {
+    if (!_refreshing) {
+      // force the refresh path even if the stored expiry still looks valid
+      _refreshing = refreshIfNeeded({ ...(loadSess() || {}), expires_at: 0 })
+        .finally(() => { _refreshing = null; });
+    }
+    const sess = await _refreshing;
+    if (!sess) { showLogin('Session expired — sign in again.'); return r; }
+    TOKEN = sess.access_token;
+    r = await go();
+  }
+  return r;
 }
 
 // Count-only query (no rows transferred) via the content-range header.
@@ -111,6 +130,20 @@ async function countOf(pathFilter) {
     const r = await api(`/rest/v1/${pathFilter}${pathFilter.includes('?') ? '&' : '?'}select=id&limit=1`, { headers: { Prefer: 'count=exact' } });
     return parseInt(((r.headers.get('content-range') || '/0').split('/')[1]) || '0', 10) || 0;
   } catch { return 0; }
+}
+
+// Fetch EVERY row of a REST query in 1000-row pages. Supabase's default
+// PostgREST max-rows cap is 1000, so a single GET silently truncates past it
+// (the Review queue / Manage list would just show a partial dataset).
+async function fetchAll(pathQuery) {
+  const out = [];
+  for (let from = 0; ; from += 1000) {
+    const r = await api(`/rest/v1/${pathQuery}&limit=1000&offset=${from}`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const chunk = await r.json();
+    out.push(...chunk);
+    if (chunk.length < 1000) return out;
+  }
 }
 
 // Undo toast for approve/reject status changes: Undo restores the rows to
@@ -150,16 +183,9 @@ const FIELDS = [
 // Pay levels: 1–18 plus the exceptional "13A" (between 13 and 14).
 //   levelTok(v)  → canonical display token: "13", "13A", '' if none
 //   levelRank(v) → comparable number: "13A" → 13.5 (so sort/equality just work)
-// The A suffix needs a word boundary so "13 and above" stays 13.
-const LEVEL_RX = /(\d+)([\s-]*A\b)?/;
-function levelTok(v) {
-  const m = String(v ?? '').trim().toUpperCase().match(LEVEL_RX);
-  return m ? m[1] + (m[2] ? 'A' : '') : '';
-}
-function levelRank(v) {
-  const m = String(v ?? '').trim().toUpperCase().match(LEVEL_RX);
-  return m ? parseInt(m[1], 10) + (m[2] ? 0.5 : 0) : null;
-}
+// Both delegate to shared/vacancy-utils.js so the parsing lives in one place.
+const levelTok = (v) => window.DepUtils.levelLabel(v);
+const levelRank = (v) => window.DepUtils.parseLevelValue(v);
 
 function tiersFor(obj) {
   if (window.DepEnrich && window.DepEnrich.parseTiers) return window.DepEnrich.parseTiers(obj);
@@ -789,7 +815,17 @@ async function loadOverview() {
     chip(flags, 'open flags', 'flags', 'bad') +
     chip(closing, 'live, closing ≤7d', 'manage', '');
   strip.querySelectorAll('[data-goto]').forEach((b) => {
-    b.onclick = () => document.querySelector(`.tabs button[data-tab="${b.dataset.goto}"]`)?.click();
+    b.onclick = () => {
+      if (b.dataset.goto === 'manage') {
+        // the "closing ≤7d" chip: land on live rows, soonest last-date first
+        if ($('mgStatus')) $('mgStatus').value = 'approved';
+        if ($('mgSearch')) $('mgSearch').value = '';
+        if ($('mgSort')) $('mgSort').value = 'lastdate_asc';
+        MG_PAGE = 1;
+        saveUI({ mgStatus: 'approved', mgSearch: '', mgSort: 'lastdate_asc', mgPage: 1 });
+      }
+      document.querySelector(`.tabs button[data-tab="${b.dataset.goto}"]`)?.click();
+    };
   });
   // keep the tab badges in sync from the same counts
   if ($('draftCount')) $('draftCount').textContent = drafts ? `(${drafts})` : '';
@@ -834,6 +870,9 @@ function wireApp() {
   const ui = loadUI();
   if (ui.draftSort) DRAFT_SORT = ui.draftSort;
   DRAFT_QUICK = new Set(Array.isArray(ui.draftQuick) ? ui.draftQuick : []);
+  // a stale saved state may predate the active↔expired mutual exclusion
+  if (DRAFT_QUICK.has('active') && DRAFT_QUICK.has('expired')) { DRAFT_QUICK.delete('active'); DRAFT_QUICK.delete('expired'); }
+  MG_PAGE = Math.max(1, parseInt(ui.mgPage, 10) || 1);
   RESTORE_LEVEL = ui.draftLevel || '';
   RESTORE_SOURCE = ui.draftSource || '';
   if ($('draftSearch')) $('draftSearch').value = ui.draftSearch || '';
@@ -871,15 +910,15 @@ function wireApp() {
   $('flagStatus').onchange = () => { saveUI({ flagStatus: $('flagStatus').value }); loadFlags(); };
 
   $('mgRefresh').onclick = loadManage;
-  $('mgStatus').onchange = () => { saveUI({ mgStatus: $('mgStatus').value }); loadManage(); };
+  $('mgStatus').onchange = () => { MG_PAGE = 1; saveUI({ mgStatus: $('mgStatus').value, mgPage: 1 }); loadManage(); };
   // Populate all three sort dropdowns from the shared option list (keeps them
   // in sync). Review queue defaults to 'source'; Manage/Updates to 'upload'.
   if ($('draftSort')) $('draftSort').innerHTML = sortOptionsHtml(DRAFT_SORT);
   if ($('mgSort')) $('mgSort').innerHTML = sortOptionsHtml(ui.mgSort || 'upload');
   if ($('updSort')) $('updSort').innerHTML = sortOptionsHtml(ui.updSort || 'upload');
-  if ($('mgSort')) $('mgSort').onchange = () => { saveUI({ mgSort: $('mgSort').value }); renderManage(); };   // client-side re-sort, no refetch
+  if ($('mgSort')) $('mgSort').onchange = () => { MG_PAGE = 1; saveUI({ mgSort: $('mgSort').value, mgPage: 1 }); renderManage(); };   // client-side re-sort, no refetch
   let _mgFilterTimer = null;
-  $('mgSearch').oninput = () => { clearTimeout(_mgFilterTimer); _mgFilterTimer = setTimeout(() => { saveUI({ mgSearch: $('mgSearch').value }); renderManage(); }, 200); };
+  $('mgSearch').oninput = () => { clearTimeout(_mgFilterTimer); _mgFilterTimer = setTimeout(() => { MG_PAGE = 1; saveUI({ mgSearch: $('mgSearch').value, mgPage: 1 }); renderManage(); }, 200); };
   if ($('draftSort')) $('draftSort').onchange = () => { DRAFT_SORT = $('draftSort').value; saveUI({ draftSort: DRAFT_SORT }); DRAFT_PAGE = 1; renderDrafts(); };
   if ($('draftLevel')) $('draftLevel').onchange = () => { saveUI({ draftLevel: $('draftLevel').value }); DRAFT_PAGE = 1; renderDrafts(); };
   if ($('draftSource')) $('draftSource').onchange = () => { saveUI({ draftSource: $('draftSource').value }); DRAFT_PAGE = 1; renderDrafts(); };
@@ -999,13 +1038,6 @@ function wireApp() {
         $('dzText').textContent = pickedFile ? `📎 ${pickedFile.name}` : ''; }
     }));
 
-  const fileToB64 = (file) => new Promise((res, rej) => {
-    const fr = new FileReader();
-    fr.onload = () => res(String(fr.result).split(',')[1]);
-    fr.onerror = rej;
-    fr.readAsDataURL(file);
-  });
-
   $('ingestBtn').onclick = async () => {
     const srcType = $('srcType').value;
     const label = $('srcLabel').value.trim();
@@ -1023,7 +1055,7 @@ function wireApp() {
         if (pickedFile.size > 10 * 1024 * 1024) throw new Error('PDF exceeds 10 MB');
         st.innerHTML = '<span class="spinner"></span> Reading file…';
         payload.filename = pickedFile.name;
-        payload.file_base64 = await fileToB64(pickedFile);
+        payload.file_base64 = await fileToBase64(pickedFile);
       }
       st.innerHTML = '<span class="spinner"></span> Extracting with Gemini… (can take ~20s)';
       const r = await api('/functions/v1/extract', {
@@ -1061,6 +1093,8 @@ function wireApp() {
   };
   if ($('bulkApproveBtn')) $('bulkApproveBtn').onclick = () => bulkActOnChecked('approve');
   if ($('bulkRejectBtn')) $('bulkRejectBtn').onclick = () => bulkActOnChecked('reject');
+  if ($('filtApproveBtn')) $('filtApproveBtn').onclick = () => bulkActOnFiltered('approve');
+  if ($('filtRejectBtn')) $('filtRejectBtn').onclick = () => bulkActOnFiltered('reject');
 
   $('viewerClose').onclick = () => { $('viewerFrame').src = 'about:blank'; $('viewerPane').style.display = 'none'; };
 
@@ -1246,9 +1280,8 @@ let RESTORE_SOURCE = '';
 
 async function loadDrafts() {
   try {
-    const r = await api('/rest/v1/vacancies?status=eq.draft&select=*&order=ingest_job_id.asc,vacancy_id.asc');
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
+    // id.asc tiebreaker keeps the 1000-row pages stable across requests
+    const data = await fetchAll('vacancies?status=eq.draft&select=*&order=ingest_job_id.asc,vacancy_id.asc,id.asc');
     CURRENT_DRAFT_IDS = data.map((x) => x.id);   // whole queue — bulk ops use this
     DRAFT_ROWS = data;
     populateDraftSourceFilter();
@@ -1332,6 +1365,7 @@ function renderDrafts() {
   const rows = sortRows(applyDraftFilters(DRAFT_ROWS), DRAFT_SORT);
   const list = $('draftList');
   const pager = $('draftPager');
+  updateFilteredBar(rows.length);
   if (!rows.length) {
     list.innerHTML = `<p class="muted">${(q || src || lvl || DRAFT_QUICK.size) ? 'No drafts match the current filters.' : 'No drafts awaiting review. 🎉'}</p>`;
     if (pager) pager.innerHTML = '';
@@ -1426,6 +1460,69 @@ async function bulkActOnChecked(action) {
   updateBulkBar();
 }
 
+/* ---- approve / reject the FILTERED set (all pages) ---- */
+function draftFiltersActive() {
+  return Boolean(
+    (($('draftSearch') && $('draftSearch').value) || '').trim()
+    || ($('draftLevel') && $('draftLevel').value)
+    || ($('draftSource') && $('draftSource').value)
+    || DRAFT_QUICK.size,
+  );
+}
+
+// The "Approve/Reject filtered (N)" buttons only appear while a filter is
+// narrowing the queue — otherwise the existing whole-queue buttons apply.
+function updateFilteredBar(n) {
+  const bar = $('draftFilteredBar');
+  if (!bar) return;
+  const on = n > 0 && draftFiltersActive();
+  bar.style.display = on ? 'flex' : 'none';
+  if (on) {
+    $('filtApproveBtn').textContent = `✓ Approve filtered (${n})`;
+    $('filtRejectBtn').textContent = `🗑 Reject filtered (${n})`;
+  }
+}
+
+// Acts on EVERY draft matching the current filters (search + Level + Source +
+// quick chips) — all pages, not just the visible one. One id=in.() PATCH per
+// 100 rows; undoable like the other bulk paths. Unsaved inline edits are NOT
+// included (same caveat as Approve all).
+async function bulkActOnFiltered(action) {
+  const rows = applyDraftFilters(DRAFT_ROWS);
+  if (!rows.length) return toast('No drafts match the current filters');
+  const status = action === 'approve' ? 'approved' : 'rejected';
+  const verb = action === 'approve' ? 'Approve & PUBLISH' : 'Reject';
+  const warn = `${verb} ${rows.length} draft(s) matching the current filters — every page, not just this one.\n\n`
+    + `Unsaved inline edits aren't included — Save those first if needed.`;
+  if (rows.length >= 50) {
+    const typed = prompt(`${warn}\n\nThis is a large batch. Type the number ${rows.length} to confirm:`);
+    if (String(typed || '').trim() !== String(rows.length)) return toast('Cancelled — number did not match');
+  } else if (!confirm(warn)) {
+    return;
+  }
+  if (action === 'approve' && !confirmNotExpired(rows)) return;
+  const btns = [$('filtApproveBtn'), $('filtRejectBtn')].filter(Boolean);
+  btns.forEach((b) => { b.disabled = true; });
+  const ids = rows.map((r) => r.id);
+  const okIds = []; let fail = 0;
+  try {
+    for (let i = 0; i < ids.length; i += 100) {
+      const part = ids.slice(i, i + 100);
+      const r = await api(`/rest/v1/vacancies?id=in.(${part.join(',')})`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ status }),
+      });
+      if (r.ok) okIds.push(...part); else fail += part.length;
+    }
+  } finally { btns.forEach((b) => { b.disabled = false; }); }
+  const msg = `${action === 'approve' ? '✅ Approved' : 'Rejected'} ${okIds.length} filtered draft(s)${fail ? `, ${fail} failed` : ''}`;
+  if (okIds.length) undoableStatus(okIds, msg); else toast(msg);
+  // remove the affected visible cards so dropFromQueue re-renders the page
+  const gone = new Set(okIds.map(String));
+  $('draftList').querySelectorAll('.draft').forEach((c) => { if (gone.has(c.dataset.id)) c.remove(); });
+  dropFromQueue(okIds);
+}
+
 // Serialise an opened draft card's editor (mirrors the card-local collect()).
 function collectFromCard(el) {
   const editor = el.querySelector('.editor');
@@ -1438,19 +1535,24 @@ function collectFromCard(el) {
   return patch;
 }
 
-function renderDraftPager(pages, start, shown, total) {
-  const pager = $('draftPager');
+// Shared pager renderer (Review queue + Manage). flip(page) re-renders.
+function wirePager(pager, page, pages, start, shown, total, noun, flip) {
   if (!pager) return;
   if (pages <= 1) {
-    pager.innerHTML = `<span class="muted">${total} draft(s)</span>`;
+    pager.innerHTML = `<span class="muted">${total} ${noun}</span>`;
     return;
   }
   pager.innerHTML = `
-    <button data-pg="prev" ${DRAFT_PAGE <= 1 ? 'disabled' : ''}>‹ Prev</button>
-    <span class="muted">Page ${DRAFT_PAGE} / ${pages} · showing ${start + 1}-${start + shown} of ${total}</span>
-    <button data-pg="next" ${DRAFT_PAGE >= pages ? 'disabled' : ''}>Next ›</button>`;
-  pager.querySelector('[data-pg="prev"]')?.addEventListener('click', () => { if (DRAFT_PAGE > 1) { DRAFT_PAGE--; renderDrafts(); window.scrollTo(0, 0); } });
-  pager.querySelector('[data-pg="next"]')?.addEventListener('click', () => { if (DRAFT_PAGE < pages) { DRAFT_PAGE++; renderDrafts(); window.scrollTo(0, 0); } });
+    <button data-pg="prev" ${page <= 1 ? 'disabled' : ''}>‹ Prev</button>
+    <span class="muted">Page ${page} / ${pages} · showing ${start + 1}-${start + shown} of ${total}</span>
+    <button data-pg="next" ${page >= pages ? 'disabled' : ''}>Next ›</button>`;
+  pager.querySelector('[data-pg="prev"]')?.addEventListener('click', () => { if (page > 1) { flip(page - 1); window.scrollTo(0, 0); } });
+  pager.querySelector('[data-pg="next"]')?.addEventListener('click', () => { if (page < pages) { flip(page + 1); window.scrollTo(0, 0); } });
+}
+
+function renderDraftPager(pages, start, shown, total) {
+  wirePager($('draftPager'), DRAFT_PAGE, pages, start, shown, total, 'draft(s)',
+    (p) => { DRAFT_PAGE = p; renderDrafts(); });
 }
 
 // After cards are approved/rejected (and removed from the DOM): drop the rows
@@ -1463,6 +1565,7 @@ function dropFromQueue(ids) {
   CURRENT_DRAFT_IDS = CURRENT_DRAFT_IDS.filter((id) => !set.has(String(id)));
   $('draftCount').textContent = DRAFT_ROWS.length ? `(${DRAFT_ROWS.length})` : '';
   const total = applyDraftFilters(DRAFT_ROWS).length;
+  updateFilteredBar(total);
   const pages = Math.max(1, Math.ceil(total / DRAFT_PAGE_SIZE));
   if (DRAFT_PAGE > pages) DRAFT_PAGE = pages;
   const visible = $('draftList').querySelectorAll('.draft').length;
@@ -1778,12 +1881,12 @@ async function openSource(r, page) {
   const dm = src.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
   if (dm) {
     if (inReview) showInPane(`https://drive.google.com/file/d/${dm[1]}/preview`, (r.post_name || 'Source') + (page ? ` — p.${page}` : ''));
-    else window.open(`https://drive.google.com/file/d/${dm[1]}/view`, '_blank');
+    else window.open(`https://drive.google.com/file/d/${dm[1]}/view`, '_blank', 'noopener');
     return;
   }
   if (/^https?:\/\//i.test(src)) {
     // external gov links usually block iframing → always open a tab
-    window.open(src + (page ? `#page=${page}` : ''), '_blank');
+    window.open(src + (page ? `#page=${page}` : ''), '_blank', 'noopener');
     return;
   }
   // Supabase storage path → signed URL
@@ -1797,19 +1900,20 @@ async function openSource(r, page) {
   } catch { /* */ }
   if (!url) return toast('Could not open source');
   if (inReview) showInPane(url, (r.post_name || 'Source') + (page ? ` — p.${page}` : ''));
-  else window.open(url, '_blank');
+  else window.open(url, '_blank', 'noopener');
 }
 
 
 /* ---------------- manage (full CRUD over all rows) ---------------- */
+const MG_PAGE_SIZE = 25;
+let MG_PAGE = 1;
 let MANAGE_ROWS = [];
 
 function collectPatch(scopeEl) {
   const patch = {};
   scopeEl.querySelectorAll('[data-k]').forEach((inp) => { patch[inp.dataset.k] = (inp.value || '').trim(); });
   const lvl = levelTok(patch.level);                         // keeps "13A"
-  if ('level' in patch) patch.level = lvl;
-  patch.level_text = lvl ? `Level-${lvl}` : '';
+  if ('level' in patch) { patch.level = lvl; patch.level_text = lvl ? `Level-${lvl}` : ''; }
   if (patch.ministry) patch.min_code = MIN_CODE_BY_NAME[patch.ministry] || minCode(patch.ministry);
   applyTiersToPatch(patch, scopeEl);
   return patch;
@@ -1830,14 +1934,12 @@ async function refreshWaPending() {
 
 async function loadManage() {
   const status = $('mgStatus').value;
-  let url = '/rest/v1/vacancies?select=*&order=created_at.desc&limit=2000';
-  if (status !== 'all') url += `&status=eq.${status}`;
+  let q = 'vacancies?select=*&order=created_at.desc,id.asc';
+  if (status !== 'all') q += `&status=eq.${status}`;
   // non-blocking: 📣 badges pop in when the local bridge answers
   refreshWaPending().then(() => { if (WA_PENDING && !$('paneManage').classList.contains('hidden')) renderManage(); });
   try {
-    const r = await api(url);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    MANAGE_ROWS = await r.json();
+    MANAGE_ROWS = await fetchAll(q);
     renderManage();
   } catch (e) { toast('Load error: ' + e.message); }
 }
@@ -1849,11 +1951,20 @@ function renderManage() {
   const rows = sortRows(filtered, mode);
   $('manageCount').textContent = `(${rows.length})`;
   const list = $('manageList');
+  const pager = $('mgPager');
   list.innerHTML = '';
-  if (!rows.length) { list.innerHTML = '<p class="muted">No matching rows.</p>'; return; }
+  if (!rows.length) {
+    list.innerHTML = '<p class="muted">No matching rows.</p>';
+    if (pager) pager.innerHTML = '';
+    return;
+  }
+  const pages = Math.max(1, Math.ceil(rows.length / MG_PAGE_SIZE));
+  if (MG_PAGE > pages) MG_PAGE = pages;
+  const start = (MG_PAGE - 1) * MG_PAGE_SIZE;
+  const slice = rows.slice(start, start + MG_PAGE_SIZE);
   const showHeaders = mode === 'source';
   let lastSrc = null;
-  rows.forEach((r) => {
+  slice.forEach((r) => {
     if (showHeaders) {
       const src = _sourceKey(r);
       if (src !== lastSrc) {
@@ -1866,6 +1977,8 @@ function renderManage() {
     }
     list.appendChild(manageCard(r, false));
   });
+  wirePager(pager, MG_PAGE, pages, start, slice.length, rows.length, 'row(s)',
+    (p) => { MG_PAGE = p; saveUI({ mgPage: p }); renderManage(); });
 }
 
 // Banner shown atop the editor when this row was opened from a flag. Compares
@@ -1911,11 +2024,21 @@ function manageCard(r, isNew) {
       </div>
       <div class="acts">
         ${(!isNew && (r.source_file_url || r.official_notification_link)) ? '<button data-act="source">📄 source</button>' : ''}
-        <button data-act="toggle">${isNew ? 'Hide' : (flagged ? 'Hide' : 'Edit')}</button>
+        <button data-act="toggle">${(isNew || flagged) ? 'Hide' : 'Edit'}</button>
         ${isNew ? '' : '<button class="bad" data-act="del">Delete</button>'}
       </div>
     </div>
-    <div class="editor" style="${(isNew || flagged) ? '' : 'display:none'}">
+    <div class="editor" style="display:none"></div>`;
+
+  const editor = el.querySelector('.editor');
+
+  // Built lazily on first open (same pattern as the Review cards): the full
+  // editor is 20+ inputs incl. the 50-option ministry select — far too heavy
+  // to render for every Manage row up-front. isNew/flagged cards start open,
+  // so they build immediately below.
+  const buildEditor = () => {
+    if (el.dataset.built) return;
+    editor.innerHTML = `
       ${flagBannerHtml(r)}
       ${(!isNew && r.raw_extraction && r.raw_extraction.detailed_eligibility) ? verbatimHtml(r.raw_extraction.detailed_eligibility) : ''}
       <div class="row">
@@ -1932,42 +2055,52 @@ function manageCard(r, isNew) {
       <div style="margin-top:10px;display:flex;gap:8px">
         <button class="good" data-act="save">${isNew ? 'Create' : 'Save changes'}</button>
         <button data-act="cancel">Cancel</button>
-      </div>
-    </div>`;
+      </div>`;
+    wireTiersEditor(el);
+    el.dataset.built = '1';
 
-  const editor = el.querySelector('.editor');
+    // Flag comparison: spotlight the flagged field's input + wire "Apply suggestion".
+    if (flagged) {
+      const banner = el.querySelector('[data-flag-banner]');
+      const col = banner && banner.dataset.col;
+      const targetInput = col ? editor.querySelector(`[data-k="${col}"]`) : null;
+      if (targetInput) targetInput.classList.add('flag-target');
+      const applyBtn = el.querySelector('[data-apply-suggestion]');
+      if (applyBtn && targetInput) {
+        applyBtn.onclick = () => {
+          targetInput.value = ACTIVE_FLAG.suggested_value || '';
+          targetInput.classList.add('flag-applied');
+          targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+          targetInput.focus();
+          toast('Suggestion filled in — review, then Save changes');
+        };
+      }
+    }
+
+    el.querySelector('[data-act="cancel"]').onclick = () => {
+      if (isNew) { el.remove(); return; }
+      editor.style.display = 'none';
+      el.querySelector('[data-act="toggle"]').textContent = 'Edit';
+    };
+
+    wireSave();
+  };
+
   el.querySelector('[data-act="toggle"]').onclick = (e) => {
+    buildEditor();
     const showing = editor.style.display !== 'none';
     editor.style.display = showing ? 'none' : 'block';
     e.currentTarget.textContent = showing ? 'Edit' : 'Hide';
   };
 
-  // Flag comparison: spotlight the flagged field's input + wire "Apply suggestion".
-  if (flagged) {
-    const banner = el.querySelector('[data-flag-banner]');
-    const col = banner && banner.dataset.col;
-    const targetInput = col ? el.querySelector(`.editor [data-k="${col}"]`) : null;
-    if (targetInput) targetInput.classList.add('flag-target');
-    const applyBtn = el.querySelector('[data-apply-suggestion]');
-    if (applyBtn && targetInput) {
-      applyBtn.onclick = () => {
-        targetInput.value = ACTIVE_FLAG.suggested_value || '';
-        targetInput.classList.add('flag-applied');
-        targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-        targetInput.focus();
-        toast('Suggestion filled in — review, then Save changes');
-      };
-    }
+  if (isNew || flagged) {
+    buildEditor();
+    editor.style.display = 'block';
     // scroll the flagged card into view once rendered
-    setTimeout(() => { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+    if (flagged) setTimeout(() => { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
   }
-  el.querySelector('[data-act="cancel"]').onclick = () => {
-    if (isNew) { el.remove(); return; }
-    editor.style.display = 'none';
-    el.querySelector('[data-act="toggle"]').textContent = 'Edit';
-  };
 
-  el.querySelector('[data-act="save"]').onclick = async () => {
+  function wireSave() { el.querySelector('[data-act="save"]').onclick = async () => {
     const patch = collectPatch(editor);
     if (!patch.post_name) return toast('Post name is required');
     try {
@@ -1998,7 +2131,7 @@ function manageCard(r, isNew) {
         el.replaceWith(manageCard(r, false));
       }
     } catch (e) { toast('Save failed: ' + e.message); }
-  };
+  }; }
 
   const delBtn = el.querySelector('[data-act="del"]');
   if (delBtn) delBtn.onclick = async () => {
@@ -2009,8 +2142,6 @@ function manageCard(r, isNew) {
       el.remove(); toast('Deleted'); scheduleGc();
     } catch (e) { toast('Delete failed: ' + e.message); }
   };
-
-  wireTiersEditor(el);
 
   const srcBtn = el.querySelector('[data-act="source"]');
   if (srcBtn) srcBtn.onclick = () => openSource(r, String((r.raw_extraction && r.raw_extraction.source_page) || '').replace(/\D/g, ''));
@@ -2061,13 +2192,9 @@ async function loadFlags() {
 }
 
 async function refreshFlagCount() {
-  try {
-    const r = await api('/rest/v1/vacancy_flags?status=eq.open&select=id');
-    if (!r.ok) return;
-    const rows = await r.json();
-    const badge = $('flagCount');
-    if (badge) badge.textContent = rows.length ? `(${rows.length})` : '';
-  } catch { /* */ }
+  const n = await countOf('vacancy_flags?status=eq.open');
+  const badge = $('flagCount');
+  if (badge) badge.textContent = n ? `(${n})` : '';
 }
 
 function renderFlags(rows) {
@@ -2203,12 +2330,8 @@ function _updSortable(u) {
 }
 
 async function refreshUpdatesCount() {
-  try {
-    const r = await api('/rest/v1/vacancy_updates?status=eq.pending&select=id');
-    if (!r.ok) return;
-    const n = (await r.json()).length;
-    const badge = $('updatesCount'); if (badge) badge.textContent = n ? `(${n})` : '';
-  } catch { /* */ }
+  const n = await countOf('vacancy_updates?status=eq.pending');
+  const badge = $('updatesCount'); if (badge) badge.textContent = n ? `(${n})` : '';
 }
 
 function renderUpdates() {
@@ -2358,7 +2481,3 @@ function updateCard(u) {
   return el;
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}

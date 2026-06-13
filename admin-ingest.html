@@ -258,6 +258,10 @@
             <button id="bulkApproveBtn" class="good">✓ Approve checked</button>
             <button id="bulkRejectBtn" class="bad">🗑 Reject checked</button>
           </div>
+          <div id="draftFilteredBar" style="display:none;align-items:center;gap:8px">
+            <button id="filtApproveBtn" class="good" title="Approve &amp; publish every draft matching the current search / filter chips — all pages, not just this one">✓ Approve filtered</button>
+            <button id="filtRejectBtn" class="bad" title="Reject every draft matching the current search / filter chips — all pages; undoable">🗑 Reject filtered</button>
+          </div>
         </div>
         <div id="draftPager" class="pager"></div>
         <div id="reviewSplit" style="display:flex;gap:16px;align-items:flex-start">
@@ -295,6 +299,7 @@
           </div>
         </div>
         <p class="muted">Edit any field then <b>Save</b>, change <b>Status</b> to publish/unpublish, or <b>Delete</b> a row. Click <b>📄 source</b> if a PDF is attached.</p>
+        <div id="mgPager" class="pager"></div>
         <div id="manageList"></div>
       </section>
 
@@ -347,6 +352,6 @@
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb8"></script>
   <script src="shared/vacancy-utils.js?v=sb3"></script>
-  <script src="admin-ingest.js?v=sb43"></script>
+  <script src="admin-ingest.js?v=sb44"></script>
 </body>
 </html>
