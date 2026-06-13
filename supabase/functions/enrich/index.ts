@@ -179,6 +179,7 @@ const DETAIL_SCHEMA = {
     no_of_posts: { type: "string" }, deputation_period_years: { type: "string" },
     deputation_type: { type: "string" }, notification_date: { type: "string" },
     last_date_to_apply: { type: "string" }, essential_qualification: { type: "string" },
+    additional_details: { type: "string" },
     eligible_service: { type: "string" }, mode_of_application: { type: "string" },
     organisation_type: { type: "string" }, functional_area: { type: "string" },
     application_form_link: { type: "string" }, source_website: { type: "string" },
@@ -220,7 +221,7 @@ Dates ISO yyyy-mm-dd; if "within N days of notification", compute from notificat
 const FILLABLE = [
   "level", "req_level1", "req_level2", "min_years_experience", "min_years_experience2",
   "no_of_posts", "deputation_period_years", "deputation_type", "notification_date",
-  "last_date_to_apply", "essential_qualification", "eligible_service", "mode_of_application",
+  "last_date_to_apply", "essential_qualification", "additional_details", "eligible_service", "mode_of_application",
   "organisation_type", "functional_area", "application_form_link", "source_website", "tags_keywords",
 ];
 

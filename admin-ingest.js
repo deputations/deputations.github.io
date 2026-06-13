@@ -171,6 +171,7 @@ const FIELDS = [
   ['deputation_period_years', 'Deputation period (yrs)'],
   ['notification_date', 'Notification date'], ['last_date_to_apply', 'Last date'],
   ['essential_qualification', 'Essential qualification'], ['eligible_service', 'Eligible service'],
+  ['additional_details', 'Additional details'],
   ['functional_area', 'Functional area / duties'], ['tags_keywords', 'Tags / keywords'],
   ['mode_of_application', 'Mode of application'], ['official_notification_link', 'Official link'],
   ['application_form_link', 'Application form link'], ['source_website', 'Source website'],
@@ -320,10 +321,13 @@ function toISODateInput(v) {
   return '';
 }
 
+// Long free-text fields get a multi-line textarea so pasted blocks are editable.
+const LONG_FIELDS = new Set(['essential_qualification', 'additional_details', 'functional_area']);
 function fieldHtml(k, lbl, r) {
   const val = r[k] || '';
   if (k === 'organisation_type') return buildSelect(k, lbl, val, ORG_TYPES, (s) => String(s || '').toLowerCase().trim());
   if (k === 'ministry') return buildSelect(k, lbl, val, MINISTRY_NAMES, normMinistry);
+  if (LONG_FIELDS.has(k)) return `<div><label>${escapeHtml(lbl)}</label><textarea data-k="${escapeHtml(k)}" rows="3">${escapeHtml(val)}</textarea></div>`;
   if (DATE_FIELDS.has(k)) {
     const iso = toISODateInput(val);
     // Empty or coercible -> native date picker (stores yyyy-mm-dd).
@@ -371,7 +375,7 @@ Output ONE object per (post × location/bench × pay level). Never collapse mult
 
 ## Output Format
 Return ONLY a JSON array — no prose, no markdown fences. Each object uses EXACTLY these keys (use "" when unknown):
-{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","detailed_eligibility","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
+{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","detailed_eligibility","additional_details","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
 
 ## Field Rules
 - ministry: standard GoI ministry name WITHOUT the "Ministry of" / "Department of" prefix (e.g. "Agriculture and Farmers Welfare", "Home Affairs", "Personnel, Public Grievances and Pensions").
@@ -381,6 +385,7 @@ Return ONLY a JSON array — no prose, no markdown fences. Each object uses EXAC
 - notification_date, last_date_to_apply: ISO yyyy-mm-dd. If a deadline is "within N days of the notification/advertisement", compute last_date_to_apply = notification_date + N days.
 - official_notification_link: official sources ONLY — the DIRECT ".pdf" link or the specific circular/notification page that opens this vacancy. NEVER a generic homepage, a careers/"current vacancies" listing, or a third-party aggregator. If unsure a link is real, leave it empty. Never invent a URL.
 - detailed_eligibility: COPY VERBATIM the complete eligibility / qualification conditions block exactly as printed in the source for THIS post (feeder grades & pay levels, essential and desirable qualifications, experience, age limit). Do NOT paraphrase, summarise, or reorder. "" if the ad states none.
+- additional_details: any other important info about THIS post not captured by the other fields (special instructions, relaxations/concessions, reservations, post breakup, contact details, remarks/notes/conditions). Copy the relevant text; do NOT duplicate eligibility text. "" if nothing extra.
 - functional_area: short summary of duties / job description.
 - source_page: the PDF page number of the ad in the issue, as a string (for side-by-side verification).
 - confidence: "high" ONLY if details came from the official notification AND post, level, location and a date are all clear; otherwise "medium" or "low".
@@ -398,7 +403,7 @@ const NOTIF_PROMPT = `You are extracting Government of India DEPUTATION vacancie
 4) You may use web search to confirm the organisation's official website or any field the PDF leaves ambiguous.
 
 Output ONLY a JSON array. Each object must use EXACTLY these keys (use "" when unknown):
-{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","detailed_eligibility","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
+{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","detailed_eligibility","additional_details","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
 
 Rules:
 - official_notification_link must be the ACTUAL notification document (direct ".pdf" preferred), or the specific circular page — NEVER a generic homepage / listing / aggregator. Leave empty if not found. Never invent a URL.
@@ -408,6 +413,7 @@ Rules:
 - ministry = standard GoI name WITHOUT the "Ministry of"/"Department of" prefix.
 - organisation_type: EXACTLY one of — Ministry; Department; Attached and Subordinate Offices; Constitutional Bodies; Statutory Bodies; Autonomous Bodies; Central Public Sector Enterprises (CPSEs).
 - detailed_eligibility = COPY VERBATIM the complete eligibility / qualification conditions block exactly as printed for THIS post (feeder grades & pay levels, qualifications, experience, age limit). Do NOT paraphrase or summarise. "" if none stated.
+- additional_details = any other important info about THIS post not captured by the other fields (special instructions, relaxations/concessions, reservations, post breakup, contact details, remarks/notes). Copy the relevant text; do NOT duplicate eligibility text. "" if nothing extra.
 - source_page = PDF page number of the post (string).
 - confidence: "high" only if post, level, location AND a date are all clear.`;
 
@@ -444,6 +450,7 @@ function mapPasted(it, jobId, label, year, i, sourceFileUrl) {
     deputation_type: it.deputation_type || '', notification_date: it.notification_date || '', last_date_to_apply: it.last_date_to_apply || '',
     official_notification_link: it.official_notification_link || '', application_form_link: it.application_form_link || '',
     source_website: it.source_website || '', essential_qualification: it.essential_qualification || '',
+    additional_details: it.additional_details || '',
     eligible_service: it.eligible_service || '', mode_of_application: it.mode_of_application || '',
     functional_area: it.functional_area || '', tags_keywords: it.tags_keywords || '',
     status: 'draft', confidence: (it.confidence || 'medium'), source_type: 'employment_news',
@@ -471,7 +478,7 @@ const CONTENT_FIELDS = [
   'eligibility_tiers', 'no_of_posts', 'deputation_period_years', 'deputation_type',
   'notification_date', 'last_date_to_apply', 'official_notification_link',
   'application_form_link', 'source_website', 'functional_area',
-  'essential_qualification', 'eligible_service', 'mode_of_application', 'tags_keywords',
+  'essential_qualification', 'additional_details', 'eligible_service', 'mode_of_application', 'tags_keywords',
 ];
 const normPart = (s) => String(s ?? '').replace(/[^a-zA-Z0-9]+/g, ' ').trim().toLowerCase();
 // Keeps the A of "13A" (lowercased) so 13 and 13A posts get distinct keys.

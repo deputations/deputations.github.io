@@ -2292,6 +2292,7 @@ function syncCardSortUI() {
         ]);
 
         const detailedEligibility = getFirstNonEmpty(item, ['Detailed_Eligibility']);
+        const additionalDetails = getFirstNonEmpty(item, ['Additional_Details']);
 
         const essentialQualification = getFirstNonEmpty(item, [
             'Essential_Qualification',
@@ -2369,6 +2370,7 @@ function syncCardSortUI() {
                 ${renderModalRichSection('Desirable Qualification', desirableQualification)}
                 ${renderModalRichSection('Experience', experience)}
                 ${renderModalRichSection('Description / Remarks', description)}
+                ${renderModalRichSection('Additional Details', additionalDetails)}
 
                 <div class="modal-actions">
                     <button

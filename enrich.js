@@ -419,6 +419,7 @@
       Tags_Keywords: norm(row.tags_keywords),
       Eligible_Service: norm(row.eligible_service),
       Essential_Qualification: norm(row.essential_qualification),
+      Additional_Details: norm(row.additional_details),
       No_of_Posts: norm(row.no_of_posts),
       Deputation_Period_Years: norm(row.deputation_period_years),
       Deputation_Type: norm(row.deputation_type),
