@@ -643,7 +643,6 @@ async function importPasted(label, st) {
   let enPdfPath = '';
   const enFile = $('enPdf').files[0];
   if (enFile) {
-    if (enFile.size > 15 * 1024 * 1024) throw new Error('EN PDF exceeds 15 MB');
     st.innerHTML = '<span class="spinner"></span> Uploading EN PDF…';
     const b64 = await fileToBase64(enFile);
     const upRes = await api('/functions/v1/extract', {
