@@ -89,6 +89,7 @@
     .dl-closing{color:var(--warn);border-color:rgba(245,158,11,.55)}
     .dl-critical{color:#fb923c;border-color:rgba(251,146,60,.6);background:rgba(251,146,60,.08)}
     .dl-expired{color:var(--bad);border-color:rgba(239,68,68,.6);background:rgba(239,68,68,.1);font-weight:600}
+    .pill.mark-badge{color:#fbbf24;border-color:rgba(251,191,36,.6);background:rgba(251,191,36,.1);font-weight:600;margin-left:6px}
     /* missing-critical-field chips */
     .gap{display:inline-block;font-size:11px;padding:2px 7px;border-radius:999px;margin-left:6px;
       border:1px dashed rgba(251,191,36,.6);color:#fbbf24;vertical-align:middle;white-space:nowrap}
@@ -288,6 +289,9 @@
               <option value="rejected">Rejected</option>
               <option value="all">All</option>
             </select>
+            <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Source:
+              <select id="mgSource" style="width:auto"><option value="">All</option><option value="__marked__">🚩 Marked for review</option></select>
+            </label>
             <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Sort:
               <select id="mgSort" style="width:auto"></select>
             </label>
@@ -352,6 +356,6 @@
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb13"></script>
   <script src="shared/vacancy-utils.js?v=sb3"></script>
-  <script src="admin-ingest.js?v=sb46"></script>
+  <script src="admin-ingest.js?v=sb47"></script>
 </body>
 </html>

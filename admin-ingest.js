@@ -643,6 +643,10 @@ async function importPasted(label, st) {
   let enPdfPath = '';
   const enFile = $('enPdf').files[0];
   if (enFile) {
+    // Explicit client cap (Edge Function payload + base64 inflation make
+    // larger uploads unreliable). Hard-refresh the page if the old 15 MB
+    // message is still showing — that came from a cached build.
+    if (enFile.size > 20 * 1024 * 1024) throw new Error(`EN PDF is ${(enFile.size / 1048576).toFixed(1)} MB — limit is 20 MB. Compress it (e.g. ilovepdf.com → Compress PDF) or split the issue and import each half.`);
     st.innerHTML = '<span class="spinner"></span> Uploading EN PDF…';
     const b64 = await fileToBase64(enFile);
     const upRes = await api('/functions/v1/extract', {
@@ -881,6 +885,7 @@ function wireApp() {
   MG_PAGE = Math.max(1, parseInt(ui.mgPage, 10) || 1);
   RESTORE_LEVEL = ui.draftLevel || '';
   RESTORE_SOURCE = ui.draftSource || '';
+  RESTORE_MG_SOURCE = ui.mgSource || '';
   if ($('draftSearch')) $('draftSearch').value = ui.draftSearch || '';
   if ($('mgSearch')) $('mgSearch').value = ui.mgSearch || '';
   if (ui.mgStatus && $('mgStatus')) $('mgStatus').value = ui.mgStatus;
@@ -917,6 +922,19 @@ function wireApp() {
 
   $('mgRefresh').onclick = loadManage;
   $('mgStatus').onchange = () => { MG_PAGE = 1; saveUI({ mgStatus: $('mgStatus').value, mgPage: 1 }); loadManage(); };
+  if ($('mgSource')) $('mgSource').onchange = () => {
+    const v = $('mgSource').value;
+    MG_PAGE = 1; saveUI({ mgSource: v, mgPage: 1 });
+    // "🚩 Marked for review" should surface marked rows regardless of status —
+    // auto-broaden to All so you see drafts AND approved AND rejected marks.
+    if (v === '__marked__' && $('mgStatus').value !== 'all') {
+      $('mgStatus').value = 'all';
+      saveUI({ mgStatus: 'all' });
+      loadManage();
+      return;
+    }
+    renderManage();
+  };
   // Populate all three sort dropdowns from the shared option list (keeps them
   // in sync). Review queue defaults to 'source'; Manage/Updates to 'upload'.
   if ($('draftSort')) $('draftSort').innerHTML = sortOptionsHtml(DRAFT_SORT);
@@ -1767,6 +1785,7 @@ function draftCard(r) {
           <b>${escapeHtml(r.post_name || '(untitled)')}</b>
           <span class="muted"> · ${escapeHtml(r.organisation || '')}${r.level ? ' · L' + escapeHtml(r.level) : ''}${r.location_city ? ' · ' + escapeHtml(r.location_city) : ''}</span>
           <span class="pill ${conf}">${conf}</span>
+          ${r.marked_for_review ? '<span class="pill mark-badge" title="Marked for review">🚩 review</span>' : ''}
           <span class="muted"> · ${score}% complete</span>
           ${linkDomainBadge(r)}${deadlineBadge(r)}${gapChips(r)}
         </span>
@@ -1774,6 +1793,7 @@ function draftCard(r) {
       <div class="acts">
         ${(r.source_file_url || r.official_notification_link) ? `<button data-act="source">📄 source${srcPage ? ' p.' + srcPage : ''}</button>` : ''}
         <button data-act="gsearch" title="Open a Google search (new tab) for this post + organisation deputation PDF">🌐 Google</button>
+        <button data-act="mark" class="${r.marked_for_review ? 'good' : ''}" title="Flag this vacancy for a second look — find it later under Manage → Source → 🚩 Marked for review (keeps the row in this queue; can be marked whether draft or approved)">${r.marked_for_review ? '🚩 Marked' : '🚩 Mark'}</button>
         <button data-act="edit">Edit</button>
         <button data-act="enrich" title="Find the official notification PDF and fill blank fields">🔎 Official PDF</button>
         <button class="good" data-act="approve">Approve</button>
@@ -1865,6 +1885,35 @@ function draftCard(r) {
   };
   const srcBtn = el.querySelector('[data-act="source"]');
   if (srcBtn) srcBtn.onclick = (e) => { e.preventDefault(); openSource(r, srcPage); };
+
+  // Toggle the marked-for-review flag in place (no row removal — vacancy stays
+  // in the queue). The badge + button label update without re-rendering, so
+  // any open editor/keyboard focus survives.
+  el.querySelector('[data-act="mark"]').onclick = async (e) => {
+    const btn = e.currentTarget;
+    const next = !r.marked_for_review;
+    btn.disabled = true;
+    try {
+      await patchRow({ marked_for_review: next });
+      r.marked_for_review = next;
+      btn.textContent = next ? '🚩 Marked' : '🚩 Mark';
+      btn.classList.toggle('good', next);
+      const headInfo = el.querySelector('.head > div:first-child > span');
+      const existing = headInfo && headInfo.querySelector('.mark-badge');
+      if (next && headInfo && !existing) {
+        const span = document.createElement('span');
+        span.className = 'pill mark-badge';
+        span.title = 'Marked for review';
+        span.textContent = '🚩 review';
+        const conf = headInfo.querySelector(`.pill.${(r.confidence || 'medium').toLowerCase()}`)
+          || headInfo.querySelector('.pill');
+        if (conf) conf.insertAdjacentElement('afterend', span);
+        else headInfo.appendChild(span);
+      } else if (!next && existing) existing.remove();
+      toast(next ? '🚩 Marked for review' : 'Unmarked');
+    } catch (err) { toast('Update failed: ' + err.message); }
+    finally { btn.disabled = false; }
+  };
   return el;
 }
 
@@ -1946,13 +1995,32 @@ async function loadManage() {
   refreshWaPending().then(() => { if (WA_PENDING && !$('paneManage').classList.contains('hidden')) renderManage(); });
   try {
     MANAGE_ROWS = await fetchAll(q);
+    populateManageSourceFilter();
     renderManage();
   } catch (e) { toast('Load error: ' + e.message); }
 }
 
+// Mirror of populateDraftSourceFilter for Manage, plus a special leading item
+// "🚩 Marked for review" that filters to marked rows (any source).
+let RESTORE_MG_SOURCE = '';
+function populateManageSourceFilter() {
+  const sel = $('mgSource');
+  if (!sel) return;
+  const prev = sel.value || RESTORE_MG_SOURCE; RESTORE_MG_SOURCE = '';
+  const srcs = [...new Set(MANAGE_ROWS.map((r) => String(r.source_category || r.source_type || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">All</option>'
+    + '<option value="__marked__">🚩 Marked for review</option>'
+    + srcs.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  if (prev && (prev === '__marked__' || srcs.includes(prev))) sel.value = prev;
+}
+
 function renderManage() {
   const q = ($('mgSearch').value || '').toLowerCase().trim();
-  const filtered = !q ? MANAGE_ROWS : MANAGE_ROWS.filter((r) => rowMatchesQuery(r, q));
+  const src = ($('mgSource') && $('mgSource').value || '').trim();
+  let filtered = !q ? MANAGE_ROWS : MANAGE_ROWS.filter((r) => rowMatchesQuery(r, q));
+  if (src === '__marked__') filtered = filtered.filter((r) => r.marked_for_review === true);
+  else if (src) filtered = filtered.filter((r) => String(r.source_category || r.source_type || '').trim() === src);
   const mode = ($('mgSort') && $('mgSort').value) || 'upload';
   const rows = sortRows(filtered, mode);
   $('manageCount').textContent = `(${rows.length})`;
@@ -2025,11 +2093,14 @@ function manageCard(r, isNew) {
         ${isNew ? '' : `<span class="muted"> · ${escapeHtml(r.organisation || '')}${r.level ? ' · L' + escapeHtml(r.level) : ''}${r.location_city ? ' · ' + escapeHtml(r.location_city) : ''}</span>`}
         <span class="pill">${escapeHtml(isNew ? 'new' : (r.status || ''))}</span>
         ${isNew ? '' : linkDomainBadge(r)}${isNew ? '' : deadlineBadge(r)}
+        ${(!isNew && r.marked_for_review) ? '<span class="pill mark-badge" title="Marked for review">🚩 review</span>' : ''}
         ${(!isNew && r.status === 'approved' && WA_PENDING && WA_PENDING.has(r.vacancy_id)) ? '<span class="pill" style="color:#34d399;border-color:rgba(52,211,153,.5)" title="Approved but not yet posted to the WhatsApp channel">📣 not posted</span>' : ''}
         ${flagged ? '<span class="pill" style="background:rgba(244,63,94,.15);border-color:rgba(244,63,94,.4);color:#fda4af">⚑ flagged</span>' : ''}
       </div>
       <div class="acts">
         ${(!isNew && (r.source_file_url || r.official_notification_link)) ? '<button data-act="source">📄 source</button>' : ''}
+        ${isNew ? '' : '<button data-act="gsearch" title="Open a Google search (new tab) for this post + organisation deputation PDF">🌐 Google</button>'}
+        ${isNew ? '' : `<button data-act="mark" class="${r.marked_for_review ? 'good' : ''}" title="Flag this vacancy for a second look — find it later under Source → 🚩 Marked for review">${r.marked_for_review ? '🚩 Marked' : '🚩 Mark'}</button>`}
         <button data-act="toggle">${(isNew || flagged) ? 'Hide' : 'Edit'}</button>
         ${isNew ? '' : '<button class="bad" data-act="del">Delete</button>'}
       </div>
@@ -2151,6 +2222,44 @@ function manageCard(r, isNew) {
 
   const srcBtn = el.querySelector('[data-act="source"]');
   if (srcBtn) srcBtn.onclick = () => openSource(r, String((r.raw_extraction && r.raw_extraction.source_page) || '').replace(/\D/g, ''));
+
+  // Google search: prefers the live edited values if the editor is open,
+  // otherwise the row's saved values (same shape as the Review-queue button).
+  const gsBtn = el.querySelector('[data-act="gsearch"]');
+  if (gsBtn) gsBtn.onclick = () => {
+    const val = (k, fb) => {
+      const inp = editor.querySelector(`[data-k="${k}"]`);
+      return ((inp && inp.value.trim()) || fb || '').trim();
+    };
+    const post = val('post_name', r.post_name);
+    const org = val('organisation', r.organisation);
+    const q = `${post} ${org} "Deputation" "2026" "pdf"`.replace(/\s+/g, ' ').trim();
+    window.open('https://www.google.com/search?q=' + encodeURIComponent(q), '_blank', 'noopener');
+  };
+
+  // Mark / unmark for review — re-render the card so the badge, button label,
+  // and (for an empty Marked filter) the visible row count stay consistent.
+  const mkBtn = el.querySelector('[data-act="mark"]');
+  if (mkBtn) mkBtn.onclick = async () => {
+    const next = !r.marked_for_review;
+    mkBtn.disabled = true;
+    try {
+      const res = await api(`/rest/v1/vacancies?id=eq.${r.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ marked_for_review: next }),
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      r.marked_for_review = next;
+      const cached = MANAGE_ROWS.find((x) => x.id === r.id);
+      if (cached) cached.marked_for_review = next;
+      // if we're currently filtered to "Marked for review" and the row just
+      // got UNmarked, drop it from the page instead of re-rendering it visibly
+      const inMarkedView = $('mgSource') && $('mgSource').value === '__marked__';
+      if (inMarkedView && !next) { el.remove(); renderManage(); }
+      else el.replaceWith(manageCard(r, false));
+      toast(next ? '🚩 Marked for review' : 'Unmarked');
+    } catch (e) { toast('Update failed: ' + e.message); mkBtn.disabled = false; }
+  };
   return el;
 }
 
