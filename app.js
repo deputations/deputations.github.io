@@ -378,6 +378,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let searchDatalist = null;
     let quickFiltersBar = null;
 
+    // EXPERIMENT: automatic link preview. Vacancy_ID -> pre-rendered thumbnail
+    // path for the Official_Notification_Link (data/link_previews.json, built by
+    // scripts/build_link_previews.py). Empty when the manifest is missing.
+    let linkPreviews = {};
+
    initializeEnhancements();
 initializeMobileFilterAccordion();
 initDesktopFilterCollapse();
@@ -471,9 +476,10 @@ function hideToastEl(t) {
 }   
 
 function loadDataFromJSON() {
-    fetchVacancies()
-        .then(data => {
+    Promise.all([fetchVacancies(), loadLinkPreviews()])
+        .then(([data, previews]) => {
             rawData = data;
+            linkPreviews = previews;
 
             reconcileWatchlistWithData();
             populateFilters();
@@ -486,6 +492,7 @@ function loadDataFromJSON() {
             renderDashboard();
             openVacancyFromUrl();
             injectJsonLd();
+            initLinkPreview();
 
             console.log('✅ Loaded', rawData.length, 'vacancies');
         })
@@ -527,6 +534,102 @@ function fetchVacancies() {
 
     console.log('📄 Source: data/vacancies.json (Supabase not configured)');
     return fetch('data/vacancies.json').then(res => res.json());
+}
+
+// EXPERIMENT: automatic link preview. Pre-rendered thumbnail manifest. Never
+// rejects — a missing/broken manifest just disables previews, nothing breaks.
+function loadLinkPreviews() {
+    return fetch('data/link_previews.json')
+        .then(res => (res.ok ? res.json() : {}))
+        .catch(() => ({}));
+}
+
+// Returns a data-link-preview="<path>" attribute for an item's notification
+// link if a thumbnail exists, else ''. Stamped onto the notification <a> tags.
+function notifPreviewAttr(item) {
+    const src = linkPreviews[safe(item && item.Vacancy_ID)];
+    return src ? ` data-link-preview="${escapeHtml(src)}"` : '';
+}
+
+// EXPERIMENT: automatic link preview — a floating thumbnail of the notification
+// document that fades in by the cursor on hover and follows it. Fine-pointer
+// (desktop) only; touch gets nothing. Revert the whole feature by removing this
+// function + its call, the notifPreviewAttr() calls, loadLinkPreviews(), and
+// the fenced #linkPreviewCard CSS block.
+function initLinkPreview() {
+    if (!window.matchMedia || !window.matchMedia('(pointer: fine)').matches) return;
+    if (document.getElementById('linkPreviewCard')) return; // run once
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const card = document.createElement('div');
+    card.id = 'linkPreviewCard';
+    card.setAttribute('aria-hidden', 'true');
+    const img = document.createElement('img');
+    img.alt = '';
+    img.decoding = 'async';
+    const cap = document.createElement('span');
+    cap.className = 'lp-cap';
+    cap.textContent = 'Official Notification';
+    card.append(img, cap);
+    document.body.appendChild(card);
+
+    const OFFSET = 18;   // gap from the cursor
+    const DELAY = 120;   // hover dwell before the card appears
+    let current = null;  // the <a> currently previewed
+    let showTimer = 0;
+    let visible = false;
+    let lastX = 0, lastY = 0;
+
+    const hide = () => {
+        clearTimeout(showTimer);
+        showTimer = 0;
+        current = null;
+        if (!visible) return;
+        visible = false;
+        card.classList.remove('show');
+    };
+
+    const place = (x, y) => {
+        const w = card.offsetWidth || 240;
+        const h = card.offsetHeight || 180;
+        let left = x + OFFSET;
+        let top = y + OFFSET;
+        if (left + w > window.innerWidth - 8) left = x - OFFSET - w;  // flip left
+        if (top + h > window.innerHeight - 8) top = y - OFFSET - h;   // flip up
+        card.style.transform = `translate(${Math.max(8, left)}px, ${Math.max(8, top)}px)`;
+    };
+
+    img.addEventListener('error', hide);                 // 404 / decode fail → no card
+    img.addEventListener('load', () => { if (current) place(lastX, lastY); });
+
+    document.addEventListener('pointerover', (e) => {
+        const a = e.target.closest && e.target.closest('[data-link-preview]');
+        if (!a || a === current) return;
+        current = a;
+        const src = a.getAttribute('data-link-preview');
+        clearTimeout(showTimer);
+        showTimer = setTimeout(() => {
+            if (current !== a) return;
+            if (img.getAttribute('src') !== src) img.src = src;
+            place(lastX, lastY);
+            visible = true;
+            card.classList.add('show');
+        }, reduce ? 0 : DELAY);
+    });
+
+    document.addEventListener('pointermove', (e) => {
+        lastX = e.clientX; lastY = e.clientY;
+        if (visible) place(lastX, lastY);
+    });
+
+    document.addEventListener('pointerout', (e) => {
+        const a = e.target.closest && e.target.closest('[data-link-preview]');
+        if (a && a === current && (!e.relatedTarget || !a.contains(e.relatedTarget))) hide();
+    });
+
+    window.addEventListener('scroll', hide, { passive: true });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
 }
 
 function hydrateFiltersFromUrl() {
@@ -1060,7 +1163,7 @@ function renderTable(data) {
               href="${escapeHtml(notificationLink)}"
               target="_blank"
               rel="noopener noreferrer"
-              onclick="event.stopPropagation();"
+              onclick="event.stopPropagation();"${notifPreviewAttr(item)}
             >
               Notification
             </a>
@@ -2016,7 +2119,7 @@ function cardFootHtml(item) {
     <div class="vx-foot">
       ${pdf ? `
         <a class="vx-link" href="${escapeHtml(pdf)}" target="_blank" rel="noopener noreferrer"
-           title="Open the official notification PDF" onclick="event.stopPropagation();">
+           title="Open the official notification PDF" onclick="event.stopPropagation();"${notifPreviewAttr(item)}>
           ${svgIcon('external')} Notification PDF
         </a>` : `
         <span class="vx-link vx-link-muted" title="Open full details">View details</span>`}
@@ -2383,7 +2486,7 @@ function syncCardSortUI() {
                     </button>
 
                     ${detailedNotificationLink ? `
-                        <a class="card-action-btn secondary" href="${escapeHtml(detailedNotificationLink)}" target="_blank" rel="noopener noreferrer">
+                        <a class="card-action-btn secondary" href="${escapeHtml(detailedNotificationLink)}" target="_blank" rel="noopener noreferrer"${notifPreviewAttr(item)}>
                             ${svgIcon('external')} Official Notification PDF
                         </a>
                     ` : ''}

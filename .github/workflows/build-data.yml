@@ -42,11 +42,17 @@ jobs:
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
         run: python scripts/build_data.py
 
+      - name: Install Chromium for link previews
+        run: python -m playwright install --with-deps chromium
+
+      - name: Render notification link previews
+        run: python scripts/build_link_previews.py
+
       - name: Commit generated files if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/*.json
+          git add data/*.json assets/previews
           if git diff --cached --quiet; then
             echo "No data changes to commit"
           else

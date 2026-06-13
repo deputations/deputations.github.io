@@ -5824,3 +5824,59 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
 @media (prefers-reduced-motion: reduce) {
   .filters-sidebar .filter-group { transition: none !important; }
 }
+
+/* ===========================================================================
+   EXPERIMENT: automatic link preview on hover.
+   A floating thumbnail of the Official Notification document that fades in by
+   the cursor when hovering a "Notification" link and follows it. The card is
+   created + positioned by initLinkPreview() in app.js; thumbnails are
+   pre-rendered at build time (scripts/build_link_previews.py) and looked up via
+   data/link_previews.json. Card only exists on the homepage, so this block is
+   inert on the other pages that share style.css.
+   To revert: remove this block + initLinkPreview() (and its call), the
+   notifPreviewAttr() calls, and loadLinkPreviews() in app.js.
+   ======================================================================== */
+#linkPreviewCard {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1500;                 /* above content; below dialog.vxd top layer */
+  width: 260px;
+  padding: 6px 6px 0;
+  border-radius: 12px;
+  background: var(--surface-2, #0b1220);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 28%, transparent);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
+  pointer-events: none;          /* never intercept hover / clicks */
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-9999px, -9999px);
+  transition: opacity 0.16s ease;
+  will-change: transform, opacity;
+}
+#linkPreviewCard.show {
+  opacity: 1;
+  visibility: visible;
+}
+#linkPreviewCard img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 320px;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 8px;
+  background: #fff;              /* PDF pages render on white */
+}
+#linkPreviewCard .lp-cap {
+  display: block;
+  padding: 6px 4px 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary, #9fb0c3);
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  #linkPreviewCard { transition: none; }
+}
