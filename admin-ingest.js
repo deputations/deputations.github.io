@@ -1792,6 +1792,7 @@ function draftCard(r) {
       </div>
       <div class="acts">
         ${(r.source_file_url || r.official_notification_link) ? `<button data-act="source">📄 source${srcPage ? ' p.' + srcPage : ''}</button>` : ''}
+        ${r.official_notification_link ? `<button data-act="openlink" title="Open the captured Official link in a new tab">🔗 Open link</button>` : ''}
         <button data-act="gsearch" title="Open a Google search (new tab) for this post + organisation deputation PDF">🌐 Google</button>
         <button data-act="mark" class="${r.marked_for_review ? 'good' : ''}" title="Flag this vacancy for a second look — find it later under Manage → Source → 🚩 Marked for review (keeps the row in this queue; can be marked whether draft or approved)">${r.marked_for_review ? '🚩 Marked' : '🚩 Mark'}</button>
         <button data-act="edit">Edit</button>
@@ -1885,6 +1886,17 @@ function draftCard(r) {
   };
   const srcBtn = el.querySelector('[data-act="source"]');
   if (srcBtn) srcBtn.onclick = (e) => { e.preventDefault(); openSource(r, srcPage); };
+
+  // Direct external link — opens whatever was captured in official_notification_link,
+  // even if a source PDF is also attached (distinct from "📄 source", which
+  // prefers the stored EN PDF for side-by-side review).
+  const lnkBtn = el.querySelector('[data-act="openlink"]');
+  if (lnkBtn) lnkBtn.onclick = () => {
+    const inp = el.querySelector('[data-k="official_notification_link"]');
+    const url = ((inp && inp.value.trim()) || r.official_notification_link || '').trim();
+    if (!url) return toast('No official link on this row');
+    window.open(/^https?:\/\//i.test(url) ? url : 'https://' + url, '_blank', 'noopener');
+  };
 
   // Toggle the marked-for-review flag in place (no row removal — vacancy stays
   // in the queue). The badge + button label update without re-rendering, so
