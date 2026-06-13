@@ -154,9 +154,11 @@
   ".sw-fb .panel{position:relative}" +
 
   /* ===== DISCLAIMER — footer link + modal ===== */
-  ".sw-footer{display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;text-align:center;" +
+  ".sw-footer{position:relative;display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;text-align:center;" +
     "margin:34px auto 22px;padding:0 16px;font-family:'Plus Jakarta Sans','Inter',system-ui,sans-serif;font-size:.8rem;color:var(--sw-muted)}" +
   ".sw-footer .sep{opacity:.45}" +
+  ".sw-footer .sw-updated{position:absolute;right:16px;top:50%;transform:translateY(-50%);opacity:.7;white-space:nowrap}" +
+  "@media (max-width:640px){.sw-footer .sw-updated{position:static;transform:none;opacity:.7;flex-basis:100%;margin-top:4px}}" +
   ".sw-footer .disc{cursor:pointer;font:inherit;font-weight:700;color:var(--sw-primary);background:none;border:none;" +
     "padding:4px 4px;border-radius:8px;text-decoration:underline;text-underline-offset:3px}" +
   ".sw-footer .disc:hover{color:var(--sw-accent)}" +
@@ -181,6 +183,14 @@
   ".sw-modal .bd strong{color:var(--sw-text);font-weight:800}" +
   ".sw-modal .bd .lead{color:var(--sw-primary)}" +
   ".sw-modal .bd .sign{margin-top:4px;color:var(--sw-accent);font-weight:700}" +
+  ".sw-modal .sw-sign{display:flex;align-items:center;gap:14px;margin-top:22px;padding-top:18px;border-top:1px solid var(--sw-border)}" +
+  ".sw-sign-pic{width:66px;height:66px;flex:0 0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;" +
+    "color:#fff;background:linear-gradient(135deg,var(--sw-primary),var(--sw-accent));box-shadow:0 8px 20px -8px rgba(0,0,0,.45)}" +
+  ".sw-sign-pic svg{width:40px;height:40px;opacity:.92}" +
+  ".sw-sign-pic img{width:100%;height:100%;object-fit:cover}" +
+  ".sw-sign-info{display:flex;flex-direction:column;gap:1px;line-height:1.45}" +
+  ".sw-sign-info strong{font-family:'Sora','Plus Jakarta Sans',sans-serif;color:var(--sw-accent);font-size:1.02rem;font-weight:800}" +
+  ".sw-sign-info span{font-size:.84rem;color:var(--sw-muted)}" +
   ".sw-modal .cls{position:absolute;top:15px;right:17px;width:38px;height:38px;border-radius:50%;border:1px solid var(--sw-border);" +
     "background:var(--sw-surface2);color:var(--sw-text);cursor:pointer;font-size:1.25rem;line-height:1;display:flex;align-items:center;justify-content:center}" +
   ".sw-modal .cls:hover{border-color:var(--sw-primary);color:var(--sw-primary)}" +
@@ -415,13 +425,13 @@
     var foot = document.createElement("div");
     foot.className = "sw-footer";
     foot.innerHTML =
-      "<span>© Deputations — independent, AI-assisted, human-reviewed</span>" +
+      "<span>© Deputations.github.io</span>" +
       "<span class='sep'>·</span>" +
       "<button type='button' class='disc'>Disclaimer</button>";
     document.body.appendChild(foot);
 
     var paras = [
-      "<strong>Deputations Portal</strong> has been conceptualised and developed by <strong>Vivek Vishal, Section Officer</strong>, in his personal capacity, as an independent initiative to assist Government officers and officials seeking Central Government deputation opportunities.",
+      "<strong>Deputations Portal</strong> is my independent initiative to assist Government officers and officials seeking Central Government deputation opportunities.",
       "The objective of this portal is to provide a <strong>holistic, organised, and user-focused</strong> platform for deputation-related vacancies, rules, references, guidance, and supporting tools, so that users can access relevant information with greater ease and clarity.",
       "<strong class='lead'>This is not an official website.</strong> Deputations is an independent, non-official information portal. It is not the website of the Government of India or of any Ministry, Department, Organisation, Cadre Controlling Authority or public authority, and it is not affiliated with, endorsed, sponsored or authorised by any of them. This website helps you locate and access official notification PDFs and source links; please refer to those original official documents for authoritative circulars, instructions, clarifications, approvals, and administrative directions.",
       "<strong class='lead'>What the portal aims to be.</strong> Every part of this portal — the searchable vacancy dashboard, the pay-level and eligibility filters, the “days-left” and source tags, the DeFeX index, the report and feedback tools, and the personal <em>My Deputation</em> tracker — has been planned and refined for one thing: clarity and practical usefulness for someone actually trying to go on deputation. It has gone through <strong>281+ revisions over about two months</strong>, and continues to be improved.",
@@ -429,9 +439,22 @@
       "<strong class='lead'>About DeFeX (Deputation Friendliness Index).</strong> DeFeX is an original concept and naming developed for this portal — an attempt to indicate how convenient, supportive, rational and predictable it is to proceed on deputation from a given Ministry, Department, Organisation or Cadre Controlling Authority. It is currently in <strong>beta</strong>, built on a deputation survey conducted in <strong>October–December 2025</strong>, and it will keep evolving. It will be revised and refined as more feedback, documentary inputs, correction requests, official clarifications, and user experiences are received. The purpose of DeFeX is constructive. It is intended not only to help Government officials make more informed deputation-related decisions, but also to provide Ministries, Departments, Organisations, and Cadre Controlling Authorities with a feedback-oriented perspective that may assist in improving officer experience, procedural rationality, transparency, and uniformity across organisations. It is meant to be <strong>constructive</strong> — to help you choose better, and to give organisations a feedback-oriented view that may improve officer experience and procedural fairness. It makes <strong>no allegations</strong>, names no individual officers, and is <strong>not</strong> an official rating, audit, vigilance finding or legal determination. Where data is thin, an organisation is simply shown as unrated.",
       "<strong class='lead'>This works best as a community effort.</strong> Keeping deputation information accurate needs many eyes. If you spot a new vacancy, a broken or wrong link, an outdated circular, a missing detail, a factual correction or a rule update — please report it through the report and feedback tools. Such inputs genuinely make this better for the whole deputation community.",
       "<strong class='lead'>On names and references.</strong> Government, ministry, department, designation, vacancy, link and rule references are used only for identification, classification and public-interest information; their use implies no official association, approval or endorsement.",
-      "By using this site you acknowledge that <strong>Deputations is an independent, AI-assisted, human-reviewed, community-supported information aid</strong>, and that final reliance must always rest on the original official sources and the competent authority.",
-      "<span class='sign'>— Vivek Vishal, Section Officer</span>"
+      "By using this site you acknowledge that <strong>Deputations is an independent, AI-assisted, human-reviewed, community-supported information aid</strong>, and that final reliance must always rest on the original official sources and the competent authority."
     ];
+    // Sign-off: headshot placeholder (swap the <svg> for an <img src='…'> when a
+    // photo is available) + name & credentials.
+    var signHtml =
+      "<div class='sw-sign'>" +
+        "<div class='sw-sign-pic' aria-hidden='true'>" +
+          "<svg viewBox='0 0 24 24' fill='currentColor'><path d='M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z'/></svg>" +
+        "</div>" +
+        "<div class='sw-sign-info'>" +
+          "<strong>Vivek Vishal</strong>" +
+          "<span>Section Officer (DR 2012 Batch)</span>" +
+          "<span>B. Tech Computer Science, NIT Durgapur</span>" +
+          "<span>MBA (FM), AJNIFM</span>" +
+        "</div>" +
+      "</div>";
     var modal = document.createElement("div");
     modal.className = "sw-modal";
     modal.setAttribute("role", "dialog");
@@ -443,7 +466,7 @@
         "<div class='hd'><span class='ic'>" + SVG_SHIELD + "</span>" +
           "<div><h3>Declaration &amp; Disclaimer</h3>" +
           "<p class='sub'>Deputations — an independent, non-official portal</p></div></div>" +
-        "<div class='bd'>" + paras.map(function (p) { return "<p>" + p + "</p>"; }).join("") + "</div>" +
+        "<div class='bd'>" + paras.map(function (p) { return "<p>" + p + "</p>"; }).join("") + signHtml + "</div>" +
       "</div>";
     document.body.appendChild(modal);
 

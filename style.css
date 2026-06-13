@@ -1681,6 +1681,20 @@ select:disabled {
   background: rgba(34, 197, 94, 0.08);
 }
 
+/* Mode of Application spans the full width of the overview grid. */
+.modal-grid .modal-field--wide { grid-column: 1 / -1; }
+
+/* Long mode sentences: a readable block box, not a giant bold pill. */
+.application-mode-badge.mode-long {
+  display: block;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  padding: 0.7rem 0.9rem;
+  white-space: normal;
+}
+
 .closing-date-text {
   color: var(--danger-color);
   font-weight: 700;
@@ -4553,6 +4567,13 @@ html:not([data-theme="light"]) .premium-credit {
 .modal-richtext .rich-subhead:first-child {
   margin-top: 0;
 }
+/* each broken-out point/sentence on its own line, with breathing room */
+.modal-richtext .rich-line { display: block; }
+.modal-richtext .rich-line + .rich-line { margin-top: 0.5rem; }
+.modal-richtext .rich-point { padding-left: 1.5rem; text-indent: -1.4rem; }
+/* sober accent for the key facts (pay level, service years, age, posts) */
+.modal-richtext .rich-key { color: #8fb3ff; font-weight: 600; }
+[data-theme="light"] .modal-richtext .rich-key { color: #2f57c9; font-weight: 600; }
 
 /* ===== modern, neutral table styling (compact, frosted header) ===== */
 

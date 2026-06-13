@@ -3878,6 +3878,13 @@ html:not([data-theme="light"]) .data-table th:has(.sort-btn.active) {
 .modal-richtext {
   white-space: normal;
 }
+.modal-richtext .rich-subhead { display:inline-block; margin-top:0.7rem; margin-bottom:0.1rem; font-weight:700; color:var(--text-primary); }
+.modal-richtext .rich-subhead:first-child { margin-top:0; }
+.modal-richtext .rich-line { display:block; }
+.modal-richtext .rich-line + .rich-line { margin-top:0.5rem; }
+.modal-richtext .rich-point { padding-left:1.5rem; text-indent:-1.4rem; }
+.modal-richtext .rich-key { color:#8fb3ff; font-weight:600; }
+[data-theme="light"] .modal-richtext .rich-key { color:#2f57c9; font-weight:600; }
 
 .modal-actions {
   gap: 0.9rem;

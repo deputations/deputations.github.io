@@ -557,14 +557,29 @@ function loadMeta() {
 // meta.generated_at_utc. Self-contained (no dependency on the nested date
 // helpers) so it can run from the top-level load flow.
 function setDataUpdated(meta) {
-    const el = document.getElementById('dataUpdated');
-    if (!el || !meta || !meta.generated_at_utc) return;
+    if (!meta || !meta.generated_at_utc) return;
     const dt = new Date(meta.generated_at_utc);
     if (Number.isNaN(dt.getTime())) return;
-    el.textContent = 'Updated ' + dt.toLocaleDateString('en-IN', {
+    const text = 'Updated ' + dt.toLocaleDateString('en-IN', {
         day: '2-digit', month: 'short', year: 'numeric'
     });
-    el.hidden = false;
+    // Show it in the disclaimer footer (bottom-right). That footer is injected by
+    // the deferred site-widgets.js, so retry until it exists.
+    let tries = 0;
+    const place = () => {
+        const foot = document.querySelector('.sw-footer');
+        if (!foot) return false;
+        let span = foot.querySelector('.sw-updated');
+        if (!span) {
+            span = document.createElement('span');
+            span.className = 'sw-updated';   // positioned bottom-right by site-widgets CSS
+            foot.appendChild(span);
+        }
+        span.textContent = text;
+        return true;
+    };
+    if (place()) return;
+    const t = setInterval(() => { if (place() || ++tries > 25) clearInterval(t); }, 200);
 }
 
 // Returns a data-link-preview="<path>" attribute for an item's notification
@@ -1660,9 +1675,7 @@ kpiGrid.addEventListener('click', (e) => {
       renderCardResults(shown, groups.length, filteredData.length, shownRows);
 
       resultsCount.textContent = filteredData.length
-        ? (groups.length === filteredData.length
-            ? `Showing ${shownRows} of ${filteredData.length} vacancies`
-            : `Showing ${shownRows} of ${filteredData.length} vacancies · ${groups.length} cards`)
+        ? `Showing ${shownRows} of ${filteredData.length} vacancies`
         : '0 vacancies';
     } else {
       const pageSize = getCurrentPageSize();
@@ -2489,7 +2502,7 @@ function syncCardSortUI() {
                         ${buildModalField('Closing Date', `<span class="${closingDateDays !== null && closingDateDays >= 0 && closingDateDays <= 15 ? 'closing-date-text' : ''}">${escapeHtml(closingDate)}</span>`, true)}
                         ${buildModalField('Notification Date', notificationDate)}
                         ${sourceDisplay ? buildModalField('Source', sourceDisplay, true) : ''}
-                        ${buildModalField('Mode of Application', renderModeBadge(modeOfApplication), true)}
+                        ${buildModalField('Mode of Application', renderModeBadge(modeOfApplication), true, 'modal-field--wide')}
                         ${tenure ? buildModalField('Tenure', tenure) : ''}
                         ${ageLimit ? buildModalField('Age Limit', ageLimit) : ''}
                         ${payScale ? buildModalField('Pay / Scale', payScale) : ''}
@@ -2750,9 +2763,9 @@ function syncCardSortUI() {
         }
     }
 
-    function buildModalField(label, value, isHtml = false) {
+    function buildModalField(label, value, isHtml = false, extraClass = '') {
         return `
-            <div class="modal-field">
+            <div class="modal-field ${extraClass}">
                 <div class="modal-field-label">${escapeHtml(label)}</div>
                 <div class="modal-field-value">${isHtml ? value : escapeHtml(value)}</div>
             </div>
@@ -3053,10 +3066,35 @@ function syncCardSortUI() {
   return 'safe';
 }
 
+    // Turn a dense eligibility / details paragraph into readable, broken-up lines:
+    //  • **labels** become bold subheadings;
+    //  • numbered/lettered points "(1)/(i)/(a)", "Note:", "OR" tiers, and sentence
+    //    boundaries each start a new line (abbreviations like "O.M.", "No." kept intact);
+    //  • key facts (pay levels, service years, age, post count) get a sober accent.
     function formatRichText(value) {
-        return escapeHtml(safe(value))
-            .replace(/\*\*(.+?)\*\*/g, '<strong class="rich-subhead">$1</strong>')
-            .replace(/\n/g, '<br>');
+        let s = escapeHtml(safe(value));
+        // bold subheadings
+        s = s.replace(/\*\*(.+?)\*\*/g, '<strong class="rich-subhead">$1</strong>');
+        // new line before structured markers
+        s = s
+            .replace(/\s+(?=\((?:\d{1,2}|[ivxlcdm]{1,4}|[a-h])\)\s)/gi, '\n')
+            .replace(/\s*(Note\s*:|Eligibility criteria\s*:|Age\s*limit\s*:|Experience\s*:|Qualifications?\s*:|Address\s*:|Desirable\s*:)/gi, '\n$1')
+            .replace(/\s*;?\s+OR\s+/g, '\nOR ');
+        // gentle sentence breaks — skip single-capital abbreviations (O.M., G.S.R.) and "No. 2"
+        s = s.replace(/(?<![A-Z])\.\s+(?=[A-Z])/g, '.\n');
+        // sober highlights for the facts that matter most
+        s = s
+            .replace(/\b(Pay Level\s*\d{1,2}[A-Z]?|Level[\s-]?\d{1,2}[A-Z]?)\b/g, '<span class="rich-key">$1</span>')
+            .replace(/\b((?:one|two|three|four|five|six|seven|eight|nine|ten)\s+years?|\d{1,2}\s*years?)\b/gi, '<span class="rich-key">$1</span>')
+            .replace(/\b(\d{1,3}\s*Posts?)\b/gi, '<span class="rich-key">$1</span>');
+        // explicit newlines from the source too
+        s = s.replace(/\r/g, '');
+        // split into blocks, wrap (points get a hanging indent)
+        const blocks = s.split('\n').map(b => b.trim()).filter(Boolean);
+        return blocks.map(b => {
+            const isPoint = /^(\((?:\d{1,2}|[ivxlcdm]{1,4}|[a-h])\)|OR\b)/i.test(b);
+            return `<span class="rich-line${isPoint ? ' rich-point' : ''}">${b}</span>`;
+        }).join('');
     }
 
     function normalizeUrl(value) {
@@ -3115,7 +3153,10 @@ function syncCardSortUI() {
 
     function renderModeBadge(mode) {
         const safeMode = safe(mode) || 'Not specified';
-        return `<span class="application-mode-badge ${getApplicationModeClass(safeMode)}">${escapeHtml(safeMode)}</span>`;
+        // Short modes (Online/Offline/Both) stay as a compact pill; long sentences
+        // render as a readable block box instead of a giant bold pill.
+        const longCls = safeMode.length > 28 ? ' mode-long' : '';
+        return `<span class="application-mode-badge ${getApplicationModeClass(safeMode)}${longCls}">${escapeHtml(safeMode)}</span>`;
     }
 
     function uniqueSorted(arr) {
