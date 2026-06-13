@@ -565,13 +565,18 @@ function initLinkPreview() {
     const card = document.createElement('div');
     card.id = 'linkPreviewCard';
     card.setAttribute('aria-hidden', 'true');
+    // Inner element carries the reveal/hide animation (scale + slide + fade);
+    // the wrapper only ever gets a translate from JS, so follow stays instant.
+    const inner = document.createElement('div');
+    inner.className = 'lp-inner';
     const img = document.createElement('img');
     img.alt = '';
     img.decoding = 'async';
     const cap = document.createElement('span');
     cap.className = 'lp-cap';
     cap.textContent = 'Official Notification';
-    card.append(img, cap);
+    inner.append(img, cap);
+    card.appendChild(inner);
     document.body.appendChild(card);
 
     const OFFSET = 18;   // gap from the cursor

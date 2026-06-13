@@ -5836,27 +5836,37 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
    To revert: remove this block + initLinkPreview() (and its call), the
    notifPreviewAttr() calls, and loadLinkPreviews() in app.js.
    ======================================================================== */
+/* Wrapper = positioning only (JS sets transform:translate every cursor move,
+   so the follow stays instant). The reveal/hide animation lives on .lp-inner,
+   which owns its own transform (scale + slide) so the two never collide. */
 #linkPreviewCard {
   position: fixed;
   top: 0;
   left: 0;
   z-index: 1500;                 /* above content; below dialog.vxd top layer */
   width: 260px;
+  pointer-events: none;          /* never intercept hover / clicks */
+  transform: translate(-9999px, -9999px);
+  will-change: transform;
+}
+#linkPreviewCard .lp-inner {
   padding: 6px 6px 0;
   border-radius: 12px;
   background: var(--surface-2, #0b1220);
   border: 1px solid color-mix(in srgb, var(--primary-color) 28%, transparent);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
-  pointer-events: none;          /* never intercept hover / clicks */
+  transform-origin: top left;
+  /* hidden resting state: smaller, nudged down + in, transparent */
   opacity: 0;
-  visibility: hidden;
-  transform: translate(-9999px, -9999px);
-  transition: opacity 0.16s ease;
-  will-change: transform, opacity;
+  transform: scale(0.86) translateY(10px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.26s cubic-bezier(0.2, 0.9, 0.25, 1);   /* gentle overshoot-y pop */
+  will-change: opacity, transform;
 }
-#linkPreviewCard.show {
+#linkPreviewCard.show .lp-inner {
   opacity: 1;
-  visibility: visible;
+  transform: scale(1) translateY(0);
 }
 #linkPreviewCard img {
   display: block;
@@ -5878,5 +5888,8 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
   text-align: center;
 }
 @media (prefers-reduced-motion: reduce) {
-  #linkPreviewCard { transition: none; }
+  #linkPreviewCard .lp-inner {
+    transition: none;
+    transform: none;            /* appear/disappear instantly, no motion */
+  }
 }
