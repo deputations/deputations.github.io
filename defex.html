@@ -7,6 +7,13 @@
   <meta name="description" content="DeFeX — a transparency index for how deputation-friendly Indian Ministries, Departments and Cadre Controlling Authorities are as parent organisations.">
   <link rel="canonical" href="https://deputations.github.io/defex.html">
 
+  <!-- identity -->
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#02040b">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f7f9">
+
   <!-- link previews — shared site card; DeFeX specifics travel in the share text -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Deputations">
@@ -24,7 +31,7 @@
   <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
   <link rel="stylesheet" href="style.css?v=ms32">
   <link rel="stylesheet" href="navbar.css?v=2">
-  <link rel="stylesheet" href="defex.css?v=ms5">
+  <link rel="stylesheet" href="defex.css?v=ms8">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 </head>
 <body>
@@ -139,9 +146,11 @@
         </div>
         <div class="dex-section-actions">
           <button class="dex-chip dex-chip--active" data-explorer-band="all">All bands</button>
-          <button class="dex-chip" data-explorer-band="friendly">Friendly</button>
-          <button class="dex-chip" data-explorer-band="mixed">Mixed</button>
-          <button class="dex-chip" data-explorer-band="restrictive">Restrictive</button>
+          <button class="dex-chip" data-explorer-band="Deputation-friendly">Deputation-friendly</button>
+          <button class="dex-chip" data-explorer-band="Generally supportive">Generally supportive</button>
+          <button class="dex-chip" data-explorer-band="Mixed">Mixed</button>
+          <button class="dex-chip" data-explorer-band="Restrictive">Restrictive</button>
+          <button class="dex-chip" data-explorer-band="Very restrictive">Very restrictive</button>
           <button class="dex-chip" data-explorer-band="om">Has official OM</button>
         </div>
       </div>
@@ -165,6 +174,10 @@
       </div>
 
       <div class="dex-filters">
+        <label class="dex-filter dex-filter--search">
+          <span>Search</span>
+          <input type="search" id="filter-search" placeholder="Filter by name or ministry…" autocomplete="off">
+        </label>
         <label class="dex-filter">
           <span>Ministry</span>
           <select id="filter-ministry"><option value="">All</option></select>
@@ -197,17 +210,18 @@
         <button class="dex-btn dex-btn-ghost dex-filter-reset" id="filter-reset">Reset</button>
       </div>
 
+      <p class="dex-result-count" id="dex-result-count" aria-live="polite"></p>
       <div class="dex-table-wrap">
         <table class="dex-table" id="dex-table">
           <thead>
             <tr>
               <th>#</th>
-              <th data-sort="name">Organisation</th>
-              <th data-sort="ministry">Ministry</th>
-              <th data-sort="dex" class="num">DeFeX</th>
-              <th data-sort="band">Band</th>
-              <th data-sort="confidence">Confidence</th>
-              <th data-sort="reports" class="num">Reports</th>
+              <th data-sort="name" tabindex="0">Organisation</th>
+              <th data-sort="ministry" tabindex="0">Ministry</th>
+              <th data-sort="dex" class="num" tabindex="0">DeFeX</th>
+              <th data-sort="band" tabindex="0">Band</th>
+              <th data-sort="confidence" tabindex="0">Confidence</th>
+              <th data-sort="reports" class="num" tabindex="0">Reports</th>
               <th></th>
             </tr>
           </thead>
@@ -216,6 +230,9 @@
         <div class="dex-empty" id="dex-empty" hidden>
           <p>No organisations match these filters.</p>
         </div>
+      </div>
+      <div class="dex-more" id="dex-more" hidden>
+        <button class="dex-btn dex-btn-ghost" id="dex-more-btn">Show more</button>
       </div>
     </section>
 
@@ -252,6 +269,7 @@
             <option>Level 11</option>
             <option>Level 12</option>
             <option>Level 13</option>
+            <option>Level 13A</option>
             <option>Level 14+</option>
           </select>
         </label>
@@ -469,7 +487,7 @@
   </button>
 
   <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
-  <script src="defex.js?v=ms5"></script>
+  <script src="defex.js?v=ms8"></script>
   <script src="config.js"></script>
   <script defer src="site-widgets.js?v=15"></script>
 </body>
