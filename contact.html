@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=ms32">
   <link rel="stylesheet" href="navbar.css?v=2">
-  <link rel="stylesheet" href="contact.css?v=3">
+  <link rel="stylesheet" href="contact.css?v=4">
   <script src="config.js?v=sb2"></script>
 </head>
 <body>
@@ -196,7 +196,8 @@
 
             <div class="ct-field">
               <label for="ctCategory">Category <span class="ct-req">*</span></label>
-              <select id="ctCategory" name="category" required>
+              <select id="ctCategory" name="category" required aria-describedby="ctCategoryErr">
+                <option value="" selected disabled hidden>— select a category —</option>
                 <option value="General Feedback">General Feedback</option>
                 <option value="Report a Bug">Report a Bug</option>
                 <option value="Suggest a Feature">Suggest a Feature</option>
@@ -206,35 +207,8 @@
                 <option value="WhatsApp Group Issue">WhatsApp Group Issue</option>
                 <option value="Other">Other</option>
               </select>
-              <p class="ct-hint" id="ctHint">Tell us what's on your mind — we read every message.</p>
-            </div>
-
-            <div class="ct-field">
-              <label for="ctRelatedPage">Which page is this about? <span class="ct-req">*</span></label>
-              <select id="ctRelatedPage" name="relatedPage" aria-describedby="ctRelatedPageErr">
-                <option value="">— select a page —</option>
-              </select>
-              <p class="ct-hint" id="ctPageHint">Pick the page your feedback is about, or “Whole site”.</p>
-              <p class="ct-err" id="ctRelatedPageErr"></p>
-            </div>
-
-            <div class="ct-field" id="ctSectionField" hidden>
-              <label for="ctRelatedSection">Section of that page <span class="ct-opt">(optional)</span></label>
-              <select id="ctRelatedSection" name="relatedSection">
-                <option value="">— select a section —</option>
-              </select>
-            </div>
-
-            <div class="ct-field">
-              <label for="ctSubject">Subject <span class="ct-req">*</span></label>
-              <input type="text" id="ctSubject" name="subject" maxlength="140" autocomplete="off">
-              <p class="ct-err" id="ctSubjectErr"></p>
-            </div>
-
-            <div class="ct-field">
-              <label for="ctMessage">Message <span class="ct-req">*</span></label>
-              <textarea id="ctMessage" name="message" rows="5" maxlength="4000"></textarea>
-              <p class="ct-err" id="ctMessageErr"></p>
+              <p class="ct-hint" id="ctHint">Choose a category to get started.</p>
+              <p class="ct-err" id="ctCategoryErr"></p>
             </div>
 
             <div class="ct-grid">
@@ -249,21 +223,52 @@
               </div>
             </div>
 
-            <details class="ct-more">
-              <summary>Add a link <span>— a specific URL you're referring to</span></summary>
-              <div class="ct-grid">
-                <div class="ct-field ct-field-wide">
-                  <label for="ctRelatedLink">Relevant link <span class="ct-opt">(absolute URL)</span></label>
-                  <input type="url" id="ctRelatedLink" name="relatedLink" placeholder="https://…" autocomplete="off">
-                </div>
+            <!-- Revealed once a category is chosen -->
+            <div id="ctRest" hidden>
+              <div class="ct-field">
+                <label for="ctRelatedPage">Which page is this about? <span class="ct-req">*</span></label>
+                <select id="ctRelatedPage" name="relatedPage" aria-describedby="ctRelatedPageErr">
+                  <option value="">— select a page —</option>
+                </select>
+                <p class="ct-hint" id="ctPageHint">Pick the page your feedback is about, or “Whole site”.</p>
+                <p class="ct-err" id="ctRelatedPageErr"></p>
               </div>
-            </details>
 
-            <label class="ct-check">
-              <input type="checkbox" id="ctConfirm" required>
-              <span>I'm a real person and this is genuine feedback.</span>
-            </label>
-            <p class="ct-err" id="ctConfirmErr"></p>
+              <div class="ct-field" id="ctSectionField" hidden>
+                <label for="ctRelatedSection">Section of that page <span class="ct-opt">(optional)</span></label>
+                <select id="ctRelatedSection" name="relatedSection">
+                  <option value="">— select a section —</option>
+                </select>
+              </div>
+
+              <div class="ct-field">
+                <label for="ctSubject">Subject <span class="ct-req">*</span></label>
+                <input type="text" id="ctSubject" name="subject" maxlength="140" autocomplete="off">
+                <p class="ct-err" id="ctSubjectErr"></p>
+              </div>
+
+              <div class="ct-field">
+                <label for="ctMessage">Message <span class="ct-req">*</span></label>
+                <textarea id="ctMessage" name="message" rows="5" maxlength="4000"></textarea>
+                <p class="ct-err" id="ctMessageErr"></p>
+              </div>
+
+              <details class="ct-more">
+                <summary>Add a link <span>— a specific URL you're referring to</span></summary>
+                <div class="ct-grid">
+                  <div class="ct-field ct-field-wide">
+                    <label for="ctRelatedLink">Relevant link <span class="ct-opt">(absolute URL)</span></label>
+                    <input type="url" id="ctRelatedLink" name="relatedLink" placeholder="https://…" autocomplete="off">
+                  </div>
+                </div>
+              </details>
+
+              <label class="ct-check">
+                <input type="checkbox" id="ctConfirm" required>
+                <span>I'm a real person and this is genuine feedback.</span>
+              </label>
+              <p class="ct-err" id="ctConfirmErr"></p>
+            </div>
 
             <div class="ct-actions">
               <button type="reset" class="ct-btn ghost" id="ctReset">Reset</button>
@@ -335,7 +340,7 @@
 
   <div class="ct-toast" id="ctToast" role="status" aria-live="polite" hidden></div>
 
-  <script src="contact.js?v=sb4"></script>
+  <script src="contact.js?v=sb5"></script>
   <script defer src="site-widgets.js?v=15"></script>
 </body>
 </html>

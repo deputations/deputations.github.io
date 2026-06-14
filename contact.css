@@ -341,6 +341,9 @@
 }
 
 .ct-form { display: grid; gap: 1rem; }
+/* Progressive-disclosure wrapper: revealed once a category is chosen. Grid so
+   its fields keep the same 1rem rhythm as the rest of the form. */
+#ctRest  { display: grid; gap: 1rem; }
 .ct-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
 .ct-field { display: grid; gap: .35rem; min-width: 0; }
 .ct-field label { font-size: .84rem; font-weight: 600; color: var(--ct-soft); }

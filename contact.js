@@ -34,7 +34,7 @@
       var subj = document.getElementById("ctSubject");
       var msg  = document.getElementById("ctMessage");
       var cat  = document.getElementById("ctCategory");
-      if (cat && !cat.value) cat.value = "General Feedback";
+      if (cat && !cat.value) { cat.value = "General Feedback"; cat.dispatchEvent(new Event("change")); }
       if (subj && !subj.value) subj.value = "Feedback on " + ref;
       if (msg && !msg.value) {
         // The page is now captured in the dedicated selector; only fall back to a
@@ -63,6 +63,7 @@
   var success     = $("#ctSuccess");
   var toastEl     = $("#ctToast");
   var fillBar     = $("#ctProgressFill");
+  var restEl      = $("#ctRest");
 
   /* ---------- Category-driven smart helper text ---------- */
   var HINTS = {
@@ -92,10 +93,18 @@
   var categoryEl = $("#ctCategory");
   var hintEl     = $("#ctHint");
   function applyHint() {
-    var v = categoryEl.value || "General Feedback";
+    var v = categoryEl.value;
+    if (!v) {
+      hintEl.textContent = "Choose a category to get started.";
+      hintEl.classList.remove("is-active");
+      return;
+    }
     hintEl.textContent = HINTS[v] || HINTS["General Feedback"];
     hintEl.classList.toggle("is-active", v !== "General Feedback");
   }
+  /* Progressive disclosure: the rest of the form (#ctRest) appears only after a
+     real category is chosen. */
+  function toggleRest() { if (restEl) restEl.hidden = !categoryEl.value; }
   categoryEl.addEventListener("change", applyHint);
   applyHint();
 
@@ -209,7 +218,7 @@
     setPage(CATEGORY_DEFAULT_PAGE[categoryEl.value] || "", true);
   }
   pageSel.addEventListener("change", function () { pageAutoSet = false; });
-  categoryEl.addEventListener("change", function () { applyCategoryDefault(); updateProgress(); });
+  categoryEl.addEventListener("change", function () { toggleRest(); applyCategoryDefault(); updateProgress(); });
 
   // Normalise a path/URL for matching: drop scheme/host, "index", ".html",
   // trailing slashes and case. The on-site feedback widget emits ?ref= paths
@@ -248,18 +257,22 @@
     if (input) input.setAttribute("aria-invalid", msg ? "true" : "false");
   }
   function clearErrors() {
-    ["ctSubject","ctMessage","ctEmail","ctConfirm","ctRelatedPage"].forEach(function (id) { setErr(id, ""); });
+    ["ctSubject","ctMessage","ctEmail","ctConfirm","ctRelatedPage","ctCategory"].forEach(function (id) { setErr(id, ""); });
     $("#ctFormErr").textContent = "";
   }
 
   function validate() {
     clearErrors();
+    if (!val("ctCategory")) {
+      setErr("ctCategory", "Please select a category to continue.");
+      return false;
+    }
     var ok = true;
     if (!val("ctSubject"))                  { setErr("ctSubject", "Please add a short subject."); ok = false; }
     if (val("ctMessage").length < 8)        { setErr("ctMessage", "Please write a bit more so we can act on it."); ok = false; }
     var email = val("ctEmail");
     if (email && !isEmail(email))           { setErr("ctEmail",   "Enter a valid email, or leave it blank."); ok = false; }
-    var cat = val("ctCategory") || "General Feedback";
+    var cat = val("ctCategory");
     if (PAGE_REQUIRED[cat] && !val("ctRelatedPage")) {
       setErr("ctRelatedPage", "Please choose which page this is about (or “Whole site”).");
       ok = false;
@@ -273,9 +286,9 @@
 
   /* ---------- Progress ---------- */
   function updateProgress() {
-    var cat = categoryEl.value || "General Feedback";
-    var required = ["ctSubject", "ctMessage", "ctConfirm"];
-    if (PAGE_REQUIRED[cat]) required.unshift("ctRelatedPage");
+    var cat = categoryEl.value;
+    var required = ["ctCategory", "ctSubject", "ctMessage", "ctConfirm"];
+    if (cat && PAGE_REQUIRED[cat]) required.unshift("ctRelatedPage");
     var filled = required.filter(function (id) {
       if (id === "ctConfirm") return !!document.getElementById("ctConfirm").checked;
       return val(id).length > 0;
@@ -391,6 +404,7 @@
     var progress = formCard.querySelector(".ct-progress"); if (progress) progress.hidden = false;
     clearErrors();
     applyHint();
+    toggleRest();
     applyCategoryDefault();
     updateProgress();
     var btn   = $("#ctSubmitBtn");
@@ -402,7 +416,7 @@
   });
 
   $("#ctReset").addEventListener("click", function () {
-    setTimeout(function () { applyHint(); applyCategoryDefault(); updateProgress(); clearErrors(); }, 0);
+    setTimeout(function () { applyHint(); toggleRest(); applyCategoryDefault(); updateProgress(); clearErrors(); }, 0);
     toast("Form cleared.");
   });
 
@@ -416,5 +430,6 @@
   }
 
   /* ---------- Init ---------- */
+  toggleRest();
   updateProgress();
 })();
