@@ -110,48 +110,26 @@
   ".sw-counter.sw-collapsed:hover .sw-c{display:inline-flex;transform:none;opacity:1}" +
   ".sw-counter.sw-collapsed:hover .sw-min{display:none}" +
 
-  /* ===== FEEDBACK (top-right) ===== */
-  ".sw-fb{top:76px;right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:10px}" +
-  ".sw-fb .launch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;border:1px solid var(--sw-border);" +
+  /* ===== FEEDBACK (top-right): like (heart + count) + dislike (→ feedback) ===== */
+  ".sw-fb{top:76px;right:16px;display:flex;flex-direction:row;align-items:center;gap:8px}" +
+  ".sw-fb button{display:inline-flex;align-items:center;gap:7px;cursor:pointer;border:1px solid var(--sw-border);" +
     "background:var(--sw-surface);-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);" +
-    "color:var(--sw-text);border-radius:999px;padding:8px 14px;box-shadow:var(--sw-shadow);font:inherit;font-weight:700;font-size:.86rem;" +
+    "color:var(--sw-text);border-radius:999px;padding:8px 13px;box-shadow:var(--sw-shadow);font:inherit;font-weight:700;font-size:.86rem;" +
     "transition:transform .18s ease,border-color .18s ease}" +
-  ".sw-fb .launch:hover{transform:translateY(-1px);border-color:var(--sw-primary)}" +
-  ".sw-fb .launch svg{width:18px;height:18px;color:var(--sw-bad)}" +
-  ".sw-fb .launch .cnt{font-variant-numeric:tabular-nums;color:var(--sw-text)}" +
-  ".sw-fb .launch .cap{color:var(--sw-muted);font-weight:600;font-size:.8rem}" +
-
-  ".sw-fb .panel{width:min(300px,86vw);background:var(--sw-surface);-webkit-backdrop-filter:blur(16px) saturate(160%);backdrop-filter:blur(16px) saturate(160%);" +
-    "border:1px solid var(--sw-border);border-radius:16px;box-shadow:var(--sw-shadow);color:var(--sw-text);padding:16px;" +
-    "transform-origin:top right;transform:scale(.92);opacity:0;pointer-events:none;transition:transform .22s cubic-bezier(.16,1,.3,1),opacity .2s ease}" +
-  ".sw-fb.open .panel{transform:none;opacity:1;pointer-events:auto}" +
-  ".sw-fb .panel h4{font-family:'Sora','Plus Jakarta Sans',sans-serif;margin:0 0 12px;font-size:1.02rem;font-weight:700}" +
-  ".sw-fb .row{display:flex;gap:8px}" +
-  ".sw-fb .vote{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;font:inherit;font-weight:700;" +
-    "padding:9px 10px;border-radius:11px;border:1px solid var(--sw-border);background:var(--sw-surface2);color:var(--sw-text);transition:all .16s ease}" +
-  ".sw-fb .vote svg{width:17px;height:17px}" +
-  ".sw-fb .vote.up:hover{border-color:var(--sw-good);color:var(--sw-good);transform:translateY(-1px)}" +
-  ".sw-fb .vote.down:hover{border-color:var(--sw-bad);color:var(--sw-bad);transform:translateY(-1px)}" +
-  ".sw-fb .vote.up.on{background:var(--sw-good);border-color:var(--sw-good);color:#04210f}" +
-  ".sw-fb .vote.up.on svg{animation:swPop .4s cubic-bezier(.34,1.56,.64,1)}" +
+  ".sw-fb .dislike{padding:8px 11px}" +
+  ".sw-fb .like:hover{transform:translateY(-1px);border-color:var(--sw-bad)}" +
+  ".sw-fb .dislike:hover{transform:translateY(-1px);border-color:var(--sw-primary)}" +
+  ".sw-fb button svg{width:20px;height:20px;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}" +
+  ".sw-fb .like .hp{fill:none;stroke:var(--sw-bad);stroke-width:1.9;stroke-linejoin:round;transition:fill .2s ease}" +
+  ".sw-fb .like:hover .hp{fill:rgba(244,63,94,.14)}" +
+  ".sw-fb .like:hover svg,.sw-fb .dislike:hover svg{transform:scale(1.1)}" +
+  ".sw-fb .dislike svg{color:var(--sw-muted)}" +
+  ".sw-fb .dislike:hover svg{color:var(--sw-primary)}" +
+  ".sw-fb .like .cnt{font-variant-numeric:tabular-nums;color:var(--sw-text);min-width:.7em;text-align:center}" +
+  ".sw-fb .like.on{border-color:var(--sw-bad)}" +
+  ".sw-fb .like.on .hp{fill:url(#swHeartGrad);stroke:none}" +
+  ".sw-fb .like.on svg{filter:drop-shadow(0 2px 6px rgba(225,29,72,.4));animation:swPop .45s cubic-bezier(.34,1.56,.64,1)}" +
   "@keyframes swPop{0%{transform:scale(.6)}60%{transform:scale(1.3)}100%{transform:scale(1)}}" +
-  ".sw-fb .thanks{display:none;align-items:center;gap:8px;margin-top:10px;color:var(--sw-good);font-weight:600;font-size:.9rem}" +
-  ".sw-fb.thanked .thanks{display:flex}" +
-  ".sw-fb .improve{display:none;margin-top:12px}" +
-  ".sw-fb.improving .improve{display:block}" +
-  ".sw-fb.improving .row,.sw-fb.improving h4{display:none}" +
-  ".sw-fb .improve p{margin:0 0 9px;font-weight:700;font-size:.92rem}" +
-  ".sw-fb .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}" +
-  ".sw-fb .chip{cursor:pointer;font:inherit;font-size:.76rem;font-weight:600;padding:6px 11px;border-radius:999px;" +
-    "border:1px solid var(--sw-border);background:transparent;color:var(--sw-muted);transition:all .15s ease}" +
-  ".sw-fb .chip:hover{border-color:var(--sw-bad);color:var(--sw-bad)}" +
-  ".sw-fb .chip.on{background:var(--sw-bad);border-color:var(--sw-bad);color:#fff}" +
-  ".sw-fb .cta{display:inline-flex;align-items:center;gap:7px;width:100%;justify-content:center;cursor:pointer;font:inherit;font-weight:700;" +
-    "padding:10px;border-radius:11px;border:none;background:linear-gradient(135deg,var(--sw-primary),var(--sw-accent));color:#fff;text-decoration:none}" +
-  ".sw-fb .cta:hover{filter:brightness(1.06)}" +
-  ".sw-fb .x{position:absolute;top:9px;right:11px;cursor:pointer;border:none;background:none;color:var(--sw-muted);font-size:1.1rem;line-height:1;padding:2px 6px;border-radius:8px}" +
-  ".sw-fb .x:hover{color:var(--sw-text)}" +
-  ".sw-fb .panel{position:relative}" +
 
   /* ===== DISCLAIMER — footer link + modal ===== */
   ".sw-footer{position:relative;display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;text-align:center;" +
@@ -225,9 +203,14 @@
   }
 
   /* SVG icons */
-  var SVG_HEART = "<svg viewBox='0 0 24 24' fill='currentColor'><path d='M12 21s-7.4-4.6-10-9.2C.7 9 1.6 5.3 4.7 4.2 6.8 3.5 9 4.3 10.2 6c.4.5.6.8.8 1.1.2-.3.4-.6.8-1.1C13.8 4.3 16 3.5 18.1 4.2c3.1 1.1 4 4.8 2.7 7.6C20.4 16.4 12 21 12 21z'/></svg>";
+  var SVG_HEART = "<svg viewBox='0 0 24 24'>" +
+    "<defs><linearGradient id='swHeartGrad' x1='3' y1='2.5' x2='20' y2='21' gradientUnits='userSpaceOnUse'>" +
+      "<stop stop-color='#ff9eb6'/><stop offset='.5' stop-color='#fb5d77'/><stop offset='1' stop-color='#e11d48'/>" +
+    "</linearGradient></defs>" +
+    "<path class='hp' d='M12 21.3l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.49L12 21.3z'/>" +
+  "</svg>";
   var SVG_UP   = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M7 10v11'/><path d='M15 5.9 14 10h5.6a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.2 22H7V10l4-9a2.5 2.5 0 0 1 4 1.9z'/></svg>";
-  var SVG_DOWN = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M17 14V3'/><path d='M9 18.1 10 14H4.4a2 2 0 0 1-2-2.3l1.4-8A2 2 0 0 1 5.8 2H17v12l-4 9a2.5 2.5 0 0 1-4-1.9z'/></svg>";
+  var SVG_DOWN = "<svg viewBox='0 0 24 24' fill='currentColor'><path d='M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L11.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z'/></svg>";
   var SVG_CHECK= "<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>";
   var SVG_ARROW= "<svg width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14'/><path d='m13 6 6 6-6 6'/></svg>";
   var SVG_SHIELD = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/><path d='m9 12 2 2 4-4'/></svg>";
@@ -323,44 +306,25 @@
 
   /* ===================== FEEDBACK ===================== */
   function buildFeedback() {
-    var page = pageKey();
-    var votedKey = "sw_voted_" + page;
+    var page = pageKey();        // originating page — used only for the feedback deep-link
+    var FB_KEY = "site";         // sentiment is one site-wide tally ("liked the website")
+    var votedKey = "sw_voted_site";
     var alreadyVoted = ls(true, votedKey);
 
     var wrap = document.createElement("div");
     wrap.className = "sw-fb";
     wrap.innerHTML =
-      "<button class='launch' aria-haspopup='dialog' aria-expanded='false' title='Rate this page'>" +
-        SVG_HEART + "<span class='cnt'>—</span><span class='cap'>found this helpful</span>" +
+      "<button class='like' title='Like the website' aria-label='Like the website'>" +
+        SVG_HEART + "<span class='cnt'>—</span>" +
       "</button>" +
-      "<div class='panel' role='dialog' aria-label='Was this page helpful?'>" +
-        "<button class='x' aria-label='Close'>×</button>" +
-        "<h4>Was this page helpful?</h4>" +
-        "<div class='row'>" +
-          "<button class='vote up'>" + SVG_UP + "Yes</button>" +
-          "<button class='vote down'>" + SVG_DOWN + "Could be better</button>" +
-        "</div>" +
-        "<div class='thanks'>" + SVG_CHECK + "<span>Thank you — glad it helped!</span></div>" +
-        "<div class='improve'>" +
-          "<p>Let us know how we can improve</p>" +
-          "<div class='chips'>" +
-            "<button class='chip' data-tag='Hard to find info'>Hard to find info</button>" +
-            "<button class='chip' data-tag='Out of date'>Out of date</button>" +
-            "<button class='chip' data-tag='Confusing'>Confusing</button>" +
-            "<button class='chip' data-tag='Missing detail'>Missing detail</button>" +
-          "</div>" +
-          "<a class='cta' href='#'>Tell us more " + SVG_ARROW + "</a>" +
-        "</div>" +
-      "</div>";
+      "<button class='dislike' title='Disliked it — Help us improve' aria-label='Disliked it — Help us improve'>" +
+        SVG_DOWN +
+      "</button>";
     document.body.appendChild(wrap);
 
-    var launch = wrap.querySelector(".launch");
-    var panel  = wrap.querySelector(".panel");
-    var cntEl  = wrap.querySelector(".cnt");
-    var upBtn  = wrap.querySelector(".vote.up");
-    var dnBtn  = wrap.querySelector(".vote.down");
-    var chips  = wrap.querySelector(".chips");
-    var cta    = wrap.querySelector(".cta");
+    var likeBtn = wrap.querySelector(".like");
+    var dislikeBtn = wrap.querySelector(".dislike");
+    var cntEl = wrap.querySelector(".cnt");
 
     // Pin to the very top-right corner. On desktop the nav links are centred, so
     // the right of the sticky navbar is empty — sit there (above the page's own
@@ -376,46 +340,31 @@
       }
     })();
 
-    function setCount(ups) { cntEl.textContent = (ups == null) ? "—" : fmt(ups); }
+    // The like count doubles as the heart's tooltip ("<N> liked the site").
+    function setCount(ups) {
+      cntEl.textContent = (ups == null) ? "—" : fmt(ups);
+      likeBtn.title = (ups == null) ? "Like the website" : (fmt(ups) + " liked the site");
+    }
 
-    // load current likes
-    if (SB_OK) rpc("get_sentiment", { p_page: page }).then(function (r) { setCount(r ? r.ups : null); });
+    // load current like tally (site-wide)
+    if (SB_OK) rpc("get_sentiment", { p_page: FB_KEY }).then(function (r) { setCount(r ? r.ups : null); });
     else setCount(null);
 
-    function openPanel() { wrap.classList.add("open"); launch.setAttribute("aria-expanded", "true"); }
-    function closePanel() { wrap.classList.remove("open"); launch.setAttribute("aria-expanded", "false"); }
-    launch.addEventListener("click", function () { wrap.classList.contains("open") ? closePanel() : openPanel(); });
-    wrap.querySelector(".x").addEventListener("click", closePanel);
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closePanel(); });
-    document.addEventListener("click", function (e) { if (!wrap.contains(e.target)) closePanel(); });
+    if (alreadyVoted === "up") likeBtn.classList.add("on");
 
-    if (alreadyVoted) { upBtn.disabled = dnBtn.disabled = (alreadyVoted === "up"); }
-
-    upBtn.addEventListener("click", function () {
-      upBtn.classList.add("on"); wrap.classList.add("thanked");
-      if (!ls(true, votedKey)) {
-        ls(false, votedKey, "up");
-        rpc("record_sentiment", { p_page: page, p_vote: "up" }).then(function (r) { if (r) setCount(r.ups); });
-        // optimistic bump
-        var cur = parseInt((cntEl.textContent || "0").replace(/[^0-9]/g, ""), 10) || 0; setCount(cur + 1);
-      }
-      setTimeout(closePanel, 1400);
+    // LIKE — records a site-wide thumbs-up, one per device; fills the heart.
+    likeBtn.addEventListener("click", function () {
+      likeBtn.classList.add("on");
+      if (ls(true, votedKey)) return;                 // already voted — no double count
+      ls(false, votedKey, "up");
+      rpc("record_sentiment", { p_page: FB_KEY, p_vote: "up" }).then(function (r) { if (r) setCount(r.ups); });
+      var cur = parseInt((cntEl.textContent || "0").replace(/[^0-9]/g, ""), 10) || 0; setCount(cur + 1);
     });
 
-    dnBtn.addEventListener("click", function () { wrap.classList.add("improving"); });
-    chips.addEventListener("click", function (e) {
-      var c = e.target.closest(".chip"); if (c) c.classList.toggle("on");
-    });
-    cta.addEventListener("click", function (e) {
-      e.preventDefault();
-      if (!ls(true, votedKey)) {
-        ls(false, votedKey, "down");
-        rpc("record_sentiment", { p_page: page, p_vote: "down" });
-      }
-      var tags = [].slice.call(chips.querySelectorAll(".chip.on")).map(function (c) { return c.dataset.tag; });
-      var url = rootPrefix() + "contact.html?ref=" + encodeURIComponent(page) +
-                (tags.length ? "&tags=" + encodeURIComponent(tags.join(", ")) : "") + "#ctFormCard";
-      location.href = url;
+    // DISLIKE — never touches the count; routes straight to the feedback form,
+    // deep-linked with the page the visitor came from.
+    dislikeBtn.addEventListener("click", function () {
+      location.href = rootPrefix() + "contact.html?ref=" + encodeURIComponent(page) + "#ctFormCard";
     });
   }
 
@@ -521,8 +470,9 @@
     }
   }
 
-  // Feedback widget kept in abeyance for a later upgrade — counter only for now.
-  var ENABLE_FEEDBACK = false;
+  // Feedback widget: site-wide "Liked the website?" — like records sentiment,
+  // dislike routes straight to the feedback form.
+  var ENABLE_FEEDBACK = true;
   function init() {
     injectCSS();
     try { enhanceNav(); } catch (e) {}

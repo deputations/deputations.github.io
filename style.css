@@ -2412,6 +2412,28 @@ select:disabled {
     0 0 22px rgba(244, 63, 94, 0.30);
 }
 
+/* Watchlist toggle is a BOOKMARK (distinct from the site "like" heart). With no
+   bookmarks it's a plain outline; once any vacancy is saved it lights up in the
+   brand gradient with a soft 3D pillow. The #favBtn id intentionally overrides the
+   legacy red .has-saved rules (incl. the light-theme ones). */
+#favBtn.has-saved {
+  border-color: transparent !important;
+  color: #ffffff !important;
+  background: linear-gradient(165deg, var(--primary-color), var(--accent-color)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.34),
+    inset 0 -3px 7px rgba(0,0,0,0.20),
+    0 9px 20px -5px color-mix(in srgb, var(--accent-color) 50%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--primary-color) 10%, transparent) !important;
+}
+#favBtn.has-saved:hover { filter: brightness(1.05); }
+#favBtn.has-saved svg,
+#favBtn.has-saved svg path { color: #ffffff !important; fill: #ffffff !important; stroke: #ffffff !important; }
+#favBtn.has-saved .fav-count {
+  background: #ffffff;
+  color: var(--accent-color);
+}
+
 /* ===== center last 1–2 cards ONLY in card view ===== */
 .view-card .cards-grid.premium-cards-grid {
   display: flex !important;
