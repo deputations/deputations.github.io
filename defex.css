@@ -460,9 +460,10 @@
   font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--text-secondary); font-weight: 700;
   border-bottom: 1px solid var(--dex-line); background: rgba(2, 4, 11, 0.35);
-  cursor: pointer; user-select: none; white-space: nowrap;
+  user-select: none; white-space: nowrap;
 }
-.dex-table th:hover { color: var(--text-primary); }
+.dex-table th[data-sort] { cursor: pointer; }
+.dex-table th[data-sort]:hover { color: var(--text-primary); }
 .dex-table th.num, .dex-table td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--dex-mono); }
 .dex-table td {
   padding: 0.85rem 1rem; border-bottom: 1px solid var(--dex-line);

@@ -99,6 +99,10 @@
   const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g,
     m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 
+  // The policy snapshot for an org — never assume it's reports[0]; the reports
+  // array may include other record types (e.g. experience timelines) in any order.
+  const policyOf = (reports) => (reports || []).find(r => r.type === "policy") || null;
+
   function bandColor(band) {
     return {
       "Deputation-friendly":  "var(--dex-mint)",
@@ -270,7 +274,6 @@
     const f = state.filters;
     return pool.filter(o => {
       if (f.ministry && o.ministry !== f.ministry) return false;
-      if (f.type && o.type !== f.type) return false;
       if (f.band && o.band !== f.band) return false;
       if (f.confidence && o.confidence_band !== f.confidence) return false;
       if (f.om && !o.has_om) return false;
@@ -282,7 +285,6 @@
     const { key, dir } = state.sort;
     const mul = dir === "asc" ? 1 : -1;
     const getter = {
-      rank: (o, i) => i,
       name: o => o.name.toLowerCase(),
       ministry: o => o.ministry.toLowerCase(),
       type: o => (o.type || "").toLowerCase(),
@@ -438,8 +440,8 @@
   }
 
   function renderPaneRules(org, reports) {
-    const p = reports[0]; // policy-type record (MVP one row per org)
-    if (!p || p.type !== "policy") {
+    const p = policyOf(reports); // the policy snapshot — not necessarily reports[0]
+    if (!p) {
       $("#pane-rules").innerHTML = `<p>We don't yet have a policy snapshot on file for this organisation. Once a community member submits the relevant OM or a structured report, it appears here.</p>`;
       return;
     }
@@ -486,7 +488,7 @@
   }
 
   function renderPaneActions(org, score, reports) {
-    const p = reports[0] || {};
+    const p = policyOf(reports) || {};
     const c = p.conditions || {};
     const actions = [];
 
@@ -550,13 +552,14 @@
       return;
     }
     const m = state.methodology;
-    const base = m.formula.base_scores[(state.reports.get(org.id)?.[0]?.deputation_allowed)] ?? "?";
-    let lines = [`<strong>B</strong> = ${base}  <span style="color:var(--text-muted)">(${state.reports.get(org.id)?.[0]?.deputation_allowed})</span>`];
+    const p = policyOf(state.reports.get(org.id));
+    const base = m.formula.base_scores[p?.deputation_allowed] ?? "?";
+    let lines = [`<strong>B</strong> = ${base}  <span style="color:var(--text-muted)">(${p?.deputation_allowed ?? "—"})</span>`];
     (score?.signals || []).forEach(s => {
       if (s.weight < 0) lines.push(`<strong>P</strong> ${escapeHtml(s.label)} <span class="delta-neg">${s.weight}</span>`);
     });
-    const personal = state.reports.get(org.id)?.[0]?.sources?.personal;
-    const om = state.reports.get(org.id)?.[0]?.sources?.om;
+    const personal = p?.sources?.personal;
+    const om = p?.sources?.om;
     if (om) lines.push(`<strong>E</strong> Official OM on file <span class="delta-pos">+8</span>`);
     else if (personal) lines.push(`<strong>E</strong> Community source <span class="delta-pos">+2</span>`);
     lines.push(`<strong>= DeFeX ${org.dex}</strong>`);
@@ -620,7 +623,7 @@
       }
 
       // Org-specific
-      const p = reports[0] || {};
+      const p = policyOf(reports) || {};
       const c = p.conditions || {};
       if (p.deputation_allowed === "No") {
         items.push(action("risk", "Parent does not currently permit deputation on file",
