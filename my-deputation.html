@@ -15,7 +15,9 @@
   <link rel="stylesheet" href="navbar.css?v=2">
   <link rel="stylesheet" href="my-deputation.css">
 
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Pinned: @latest is unversioned and a bad build that throws in createIcons()
+       silently breaks modal listeners (saved-search Save, etc.). 1.18.0 = known-good. -->
+  <script src="https://unpkg.com/lucide@1.18.0"></script>
 </head>
 <body>
   <nav class="top-nav" aria-label="Primary site navigation">
@@ -66,7 +68,7 @@
       <nav class="md-tabs" role="tablist" aria-label="My Deputation sections">
         <button class="md-tab" role="tab" data-tab="overview"  aria-selected="true"><i data-lucide="layout-grid"></i><span class="md-tab-label">Overview</span></button>
         <button class="md-tab" role="tab" data-tab="bookmarks" aria-selected="false"><i data-lucide="bookmark"></i><span class="md-tab-label">Bookmarks</span> <span id="tabBadgeBookmarks" class="md-tab-badge" hidden>0</span></button>
-        <button class="md-tab" role="tab" data-tab="searches"  aria-selected="false"><i data-lucide="search"></i><span class="md-tab-label">Searches</span> <span id="tabBadgeSearches" class="md-tab-badge" hidden>0</span></button>
+        <button class="md-tab" role="tab" data-tab="searches"  aria-selected="false"><i data-lucide="search"></i><span class="md-tab-label">Saved searches</span> <span id="tabBadgeSearches" class="md-tab-badge" hidden>0</span></button>
         <button class="md-tab" role="tab" data-tab="tracker"   aria-selected="false"><i data-lucide="kanban-square"></i><span class="md-tab-label">Tracker</span></button>
         <button class="md-tab" role="tab" data-tab="documents" aria-selected="false"><i data-lucide="file-check-2"></i><span class="md-tab-label">Documents</span></button>
         <button class="md-tab" role="tab" data-tab="calendar"  aria-selected="false"><i data-lucide="calendar-days"></i><span class="md-tab-label">Calendar</span></button>
@@ -95,7 +97,7 @@
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb13"></script>
   <script src="shared/vacancy-utils.js?v=sb3"></script>
-  <script src="my-deputation.js?v=sb3"></script>
+  <script src="my-deputation.js?v=sb4"></script>
   <script defer src="site-widgets.js?v=15"></script>
 </body>
 </html>
