@@ -37,7 +37,12 @@
       if (cat && !cat.value) cat.value = "General Feedback";
       if (subj && !subj.value) subj.value = "Feedback on " + ref;
       if (msg && !msg.value) {
-        msg.value = "Page: " + ref + "\n" + (tags ? "What could be better: " + tags + "\n" : "") + "\n";
+        // The page is now captured in the dedicated selector; only fall back to a
+        // "Page:" line in the message when ref doesn't match a known page.
+        var parts = [];
+        if (!findPageMatch(ref)) parts.push("Page: " + ref);
+        if (tags) parts.push("What could be better: " + tags);
+        msg.value = parts.length ? parts.join("\n") + "\n\n" : "";
       }
       var card = document.getElementById("ctFormCard");
       if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -70,6 +75,20 @@
     "Other":                "Tell us what we should know — keep it brief and specific.",
     "New Rule/Circular":    "Share the OM number, subject line, date, and a link to the official source (DoPT / GoI website) so we can review and add it."
   };
+
+  /* Categories where naming a page (or "Whole site") is mandatory. */
+  var PAGE_REQUIRED = { "Report a Bug": 1, "Vacancy Correction": 1, "Policy Clarification": 1, "New Rule/Circular": 1 };
+  /* Page preselected per category when the user hasn't chosen one.
+   * "Report a Bug" is intentionally absent so the reporter must name the page. */
+  var CATEGORY_DEFAULT_PAGE = {
+    "General Feedback":     "__SITE__",
+    "Suggest a Feature":    "__SITE__",
+    "WhatsApp Group Issue": "__SITE__",
+    "Other":                "__SITE__",
+    "Vacancy Correction":   "/report-vacancy.html",
+    "New Rule/Circular":    "/rules.html",
+    "Policy Clarification": "/Rules/faq.html"
+  };
   var categoryEl = $("#ctCategory");
   var hintEl     = $("#ctHint");
   function applyHint() {
@@ -98,6 +117,8 @@
 
   /* ---------- Page / section cascading dropdowns (Add context) ---------- */
   var PAGES = [
+    { value: "__SITE__",               label: "Whole site / Not page-specific",
+      sections: [] },
     { value: "/index.html",            label: "Home",
       sections: [] },
     { value: "/rules.html",            label: "Rules — Deputation Rules Hub",
@@ -172,6 +193,51 @@
   pageSel.addEventListener("change", rebuildSections);
   rebuildSections();
 
+  /* ---------- "Which page is this about?" — defaults, required, prefill ---------- */
+  // Track whether the current page value was set by us (a default) or chosen by
+  // the user. A deliberate choice is preserved across category switches; an
+  // auto-set value is replaced by the new category's default — which keeps
+  // "Whole site" from sticking onto a later "Report a Bug" (that must name a page).
+  var pageAutoSet = false;
+  function setPage(value, auto) {
+    pageSel.value = value || "";
+    pageAutoSet = !!auto;
+    rebuildSections();
+  }
+  function applyCategoryDefault() {
+    if (!pageAutoSet && pageSel.value !== "") return;   // keep a deliberate choice
+    setPage(CATEGORY_DEFAULT_PAGE[categoryEl.value] || "", true);
+  }
+  pageSel.addEventListener("change", function () { pageAutoSet = false; });
+  categoryEl.addEventListener("change", function () { applyCategoryDefault(); updateProgress(); });
+
+  // Normalise a path/URL for matching: drop scheme/host, "index", ".html",
+  // trailing slashes and case. The on-site feedback widget emits ?ref= paths
+  // WITHOUT ".html" (e.g. /rules), while PAGES values HAVE it — normalise both.
+  function normPath(s) {
+    try {
+      var p = s;
+      if (/^https?:/i.test(p)) p = new URL(p).pathname;
+      p = p.replace(/index\.html$/i, "").replace(/\.html$/i, "").replace(/\/+$/, "").toLowerCase();
+      return p === "" ? "/" : p;
+    } catch (e) { return ""; }
+  }
+  function findPageMatch(raw) {
+    if (!raw) return "";
+    var w = normPath(raw);
+    for (var i = 0; i < PAGES.length; i++) {
+      if (PAGES[i].value === "__SITE__") continue;
+      if (normPath(PAGES[i].value) === w) return PAGES[i].value;
+    }
+    return "";
+  }
+  (function initPageField() {
+    var qp = new URLSearchParams(location.search);
+    var hit = findPageMatch(qp.get("page") || qp.get("ref")) || findPageMatch(document.referrer);
+    if (hit) setPage(hit, false);     // a referred page is treated as a deliberate choice
+    else applyCategoryDefault();
+  }());
+
   /* ---------- Validation ---------- */
   function isEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
   function val(id) { var el = document.getElementById(id); return (el && el.value || "").trim(); }
@@ -182,7 +248,7 @@
     if (input) input.setAttribute("aria-invalid", msg ? "true" : "false");
   }
   function clearErrors() {
-    ["ctSubject","ctMessage","ctEmail","ctConfirm"].forEach(function (id) { setErr(id, ""); });
+    ["ctSubject","ctMessage","ctEmail","ctConfirm","ctRelatedPage"].forEach(function (id) { setErr(id, ""); });
     $("#ctFormErr").textContent = "";
   }
 
@@ -193,6 +259,11 @@
     if (val("ctMessage").length < 8)        { setErr("ctMessage", "Please write a bit more so we can act on it."); ok = false; }
     var email = val("ctEmail");
     if (email && !isEmail(email))           { setErr("ctEmail",   "Enter a valid email, or leave it blank."); ok = false; }
+    var cat = val("ctCategory") || "General Feedback";
+    if (PAGE_REQUIRED[cat] && !val("ctRelatedPage")) {
+      setErr("ctRelatedPage", "Please choose which page this is about (or “Whole site”).");
+      ok = false;
+    }
     if (!document.getElementById("ctConfirm").checked) {
       setErr("ctConfirm", "Please tick the confirmation box.");
       ok = false;
@@ -202,7 +273,9 @@
 
   /* ---------- Progress ---------- */
   function updateProgress() {
+    var cat = categoryEl.value || "General Feedback";
     var required = ["ctSubject", "ctMessage", "ctConfirm"];
+    if (PAGE_REQUIRED[cat]) required.unshift("ctRelatedPage");
     var filled = required.filter(function (id) {
       if (id === "ctConfirm") return !!document.getElementById("ctConfirm").checked;
       return val(id).length > 0;
@@ -223,6 +296,10 @@
 
   /* ---------- Submit ---------- */
   function buildPayload() {
+    var pageVal = val("ctRelatedPage");
+    var pageObj = PAGES.find(function (p) { return p.value === pageVal; }) || {};
+    var isSite  = (pageVal === "__SITE__");
+    var pageDisplay = isSite ? "Whole site" : pageVal;
     return {
       action: "feedback",
       category:     val("ctCategory") || "General Feedback",
@@ -230,7 +307,9 @@
       message:      val("ctMessage"),
       name:         val("ctName"),
       email:        val("ctEmail"),
-      relatedPage:  val("ctRelatedPage") + (val("ctRelatedSection") ? "  §  " + val("ctRelatedSection") : ""),
+      page:         isSite ? "" : pageVal,                          // discrete machine value ("" = whole-site/unspecified)
+      pageLabel:    isSite ? "Whole site" : (pageObj.label || ""),  // human label
+      relatedPage:  pageDisplay + (val("ctRelatedSection") ? "  §  " + val("ctRelatedSection") : ""),
       relatedLink:  val("ctRelatedLink"),
       pageContext:  document.referrer || location.pathname,
       userAgent:    navigator.userAgent || "",
@@ -312,6 +391,7 @@
     var progress = formCard.querySelector(".ct-progress"); if (progress) progress.hidden = false;
     clearErrors();
     applyHint();
+    applyCategoryDefault();
     updateProgress();
     var btn   = $("#ctSubmitBtn");
     var label = $("#ctSubmitLabel");
@@ -322,7 +402,7 @@
   });
 
   $("#ctReset").addEventListener("click", function () {
-    setTimeout(function () { applyHint(); updateProgress(); clearErrors(); }, 0);
+    setTimeout(function () { applyHint(); applyCategoryDefault(); updateProgress(); clearErrors(); }, 0);
     toast("Form cleared.");
   });
 

@@ -146,6 +146,7 @@
         <button id="tabManage" data-tab="manage">🗂 Manage data</button>
         <button id="tabUpdates" data-tab="updates">🔀 Updates <span id="updatesCount"></span></button>
         <button id="tabFlags" data-tab="flags">⚑ Flags <span id="flagCount"></span></button>
+        <button id="tabFeedback" data-tab="feedback">✉️ Feedback <span id="fbCount"></span></button>
       </div>
 
       <!-- INGEST -->
@@ -323,6 +324,23 @@
         </div>
         <p class="muted">Readers flag problems on live vacancies. <b>Open</b> in the manager to fix the vacancy yourself, then mark the flag <b>✓ Valid</b> (keep for the record) or <b>Dismiss</b> (invalid / hide). Sorted by endorsements.</p>
         <div id="flagsList"></div>
+      </section>
+
+      <!-- FEEDBACK (contact-form submissions) -->
+      <section id="paneFeedback" class="card hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">Feedback <span id="fbHdrCount" class="muted"></span></h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="fbStatus" style="width:auto">
+              <option value="new">New</option>
+              <option value="resolved">Resolved</option>
+              <option value="all">All</option>
+            </select>
+            <button id="fbRefresh">↻</button>
+          </div>
+        </div>
+        <p class="muted">Messages sent from the Contact page “Send feedback” form. Each shows the page it’s about. Mark <b>✓ Resolved</b> when handled, or <b>Re-open</b> to revisit.</p>
+        <div id="fbList"></div>
       </section>
 
       <!-- UPDATES (pending merges + duplicate suggestions) -->

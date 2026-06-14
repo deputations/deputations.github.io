@@ -210,6 +210,22 @@
             </div>
 
             <div class="ct-field">
+              <label for="ctRelatedPage">Which page is this about? <span class="ct-req">*</span></label>
+              <select id="ctRelatedPage" name="relatedPage" aria-describedby="ctRelatedPageErr">
+                <option value="">— select a page —</option>
+              </select>
+              <p class="ct-hint" id="ctPageHint">Pick the page your feedback is about, or “Whole site”.</p>
+              <p class="ct-err" id="ctRelatedPageErr"></p>
+            </div>
+
+            <div class="ct-field" id="ctSectionField" hidden>
+              <label for="ctRelatedSection">Section of that page <span class="ct-opt">(optional)</span></label>
+              <select id="ctRelatedSection" name="relatedSection">
+                <option value="">— select a section —</option>
+              </select>
+            </div>
+
+            <div class="ct-field">
               <label for="ctSubject">Subject <span class="ct-req">*</span></label>
               <input type="text" id="ctSubject" name="subject" maxlength="140" autocomplete="off">
               <p class="ct-err" id="ctSubjectErr"></p>
@@ -234,20 +250,8 @@
             </div>
 
             <details class="ct-more">
-              <summary>Add context <span>— page / section / link you're referring to</span></summary>
+              <summary>Add a link <span>— a specific URL you're referring to</span></summary>
               <div class="ct-grid">
-                <div class="ct-field">
-                  <label for="ctRelatedPage">Related page</label>
-                  <select id="ctRelatedPage" name="relatedPage">
-                    <option value="">— select a page —</option>
-                  </select>
-                </div>
-                <div class="ct-field" id="ctSectionField" hidden>
-                  <label for="ctRelatedSection">Section of that page</label>
-                  <select id="ctRelatedSection" name="relatedSection">
-                    <option value="">— select a section —</option>
-                  </select>
-                </div>
                 <div class="ct-field ct-field-wide">
                   <label for="ctRelatedLink">Relevant link <span class="ct-opt">(absolute URL)</span></label>
                   <input type="url" id="ctRelatedLink" name="relatedLink" placeholder="https://…" autocomplete="off">
@@ -331,7 +335,7 @@
 
   <div class="ct-toast" id="ctToast" role="status" aria-live="polite" hidden></div>
 
-  <script src="contact.js?v=sb3"></script>
+  <script src="contact.js?v=sb4"></script>
   <script defer src="site-widgets.js?v=15"></script>
 </body>
 </html>

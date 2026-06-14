@@ -812,17 +812,19 @@ async function loadOverview() {
   const strip = $('ovStrip');
   if (!strip) return;
   const iso = (d) => d.toISOString().slice(0, 10);
-  const [drafts, updates, flags, closing] = await Promise.all([
+  const [drafts, updates, flags, closing, feedbackNew] = await Promise.all([
     countOf('vacancies?status=eq.draft'),
     countOf('vacancy_updates?status=eq.pending'),
     countOf('vacancy_flags?status=eq.open'),
     countOf(`vacancies?status=eq.approved&last_date_to_apply=gte.${iso(new Date())}&last_date_to_apply=lte.${iso(new Date(Date.now() + 7 * 86400000))}`),
+    countOf('feedback?status=eq.new'),
   ]);
   const chip = (n, label, tab, tone) => `<button type="button" class="ov${n && tone ? ' ' + tone : ''}" data-goto="${tab}"><b>${n}</b> ${label}</button>`;
   strip.innerHTML =
     chip(drafts, 'drafts to review', 'review', 'warn') +
     chip(updates, 'pending updates', 'updates', 'warn') +
     chip(flags, 'open flags', 'flags', 'bad') +
+    chip(feedbackNew, 'new feedback', 'feedback', 'warn') +
     chip(closing, 'live, closing ≤7d', 'manage', '');
   strip.querySelectorAll('[data-goto]').forEach((b) => {
     b.onclick = () => {
@@ -841,6 +843,7 @@ async function loadOverview() {
   if ($('draftCount')) $('draftCount').textContent = drafts ? `(${drafts})` : '';
   if ($('updatesCount')) $('updatesCount').textContent = updates ? `(${updates})` : '';
   if ($('flagCount')) $('flagCount').textContent = flags ? `(${flags})` : '';
+  if ($('fbCount')) $('fbCount').textContent = feedbackNew ? `(${feedbackNew})` : '';
   loadRecentJobs();
   loadWaOverview();
 }
@@ -890,6 +893,7 @@ function wireApp() {
   if ($('mgSearch')) $('mgSearch').value = ui.mgSearch || '';
   if (ui.mgStatus && $('mgStatus')) $('mgStatus').value = ui.mgStatus;
   if (ui.flagStatus && $('flagStatus')) $('flagStatus').value = ui.flagStatus;
+  if (ui.fbStatus && $('fbStatus')) $('fbStatus').value = ui.fbStatus;
 
   // tabs
   document.querySelectorAll('.tabs button').forEach((b) => {
@@ -902,6 +906,7 @@ function wireApp() {
       $('paneReview').classList.toggle('hidden', t !== 'review');
       $('paneManage').classList.toggle('hidden', t !== 'manage');
       $('paneFlags').classList.toggle('hidden', t !== 'flags');
+      $('paneFeedback').classList.toggle('hidden', t !== 'feedback');
       $('paneUpdates').classList.toggle('hidden', t !== 'updates');
       // leaving Manage by hand clears any flag-comparison context so it doesn't
       // re-trigger on a later manual visit (the flag's Open button re-sets it)
@@ -910,6 +915,7 @@ function wireApp() {
       if (t === 'review') loadDrafts();
       if (t === 'manage') loadManage();
       if (t === 'flags') loadFlags();
+      if (t === 'feedback') loadFeedback();
       if (t === 'updates') loadUpdates();
     };
   });
@@ -919,6 +925,9 @@ function wireApp() {
 
   $('flagRefresh').onclick = loadFlags;
   $('flagStatus').onchange = () => { saveUI({ flagStatus: $('flagStatus').value }); loadFlags(); };
+
+  $('fbRefresh').onclick = loadFeedback;
+  $('fbStatus').onchange = () => { saveUI({ fbStatus: $('fbStatus').value }); loadFeedback(); };
 
   $('mgRefresh').onclick = loadManage;
   $('mgStatus').onchange = () => { MG_PAGE = 1; saveUI({ mgStatus: $('mgStatus').value, mgPage: 1 }); loadManage(); };
@@ -2303,6 +2312,80 @@ const FLAG_FIELD_TO_COLUMN = {
 // Set when an admin clicks "Open in manager" on a flag; consumed by renderManage
 // to auto-expand the matching card and show the current-vs-suggested banner.
 let ACTIVE_FLAG = null;
+
+/* ---------------- feedback (contact-form submissions) ---------------- */
+async function loadFeedback() {
+  const status = $('fbStatus') ? $('fbStatus').value : 'new';
+  let url = '/rest/v1/feedback?select=*&order=created_at.desc&limit=500';
+  if (status !== 'all') url += `&status=eq.${status}`;
+  const list = $('fbList');
+  if (list) list.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const r = await api(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    renderFeedback(await r.json());
+  } catch (e) { if (list) list.innerHTML = `<p class="muted">Load error: ${escapeHtml(e.message)}</p>`; }
+  refreshFeedbackCount();
+}
+
+async function refreshFeedbackCount() {
+  const n = await countOf('feedback?status=eq.new');
+  if ($('fbCount')) $('fbCount').textContent = n ? `(${n})` : '';
+}
+
+function renderFeedback(rows) {
+  const list = $('fbList');
+  if ($('fbHdrCount')) $('fbHdrCount').textContent = `(${rows.length})`;
+  if (!list) return;
+  if (!rows.length) { list.innerHTML = '<p class="muted">No feedback in this view.</p>'; return; }
+  list.innerHTML = '';
+  rows.forEach((f) => list.appendChild(feedbackCard(f)));
+}
+
+function feedbackCard(f) {
+  const el = document.createElement('div');
+  el.className = 'draft';
+  const when = (f.created_at || '').slice(0, 10);
+  const status = f.status || 'new';
+  const pageTxt = f.page_label || f.page || f.related_page || 'Whole site';
+  const who = [f.name, f.email].filter(Boolean).join(' · ');
+  const link = f.related_link || '';
+  const linkHtml = /^https?:\/\//i.test(link)
+    ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener">${escapeHtml(link)}</a>`
+    : escapeHtml(link);
+  el.innerHTML = `
+    <div class="head">
+      <div>
+        <b>${escapeHtml(f.category || 'General Feedback')}</b>
+        <span class="muted"> · 📄 ${escapeHtml(pageTxt)}</span>
+        <span class="pill">${escapeHtml(status)}</span>
+        <span class="muted"> · ${escapeHtml(when)}</span>
+      </div>
+      <div class="acts">
+        ${status === 'resolved'
+          ? '<button data-act="reopen">Re-open</button>'
+          : '<button class="good" data-act="resolve">✓ Resolved</button>'}
+      </div>
+    </div>
+    ${f.subject ? `<div style="margin:6px 0;font-weight:600">${escapeHtml(f.subject)}</div>` : ''}
+    ${f.message ? `<div style="margin:6px 0;color:var(--text,#cbd5e1);white-space:pre-wrap">${escapeHtml(f.message)}</div>` : ''}
+    ${link ? `<div class="muted" style="margin:4px 0"><b>Link:</b> ${linkHtml}</div>` : ''}
+    ${who ? `<div class="muted" style="font-size:.8rem">From: ${escapeHtml(who)}</div>` : ''}`;
+
+  const setStatus = async (next) => {
+    try {
+      const r = await api(`/rest/v1/feedback?id=eq.${f.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: next }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      toast(`Feedback marked ${next}`); loadFeedback();
+    } catch (e) { toast('Update failed: ' + e.message); }
+  };
+  el.querySelector('[data-act="resolve"]')?.addEventListener('click', () => setStatus('resolved'));
+  el.querySelector('[data-act="reopen"]')?.addEventListener('click', () => setStatus('new'));
+  return el;
+}
 
 async function loadFlags() {
   const status = $('flagStatus') ? $('flagStatus').value : 'open';

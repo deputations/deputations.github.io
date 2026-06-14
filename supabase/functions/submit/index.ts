@@ -58,10 +58,13 @@ Deno.serve(async (req) => {
   if (action === "feedback") {
     if (!String(body.message || "").trim()) return json({ ok: false, message: "Message is required." });
     if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) return json({ ok: false, message: "Email looks invalid." });
+    const cap = (v: unknown, n: number) => String(v ?? "").trim().slice(0, n);
     const { error } = await admin.from("feedback").insert({
-      category: body.category || "", subject: body.subject || "", message: body.message || "",
-      name: body.name || "", email: body.email || "", related_page: body.relatedPage || "",
-      related_link: body.relatedLink || "", page_context: body.pageContext || "", user_agent: body.userAgent || "",
+      category: cap(body.category, 80), subject: cap(body.subject, 200), message: cap(body.message, 6000),
+      name: cap(body.name, 120), email: cap(body.email, 160),
+      page: cap(body.page, 200), page_label: cap(body.pageLabel, 200),
+      related_page: cap(body.relatedPage, 400), related_link: cap(body.relatedLink, 600),
+      page_context: cap(body.pageContext, 400), user_agent: cap(body.userAgent, 400),
     });
     if (error) return json({ ok: false, message: error.message }, 500);
     return json({ ok: true, success: true, feedbackId: "FB-" + Date.now().toString(36).toUpperCase() });
