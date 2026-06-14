@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const searchPost = document.getElementById('searchPost');
     const filterMyPayLevel = createSingleSelect(document.getElementById('filterMyPayLevelSS'), {
-      placeholder: 'Any Level',
+      placeholder: 'Your Pay Level',
     });
     const filterExperience = createSingleSelect(document.getElementById('filterExperienceSS'), {
       placeholder: 'Any',
@@ -1373,11 +1373,54 @@ function renderTable(data) {
         refreshSearchSuggestions('');
     }
 
+    // Typewriter-cycle the search placeholder through several angles so users see
+    // they can search by more than the post name. Pauses while the box is focused
+    // or has text; shows a static hint under prefers-reduced-motion.
+    function cycleSearchPlaceholder(input) {
+        if (!input) return;
+        // Only the moving word gets the gradient; "Search by" stays solid.
+        const hints = ['post name', 'keywords', 'location', 'department', 'organisation', 'Ministry'];
+        const ph = input.closest('.input-icon') && input.closest('.input-icon').querySelector('.search-ph');
+        // No overlay element → fall back to the native placeholder.
+        if (!ph) { input.placeholder = 'Search by post, keywords, ministry…'; return; }
+        // Match the input's font so the overlay lines up exactly with typed text.
+        const cs = getComputedStyle(input);
+        ph.style.fontSize = cs.fontSize;
+        ph.style.fontFamily = cs.fontFamily;
+        ph.style.letterSpacing = cs.letterSpacing;
+        ph.innerHTML = 'Search by <span class="search-ph-word"></span>';
+        const word = ph.querySelector('.search-ph-word');
+        input.placeholder = '';                          // overlay replaces it
+        const show = (on) => { ph.style.display = on ? '' : 'none'; };
+        input.addEventListener('input', () => show(input.value.length === 0));
+        const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduced) { word.textContent = 'post, keywords, ministry…'; show(input.value.length === 0); return; }
+        let hi = 0, ci = 0, erasing = false;
+        (function tick() {
+            if (input.value.length > 0) { show(false); setTimeout(tick, 700); return; }
+            show(true);
+            if (document.activeElement === input) { setTimeout(tick, 500); return; } // freeze while focused
+            const w = hints[hi];
+            if (!erasing) {
+                ci++;
+                word.textContent = w.slice(0, ci) + '…';
+                if (ci >= w.length) { erasing = true; setTimeout(tick, 1500); return; }
+                setTimeout(tick, 70);
+            } else {
+                ci--;
+                word.textContent = w.slice(0, ci) + (ci ? '…' : '');
+                if (ci <= 0) { erasing = false; hi = (hi + 1) % hints.length; setTimeout(tick, 350); return; }
+                setTimeout(tick, 35);
+            }
+        })();
+    }
+
     function bindEvents() {
   searchPost.addEventListener('input', () => {
     refreshSearchSuggestions(searchPost.value);
     onFilterChange();
   });
+  cycleSearchPlaceholder(searchPost);
 
   [
     filterMyPayLevel,

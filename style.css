@@ -781,18 +781,44 @@ body {
   position: relative;
 }
 
-.input-icon i {
+.input-icon i,
+.input-icon .icon {
   position: absolute;
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
 }
 
 .input-icon input {
   padding-left: 2.8rem;
+}
+
+/* Overlay placeholder (native ::placeholder can't take a gradient). "Search by"
+   stays solid (theme-aware); only the cycling word gets the brand gradient. JS
+   writes the text here, matches the input's font, and hides it once you type. */
+.input-icon .search-ph {
+  position: absolute;
+  left: 2.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: calc(100% - 3.4rem);
+  font-weight: 600;
+  color: var(--text-secondary);   /* "Search by " — dark in light theme, light in dark */
+}
+.input-icon .search-ph .search-ph-word {
+  font-weight: 700;
+  background: linear-gradient(90deg, #FF6B6B, #6B66FF);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 /* INPUTS */
@@ -2473,7 +2499,8 @@ select:disabled {
   color: #94a3b8;
 }
 
-[data-theme="light"] .input-icon i {
+[data-theme="light"] .input-icon i,
+[data-theme="light"] .input-icon .icon {
   color: #64748b;
 }
 
@@ -5781,16 +5808,23 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
     max-height: none;
     overflow: visible;
     align-self: stretch;
+    display: flex;
+    flex-direction: column;
   }
   body.filters-collapsed .kpi-grid { grid-area: kpis; margin-bottom: 0; align-self: stretch; }
   body.filters-collapsed .kpi-card { min-height: 0; }
   body.filters-collapsed .top-toolbar { grid-area: toolbar; margin-bottom: 0; }
   body.filters-collapsed .data-container { grid-area: data; }
 
-  body.filters-collapsed .filters-sidebar .filter-group:not(.fg-primary) { display: none; }
-  body.filters-collapsed .filters-sidebar .fg-primary { margin-bottom: 0; }
+  /* Miniature card = just My Pay Level (top) + Search (below) + the button.
+     Hide the header, Clear-All and every other filter group. */
+  body.filters-collapsed .filters-sidebar .filters-header { display: none; }
+  body.filters-collapsed .filters-sidebar .filter-group:not(.fg-primary):not(.fg-search) { display: none; }
+  body.filters-collapsed .filters-sidebar .fg-search label { display: none; }   /* box only */
+  body.filters-collapsed .filters-sidebar .fg-primary { order: 1; margin-bottom: 0.9rem; }
+  body.filters-collapsed .filters-sidebar .fg-search  { order: 2; margin-bottom: 0; }
   /* collapsed card: button back at the bottom of the compact card */
-  body.filters-collapsed .filters-sidebar .filters-more-btn { order: 0; margin: auto 0 0; }
+  body.filters-collapsed .filters-sidebar .filters-more-btn { order: 3; margin: auto 0 0; }
 
   /* full-width rows: hand the freed space to Post Name (sums to 100%) */
   body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(1),

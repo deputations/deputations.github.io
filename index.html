@@ -40,7 +40,7 @@
   >
 
   <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
-  <link rel="stylesheet" href="style.css?v=ms36">
+  <link rel="stylesheet" href="style.css?v=ms40">
   <link rel="stylesheet" href="navbar.css?v=2">
 </head>
 <body class="filters-collapsed">
@@ -132,20 +132,21 @@
           <button id="clearFiltersBtn" class="text-btn">Clear All</button>
         </div>
 
-        <div class="filter-group">
+        <div class="filter-group fg-search">
           <label for="searchPost">Search</label>
           <div class="input-icon">
             <svg class="icon"><use href="#i-search"/></svg>
-            <input type="text" id="searchPost" placeholder="Post, dept, keywords...">
+            <input type="text" id="searchPost" placeholder="Search by post, dept, keywords…">
+            <span class="search-ph" aria-hidden="true"></span>
           </div>
         </div>
 
         <div class="filter-group fg-primary">
-          <label id="filterMyPayLevelLbl">My Pay Level</label>
+          <label id="filterMyPayLevelLbl">Display deputations for me</label>
           <div class="ms ss" id="filterMyPayLevelSS">
             <button type="button" class="ms-trigger" id="filterMyPayLevelBtn"
                     aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterMyPayLevelLbl">
-              <span class="ms-trigger-label">Any Level</span>
+              <span class="ms-trigger-label">Your Pay Level</span>
               <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </button>
             <div class="ms-panel ss-panel" id="filterMyPayLevelPanel" hidden role="listbox" aria-label="Select your pay level">
@@ -309,7 +310,7 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb13"></script>
-  <script src="app.js?v=ms37"></script>
+  <script src="app.js?v=ms40"></script>
   <script defer src="site-widgets.js?v=15"></script>
 </body>
 </html>
