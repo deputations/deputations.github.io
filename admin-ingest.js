@@ -158,8 +158,9 @@ function undoableStatus(ids, msg) {
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
     }
-    toast(`↩ Restored ${ids.length} row(s) to the Review queue`);
+    toast(`↩ Restored ${ids.length} row(s) to draft`);
     loadDrafts();
+    refreshReviewBadges();
   }, { onExpire: scheduleGc });
 }
 
@@ -746,6 +747,7 @@ async function boot() {
     $('paneIngest').classList.add('hidden');
     $('paneReview').classList.remove('hidden');
   }
+  refreshReviewBadges();   // ensure the Marked badge populates even if Marked isn't the active tab
 }
 
 /* ---------------- WhatsApp channel poster (local bridge) ---------------- */
@@ -812,8 +814,9 @@ async function loadOverview() {
   const strip = $('ovStrip');
   if (!strip) return;
   const iso = (d) => d.toISOString().slice(0, 10);
-  const [drafts, updates, flags, closing, feedbackNew] = await Promise.all([
-    countOf('vacancies?status=eq.draft'),
+  const [drafts, marked, updates, flags, closing, feedbackNew] = await Promise.all([
+    countOf('vacancies?status=eq.draft&marked_for_review=eq.false'),
+    countOf('vacancies?status=eq.draft&marked_for_review=eq.true'),
     countOf('vacancy_updates?status=eq.pending'),
     countOf('vacancy_flags?status=eq.open'),
     countOf(`vacancies?status=eq.approved&last_date_to_apply=gte.${iso(new Date())}&last_date_to_apply=lte.${iso(new Date(Date.now() + 7 * 86400000))}`),
@@ -822,6 +825,7 @@ async function loadOverview() {
   const chip = (n, label, tab, tone) => `<button type="button" class="ov${n && tone ? ' ' + tone : ''}" data-goto="${tab}"><b>${n}</b> ${label}</button>`;
   strip.innerHTML =
     chip(drafts, 'drafts to review', 'review', 'warn') +
+    chip(marked, '🚩 marked for review', 'marked', '') +
     chip(updates, 'pending updates', 'updates', 'warn') +
     chip(flags, 'open flags', 'flags', 'bad') +
     chip(feedbackNew, 'new feedback', 'feedback', 'warn') +
@@ -841,6 +845,7 @@ async function loadOverview() {
   });
   // keep the tab badges in sync from the same counts
   if ($('draftCount')) $('draftCount').textContent = drafts ? `(${drafts})` : '';
+  if ($('markedCount')) $('markedCount').textContent = marked ? `(${marked})` : '';
   if ($('updatesCount')) $('updatesCount').textContent = updates ? `(${updates})` : '';
   if ($('flagCount')) $('flagCount').textContent = flags ? `(${flags})` : '';
   if ($('fbCount')) $('fbCount').textContent = feedbackNew ? `(${feedbackNew})` : '';
@@ -895,15 +900,17 @@ function wireApp() {
   if (ui.flagStatus && $('flagStatus')) $('flagStatus').value = ui.flagStatus;
   if (ui.fbStatus && $('fbStatus')) $('fbStatus').value = ui.fbStatus;
 
-  // tabs
+  // tabs. Review queue and Marked share #paneReview — the only difference is
+  // which set of drafts loadDrafts() pulls (REVIEW_VIEW filter).
   document.querySelectorAll('.tabs button').forEach((b) => {
     b.onclick = () => {
       document.querySelectorAll('.tabs button').forEach((x) => x.classList.remove('active'));
       b.classList.add('active');
       const t = b.dataset.tab;
       saveUI({ tab: t });
+      const reviewish = (t === 'review' || t === 'marked');
       $('paneIngest').classList.toggle('hidden', t !== 'ingest');
-      $('paneReview').classList.toggle('hidden', t !== 'review');
+      $('paneReview').classList.toggle('hidden', !reviewish);
       $('paneManage').classList.toggle('hidden', t !== 'manage');
       $('paneFlags').classList.toggle('hidden', t !== 'flags');
       $('paneFeedback').classList.toggle('hidden', t !== 'feedback');
@@ -912,7 +919,7 @@ function wireApp() {
       // re-trigger on a later manual visit (the flag's Open button re-sets it)
       if (t !== 'manage') ACTIVE_FLAG = null;
       if (t === 'ingest') loadOverview();
-      if (t === 'review') loadDrafts();
+      if (reviewish) { REVIEW_VIEW = (t === 'marked') ? 'marked' : 'review'; loadDrafts(); }
       if (t === 'manage') loadManage();
       if (t === 'flags') loadFlags();
       if (t === 'feedback') loadFeedback();
@@ -934,14 +941,6 @@ function wireApp() {
   if ($('mgSource')) $('mgSource').onchange = () => {
     const v = $('mgSource').value;
     MG_PAGE = 1; saveUI({ mgSource: v, mgPage: 1 });
-    // "🚩 Marked for review" should surface marked rows regardless of status —
-    // auto-broaden to All so you see drafts AND approved AND rejected marks.
-    if (v === '__marked__' && $('mgStatus').value !== 'all') {
-      $('mgStatus').value = 'all';
-      saveUI({ mgStatus: 'all' });
-      loadManage();
-      return;
-    }
     renderManage();
   };
   // Populate all three sort dropdowns from the shared option list (keeps them
@@ -1141,10 +1140,11 @@ function wireApp() {
     // fetch the matching rows up-front: exact count for the confirm + dates for
     // the expired warning (the PATCH itself re-applies the filter, so a race
     // just means a freshly-arrived draft also gets approved — same as before)
+    const viewFilt = `&marked_for_review=eq.${REVIEW_VIEW === 'marked'}`;
     const rows = [];
     try {
       for (let from = 0; ; from += 1000) {
-        const cr = await api(`/rest/v1/vacancies?status=eq.draft&${filt}&select=id,last_date_to_apply&order=id.asc&limit=1000&offset=${from}`);
+        const cr = await api(`/rest/v1/vacancies?status=eq.draft${viewFilt}&${filt}&select=id,last_date_to_apply&order=id.asc&limit=1000&offset=${from}`);
         if (!cr.ok) break;
         const chunk = await cr.json();
         rows.push(...chunk);
@@ -1169,7 +1169,7 @@ function wireApp() {
     const b = $('approveAllBtn'); b.disabled = true;
     try {
       // one PATCH; return=representation gives the exact ids for Undo
-      const r = await api(`/rest/v1/vacancies?status=eq.draft&${filt}&select=id`, {
+      const r = await api(`/rest/v1/vacancies?status=eq.draft${viewFilt}&${filt}&select=id`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
         body: JSON.stringify({ status: 'approved' }),
       });
@@ -1184,9 +1184,10 @@ function wireApp() {
     const n = CURRENT_DRAFT_IDS.length;
     if (!n) return toast('No drafts to reject');
     if (!confirm(`Reject ALL ${n} draft(s)?\nThey move to Manage → Rejected (and you can Undo for a few seconds).`)) return;
+    const viewFilt = `&marked_for_review=eq.${REVIEW_VIEW === 'marked'}`;
     const b = $('rejectAllBtn'); b.disabled = true;
     try {
-      const r = await api('/rest/v1/vacancies?status=eq.draft&select=id', {
+      const r = await api(`/rest/v1/vacancies?status=eq.draft${viewFilt}&select=id`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
         body: JSON.stringify({ status: 'rejected' }),
       });
@@ -1305,6 +1306,9 @@ const DRAFT_PAGE_SIZE = 25;
 let DRAFT_PAGE = 1;
 let DRAFT_SORT = 'source';   // default preserves the grouped-by-source view
 let DRAFT_ROWS = [];   // full current draft list (display source for pagination)
+// 'review' = drafts NOT marked-for-review · 'marked' = drafts that ARE marked.
+// Both views share #paneReview and the same workflow; only the loaded set differs.
+let REVIEW_VIEW = 'review';
 let DRAFT_QUICK = new Set();   // active quick-filter chips (confidence / gaps / deadline)
 // one-shot restore for the dynamic Level/Source dropdowns (their options only
 // exist after the first loadDrafts) — consumed by populateDraft*Filter below
@@ -1313,16 +1317,42 @@ let RESTORE_SOURCE = '';
 
 async function loadDrafts() {
   try {
-    // id.asc tiebreaker keeps the 1000-row pages stable across requests
-    const data = await fetchAll('vacancies?status=eq.draft&select=*&order=ingest_job_id.asc,vacancy_id.asc,id.asc');
+    // id.asc tiebreaker keeps the 1000-row pages stable across requests.
+    // Marked tab gets the same draft set, filtered to marked_for_review rows.
+    const markedFilter = `&marked_for_review=eq.${REVIEW_VIEW === 'marked'}`;
+    const data = await fetchAll(`vacancies?status=eq.draft${markedFilter}&select=*&order=ingest_job_id.asc,vacancy_id.asc,id.asc`);
     CURRENT_DRAFT_IDS = data.map((x) => x.id);   // whole queue — bulk ops use this
     DRAFT_ROWS = data;
     populateDraftSourceFilter();
     DRAFT_PAGE = 1;
-    $('draftCount').textContent = data.length ? `(${data.length})` : '';
     populateDraftLevelFilter();
     renderDrafts();
+    refreshReviewBadges();    // keep both tab badges in sync with this load
+    updateReviewHeading();
   } catch (e) { toast('Load error: ' + e.message); }
+}
+
+// Count-only refresh of the Review-queue and Marked tab badges. Called after
+// loadDrafts and after every mark / unmark / approve / reject so both numbers
+// stay correct even when a row moves between the two tabs.
+async function refreshReviewBadges() {
+  const [drafts, marked] = await Promise.all([
+    countOf('vacancies?status=eq.draft&marked_for_review=eq.false'),
+    countOf('vacancies?status=eq.draft&marked_for_review=eq.true'),
+  ]);
+  if ($('draftCount')) $('draftCount').textContent = drafts ? `(${drafts})` : '';
+  if ($('markedCount')) $('markedCount').textContent = marked ? `(${marked})` : '';
+}
+
+// Rewrites the Review pane's h2 + "what to do" hint based on which tab the
+// pane is currently representing (Review queue vs Marked).
+function updateReviewHeading() {
+  const h = document.querySelector('#paneReview h2');
+  const hint = $('reviewHint');
+  if (h) h.textContent = REVIEW_VIEW === 'marked' ? '🚩 Marked for review' : 'Review queue';
+  if (hint) hint.innerHTML = REVIEW_VIEW === 'marked'
+    ? 'Drafts you flagged for a closer look. Same workflow as the Review queue — <b>🚩 Marked</b> unmarks the row (it goes back to Review). Press <kbd>?</kbd> for keyboard shortcuts.'
+    : 'Click <b>Edit</b> to change fields, then <b>Approve</b> (publishes live) or <b>Reject</b> (moves to Manage → Rejected; undoable). Tick the checkboxes to <b>approve / reject in bulk</b>. Click <b>📄 source</b> to view the original page beside it. Press <kbd>?</kbd> for keyboard shortcuts.';
 }
 
 // Fill the Level filter with the distinct pay levels present in the current
@@ -1907,9 +1937,9 @@ function draftCard(r) {
     window.open(/^https?:\/\//i.test(url) ? url : 'https://' + url, '_blank', 'noopener');
   };
 
-  // Toggle the marked-for-review flag in place (no row removal — vacancy stays
-  // in the queue). The badge + button label update without re-rendering, so
-  // any open editor/keyboard focus survives.
+  // Toggle the marked-for-review flag. A toggle MOVES the row to the other
+  // tab (Review ↔ Marked), so we drop it from the current view rather than
+  // updating in place — and refresh both tab badges so the counts shift too.
   el.querySelector('[data-act="mark"]').onclick = async (e) => {
     const btn = e.currentTarget;
     const next = !r.marked_for_review;
@@ -1917,23 +1947,11 @@ function draftCard(r) {
     try {
       await patchRow({ marked_for_review: next });
       r.marked_for_review = next;
-      btn.textContent = next ? '🚩 Marked' : '🚩 Mark';
-      btn.classList.toggle('good', next);
-      const headInfo = el.querySelector('.head > div:first-child > span');
-      const existing = headInfo && headInfo.querySelector('.mark-badge');
-      if (next && headInfo && !existing) {
-        const span = document.createElement('span');
-        span.className = 'pill mark-badge';
-        span.title = 'Marked for review';
-        span.textContent = '🚩 review';
-        const conf = headInfo.querySelector(`.pill.${(r.confidence || 'medium').toLowerCase()}`)
-          || headInfo.querySelector('.pill');
-        if (conf) conf.insertAdjacentElement('afterend', span);
-        else headInfo.appendChild(span);
-      } else if (!next && existing) existing.remove();
-      toast(next ? '🚩 Marked for review' : 'Unmarked');
-    } catch (err) { toast('Update failed: ' + err.message); }
-    finally { btn.disabled = false; }
+      el.remove();
+      dropFromQueue([r.id]);
+      refreshReviewBadges();
+      toast(next ? '🚩 Marked for review — moved to the Marked tab' : 'Unmarked — back in the Review queue');
+    } catch (err) { toast('Update failed: ' + err.message); btn.disabled = false; }
   };
   return el;
 }
@@ -2011,7 +2029,9 @@ async function refreshWaPending() {
 async function loadManage() {
   const status = $('mgStatus').value;
   let q = 'vacancies?select=*&order=created_at.desc,id.asc';
-  if (status !== 'all') q += `&status=eq.${status}`;
+  // "marked" is a virtual status — it really means "any status, marked_for_review=true"
+  if (status === 'marked') q += '&marked_for_review=eq.true';
+  else if (status !== 'all') q += `&status=eq.${status}`;
   // non-blocking: 📣 badges pop in when the local bridge answers
   refreshWaPending().then(() => { if (WA_PENDING && !$('paneManage').classList.contains('hidden')) renderManage(); });
   try {
@@ -2021,8 +2041,8 @@ async function loadManage() {
   } catch (e) { toast('Load error: ' + e.message); }
 }
 
-// Mirror of populateDraftSourceFilter for Manage, plus a special leading item
-// "🚩 Marked for review" that filters to marked rows (any source).
+// Mirror of populateDraftSourceFilter for Manage. (The Status dropdown's
+// "🚩 Marked" item handles the marked-for-review filter now.)
 let RESTORE_MG_SOURCE = '';
 function populateManageSourceFilter() {
   const sel = $('mgSource');
@@ -2031,17 +2051,15 @@ function populateManageSourceFilter() {
   const srcs = [...new Set(MANAGE_ROWS.map((r) => String(r.source_category || r.source_type || '').trim()).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b));
   sel.innerHTML = '<option value="">All</option>'
-    + '<option value="__marked__">🚩 Marked for review</option>'
     + srcs.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
-  if (prev && (prev === '__marked__' || srcs.includes(prev))) sel.value = prev;
+  if (prev && srcs.includes(prev)) sel.value = prev;
 }
 
 function renderManage() {
   const q = ($('mgSearch').value || '').toLowerCase().trim();
   const src = ($('mgSource') && $('mgSource').value || '').trim();
   let filtered = !q ? MANAGE_ROWS : MANAGE_ROWS.filter((r) => rowMatchesQuery(r, q));
-  if (src === '__marked__') filtered = filtered.filter((r) => r.marked_for_review === true);
-  else if (src) filtered = filtered.filter((r) => String(r.source_category || r.source_type || '').trim() === src);
+  if (src) filtered = filtered.filter((r) => String(r.source_category || r.source_type || '').trim() === src);
   const mode = ($('mgSort') && $('mgSort').value) || 'upload';
   const rows = sortRows(filtered, mode);
   $('manageCount').textContent = `(${rows.length})`;
@@ -2275,7 +2293,9 @@ function manageCard(r, isNew) {
       if (cached) cached.marked_for_review = next;
       // if we're currently filtered to "Marked for review" and the row just
       // got UNmarked, drop it from the page instead of re-rendering it visibly
-      const inMarkedView = $('mgSource') && $('mgSource').value === '__marked__';
+      // If we're currently filtered to "Marked" and the row just got UNmarked,
+      // drop it from view rather than re-rendering it as visible-but-unmarked.
+      const inMarkedView = $('mgStatus') && $('mgStatus').value === 'marked';
       if (inMarkedView && !next) { el.remove(); renderManage(); }
       else el.replaceWith(manageCard(r, false));
       toast(next ? '🚩 Marked for review' : 'Unmarked');

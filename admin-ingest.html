@@ -143,6 +143,7 @@
       <div class="tabs">
         <button id="tabIngest" class="active" data-tab="ingest">⬆️ Ingest</button>
         <button id="tabReview" data-tab="review">📝 Review queue <span id="draftCount"></span></button>
+        <button id="tabMarked" data-tab="marked">🚩 Marked <span id="markedCount"></span></button>
         <button id="tabManage" data-tab="manage">🗂 Manage data</button>
         <button id="tabUpdates" data-tab="updates">🔀 Updates <span id="updatesCount"></span></button>
         <button id="tabFlags" data-tab="flags">⚑ Flags <span id="flagCount"></span></button>
@@ -239,7 +240,7 @@
             <button id="refreshBtn">↻ Refresh</button>
           </div>
         </div>
-        <p class="muted">Click <b>Edit</b> to change fields, then <b>Approve</b> (publishes live) or <b>Reject</b> (moves to Manage → Rejected; undoable). Approve without editing publishes the row as-is. Tick the checkboxes to <b>approve / reject in bulk</b>. Click <b>📄 source</b> to view the original page beside it. Press <kbd>?</kbd> for keyboard shortcuts.</p>
+        <p id="reviewHint" class="muted">Click <b>Edit</b> to change fields, then <b>Approve</b> (publishes live) or <b>Reject</b> (moves to Manage → Rejected; undoable). Approve without editing publishes the row as-is. Tick the checkboxes to <b>approve / reject in bulk</b>. Click <b>📄 source</b> to view the original page beside it. Press <kbd>?</kbd> for keyboard shortcuts.</p>
         <div id="draftQuick" class="quick">
           <button type="button" data-q="high">High</button>
           <button type="button" data-q="medium">Med</button>
@@ -287,11 +288,12 @@
             <select id="mgStatus" style="width:auto">
               <option value="approved">Approved (live)</option>
               <option value="draft">Draft</option>
+              <option value="marked">🚩 Marked</option>
               <option value="rejected">Rejected</option>
               <option value="all">All</option>
             </select>
             <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Source:
-              <select id="mgSource" style="width:auto"><option value="">All</option><option value="__marked__">🚩 Marked for review</option></select>
+              <select id="mgSource" style="width:auto"><option value="">All</option></select>
             </label>
             <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Sort:
               <select id="mgSort" style="width:auto"></select>
@@ -374,6 +376,6 @@
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb13"></script>
   <script src="shared/vacancy-utils.js?v=sb3"></script>
-  <script src="admin-ingest.js?v=sb48"></script>
+  <script src="admin-ingest.js?v=sb49"></script>
 </body>
 </html>
