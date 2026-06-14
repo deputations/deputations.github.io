@@ -576,7 +576,7 @@
       <h2 style="font-family:Sora,sans-serif;letter-spacing:-0.02em;margin:0 0 1rem;">${existing ? 'Edit search' : 'New saved search'}</h2>
       <form class="md-modal-form" id="mdSearchForm">
         <div>
-          <label>Name</label>
+          <label>Name the saved search</label>
           <input class="md-input" name="name" required value="${U.escapeHtml(existing?.name || '')}" placeholder="e.g. Level 12–13 · Delhi · Defence">
         </div>
         <div class="row">
@@ -1584,13 +1584,17 @@
   }
 
   function updateTabBadges() {
-    const bm = document.getElementById('tabBadgeBookmarks');
-    const count = store.bookmarks().length;
-    if (bm) { bm.textContent = count; bm.hidden = !count; }
-
-    const ss = document.getElementById('tabBadgeSearches');
-    const totalNew = store.searches().reduce((sum, s) => sum + computeSearchNewCount(s), 0);
-    if (ss) { ss.textContent = totalNew; ss.hidden = !totalNew; }
+    // CSS sets .md-tab-badge { display:inline-block }, which beats the [hidden]
+    // attribute — so toggle inline display too, otherwise a 0 count stays on screen.
+    const setBadge = (el, n) => {
+      if (!el) return;
+      const show = Number(n) > 0;
+      el.textContent = n;
+      el.hidden = !show;
+      el.style.display = show ? '' : 'none';
+    };
+    setBadge(document.getElementById('tabBadgeBookmarks'), store.bookmarks().length);
+    setBadge(document.getElementById('tabBadgeSearches'), store.searches().length);
   }
 
   function toast(message) {
