@@ -1062,12 +1062,3 @@ body.dex-drawer-open { overflow: hidden; }   /* scroll-lock the page behind the 
   color: #ffffff;
   box-shadow: 0 12px 30px rgba(8, 145, 178, 0.35);
 }
-
-/* ============================================================
-   M7 — calmer hero CTA hierarchy: drop the infinite pulse so the
-   primary CTA leads. "Report" keeps its accent (now static).
-   Revert: delete this block to restore the pulsing animation.
-   ============================================================ */
-.dex-btn-attention,
-[data-theme="light"] .dex-btn-attention { animation: none; }
-.dex-btn-attention::before { animation: none; opacity: 0.5; }
