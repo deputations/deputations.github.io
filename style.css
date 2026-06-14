@@ -143,6 +143,24 @@ table {
   --shadow-glass: 0 10px 32px -8px rgba(15, 23, 42, 0.14);
 }
 
+/* Reading / scroll progress bar — fixed at the very top, brand gradient that
+   swaps automatically with the theme (uses the themed --primary/--accent vars). */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0;
+  z-index: 2000;
+  background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+  transition: width .1s linear;
+  pointer-events: none;
+  will-change: width;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-progress { transition: none; }
+}
+
 /* RESET */
 * {
   box-sizing: border-box;
@@ -1089,6 +1107,26 @@ select:disabled {
   box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.10);
 }
 
+/* "New" quick filter — a small brand-gradient dot so it reads as "latest additions". */
+.quick-pill--new::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 0.45rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF6B6B, #6B66FF);
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+.quick-pill--new.active {
+  border-color: transparent;
+  color: var(--text-primary);
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.16), rgba(107, 102, 255, 0.16));
+  box-shadow: 0 0 0 2px rgba(107, 102, 255, 0.12);
+}
+
 .view-toggles {
   margin-left: auto;
   display: flex;
@@ -1118,6 +1156,19 @@ select:disabled {
 .data-container {
   min-height: 400px;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Desktop: let the results column fill the grid row so the table card's bottom
+   can reach the (often taller, expanded) filters sidebar instead of stopping short.
+   The card grows via flex, but the table keeps its NATURAL row heights at the top —
+   any spare height is left as empty space below the rows (not distributed into them).
+   When the results are already taller than the sidebar this is a no-op. */
+@media (min-width: 769px) {
+  .main-layout { align-items: stretch; }
+  .filters-sidebar { align-self: start; }
+  .dashboard-content { display: flex; flex-direction: column; }
+  .data-container { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+  .view-table .table-wrapper { flex: 1 1 auto; }
 }
 
 .view-table .cards-grid {
@@ -5770,6 +5821,35 @@ body.vxd-open { overflow: hidden; }
   .filters-more-btn .icon { width: 16px; height: 16px; }
   .filters-more-caret { transition: transform 0.2s ease; }
   .filters-more-btn[aria-expanded="true"] .filters-more-caret { transform: rotate(180deg); }
+
+  /* Cue: collapsed + a hidden filter is active → fill the button with the brand
+     gradient (theme-aware) and show a count, so unseen filters aren't a surprise. */
+  .filters-more-btn--cue {
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: #fff;
+    box-shadow: 0 6px 18px -7px color-mix(in srgb, var(--accent-color) 65%, transparent);
+  }
+  .filters-more-btn--cue:hover {
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    filter: brightness(1.06);
+  }
+  .filters-more-count {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.2rem;
+    height: 1.2rem;
+    padding: 0 0.34rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.28);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .filters-more-btn--cue .filters-more-count { display: inline-flex; }
 
   /* expanded sidebar: "Hide filters" sits at the top, right below the
      Filters / Clear All header */

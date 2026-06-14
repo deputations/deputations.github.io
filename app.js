@@ -297,6 +297,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterMinistry = createSingleSelect(document.getElementById('filterMinistrySS'), {
       placeholder: 'All Ministries',
     });
+    const filterOrgType = createSingleSelect(document.getElementById('filterOrgTypeSS'), {
+      placeholder: 'All Types',
+    });
+    const filterRegion = createSingleSelect(document.getElementById('filterRegionSS'), {
+      placeholder: 'All Regions',
+    });
     const filterLocation = createMultiSelect(document.getElementById('filterLocationMS'), {
       placeholder: 'All Locations',
       singularPattern: (v) => v,
@@ -369,6 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let vtDiscrete = false;
 
     let quickFilters = {
+        newOnly: false,
         closing7: false,
         delhiNcr: false,
         closingToday: false
@@ -386,6 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
    initializeEnhancements();
 initializeMobileFilterAccordion();
 initDesktopFilterCollapse();
+setupScrollProgress();
 initializeModal();
 updateWatchlistUI();
 setLoadingUI();
@@ -691,6 +699,8 @@ function hydrateFiltersFromUrl() {
         setIfPresent('experience', filterExperience);
         setIfPresent('level', filterLevel);
         setIfPresent('ministry', filterMinistry);
+        setIfPresent('orgType', filterOrgType);
+        setIfPresent('region', filterRegion);
         // multi-select: ?location=a,b,c
         if (params.has('location')) {
           const arr = (params.get('location') || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -699,6 +709,7 @@ function hydrateFiltersFromUrl() {
         if (params.has('status')) filterStatus.value = params.get('status');
 
         const quick = (params.get('quick') || '').split(',').filter(Boolean);
+        if (quick.includes('newOnly')) quickFilters.newOnly = true;
         if (quick.includes('closing7')) quickFilters.closing7 = true;
         if (quick.includes('closingToday')) quickFilters.closingToday = true;
         if (quick.includes('delhiNcr')) quickFilters.delhiNcr = true;
@@ -874,6 +885,28 @@ function getDateSortValue(value) {
 // sits beside the KPIs by default (body.filters-collapsed, set in the markup so
 // there's no flash); "Show more filters" restores the full left sidebar.
 // Mobile (≤768px) keeps its own Show Filters accordion untouched.
+// Reading/scroll progress bar (matches the Rules page). Widens the fixed top
+// bar in proportion to how far the page is scrolled; throttled via rAF.
+function setupScrollProgress() {
+  const bar = document.getElementById('scrollProgress');
+  if (!bar) return;
+  let ticking = false;
+  const update = () => {
+    const h = document.documentElement;
+    const max = (h.scrollHeight - h.clientHeight) || 1;
+    bar.style.width = Math.min(100, (h.scrollTop / max) * 100) + '%';
+    ticking = false;
+  };
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(update);
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  update();
+}
+
 function initDesktopFilterCollapse() {
   const btn = document.getElementById('desktopFilterToggle');
   if (!btn) return;
@@ -882,10 +915,11 @@ function initDesktopFilterCollapse() {
 
   const applyLabel = (expanded) => {
     btn.setAttribute('aria-expanded', String(expanded));
-    if (label) label.textContent = expanded ? 'Hide filters' : 'Show more filters';
+    if (label) label.textContent = expanded ? 'Hide filters' : 'Many more filters';
   };
   const applyLayout = (expanded) => {
     document.body.classList.toggle('filters-collapsed', !expanded);
+    updateHiddenFilterCue(); // cue only shows while collapsed
   };
 
   // Always load collapsed — expanding is a per-visit choice, not remembered.
@@ -1269,7 +1303,7 @@ function renderTable(data) {
         // changes filters), so we tally them ONCE here — in a single pass — rather
         // than recomputing per filter change.
         const activeRows = [];
-        const levelCounts = {}, ministryCounts = {}, locationCounts = {};
+        const levelCounts = {}, ministryCounts = {}, locationCounts = {}, orgTypeCounts = {}, regionCounts = {};
         let inactiveCount = 0;
         rawData.forEach(i => {
             const st = safe(i.Status);
@@ -1278,6 +1312,8 @@ function renderTable(data) {
                 const lv = safe(i.Level_Text);   if (lv)  levelCounts[lv]    = (levelCounts[lv]    || 0) + 1;
                 const mn = safe(i.Ministry);      if (mn)  ministryCounts[mn] = (ministryCounts[mn] || 0) + 1;
                 const loc = formatLocation(i);    if (loc) locationCounts[loc] = (locationCounts[loc] || 0) + 1;
+                const ot = safe(i.Organisation_Type); if (ot) orgTypeCounts[ot] = (orgTypeCounts[ot] || 0) + 1;
+                const rg = safe(i.Region);        if (rg)  regionCounts[rg]   = (regionCounts[rg]   || 0) + 1;
             } else if (st === 'Inactive') {
                 inactiveCount++;
             }
@@ -1329,6 +1365,25 @@ function renderTable(data) {
         const ministries = Object.keys(ministryCounts).sort((a, b) => a.localeCompare(b));
         filterMinistry.populate([{ value: '', name: 'All Ministries', count: null }].concat(
             ministries.map(m => ({ value: m, name: m, count: ministryCounts[m] }))
+        ));
+
+        // ORGANISATION TYPE — active vacancies per type, most common first.
+        const orgTypes = Object.keys(orgTypeCounts).sort((a, b) =>
+            (orgTypeCounts[b] - orgTypeCounts[a]) || a.localeCompare(b));
+        filterOrgType.populate([{ value: '', name: 'All Types', count: null }].concat(
+            orgTypes.map(t => ({ value: t, name: t, count: orgTypeCounts[t] }))
+        ));
+
+        // REGION — derived client-side from the location's state (enrich.js). Shown
+        // in a fixed geographic order; only regions with ≥1 active vacancy appear.
+        const REGION_ORDER = ['North', 'South', 'East', 'West', 'Central', 'NorthEast'];
+        const REGION_LABEL = { NorthEast: 'North-East' };
+        const regions = Object.keys(regionCounts).sort((a, b) => {
+            const ia = REGION_ORDER.indexOf(a), ib = REGION_ORDER.indexOf(b);
+            return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
+        });
+        filterRegion.populate([{ value: '', name: 'All Regions', count: null }].concat(
+            regions.map(r => ({ value: r, name: REGION_LABEL[r] || r, count: regionCounts[r] }))
         ));
 
         // STATUS — count per status. Preserve the default "Active" selection.
@@ -1427,6 +1482,8 @@ function renderTable(data) {
     filterExperience,
     filterLevel,
     filterMinistry,
+    filterOrgType,
+    filterRegion,
     filterLocation,
     filterStatus
   ].forEach((el) => {
@@ -1456,12 +1513,15 @@ function renderTable(data) {
     if (filterExperience) filterExperience.value = '';
     filterLevel.value = '';
     filterMinistry.value = '';
+    filterOrgType.value = '';
+    filterRegion.value = '';
     filterLocation.setValues([]);
     filterStatus.value = 'Active';
     showWatchlistOnly = false;
     kpiFilter = 'all';
 
     quickFilters = {
+      newOnly: false,
       closing7: false,
       delhiNcr: false,
       closingToday: false
@@ -1501,6 +1561,8 @@ function renderTable(data) {
     if (filterName === 'experience' && filterExperience) filterExperience.value = '';
     if (filterName === 'level') filterLevel.value = '';
     if (filterName === 'ministry') filterMinistry.value = '';
+    if (filterName === 'orgType') filterOrgType.value = '';
+    if (filterName === 'region') filterRegion.value = '';
     if (filterName === 'location') filterLocation.setValues([]);
     if (filterName && filterName.startsWith('location:')) {
       const v = filterName.slice('location:'.length);
@@ -1706,6 +1768,7 @@ kpiGrid.addEventListener('click', (e) => {
   const paint = () => {
     renderKPIs(baseFilteredData);
     renderActiveFilterChips();
+    updateHiddenFilterCue();
 
     if (currentView === 'card') {
       // Cards group sibling posts (same org + post + level + notification),
@@ -1802,6 +1865,8 @@ function isNewVacancy(item) {
   const myYears = filterExperience ? filterExperience.value : '';
   const level = filterLevel.value;
   const ministry = filterMinistry.value;
+  const orgType = filterOrgType.value;
+  const region = filterRegion.value;
   const locations = filterLocation.values;
   const locationSet = locations.length ? new Set(locations) : null;
   const status = filterStatus.value;
@@ -1833,6 +1898,8 @@ function isNewVacancy(item) {
     if (search && !fuzzyIncludes(search, searchableText)) return false;
     if (level && itemLevel !== level) return false;
     if (ministry && itemMinistry !== ministry) return false;
+    if (orgType && safe(item.Organisation_Type) !== orgType) return false;
+    if (region && safe(item.Region) !== region) return false;
     if (locationSet && !locationSet.has(itemLocation)) return false;
     if (applyStatusFilter && status && itemStatus !== status) return false;
 
@@ -1848,6 +1915,8 @@ function isNewVacancy(item) {
 
     if (showWatchlistOnly && !watchlist.has(itemId)) return false;
     if (applyStatusFilter && !Number.isNaN(itemDaysLeft) && status === 'Active' && itemDaysLeft < 0) return false;
+
+    if (quickFilters.newOnly && !isNewVacancy(item)) return false;
 
     if (quickFilters.closing7) {
       if (Number.isNaN(itemDaysLeft) || itemDaysLeft < 0 || itemDaysLeft > 7) return false;
@@ -2061,6 +2130,8 @@ function isNewVacancy(item) {
   if (filterExperience && filterExperience.value) chips.push(makeChip('experience', `Experience: ${filterExperience.value === '10' ? '10+' : escapeHtml(filterExperience.value)} yr`));
   if (filterLevel.value) chips.push(makeChip('level', `Pay Level: ${escapeHtml(filterLevel.value)}`));
   if (filterMinistry.value) chips.push(makeChip('ministry', `Ministry: ${escapeHtml(filterMinistry.value)}`));
+  if (filterOrgType.value) chips.push(makeChip('orgType', `Type: ${escapeHtml(filterOrgType.value)}`));
+  if (filterRegion.value) chips.push(makeChip('region', `Region: ${escapeHtml(filterRegion.value === 'NorthEast' ? 'North-East' : filterRegion.value)}`));
   filterLocation.values.forEach(loc => {
     chips.push(makeChip(`location:${loc}`, `Location: ${escapeHtml(loc)}`));
   });
@@ -2071,6 +2142,45 @@ function isNewVacancy(item) {
   if (kpiFilter === 'closingSoon') chips.push(makeChip('kpi', 'KPI: Closing Soon'));
 
   activeFilters.innerHTML = chips.join('');
+}
+
+// When the sidebar is collapsed, the filters living in the "Many more filters"
+// drawer (everything except My Pay Level + Search) are hidden — yet they may still
+// be narrowing the results. Flag that on the toggle button (brand-gradient fill +
+// a count) so the user isn't confused by an unseen filter. Expanded = normal look.
+function countHiddenActiveFilters() {
+  let n = 0;
+  if (filterExperience && filterExperience.value) n++;
+  if (filterLevel.value) n++;
+  if (filterMinistry.value) n++;
+  if (filterOrgType.value) n++;
+  if (filterRegion.value) n++;
+  if (filterLocation.values.length) n++;
+  if (filterStatus.value && filterStatus.value !== 'Active') n++; // Active is the default
+  return n;
+}
+
+function updateHiddenFilterCue() {
+  const btn = document.getElementById('desktopFilterToggle');
+  if (!btn) return;
+  const n = countHiddenActiveFilters();
+  const show = document.body.classList.contains('filters-collapsed') && n > 0;
+
+  btn.classList.toggle('filters-more-btn--cue', show);
+  btn.title = show
+    ? `${n} active filter${n > 1 ? 's' : ''} hidden in here — click to view`
+    : '';
+
+  let badge = btn.querySelector('.filters-more-count');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.className = 'filters-more-count';
+    badge.setAttribute('aria-hidden', 'true');
+    const caret = btn.querySelector('.filters-more-caret');
+    if (caret) caret.insertAdjacentElement('beforebegin', badge);
+    else btn.appendChild(badge);
+  }
+  badge.textContent = String(n);
 }
 
     function makeChip(filterName, label) {
@@ -2895,6 +3005,9 @@ function syncCardSortUI() {
         if (!quickFiltersBar) return;
 
         quickFiltersBar.innerHTML = `
+            <button type="button" class="quick-pill quick-pill--new ${quickFilters.newOnly ? 'active' : ''}" data-quick-filter="newOnly">
+                New
+            </button>
             <button type="button" class="quick-pill ${quickFilters.closing7 ? 'active' : ''}" data-quick-filter="closing7">
                 Closing in 7 days
             </button>

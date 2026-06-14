@@ -40,10 +40,13 @@
   >
 
   <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
-  <link rel="stylesheet" href="style.css?v=ms40">
+  <link rel="stylesheet" href="style.css?v=ms47">
   <link rel="stylesheet" href="navbar.css?v=2">
 </head>
 <body class="filters-collapsed">
+  <!-- reading/scroll progress bar — themed (brand gradient swaps with the theme) -->
+  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
   <!-- inline icon sprite (no icon CDN dependency) -->
   <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
     <defs>
@@ -202,6 +205,20 @@
         </div>
 
         <div class="filter-group">
+          <label id="filterOrgTypeLbl">Organisation Type</label>
+          <div class="ms ss" id="filterOrgTypeSS">
+            <button type="button" class="ms-trigger" id="filterOrgTypeBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterOrgTypeLbl">
+              <span class="ms-trigger-label">All Types</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="ms-panel ss-panel" id="filterOrgTypePanel" hidden role="listbox" aria-label="Select organisation type">
+              <ul class="ms-list ss-list" id="filterOrgTypeList" role="listbox"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-group">
           <label id="filterLocationLbl">Location</label>
           <div class="ms" id="filterLocationMS">
             <button type="button" class="ms-trigger" id="filterLocationBtn"
@@ -240,6 +257,20 @@
         </div>
 
         <div class="filter-group">
+          <label id="filterRegionLbl">Region</label>
+          <div class="ms ss" id="filterRegionSS">
+            <button type="button" class="ms-trigger" id="filterRegionBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterRegionLbl">
+              <span class="ms-trigger-label">All Regions</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="ms-panel ss-panel" id="filterRegionPanel" hidden role="listbox" aria-label="Select region">
+              <ul class="ms-list ss-list" id="filterRegionList" role="listbox"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-group">
           <label id="filterStatusLbl">Status</label>
           <div class="ms ss" id="filterStatusSS">
             <button type="button" class="ms-trigger ms-trigger--active" id="filterStatusBtn"
@@ -255,7 +286,7 @@
 
         <button type="button" id="desktopFilterToggle" class="filters-more-btn" aria-expanded="false" aria-controls="filtersSidebar">
           <svg class="icon"><use href="#i-sliders"/></svg>
-          <span>Show more filters</span>
+          <span>Many more filters</span>
           <svg class="icon filters-more-caret"><use href="#i-chevron-down"/></svg>
         </button>
 
@@ -310,7 +341,7 @@
 
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb13"></script>
-  <script src="app.js?v=ms40"></script>
+  <script src="app.js?v=ms47"></script>
   <script defer src="site-widgets.js?v=15"></script>
 </body>
 </html>
