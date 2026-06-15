@@ -129,6 +129,7 @@
   ".sw-fb .like.on{border-color:var(--sw-bad)}" +
   ".sw-fb .like.on .hp{fill:url(#swHeartGrad);stroke:none}" +
   ".sw-fb .like.on svg{filter:drop-shadow(0 2px 6px rgba(225,29,72,.4));animation:swPop .45s cubic-bezier(.34,1.56,.64,1)}" +
+  ".sw-fb.liked .dislike{display:none}" +
   "@keyframes swPop{0%{transform:scale(.6)}60%{transform:scale(1.3)}100%{transform:scale(1)}}" +
 
   /* ===== DISCLAIMER — footer link + modal ===== */
@@ -350,11 +351,14 @@
     if (SB_OK) rpc("get_sentiment", { p_page: FB_KEY }).then(function (r) { setCount(r ? r.ups : null); });
     else setCount(null);
 
-    if (alreadyVoted === "up") likeBtn.classList.add("on");
+    // Once the page is LIKED, the dislike is no longer offered — just the heart +
+    // count remains. (A dislike leaves both as-is, since it only routes to feedback.)
+    if (alreadyVoted === "up") { likeBtn.classList.add("on"); wrap.classList.add("liked"); }
 
     // LIKE — records a site-wide thumbs-up, one per device; fills the heart.
     likeBtn.addEventListener("click", function () {
       likeBtn.classList.add("on");
+      wrap.classList.add("liked");                     // hides the dislike button
       if (ls(true, votedKey)) return;                 // already voted — no double count
       ls(false, votedKey, "up");
       rpc("record_sentiment", { p_page: FB_KEY, p_vote: "up" }).then(function (r) { if (r) setCount(r.ups); });
