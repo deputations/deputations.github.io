@@ -2464,8 +2464,12 @@ function feedbackCard(f) {
     const what = f.subject ? `"${f.subject}"` : 'this feedback';
     if (!confirm(`Delete ${what}? This cannot be undone.`)) return;
     try {
-      const r = await api(`/rest/v1/feedback?id=eq.${f.id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+      // return=representation so we can confirm a row was actually removed — a
+      // missing RLS DELETE policy returns 204 with an empty body (silent no-op).
+      const r = await api(`/rest/v1/feedback?id=eq.${f.id}`, { method: 'DELETE', headers: { Prefer: 'return=representation' } });
       if (!r.ok) throw new Error('HTTP ' + r.status);
+      const deleted = await r.json().catch(() => []);
+      if (!Array.isArray(deleted) || !deleted.length) throw new Error('nothing deleted (permission?)');
       el.remove(); toast('Feedback deleted'); refreshFeedbackCount();
     } catch (e) { toast('Delete failed: ' + e.message); }
   });
