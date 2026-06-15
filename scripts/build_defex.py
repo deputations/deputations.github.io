@@ -155,11 +155,13 @@ def load_master():
         for o in m["organisations"]:
             oname = o["name"]
             otype = o.get("type") or ""
-            # Ministry "(Secretariat)" entries are mistyped in the master (all
-            # "Attached Office"); normalise so they don't surface that way, and to
-            # match the synthesised-secretariat path further below.
+            # Normalise org types the master mislabels (mostly "Attached Office"):
+            #   "Ministry of X (Secretariat)" -> Ministry   (the ministry HQ)
+            #   "Department of X"              -> Department
             if oname.strip().lower().endswith("(secretariat)"):
                 otype = "Ministry"
+            elif oname.strip().lower().startswith("department of"):
+                otype = "Department"
             orgs.append({
                 "id": f"{slugify(mname)}__{slugify(oname)}",
                 "name": oname,

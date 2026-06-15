@@ -15,19 +15,19 @@
         },
         {
           "name": "Department of Agricultural Research & Education (DARE)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Agriculture & Farmers Welfare",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Animal Husbandry & Dairying",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Fisheries",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Indian Council of Agricultural Research (ICAR)",
@@ -80,7 +80,7 @@
         },
         {
           "name": "Department of AYUSH (Administration)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "National Institute of Ayurveda (NIA), Jaipur",
@@ -117,15 +117,15 @@
         },
         {
           "name": "Department of Chemicals & Petrochemicals",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Fertilizers",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Pharmaceuticals",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Fertilizer Quality Control Laboratories (FQCLs)",
@@ -224,7 +224,7 @@
         },
         {
           "name": "Department of Commerce",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Directorate General of Foreign Trade (DGFT)",
@@ -269,11 +269,11 @@
         },
         {
           "name": "Department of Posts (India Post)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Telecommunications (DoT)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Postal Directorate Field Offices",
@@ -314,11 +314,11 @@
         },
         {
           "name": "Department of Consumer Affairs",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Food & Public Distribution",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Directorate of Marketing & Inspection (DMI)",
@@ -510,19 +510,19 @@
         },
         {
           "name": "Department of Defence",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Defence Production",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Ex-Servicemen Welfare",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Military Affairs",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Directorate General of Aeronautical Quality Assurance (DGAQA)",
@@ -649,11 +649,11 @@
         },
         {
           "name": "Department of Higher Education",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of School Education & Literacy",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Indian Institutes of Management (IIMs)",
@@ -885,23 +885,23 @@
         },
         {
           "name": "Department of Economic Affairs",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Expenditure",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Financial Services",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Investment & Public Asset Management (DIPAM)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Revenue",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "GST & Customs Field Formations",
@@ -978,11 +978,11 @@
         },
         {
           "name": "Department of Animal Husbandry & Dairying",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Fisheries",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Fisheries Development Field Offices",
@@ -1068,11 +1068,11 @@
         },
         {
           "name": "Department of Health and Family Welfare (DoHFW)",
-          "type": "Departments"
+          "type": "Department"
         },
         {
           "name": "Department of Health Research (DHR)",
-          "type": "Departments"
+          "type": "Department"
         },
         {
           "name": "Medical Stores Organisation, Ministry of Health and Family Welfare",
@@ -1361,11 +1361,11 @@
         },
         {
           "name": "Department of Drinking Water & Sanitation",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Water Resources, River Development & Ganga Rejuvenation",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Ganga Basin Field Directorates",
@@ -1435,11 +1435,11 @@
         },
         {
           "name": "Department of Justice",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Legal Affairs",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "High Court / Subordinate Court Coordination Units",
@@ -1686,15 +1686,15 @@
         },
         {
           "name": "Department of Administrative Reforms & Public Grievances (DARPG)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Pensions & Pensioners’ Welfare",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Personnel & Training (DoPT)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "DoPT Cadre Units / Establishment Sections",
@@ -2036,19 +2036,19 @@
         },
         {
           "name": "Department of Biotechnology (DBT)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Science & Technology (DST)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Science & Technology – Autonomous Institutions (IISc / IISERs – Coord.)",
-          "type": "Autonomous Body"
+          "type": "Department"
         },
         {
           "name": "Department of Scientific & Industrial Research (DSIR)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "DST / DBT Programme Management Units",
@@ -2126,11 +2126,11 @@
         },
         {
           "name": "Department of Empowerment of Persons with Disabilities (DEPwD)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Social Justice & Empowerment",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Dr. Ambedkar Foundation",
@@ -2457,11 +2457,11 @@
       "organisations": [
         {
           "name": "Department of Sports",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Youth Affairs",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Khelo India Division",
