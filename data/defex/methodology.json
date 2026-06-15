@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0-beta",
+  "version": "0.2.0-beta",
   "status": "beta",
   "formula": {
     "expression": "DeFeX = clamp(0, 100,  B - sum(Pi) + E)",
@@ -75,6 +75,11 @@
     "integrity_flag_policy": "Submissions alleging integrity issues are NEVER displayed publicly. They route to manual review and may lower confidence."
   },
   "changelog": [
+    {
+      "version": "0.2.0-beta",
+      "date": "2026-06-15",
+      "note": "Cumulative scoring. An organisation's DeFeX now reflects ALL responses collected for it, not a single row: the base uses the consensus Deputation_Allowed, friction penalties apply only on a majority report, community reports add +2 each (capped +8), and confidence rises with response volume and agreement. Rankings are rebuilt monthly."
+    },
     {
       "version": "0.1.0-beta",
       "date": "2026-06-15",
