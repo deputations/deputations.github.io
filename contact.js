@@ -64,6 +64,8 @@
   var toastEl     = $("#ctToast");
   var fillBar     = $("#ctProgressFill");
   var restEl      = $("#ctRest");
+  var subEl        = document.querySelector(".ct-subscribe");
+  var communityCol = document.querySelector(".ct-community");
 
   /* ---------- Category-driven smart helper text ---------- */
   var HINTS = {
@@ -104,7 +106,22 @@
   }
   /* Progressive disclosure: the rest of the form (#ctRest) appears only after a
      real category is chosen. */
-  function toggleRest() { if (restEl) restEl.hidden = !categoryEl.value; }
+  function toggleRest() {
+    var expanded = !!categoryEl.value;
+    if (restEl) restEl.hidden = !expanded;
+    placeSubscribe(expanded);
+  }
+  /* Employment News card: while the feedback form is collapsed it fills the
+     short right column (just below the feedback card); once the form expands it
+     returns to the bottom of the left community column where it normally lives. */
+  function placeSubscribe(expanded) {
+    if (!subEl) return;
+    if (expanded) {
+      if (communityCol && subEl.parentNode !== communityCol) communityCol.appendChild(subEl);
+    } else if (formCard && formCard.nextElementSibling !== subEl) {
+      formCard.parentNode.insertBefore(subEl, formCard.nextSibling);
+    }
+  }
   categoryEl.addEventListener("change", applyHint);
   applyHint();
 
