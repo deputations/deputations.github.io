@@ -261,6 +261,24 @@ body {
   100% { transform: translate(70px, 50px) scale(1.12); }
 }
 
+/* BEGIN hero-wave — full-bleed WebGL wave background (see hero-wave.js) */
+.bg-wave {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;            /* over the blurred blobs, still inside .bg-shapes (z-index:-1) */
+  pointer-events: none;
+  display: block;
+}
+/* soften the blobs so the two background layers don't fight */
+.bg-shapes .shape { opacity: 0.6; }
+/* perf budget: no WebGL on phones (mirrors .shape being disabled <=768px) */
+@media (max-width: 768px) {
+  .bg-wave { display: none; }
+}
+/* END hero-wave */
+
 /* LAYOUT */
 .app-container {
   max-width: 1600px;
