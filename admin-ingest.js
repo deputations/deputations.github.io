@@ -2353,13 +2353,71 @@ async function refreshFeedbackCount() {
   if ($('fbCount')) $('fbCount').textContent = n ? `(${n})` : '';
 }
 
+// Category order mirrors the Contact page “Category” dropdown (contact.html).
+const FB_CATEGORY_ORDER = [
+  'General Feedback',
+  'Report a Bug',
+  'Suggest a Feature',
+  'Vacancy Correction',
+  'New Rule/Circular',
+  'Policy Clarification',
+  'WhatsApp Group Issue',
+  'Other',
+];
+
+function fbCategoryRank(cat) {
+  const i = FB_CATEGORY_ORDER.indexOf(cat);
+  return i === -1 ? FB_CATEGORY_ORDER.length : i;
+}
+
+function fbPageOf(f) {
+  return f.page_label || f.page || f.related_page || 'Whole site';
+}
+
 function renderFeedback(rows) {
   const list = $('fbList');
   if ($('fbHdrCount')) $('fbHdrCount').textContent = `(${rows.length})`;
   if (!list) return;
   if (!rows.length) { list.innerHTML = '<p class="muted">No feedback in this view.</p>'; return; }
   list.innerHTML = '';
-  rows.forEach((f) => list.appendChild(feedbackCard(f)));
+
+  // Group by category (dropdown order), then by page within each category.
+  const byCat = new Map();
+  rows.forEach((f) => {
+    const cat = f.category || 'General Feedback';
+    if (!byCat.has(cat)) byCat.set(cat, []);
+    byCat.get(cat).push(f);
+  });
+
+  const cats = [...byCat.keys()].sort(
+    (a, b) => fbCategoryRank(a) - fbCategoryRank(b) || a.localeCompare(b)
+  );
+
+  cats.forEach((cat) => {
+    const catRows = byCat.get(cat);
+    const catHdr = document.createElement('h3');
+    catHdr.className = 'fb-cat-hdr';
+    catHdr.innerHTML = `${escapeHtml(cat)} <span class="muted">(${catRows.length})</span>`;
+    list.appendChild(catHdr);
+
+    // Sub-group by page (dropdown’s second selector).
+    const byPage = new Map();
+    catRows.forEach((f) => {
+      const page = fbPageOf(f);
+      if (!byPage.has(page)) byPage.set(page, []);
+      byPage.get(page).push(f);
+    });
+    const pages = [...byPage.keys()].sort((a, b) => a.localeCompare(b));
+
+    pages.forEach((page) => {
+      const pageRows = byPage.get(page);
+      const pageHdr = document.createElement('h4');
+      pageHdr.className = 'fb-page-hdr';
+      pageHdr.innerHTML = `📄 ${escapeHtml(page)} <span class="muted">(${pageRows.length})</span>`;
+      list.appendChild(pageHdr);
+      pageRows.forEach((f) => list.appendChild(feedbackCard(f)));
+    });
+  });
 }
 
 function feedbackCard(f) {
@@ -2367,7 +2425,6 @@ function feedbackCard(f) {
   el.className = 'draft';
   const when = (f.created_at || '').slice(0, 10);
   const status = f.status || 'new';
-  const pageTxt = f.page_label || f.page || f.related_page || 'Whole site';
   const who = [f.name, f.email].filter(Boolean).join(' · ');
   const link = f.related_link || '';
   const linkHtml = /^https?:\/\//i.test(link)
@@ -2376,8 +2433,6 @@ function feedbackCard(f) {
   el.innerHTML = `
     <div class="head">
       <div>
-        <b>${escapeHtml(f.category || 'General Feedback')}</b>
-        <span class="muted"> · 📄 ${escapeHtml(pageTxt)}</span>
         <span class="pill">${escapeHtml(status)}</span>
         <span class="muted"> · ${escapeHtml(when)}</span>
       </div>
