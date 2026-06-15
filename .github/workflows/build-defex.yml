@@ -3,7 +3,7 @@ name: Build DeFeX data
 on:
   workflow_dispatch:
   schedule:
-    - cron: "15 4 * * 1"   # ~09:45 IST every Monday
+    - cron: "15 4 1 * *"   # ~09:45 IST on the 1st of each month
   push:
     branches: [main]
     paths:
