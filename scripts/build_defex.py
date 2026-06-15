@@ -153,12 +153,19 @@ def load_master():
         mname = m["name"]
         ministry_keys[normkey(mname)] = mname
         for o in m["organisations"]:
+            oname = o["name"]
+            otype = o.get("type") or ""
+            # Ministry "(Secretariat)" entries are mistyped in the master (all
+            # "Attached Office"); normalise so they don't surface that way, and to
+            # match the synthesised-secretariat path further below.
+            if oname.strip().lower().endswith("(secretariat)"):
+                otype = "Ministry Secretariat"
             orgs.append({
-                "id": f"{slugify(mname)}__{slugify(o['name'])}",
-                "name": o["name"],
+                "id": f"{slugify(mname)}__{slugify(oname)}",
+                "name": oname,
                 "ministry": mname,
-                "type": o.get("type") or "",
-                "_nk_name": normkey(o["name"]),
+                "type": otype,
+                "_nk_name": normkey(oname),
                 "_nk_ministry": normkey(mname),
             })
     return orgs, ministry_keys
