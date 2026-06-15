@@ -159,7 +159,7 @@ def load_master():
             # "Attached Office"); normalise so they don't surface that way, and to
             # match the synthesised-secretariat path further below.
             if oname.strip().lower().endswith("(secretariat)"):
-                otype = "Ministry Secretariat"
+                otype = "Ministry"
             orgs.append({
                 "id": f"{slugify(mname)}__{slugify(oname)}",
                 "name": oname,
@@ -360,7 +360,7 @@ def main():
                     sec_id = f"{slugify(ministry)}__{slugify(sec_name_guess)}"
                     sec = {
                         "id": sec_id, "name": sec_name_guess, "ministry": ministry,
-                        "type": "Ministry Secretariat",
+                        "type": "Ministry",
                         "_nk_name": normkey(sec_name_guess), "_nk_ministry": normkey(ministry),
                     }
                     orgs.append(sec)
