@@ -2440,6 +2440,7 @@ function feedbackCard(f) {
         ${status === 'resolved'
           ? '<button data-act="reopen">Re-open</button>'
           : '<button class="good" data-act="resolve">✓ Resolved</button>'}
+        <button class="bad" data-act="del">Delete</button>
       </div>
     </div>
     ${f.subject ? `<div style="margin:6px 0;font-weight:600">${escapeHtml(f.subject)}</div>` : ''}
@@ -2459,6 +2460,15 @@ function feedbackCard(f) {
   };
   el.querySelector('[data-act="resolve"]')?.addEventListener('click', () => setStatus('resolved'));
   el.querySelector('[data-act="reopen"]')?.addEventListener('click', () => setStatus('new'));
+  el.querySelector('[data-act="del"]')?.addEventListener('click', async () => {
+    const what = f.subject ? `"${f.subject}"` : 'this feedback';
+    if (!confirm(`Delete ${what}? This cannot be undone.`)) return;
+    try {
+      const r = await api(`/rest/v1/feedback?id=eq.${f.id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      el.remove(); toast('Feedback deleted'); refreshFeedbackCount();
+    } catch (e) { toast('Delete failed: ' + e.message); }
+  });
   return el;
 }
 
