@@ -915,6 +915,7 @@ function wireApp() {
       $('paneFlags').classList.toggle('hidden', t !== 'flags');
       $('paneFeedback').classList.toggle('hidden', t !== 'feedback');
       $('paneUpdates').classList.toggle('hidden', t !== 'updates');
+      $('paneProjects').classList.toggle('hidden', t !== 'projects');
       // leaving Manage by hand clears any flag-comparison context so it doesn't
       // re-trigger on a later manual visit (the flag's Open button re-sets it)
       if (t !== 'manage') ACTIVE_FLAG = null;
@@ -924,8 +925,15 @@ function wireApp() {
       if (t === 'flags') loadFlags();
       if (t === 'feedback') loadFeedback();
       if (t === 'updates') loadUpdates();
+      if (t === 'projects') loadProjectsAdmin();
     };
   });
+
+  // Projects CMS (V² upcoming-projects) wiring
+  if ($('projRefresh')) $('projRefresh').onclick = loadProjectsAdmin;
+  if ($('projAddBtn')) $('projAddBtn').onclick = () => openProjectForm(null);
+  if ($('pf_save')) $('pf_save').onclick = saveProject;
+  if ($('pf_cancel')) $('pf_cancel').onclick = () => $('projForm').classList.add('hidden');
 
   if ($('updRefresh')) $('updRefresh').onclick = loadUpdates;
   if ($('updSort')) $('updSort').onchange = () => { saveUI({ updSort: $('updSort').value }); renderUpdates(); };   // client-side re-sort, no refetch
@@ -2474,6 +2482,165 @@ function feedbackCard(f) {
     } catch (e) { toast('Delete failed: ' + e.message); }
   });
   return el;
+}
+
+/* ============================================================================
+   Projects CMS — manages public.upcoming_projects (V² Upcoming Projects page).
+   ========================================================================== */
+let PROJ_ROWS = [];
+
+async function loadProjectsAdmin() {
+  const list = $('projList');
+  if (list) list.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const r = await api('/rest/v1/upcoming_projects?select=*&order=sort_order.asc,created_at.asc&limit=500');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    PROJ_ROWS = await r.json();
+    renderProjectsAdmin(PROJ_ROWS);
+  } catch (e) {
+    if (list) list.innerHTML = `<p class="muted">Load error: ${escapeHtml(e.message)}. If this is the first run, apply <code>supabase/migrations/0013_upcoming_projects.sql</code> in the SQL editor.</p>`;
+  }
+  refreshProjectCount();
+}
+
+async function refreshProjectCount() {
+  const n = await countOf('upcoming_projects');
+  if ($('projCount')) $('projCount').textContent = n ? ` (${n})` : '';
+}
+
+function renderProjectsAdmin(rows) {
+  const list = $('projList');
+  if ($('projHdrCount')) $('projHdrCount').textContent = `(${rows.length})`;
+  if (!list) return;
+  if (!rows.length) { list.innerHTML = '<p class="muted">No projects yet. Click <b>+ Add project</b> to create one.</p>'; return; }
+  list.innerHTML = '';
+  rows.forEach((p, i) => list.appendChild(projectCard(p, i, rows.length)));
+}
+
+function projectCard(p, i, n) {
+  const el = document.createElement('div');
+  el.className = 'draft';
+  const tags = Array.isArray(p.tags) ? p.tags : [];
+  el.innerHTML = `
+    <div class="head">
+      <div>
+        <b>${escapeHtml(p.title || p.slug)}</b>
+        <span class="pill">${escapeHtml(p.status || 'concept')}</span>
+        ${p.is_published
+          ? '<span class="pill" style="color:var(--good);border-color:var(--good)">live</span>'
+          : '<span class="pill" style="color:var(--muted)">hidden</span>'}
+        <span class="muted"> · #${p.sort_order ?? 0} · ${escapeHtml(p.slug)}</span>
+      </div>
+      <div class="acts">
+        <button data-act="up" ${i === 0 ? 'disabled' : ''} title="Move up">▲</button>
+        <button data-act="down" ${i === n - 1 ? 'disabled' : ''} title="Move down">▼</button>
+        <button data-act="edit">Edit</button>
+        <button data-act="pub">${p.is_published ? 'Unpublish' : 'Publish'}</button>
+        <button class="bad" data-act="del">Delete</button>
+      </div>
+    </div>
+    ${p.blurb ? `<div class="muted" style="margin:6px 0;white-space:pre-wrap">${escapeHtml(p.blurb)}</div>` : ''}
+    ${tags.length ? `<div style="margin:4px 0">${tags.map((t) => `<span class="pill">${escapeHtml(t)}</span>`).join(' ')}</div>` : ''}
+    ${p.image_url ? `<div class="muted" style="font-size:.8rem">🖼 ${escapeHtml(p.image_url)}</div>` : ''}`;
+
+  el.querySelector('[data-act="edit"]').onclick = () => openProjectForm(p);
+  el.querySelector('[data-act="del"]').onclick = () => deleteProject(p);
+  el.querySelector('[data-act="pub"]').onclick = async () => {
+    try { await patchProject(p.id, { is_published: !p.is_published }); toast(p.is_published ? 'Unpublished' : 'Published'); loadProjectsAdmin(); }
+    catch (e) { toast('Failed: ' + e.message); }
+  };
+  el.querySelector('[data-act="up"]').onclick = () => moveProject(i, -1);
+  el.querySelector('[data-act="down"]').onclick = () => moveProject(i, 1);
+  return el;
+}
+
+async function patchProject(id, patch) {
+  const r = await api(`/rest/v1/upcoming_projects?id=eq.${id}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify(patch),
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+}
+
+// Reorder by renumbering all rows to clean 0,10,20… positions after the move.
+async function moveProject(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= PROJ_ROWS.length) return;
+  const arr = PROJ_ROWS.slice();
+  const [it] = arr.splice(i, 1);
+  arr.splice(j, 0, it);
+  try {
+    for (let k = 0; k < arr.length; k++) {
+      if ((arr[k].sort_order ?? -1) !== k * 10) await patchProject(arr[k].id, { sort_order: k * 10 });
+    }
+    toast('Reordered'); loadProjectsAdmin();
+  } catch (e) { toast('Reorder failed: ' + e.message); }
+}
+
+async function deleteProject(p) {
+  if (!confirm(`Delete "${p.title || p.slug}"? This cannot be undone. (Votes recorded under project:${p.slug} are stored separately and are kept.)`)) return;
+  try {
+    // return=representation so a missing DELETE policy (silent 204) is caught
+    const r = await api(`/rest/v1/upcoming_projects?id=eq.${p.id}`, { method: 'DELETE', headers: { Prefer: 'return=representation' } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const del = await r.json().catch(() => []);
+    if (!Array.isArray(del) || !del.length) throw new Error('nothing deleted (permission?)');
+    toast('Project deleted'); loadProjectsAdmin();
+  } catch (e) { toast('Delete failed: ' + e.message); }
+}
+
+function openProjectForm(p) {
+  const f = $('projForm');
+  f.classList.remove('hidden');
+  $('projFormTitle').textContent = p ? 'Edit project' : 'Add project';
+  $('pf_id').value     = p ? p.id : '';
+  $('pf_title').value  = p ? (p.title || '') : '';
+  $('pf_slug').value   = p ? (p.slug || '') : '';
+  $('pf_blurb').value  = p ? (p.blurb || '') : '';
+  $('pf_status').value = p ? (p.status || 'concept') : 'concept';
+  $('pf_icon').value   = p ? (p.icon || 'spark') : 'spark';
+  $('pf_tags').value   = p ? ((Array.isArray(p.tags) ? p.tags : []).join(', ')) : '';
+  $('pf_order').value  = p ? (p.sort_order ?? 0) : (PROJ_ROWS.length * 10);
+  $('pf_image').value  = p ? (p.image_url || '') : '';
+  $('pf_pub').checked  = p ? !!p.is_published : true;
+  $('pf_msg').textContent = '';
+  f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  $('pf_title').focus();
+}
+
+async function saveProject() {
+  const id    = $('pf_id').value.trim();
+  const slug  = $('pf_slug').value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+  const title = $('pf_title').value.trim();
+  const msg   = $('pf_msg');
+  msg.className = 'muted';
+  if (!title) { msg.textContent = 'Title is required.'; return; }
+  if (!slug)  { msg.textContent = 'Slug is required.'; return; }
+  const tags = $('pf_tags').value.split(',').map((s) => s.trim()).filter(Boolean);
+  const body = {
+    slug, title,
+    blurb: $('pf_blurb').value.trim(),
+    status: $('pf_status').value,
+    icon: $('pf_icon').value,
+    tags,
+    image_url: $('pf_image').value.trim() || null,
+    sort_order: parseInt($('pf_order').value, 10) || 0,
+    is_published: $('pf_pub').checked,
+  };
+  $('pf_save').disabled = true; msg.textContent = 'Saving…';
+  try {
+    const r = id
+      ? await api(`/rest/v1/upcoming_projects?id=eq.${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(body) })
+      : await api('/rest/v1/upcoming_projects', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(body) });
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      throw new Error('HTTP ' + r.status + (/duplicate key/i.test(t) ? ' — slug already exists' : (t ? ' — ' + t.slice(0, 120) : '')));
+    }
+    toast(id ? 'Project updated' : 'Project added');
+    $('projForm').classList.add('hidden');
+    loadProjectsAdmin();
+  } catch (e) { msg.textContent = 'Save failed: ' + e.message; }
+  finally { $('pf_save').disabled = false; }
 }
 
 async function loadFlags() {

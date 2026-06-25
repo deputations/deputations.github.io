@@ -1,0 +1,124 @@
+/* ============================================================================
+   home-flourish.css — OPTIONAL homepage enhancements (Tier A + B).
+   FENCED + self-contained: delete the one <link> in index.html to fully revert.
+   Touches nothing in style.css / app.js. Every animation is gated behind
+   prefers-reduced-motion; pointer effects disable <=900px / on touch.
+
+   A1 (stat count-ups) already exists in app.js (animateKpiCounters) — not here.
+   A2  one-shot title sheen          A3  bookmark spring already exists (app.js)
+   A4  urgency-as-light (<=3 days)    B1  fly-to-watchlist bead + counter pop
+   B2  cursor spotlight on KPI cards  B3  subtle glass highlight on KPI cards
+   ============================================================================ */
+:root { --hf-spring: cubic-bezier(.34, 1.56, .64, 1); --hf-ease: cubic-bezier(.22, 1, .36, 1); }
+
+/* ---- A2: one-shot sheen across the homepage title (resting look unchanged) ----
+   Two background layers, both clipped to the letters: a white gloss band parked
+   off-screen + the ORIGINAL red→blue gradient. At rest only the original shows. */
+.app-header .header-logo h1 .gradient-text {
+  background:
+    linear-gradient(110deg, transparent 38%, rgba(255, 255, 255, .72) 50%, transparent 62%),
+    linear-gradient(to right, #FF6B6B, #6B66FF);
+  background-size: 240% 100%, 100% 100%;
+  background-position: 250% 0, 0 0;          /* gloss parked off to the right */
+  background-repeat: no-repeat;
+  -webkit-background-clip: text; background-clip: text;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .app-header .header-logo h1 .gradient-text.hf-sheen { animation: hf-title-sheen 1.4s var(--hf-ease) 1 both; }
+  @keyframes hf-title-sheen {
+    from { background-position: 250% 0, 0 0; }
+    to   { background-position: -150% 0, 0 0; }
+  }
+}
+
+/* ---- A4: urgency-as-light — a soft warm pulse on pills closing in <=3 days ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .days-pill.hf-urgent { animation: hf-urgent 1.9s ease-in-out infinite; }
+  @keyframes hf-urgent {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(251, 113, 133, 0); }
+    50%      { box-shadow: 0 0 10px 1px rgba(251, 113, 133, .55); }
+  }
+}
+
+/* ---- B1: fly-to-watchlist bead + counter pop ---- */
+.hf-bead {
+  position: fixed; z-index: 2100; pointer-events: none; width: 15px; height: 15px;
+  margin: -7.5px 0 0 -7.5px; border-radius: 50%; will-change: transform, opacity;
+  background: radial-gradient(circle at 40% 35%, #fff, #22d3ee 42%, #a78bfa);
+  box-shadow: 0 0 20px 5px rgba(167, 139, 250, .6);
+}
+@media (prefers-reduced-motion: no-preference) {
+  #favCount.hf-pop { animation: hf-fav-pop .5s var(--hf-spring); }
+  @keyframes hf-fav-pop { 0% { transform: scale(1); } 40% { transform: scale(1.45); } 100% { transform: scale(1); } }
+}
+
+/* ---- B2: cursor spotlight on the 4 KPI cards (desktop + fine pointer only) ----
+   Uses the free ::before pseudo; the existing translateY(-6px) hover lift is
+   untouched. currentColor = each card's tone, so the light matches the card. */
+@media (hover: hover) and (pointer: fine) and (min-width: 901px) and (prefers-reduced-motion: no-preference) {
+  .kpi-card > * { position: relative; z-index: 1; }
+  .kpi-card::before {
+    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit;
+    background: radial-gradient(220px circle at var(--hf-mx, 50%) var(--hf-my, 50%), color-mix(in srgb, currentColor 24%, transparent), transparent 60%);
+    opacity: 0; transition: opacity .3s; mix-blend-mode: screen;
+  }
+  .kpi-card:hover::before { opacity: 1; }
+  /* light mode: screen-blend is invisible on a pale card → normal blend, soft tonal glow */
+  [data-theme="light"] .kpi-card::before {
+    mix-blend-mode: normal;
+    background: radial-gradient(220px circle at var(--hf-mx, 50%) var(--hf-my, 50%), color-mix(in srgb, currentColor 18%, transparent), transparent 62%);
+  }
+}
+
+/* ---- B3: subtle glass top-highlight on the KPI cards (additive; dark theme) ----
+   Keeps the existing --shadow-glass and only adds a faint inner top edge. */
+.kpi-card { box-shadow: var(--shadow-glass), inset 0 1px 0 rgba(255, 255, 255, .10); }
+
+/* ============================================================================
+   CARD VIEW (.vx-card) — premium glass: hairline rim + inset highlight (always),
+   cursor spotlight + 3D tilt (desktop + fine pointer + motion only).
+   The vx-in scroll-reveal already on .vx-card animates `transform`; .hf-tilt
+   (added by JS only while a card is actively hovered) disables it so the tilt
+   transform can take over without a fight, then it's restored on leave.
+   ============================================================================ */
+/* hairline gradient rim (free ::after) + inset glass top edge — static, all devices */
+.vx-card { box-shadow: var(--shadow-glass), inset 0 1px 0 rgba(255, 255, 255, .10); }
+.vx-card::after {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit;
+  padding: 1px; opacity: .5;
+  background: linear-gradient(140deg, color-mix(in srgb, var(--primary-color) 55%, transparent), color-mix(in srgb, var(--accent-color) 55%, transparent));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+[data-theme="light"] .vx-card { box-shadow: var(--shadow-glass), inset 0 1px 0 rgba(255, 255, 255, .6); }
+
+@media (hover: hover) and (pointer: fine) and (min-width: 901px) and (prefers-reduced-motion: no-preference) {
+  .vx-card > * { position: relative; z-index: 1; }
+  .vx-card::before {
+    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit;
+    background: radial-gradient(240px circle at var(--vx-mx, 50%) var(--vx-my, 50%), color-mix(in srgb, var(--primary-color) 20%, transparent), transparent 60%);
+    opacity: 0; transition: opacity .3s; mix-blend-mode: screen;
+  }
+  .vx-card:hover::before { opacity: 1; }
+  /* light mode: screen-blend vanishes on white → normal blend, soft blue glow */
+  [data-theme="light"] .vx-card::before {
+    mix-blend-mode: normal;
+    background: radial-gradient(240px circle at var(--vx-mx, 50%) var(--vx-my, 50%), color-mix(in srgb, var(--primary-color) 16%, transparent), transparent 62%);
+  }
+  .vx-card.hf-tilt {
+    animation: none !important;            /* release transform from the vx-in scroll-reveal */
+    will-change: transform;
+    transition: transform .14s var(--hf-ease), box-shadow .25s ease, border-color .25s ease;
+  }
+}
+
+/* ============================================================================
+   FROSTED-OPAQUE DARK CARDS — ported from the upcoming-projects translucency fix.
+   The dark .vx-card / .kpi-card gradients fade to 35–40% alpha, so the WebGL wave
+   shows through. Raise the alpha to near-opaque (same hue 15,23,42 → no tone
+   shift). Light theme keeps its own opaque backgrounds (higher specificity).
+   ============================================================================ */
+.vx-card  { background: linear-gradient(165deg, rgba(15, 23, 42, .97), rgba(15, 23, 42, .93)); }
+.kpi-card { background: linear-gradient(145deg, rgba(15, 23, 42, .97), rgba(15, 23, 42, .93)); }
+/* light mode: let the glass rim read a touch stronger on white */
+[data-theme="light"] .vx-card::after { opacity: .68; }

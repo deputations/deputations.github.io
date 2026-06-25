@@ -6086,22 +6086,20 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
   }
 }
 
-/* "Updated <date>" chip in the results bar — set once from meta.generated_at_utc
-   (setDataUpdated() in app.js). Sits right after the vacancy count, muted, with
-   a leading separator dot. Hidden until populated (no stray "·"). */
-.data-updated {
+/* "Updated <date>" pinned to the right of the top nav (home only). Set once
+   from meta.generated_at_utc by setDataUpdated() in app.js; hidden until
+   populated. The .nav-links { margin: 0 auto } keeps the links centred while
+   this sits at the right edge. */
+.nav-updated {
   flex: 0 0 auto;
   white-space: nowrap;
-  color: var(--text-secondary);
+  font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
   font-size: 0.82rem;
-  font-weight: 500;
-  opacity: 0.85;
+  font-weight: 600;
+  color: #9fb3c8;
+  opacity: 0.9;
 }
-.data-updated::before {
-  content: "·";
-  margin: 0 0.5rem 0 0.15rem;
-  opacity: 0.6;
-}
-@media (max-width: 520px) {
-  .data-updated { display: none; }   /* avoid crowding the mobile toolbar */
+[data-theme="light"] .nav-updated { color: #5a6b85; }
+@media (max-width: 860px) {
+  .nav-updated { display: none; }   /* nav becomes a scroller on mobile */
 }

@@ -152,6 +152,7 @@
         <button id="tabUpdates" data-tab="updates">🔀 Updates <span id="updatesCount"></span></button>
         <button id="tabFlags" data-tab="flags">⚑ Flags <span id="flagCount"></span></button>
         <button id="tabFeedback" data-tab="feedback">✉️ Feedback <span id="fbCount"></span></button>
+        <button id="tabProjects" data-tab="projects">🚀 Projects <span id="projCount"></span></button>
       </div>
 
       <!-- INGEST -->
@@ -363,6 +364,66 @@
         <p class="muted">A re-upload that matches a <b>live</b> vacancy queues here as an <b>update</b> — <b>Apply</b> to enrich the live row with the new data. A re-upload that looks like the same post on a <b>different date</b> shows as a <b>possible duplicate</b> — <b>Merge into existing</b> (update the live row) or <b>Create as new</b> (keep both). Identical re-uploads are skipped automatically.</p>
         <div id="updatesList"></div>
       </section>
+
+      <!-- PROJECTS (V² upcoming-projects CMS) -->
+      <section id="paneProjects" class="card hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">🚀 Upcoming Projects <span id="projHdrCount" class="muted"></span></h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button id="projRefresh">↻</button>
+            <button id="projAddBtn" class="primary">+ Add project</button>
+          </div>
+        </div>
+        <p class="muted">These power the public <a href="/upcoming-projects.html" target="_blank" rel="noopener">V² Upcoming Projects</a> page. Add, edit, reorder (▲▼), publish/unpublish or delete. <b>Order</b> ascending — lower shows first. <b>Slug</b> is the stable vote key (<code>project:&lt;slug&gt;</code>) — don't change it once a project has votes.</p>
+
+        <!-- add / edit form (toggled) -->
+        <div id="projForm" class="card hidden" style="background:var(--panel2)">
+          <h3 id="projFormTitle" style="margin-top:0">Add project</h3>
+          <input type="hidden" id="pf_id" />
+          <div class="row">
+            <div><label>Title</label><input id="pf_title" placeholder="V² PDF Reader" /></div>
+            <div><label>Slug (lowercase-dashes — stable vote key)</label><input id="pf_slug" placeholder="v2-pdf-reader" /></div>
+          </div>
+          <label>Blurb</label>
+          <textarea id="pf_blurb" rows="3" placeholder="1–3 sentence description"></textarea>
+          <div class="row">
+            <div><label>Status</label>
+              <select id="pf_status">
+                <option value="concept">Concept</option>
+                <option value="design">In design</option>
+                <option value="planned">Planned</option>
+              </select>
+            </div>
+            <div><label>Icon (placeholder art glyph)</label>
+              <select id="pf_icon">
+                <option value="spark">spark</option>
+                <option value="file">file</option>
+                <option value="pulse">pulse (health)</option>
+                <option value="bell">bell</option>
+                <option value="calculator">calculator</option>
+                <option value="users">users</option>
+                <option value="folder">folder</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div><label>Tags (comma-separated)</label><input id="pf_tags" placeholder="Desktop, Windows, Productivity" /></div>
+            <div><label>Order (lower = first)</label><input id="pf_order" type="number" value="0" /></div>
+          </div>
+          <label>Image URL (optional — falls back to gradient art)</label>
+          <input id="pf_image" placeholder="https://…/screenshot.png" />
+          <label style="display:flex;gap:8px;align-items:center;margin-top:12px">
+            <input type="checkbox" id="pf_pub" checked style="width:auto" /> Published (visible on the public page)
+          </label>
+          <div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button id="pf_save" class="primary">Save project</button>
+            <button id="pf_cancel">Cancel</button>
+            <span id="pf_msg" class="muted"></span>
+          </div>
+        </div>
+
+        <div id="projList"></div>
+      </section>
     </div>
   </div>
 
@@ -380,6 +441,6 @@
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb13"></script>
   <script src="shared/vacancy-utils.js?v=sb3"></script>
-  <script src="admin-ingest.js?v=sb50"></script>
+  <script src="admin-ingest.js?v=sb51"></script>
 </body>
 </html>

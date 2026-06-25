@@ -42,6 +42,9 @@
   <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
   <link rel="stylesheet" href="style.css?v=ms48">
   <link rel="stylesheet" href="navbar.css?v=2">
+  <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the script below to revert) -->
+  <link rel="stylesheet" href="home-flourish.css?v=4">
+  <!-- END home-flourish -->
   <!-- BEGIN hero-wave -->
   <script type="importmap">
   { "imports": { "three": "/vendor/three.module.js?v=170" } }
@@ -105,7 +108,9 @@
       <a href="/report-vacancy.html">Report Vacancy</a>
       <a href="/contact.html">Contact</a>
       <a href="/my-deputation.html">My Deputation</a>
+      <a href="/upcoming-projects.html">Upcoming Projects</a>
     </div>
+    <span class="nav-updated" id="dataUpdated" hidden></span>
   </nav>
 
   <div class="bg-shapes">
@@ -306,7 +311,6 @@
         <div class="top-toolbar">
           <div class="toolbar-line toolbar-line-filters">
             <div class="results-count" id="resultsCount" aria-live="polite">Loading vacancies...</div>
-            <span class="data-updated" id="dataUpdated" hidden></span>
             <div id="activeFilters" class="active-filters"></div>
             <div class="quick-filters-bar" id="quickFiltersBar"></div>
 
@@ -350,6 +354,9 @@
   <script src="config.js?v=sb1"></script>
   <script src="enrich.js?v=sb13"></script>
   <script src="app.js?v=ms47"></script>
+  <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the stylesheet above to revert) -->
+  <script defer src="home-flourish.js?v=2"></script>
+  <!-- END home-flourish -->
   <script defer src="site-widgets.js?v=19"></script>
   <!-- BEGIN hero-wave -->
   <script type="module" src="/hero-wave.js?v=2"></script>
