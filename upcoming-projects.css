@@ -342,6 +342,7 @@
 /* ---------- Vote module ---------- */
 .up-vote { margin-top: auto; padding-top: .55rem; display: grid; gap: .8rem; }
 .up-vote-btns { display: flex; gap: .6rem; }
+@media (max-width: 480px) { .up-vote-btns { flex-direction: column; } }
 .up-btn {
   --magx: 0; --magy: 0;
   flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: .5rem;

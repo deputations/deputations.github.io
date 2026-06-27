@@ -165,8 +165,8 @@
             '<p class="up-desc">' + esc(p.blurb) + '</p>' +
             '<div class="up-vote">' +
               '<div class="up-vote-btns">' +
-                '<button type="button" class="up-btn up-like" data-vote="up" aria-label="Like ' + esc(p.title) + '">' + SVG.up + '<span>Want this</span></button>' +
-                '<button type="button" class="up-btn up-dislike" data-vote="down" aria-label="Pass on ' + esc(p.title) + '">' + SVG.down + '<span>Not for me</span></button>' +
+                '<button type="button" class="up-btn up-like" data-vote="up" aria-label="Liked ' + esc(p.title) + '">' + SVG.up + '<span>Liked the project</span></button>' +
+                '<button type="button" class="up-btn up-dislike" data-vote="down" aria-label="Did not like ' + esc(p.title) + '">' + SVG.down + '<span>Did not like</span></button>' +
               '</div>' +
               '<div class="up-meter">' +
                 '<div class="up-meter-track"><div class="up-meter-fill"></div></div>' +
