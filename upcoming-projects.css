@@ -337,7 +337,10 @@
 .up-wanted-pill svg { width: 14px; height: 14px; }
 .up-name { font-family: "Sora", "Plus Jakarta Sans", sans-serif; font-size: 1.42rem; font-weight: 800; letter-spacing: -.01em; margin: .1rem 0 0; line-height: 1.2; }
 .up-project.is-featured .up-name { font-size: 1.7rem; }
-.up-desc { color: var(--up-muted); font-size: .96rem; line-height: 1.6; margin: 0; }
+.up-desc { color: var(--up-muted); font-size: .95rem; line-height: 1.62; margin: 0; text-wrap: pretty; }
+.up-desc .up-lead { display: block; color: var(--up-text); font-weight: 600; font-size: 1.04rem; line-height: 1.5; margin-bottom: .55rem; letter-spacing: -.01em; }
+.up-project.is-featured .up-desc .up-lead { font-size: 1.14rem; }
+.up-desc .up-em { color: var(--up-primary); font-weight: 700; }
 
 /* ---------- Vote module ---------- */
 .up-vote { margin-top: auto; padding-top: .55rem; display: grid; gap: .8rem; }

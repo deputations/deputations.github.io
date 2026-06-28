@@ -61,12 +61,12 @@
     },
     {
       slug: "health-fitness",
-      title: "Health & Fitness App",
+      title: "AI Health Companion App",
       status: "concept",
-      tags: ["Blood report → plan", "Retest proof", "Reminders & logging", "Workouts & diet"],
+      tags: ["Blood reports → plan", "Workouts & nutrition", "Sleep & recovery", "Retest proof"],
       icon: "pulse",
       image: "",
-      blurb: "Health isn't the same as fitness — you can look great while your blood report flags low Vitamin D, low B12 or high triglycerides. Upload that report and AI turns the correctable red markers into a time-boxed, clinician-reviewable protocol — supplements, diet and lifestyle tweaks — with reminders and one-tap logging, then prompts a re-test that proves your numbers came back to normal: a plan you'll actually finish, with proof it worked. Once your health is on track it expands into a full fitness layer — gym and diet plans for your goal (bulk, cut, lose 15 kg), built around the equipment you actually have."
+      blurb: "From blood reports to workouts, sleep, nutrition and recovery — your whole health journey in **one AI companion**. Your labs, daily habits and fitness goals usually live in apps that never talk to each other; this **connects them**. Upload a blood report and AI explains every abnormal marker in plain English and builds a personalised plan — lifestyle, nutrition, supplements, reminders — while also planning workouts, adapting when equipment isn't available, and tracking sleep, hydration, activity and weight. The real innovation is **the link between them**: your labs shape your fitness plan, your habits shape your health plan, and the plan evolves automatically as you improve. Months later it prompts a fresh blood report and compares it with the last — showing exactly what changed, and **proving your effort worked**."
     },
     {
       slug: "deputation-alerts",
@@ -139,6 +139,15 @@
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
   function votedKey(slug) { return "up_voted_" + slug; }
 
+  /* Rich blurb: escape first (XSS-safe), then apply a tiny markup layer —
+     **phrase** -> brand-tinted bold, and the opening sentence -> a lead line. */
+  function blurbHTML(text) {
+    var t = esc(text).replace(/\*\*([^*]+)\*\*/g, '<strong class="up-em">$1</strong>');
+    var m = t.match(/^(.*?[.!?])(\s+)([\s\S]+)$/);
+    if (m && m[3].length > 40) return '<span class="up-lead">' + m[1] + '</span>' + m[3];
+    return t;
+  }
+
   /* ---------- Render ---------- */
   function cardHTML(p, i) {
     var media = p.image
@@ -162,7 +171,7 @@
             '<span class="up-wanted-pill" hidden>' + SVG.crown + 'Most wanted</span>' +
             '<div class="up-tags">' + tags + '</div>' +
             '<h2 class="up-name">' + esc(p.title) + '</h2>' +
-            '<p class="up-desc">' + esc(p.blurb) + '</p>' +
+            '<p class="up-desc">' + blurbHTML(p.blurb) + '</p>' +
             '<div class="up-vote">' +
               '<div class="up-vote-btns">' +
                 '<button type="button" class="up-btn up-like" data-vote="up" aria-label="Liked ' + esc(p.title) + '">' + SVG.up + '<span>Liked the project</span></button>' +
