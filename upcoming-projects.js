@@ -69,6 +69,42 @@
       blurb: "From blood reports to workouts, sleep, nutrition and recovery — your whole health journey in **one AI companion**. Your labs, daily habits and fitness goals usually live in apps that never talk to each other; this **connects them**. Upload a blood report and AI explains every abnormal marker in plain English and builds a personalised plan — lifestyle, nutrition, supplements, reminders — while also planning workouts, adapting when equipment isn't available, and tracking sleep, hydration, activity and weight. The real innovation is **the link between them**: your labs shape your fitness plan, your habits shape your health plan, and the plan evolves automatically as you improve. Months later it prompts a fresh blood report and compares it with the last — showing exactly what changed, and **proving your effort worked**."
     },
     {
+      slug: "govtshaadi",
+      title: "GovtShaadi",
+      status: "concept",
+      tags: ["Career compatibility", "Verified profiles", "Delhi-based", "Completely free"],
+      icon: "heart",
+      image: "",
+      blurb: "A matrimony platform built only for government professionals permanently based in Delhi. Most sites match on age, education, religion, community or horoscope, yet ignore what really decides long-term stability for serving officers: whether two careers can stay in the same city. In transferable services, couples are posted apart for years, straining housing, children and family support, and many officers value staying together over higher pay. GovtShaadi makes **career compatibility a primary matching factor**, not a stray profile field, for CSS, CSSS and Delhi Government services. Every profile is **fully identity-verified**, privacy is granular by design, and the service is **completely free**."
+    },
+    {
+      slug: "govmarket",
+      title: "GovMarket",
+      status: "concept",
+      tags: ["Verified members", "Transfer season", "Hyperlocal", "Completely free"],
+      icon: "tag",
+      image: "",
+      blurb: "A buy-and-sell marketplace open only to verified government employees. Ordinary classifieds are full of anonymous listings, payment scams and fraudsters who impersonate government and defence personnel to win trust. GovMarket removes that risk with a **verified, government-only community** where every member is who they claim to be. It is built for transfer season, when an outgoing officer can sell furniture and appliances to an incoming one, often in the same colony, so big items change hands locally instead of travelling hundreds of kilometres. You meet within familiar office premises or government quarters, making each deal **safer by default**, with no listing fees, commissions or subscriptions."
+    },
+    {
+      slug: "govconnect",
+      title: "GovConnect",
+      status: "concept",
+      tags: ["Verified neighbours", "Carpool & services", "Hyperlocal", "Completely free"],
+      icon: "home",
+      image: "",
+      blurb: "A practical hyperlocal utility for the colony, complex or neighbourhood where government families actually live. Thousands share the same streets and nearby offices, yet rarely tap the help sitting a few doors away. GovConnect is built **only for verified government employees**, so you can find a reliable carpool partner, a trusted plumber, tutor or maid, and the local recommendations that usually take years to learn. Run lost-and-found, blood-donation requests, share-an-auto coordination and everyday logistics where **every exchange stays inside a verified community**. It is the working layer of neighbourhood life: who to call, what to share, how to get things done, and **completely free**."
+    },
+    {
+      slug: "officers-club",
+      title: "The Officers' Club",
+      status: "concept",
+      tags: ["Verified officers", "Local chapter", "Clubs & activities", "Families too"],
+      icon: "shield",
+      image: "",
+      blurb: "A social home for verified government officers and their families, organised as local chapters wherever you are posted. You can serve for decades and still barely know the colleagues in your own colony; this is the belonging that lifelong service was always meant to have. Join your **chapter** and find people nearby for badminton, cricket, cycling, trekking, book clubs, music evenings and festival celebrations. It is built **for families too**, with friendships between spouses, play groups for children and parents swapping school notes. Membership is exclusive, safe and verified, and **completely free**. Not another feed to scroll, but a real community to belong to."
+    },
+    {
       slug: "deputation-alerts",
       title: "Deputation Alert Bot",
       status: "design",
@@ -114,6 +150,10 @@
     folder:     '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M8 13h8M8 17h5"/>',
     file:       '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>',
     pulse:      '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>',
+    heart:      '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+    tag:        '<path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.2"/>',
+    home:       '<path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/><path d="M9 21v-6h6v6"/>',
+    shield:     '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
     spark:      '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>'
   };
 
@@ -308,21 +348,24 @@
       c.__score = k.ups - k.downs;
     });
     var grand = cards.reduce(function (s, c) { return s + c.__total; }, 0);
+    // Only treat the board as a live leaderboard once there's meaningful
+    // participation — a stray early vote shouldn't reshuffle the roadmap.
+    var ranked = grand >= 10;
     var ordered = cards.slice().sort(function (a, b) {
       return (b.__pctv - a.__pctv) || (b.__score - a.__score) || (a.__idx - b.__idx);
     });
     var feature = null;
-    if (grand > 0 && ordered.length > 1) {
+    if (ranked && ordered.length > 1) {
       var top = ordered[0], second = ordered[1];
       if (top.__total >= 5 && (top.__pctv - second.__pctv) >= 8) feature = top;
     }
-    if (grand > 0) ordered.forEach(function (c) { feed.appendChild(c); }); // one-time reorder
+    if (ranked) ordered.forEach(function (c) { feed.appendChild(c); }); // one-time reorder
     cards.forEach(function (c) { c.classList.remove("is-featured"); });
     ordered.forEach(function (c, i) {
       var rank = c.querySelector(".up-rank");
       var pill = c.querySelector(".up-wanted-pill");
       var folio = c.querySelector(".up-folio");
-      if (grand > 0) { rank.hidden = false; rank.textContent = "#" + (i + 1); if (folio) folio.textContent = String(i + 1); }
+      if (ranked) { rank.hidden = false; rank.textContent = "#" + (i + 1); if (folio) folio.textContent = String(i + 1); }
       else { rank.hidden = true; if (folio) folio.textContent = ""; }
       if (pill) pill.hidden = (c !== feature);
     });
