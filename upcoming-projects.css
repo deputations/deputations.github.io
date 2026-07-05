@@ -141,6 +141,13 @@
   .up-logo { animation: up-logo-in .8s var(--up-ease-out) both; }
   @keyframes up-logo-in { from { opacity: 0; transform: translateY(-10px) scale(.92); } to { opacity: 1; transform: none; } }
 }
+/* scroll-docking logo: JS makes the logo fixed and drives this dock's transform
+   from hero-centre to a floating spot on the left as the page scrolls (desktop only). */
+.up-logo-dock { position: fixed; left: 0; top: 0; z-index: 40; transform-origin: top left; will-change: transform; pointer-events: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .up-logo-dock.is-floating .up-logo { animation: up-logo-bob 4.5s ease-in-out infinite; }
+  @keyframes up-logo-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+}
 .up-eyebrow {
   display: inline-flex; align-items: center; gap: .5rem;
   padding: .4rem .9rem; border-radius: 999px;

@@ -584,6 +584,48 @@
     });
   }
 
+  /* ---------- Scroll-docking logo: hero-centre → floating left (desktop, motion-safe) ---------- */
+  function setupLogoFloat() {
+    var logo = document.querySelector(".up-logo");
+    if (!logo || logo.__docked) return;
+    if (!(matchMedia("(min-width: 900px)").matches && MM_MOTION)) return; // mobile / reduced-motion: normal in-flow logo
+    logo.__docked = true;
+
+    var parent = logo.parentNode;
+    var w = logo.offsetWidth || 116, h = logo.offsetHeight || 116;
+    var spacer = document.createElement("div");
+    spacer.setAttribute("aria-hidden", "true");
+    spacer.style.cssText = "height:" + h + "px;margin:0 auto .7rem;";
+    var dock = document.createElement("div");
+    dock.className = "up-logo-dock";
+    parent.insertBefore(spacer, logo);
+    parent.insertBefore(dock, logo);
+    dock.appendChild(logo);
+    logo.style.margin = "0";
+
+    var raf = 0;
+    function apply() {
+      raf = 0;
+      var vw = innerWidth, vh = innerHeight;
+      var D = Math.min(vh * 0.85, 720);                 // migrate slowly over ~this many px of scroll
+      var sy = window.scrollY || document.documentElement.scrollTop || 0;
+      var p = sy <= 0 ? 0 : sy >= D ? 1 : sy / D;
+      var e = p * p * (3 - 2 * p);                      // smoothstep
+      var sTop = spacer.getBoundingClientRect().top;    // logo's in-hero viewport Y (follows the hero up)
+      var inHeroX = vw / 2 - w / 2;
+      var floatX = 22, floatY = vh * 0.42, floatS = 0.6;
+      var x = inHeroX + (floatX - inHeroX) * e;
+      var y = sTop + (floatY - sTop) * e;
+      var s = 1 + (floatS - 1) * e;
+      dock.style.transform = "translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0) scale(" + s.toFixed(3) + ")";
+      dock.classList.toggle("is-floating", p >= 0.999);
+    }
+    function onScroll() { if (!raf) raf = requestAnimationFrame(apply); }
+    addEventListener("scroll", onScroll, { passive: true });
+    addEventListener("resize", onScroll, { passive: true });
+    apply();
+  }
+
   /* ---------- Load projects from the admin-managed table (fallback: PROJECTS) ---------- */
   function loadProjects() {
     if (!SB_OK) return Promise.resolve(null);
@@ -639,6 +681,7 @@
   function init() {
     var feed = document.getElementById("upFeed");
     if (!feed) return;
+    setupLogoFloat();
     loadProjects().then(function (list) {
       if (list && list.length) PROJECTS = list;
       BY_SLUG = {};
