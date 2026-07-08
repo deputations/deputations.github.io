@@ -40,7 +40,7 @@
   >
 
   <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
-  <link rel="stylesheet" href="style.css?v=ms48">
+  <link rel="stylesheet" href="style.css?v=ms49">
   <link rel="stylesheet" href="navbar.css?v=2">
   <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the script below to revert) -->
   <link rel="stylesheet" href="home-flourish.css?v=4">
@@ -52,6 +52,8 @@
   <!-- END hero-wave -->
 </head>
 <body class="filters-collapsed">
+  <!-- a11y: first focusable element jumps keyboard users past nav + filters -->
+  <a class="skip-link" href="#main-content">Skip to content</a>
   <!-- reading/scroll progress bar — themed (brand gradient swaps with the theme) -->
   <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
@@ -103,7 +105,7 @@
     <div class="nav-links">
       <a href="/index.html" class="active">Home</a>
       <a href="/rules.html">Rules</a>
-      <a href="/Rules/faq.html">FAQs</a>
+      <a href="/faq.html">FAQs</a>
       <a href="/defex.html">DeFeX</a>
       <a href="/report-vacancy.html">Report Vacancy</a>
       <a href="/contact.html">Contact</a>
@@ -141,7 +143,7 @@
       </div>
     </header>
 
-    <main class="main-layout">
+    <main class="main-layout" id="main-content">
       <aside class="filters-sidebar glass-panel" id="filtersSidebar">
         <div class="filters-header">
           <h2><svg class="icon"><use href="#i-filter"/></svg> Filters</h2>
@@ -165,8 +167,8 @@
               <span class="ms-trigger-label">Your Pay Level</span>
               <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </button>
-            <div class="ms-panel ss-panel" id="filterMyPayLevelPanel" hidden role="listbox" aria-label="Select your pay level">
-              <ul class="ms-list ss-list" id="filterMyPayLevelList" role="listbox"></ul>
+            <div class="ms-panel ss-panel" id="filterMyPayLevelPanel" hidden>
+              <ul class="ms-list ss-list" id="filterMyPayLevelList" role="listbox" aria-label="Select your pay level"></ul>
             </div>
           </div>
         </div>
@@ -179,8 +181,8 @@
               <span class="ms-trigger-label">Select Pay Level first</span>
               <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </button>
-            <div class="ms-panel ss-panel" id="filterExperiencePanel" hidden role="listbox" aria-label="Select years of experience">
-              <ul class="ms-list ss-list" id="filterExperienceList" role="listbox"></ul>
+            <div class="ms-panel ss-panel" id="filterExperiencePanel" hidden>
+              <ul class="ms-list ss-list" id="filterExperienceList" role="listbox" aria-label="Select years of experience"></ul>
             </div>
           </div>
           <p class="filter-hint">Years at your current level. Refines "My Pay Level" to posts you're eligible for.</p>
@@ -197,8 +199,8 @@
                 <path d="m6 9 6 6 6-6"/>
               </svg>
             </button>
-            <div class="ms-panel ss-panel" id="filterLevelPanel" hidden role="listbox" aria-label="Select pay level">
-              <ul class="ms-list ss-list" id="filterLevelList" role="listbox"></ul>
+            <div class="ms-panel ss-panel" id="filterLevelPanel" hidden>
+              <ul class="ms-list ss-list" id="filterLevelList" role="listbox" aria-label="Select pay level"></ul>
             </div>
           </div>
         </div>
@@ -211,8 +213,8 @@
               <span class="ms-trigger-label">All Ministries</span>
               <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </button>
-            <div class="ms-panel ss-panel" id="filterMinistryPanel" hidden role="listbox" aria-label="Select ministry">
-              <ul class="ms-list ss-list" id="filterMinistryList" role="listbox"></ul>
+            <div class="ms-panel ss-panel" id="filterMinistryPanel" hidden>
+              <ul class="ms-list ss-list" id="filterMinistryList" role="listbox" aria-label="Select ministry"></ul>
             </div>
           </div>
         </div>
@@ -225,8 +227,8 @@
               <span class="ms-trigger-label">All Types</span>
               <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </button>
-            <div class="ms-panel ss-panel" id="filterOrgTypePanel" hidden role="listbox" aria-label="Select organisation type">
-              <ul class="ms-list ss-list" id="filterOrgTypeList" role="listbox"></ul>
+            <div class="ms-panel ss-panel" id="filterOrgTypePanel" hidden>
+              <ul class="ms-list ss-list" id="filterOrgTypeList" role="listbox" aria-label="Select organisation type"></ul>
             </div>
           </div>
         </div>
@@ -256,7 +258,7 @@
                 </button>
               </header>
               <p class="ms-hint">Click a location to select it · click again to deselect</p>
-              <ul class="ms-list" id="filterLocationList" role="listbox" aria-multiselectable="true"></ul>
+              <ul class="ms-list" id="filterLocationList" role="listbox" aria-multiselectable="true" aria-label="Select locations"></ul>
               <div class="ms-empty" hidden>No matches</div>
               <footer class="ms-panel-foot">
                 <span class="ms-count" data-ms-count>0 selected</span>
@@ -277,8 +279,8 @@
               <span class="ms-trigger-label">All Regions</span>
               <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </button>
-            <div class="ms-panel ss-panel" id="filterRegionPanel" hidden role="listbox" aria-label="Select region">
-              <ul class="ms-list ss-list" id="filterRegionList" role="listbox"></ul>
+            <div class="ms-panel ss-panel" id="filterRegionPanel" hidden>
+              <ul class="ms-list ss-list" id="filterRegionList" role="listbox" aria-label="Select region"></ul>
             </div>
           </div>
         </div>
@@ -291,8 +293,8 @@
               <span class="ms-trigger-label">Active</span>
               <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </button>
-            <div class="ms-panel ss-panel" id="filterStatusPanel" hidden role="listbox" aria-label="Select status">
-              <ul class="ms-list ss-list" id="filterStatusList" role="listbox"></ul>
+            <div class="ms-panel ss-panel" id="filterStatusPanel" hidden>
+              <ul class="ms-list ss-list" id="filterStatusList" role="listbox" aria-label="Select status"></ul>
             </div>
           </div>
         </div>
@@ -320,8 +322,8 @@
                 <span class="ms-trigger-label">Closing soon</span>
                 <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
               </button>
-              <div class="ms-panel ss-panel" id="cardSortPanel" hidden role="listbox" aria-label="Sort cards by">
-                <ul class="ms-list ss-list" id="cardSortList" role="listbox"></ul>
+              <div class="ms-panel ss-panel" id="cardSortPanel" hidden>
+                <ul class="ms-list ss-list" id="cardSortList" role="listbox" aria-label="Sort cards by"></ul>
               </div>
             </div>
 
@@ -357,7 +359,7 @@
   <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the stylesheet above to revert) -->
   <script defer src="home-flourish.js?v=2"></script>
   <!-- END home-flourish -->
-  <script defer src="site-widgets.js?v=19"></script>
+  <script defer src="site-widgets.js?v=20"></script>
   <!-- BEGIN hero-wave -->
   <script type="module" src="/hero-wave.js?v=2"></script>
   <!-- END hero-wave -->

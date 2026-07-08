@@ -6103,3 +6103,71 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
 @media (max-width: 860px) {
   .nav-updated { display: none; }   /* nav becomes a scroller on mobile */
 }
+
+/* ============================================================================
+   WEBSITE-REVIEW P0 additions (2026-07-08)
+   P0-9: skip-to-content link · P0-3: compact mobile KPI strip + smaller hero
+   ============================================================================ */
+
+/* -- P0-9: skip link — hidden until keyboard-focused ----------------------- */
+.skip-link {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 4000;
+  padding: 0.65rem 1.1rem;
+  border-radius: 12px;
+  background: var(--primary-color);
+  color: #04111c;
+  font-weight: 800;
+  text-decoration: none;
+  transform: translateY(-200%);
+  opacity: 0;
+  pointer-events: none;
+}
+.skip-link:focus-visible {
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* -- P0-3: mobile — 4 KPI chips in ONE row so the list starts near the fold */
+@media (max-width: 640px) {
+  .kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.45rem;
+    margin-bottom: 0.8rem;
+  }
+  .kpi-card {
+    min-height: 0;
+    padding: 0.55rem 0.25rem 0.5rem;
+    gap: 0.12rem;
+    border-radius: 12px;
+  }
+  .kpi-icon { display: none; }
+  .kpi-value { font-size: 1.28rem; }
+  .kpi-title {
+    font-size: 0.55rem;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .kpi-trend { display: none; }   /* deltas are desktop detail; chips stay clean */
+
+  /* smaller hero: tighten the title row */
+  .app-header { margin-bottom: 0.6rem; }
+  .header-logo > .icon { display: none; }
+  .header-logo h1 { font-size: 1.02rem; }
+}
+
+/* -- P0-5 (M3): search is the most-used control — keep it visible on mobile
+   even when the filter accordion is collapsed (only the box, label hidden).
+   Desktop layout unchanged (desktop-collapsed already shows it). */
+@media (max-width: 768px) {
+  .filters-sidebar.collapsed > .fg-search { display: block !important; margin-bottom: 0; }
+  .filters-sidebar.collapsed > .fg-search label { display: none; }
+}

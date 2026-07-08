@@ -1233,7 +1233,7 @@ function renderTable(data) {
           ${escapeHtml(notificationDateText)}
         </td>
 
-        <td class="table-link-cell" data-label="Notification">
+        <td class="table-link-cell" data-label="Source PDF">
           ${notificationLink ? `
             <a
               class="table-link-btn"
@@ -1242,7 +1242,7 @@ function renderTable(data) {
               rel="noopener noreferrer"
               onclick="event.stopPropagation();"${notifPreviewAttr(item)}
             >
-              Notification
+              Source PDF
             </a>
           ` : '—'}
           ${item.Source_Ref
@@ -1280,7 +1280,7 @@ function renderTable(data) {
             ${renderSortableHeader('Location', 'Location', 'location-col')}
             ${renderSortableHeader('Days Left', 'Days_Left', 'days-col')}
             ${renderSortableHeader('Notification Date', 'Notification_Date', 'notification-date-col')}
-            <th class="table-link-cell">Notification</th>
+            <th class="table-link-cell">Source PDF</th>
             <th
               class="save-col save-col-heading ${hasSavedAny ? 'has-saved' : ''}"
               title="${hasSavedAny ? 'Bookmarks saved' : 'No bookmarks yet'}"
@@ -1471,9 +1471,12 @@ function renderTable(data) {
     }
 
     function bindEvents() {
+  // Debounce the full re-filter + rebuild (150ms); suggestions stay instant.
+  let searchDebounceTimer = null;
   searchPost.addEventListener('input', () => {
     refreshSearchSuggestions(searchPost.value);
-    onFilterChange();
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(onFilterChange, 150);
   });
   cycleSearchPlaceholder(searchPost);
 
@@ -2043,10 +2046,13 @@ function isNewVacancy(item) {
 }
 
    function buildKpiCard(title, value, icon, tone, delta, filterKey = 'all') {
-  const trendClass = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
-  const trendSymbol = delta > 0 ? '↑' : delta < 0 ? '↓' : '•';
-  const trendText = delta === 0 ? 'No change' : `${trendSymbol} ${Math.abs(delta)}`;
+  const trendClass = delta > 0 ? 'up' : 'down';
+  const trendSymbol = delta > 0 ? '↑' : '↓';
   const isSelected = kpiFilter === filterKey;
+  // "No change" is noise — render the delta line only when nonzero (review V4).
+  const trendHtml = delta === 0
+    ? ''
+    : `<div class="kpi-trend ${trendClass}">${trendSymbol} ${Math.abs(delta)}</div>`;
 
   return `
     <button
@@ -2061,9 +2067,7 @@ function isNewVacancy(item) {
       </div>
       <div class="kpi-title">${title}</div>
       <div class="kpi-value" data-count="${value}">0</div>
-      <div class="kpi-trend ${trendClass}">
-        ${trendText}
-      </div>
+      ${trendHtml}
     </button>
   `;
 }

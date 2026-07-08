@@ -72,11 +72,11 @@
   ".sw-counter *,.sw-fb *{box-sizing:border-box}" +
 
   /* palette (dark default) */
-  ".sw-counter,.sw-fb,.sw-footer,.sw-modal{--sw-surface:rgba(15,23,42,.82);--sw-surface2:rgba(30,41,59,.9);" +
+  ".sw-counter,.sw-fb,.sw-footer,.sw-modal,.sw-menu-btn,.sw-sheet{--sw-surface:rgba(15,23,42,.82);--sw-surface2:rgba(30,41,59,.9);" +
     "--sw-border:rgba(148,163,184,.18);--sw-text:#f8fafc;--sw-muted:#94a3b8;" +
     "--sw-primary:#22d3ee;--sw-accent:#a78bfa;--sw-good:#34d399;--sw-bad:#f87171;" +
     "--sw-gold:#fbbf24;--sw-shadow:0 14px 40px -12px rgba(0,0,0,.6)}" +
-  "html[data-theme='light'] .sw-counter,html[data-theme='light'] .sw-fb,html[data-theme='light'] .sw-footer,html[data-theme='light'] .sw-modal{" +
+  "html[data-theme='light'] .sw-counter,html[data-theme='light'] .sw-fb,html[data-theme='light'] .sw-footer,html[data-theme='light'] .sw-modal,html[data-theme='light'] .sw-menu-btn,html[data-theme='light'] .sw-sheet{" +
     "--sw-surface:rgba(255,255,255,.92);--sw-surface2:rgba(248,250,252,.96);" +
     "--sw-border:rgba(15,23,42,.10);--sw-text:#0f172a;--sw-muted:#64748b;" +
     "--sw-primary:#0284c7;--sw-accent:#7c3aed;--sw-good:#16a34a;--sw-bad:#e11d48;" +
@@ -136,11 +136,37 @@
   ".sw-footer{position:relative;display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;text-align:center;" +
     "margin:34px auto 22px;padding:0 16px;font-family:'Plus Jakarta Sans','Inter',system-ui,sans-serif;font-size:.8rem;color:var(--sw-muted)}" +
   ".sw-footer .sep{opacity:.45}" +
+  ".sw-footer .src{opacity:.72}" +
+  ".sw-footer .flink{color:var(--sw-primary);font-weight:700;text-decoration:none}" +
+  ".sw-footer .flink:hover{color:var(--sw-accent)}" +
   ".sw-footer .sw-updated{position:absolute;right:16px;top:50%;transform:translateY(-50%);opacity:.7;white-space:nowrap}" +
   "@media (max-width:640px){.sw-footer .sw-updated{position:static;transform:none;opacity:.7;flex-basis:100%;margin-top:4px}}" +
   ".sw-footer .disc{cursor:pointer;font:inherit;font-weight:700;color:var(--sw-primary);background:none;border:none;" +
     "padding:4px 4px;border-radius:8px;text-decoration:underline;text-underline-offset:3px}" +
   ".sw-footer .disc:hover{color:var(--sw-accent)}" +
+
+  /* ===== MOBILE NAV (hamburger + bottom sheet, <=768px) ===== */
+  ".sw-menu-btn{display:none;align-items:center;justify-content:center;width:40px;height:40px;flex:0 0 auto;margin-left:6px;" +
+    "border-radius:12px;border:1px solid var(--sw-border);background:var(--sw-surface);color:var(--sw-text);cursor:pointer}" +
+  ".sw-menu-btn svg{width:20px;height:20px}" +
+  "@media (max-width:768px){.sw-menu-btn{display:inline-flex}}" +
+  ".sw-sheet{position:fixed;inset:0;z-index:3200;display:none;background:rgba(2,6,23,.6);" +
+    "-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}" +
+  ".sw-sheet.open{display:block}" +
+  ".sw-sheet .panel{position:absolute;left:0;right:0;bottom:0;max-height:76vh;overflow:auto;" +
+    "border-radius:20px 20px 0 0;background:var(--sw-surface2);border-top:1px solid var(--sw-border);" +
+    "box-shadow:var(--sw-shadow);padding:12px 14px calc(20px + env(safe-area-inset-bottom,0px))}" +
+  "@media (prefers-reduced-motion:no-preference){.sw-sheet.open .panel{animation:sw-sheet-up .28s cubic-bezier(.16,1,.3,1)}}" +
+  "@keyframes sw-sheet-up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}" +
+  ".sw-sheet .hdr{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 10px}" +
+  ".sw-sheet .ttl{font-weight:800;color:var(--sw-muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.12em}" +
+  ".sw-sheet .x{width:36px;height:36px;border-radius:10px;border:1px solid var(--sw-border);background:var(--sw-surface);" +
+    "color:var(--sw-text);font-size:1.05rem;cursor:pointer}" +
+  ".sw-sheet nav{display:grid;gap:4px}" +
+  ".sw-sheet nav a{display:flex;align-items:center;min-height:46px;padding:.55rem .9rem;border-radius:12px;" +
+    "color:var(--sw-text);font-weight:700;text-decoration:none;font-size:.98rem}" +
+  ".sw-sheet nav a:active{background:rgba(148,163,184,.14)}" +
+  ".sw-sheet nav a.active{background:color-mix(in srgb,var(--sw-primary) 14%,transparent);color:var(--sw-primary)}" +
   ".sw-modal{position:fixed;inset:0;z-index:10001;display:none;align-items:center;justify-content:center;padding:20px;" +
     "background:radial-gradient(circle at 20% 18%,rgba(34,211,238,.10),transparent 30%),radial-gradient(circle at 82% 82%,rgba(167,139,250,.12),transparent 28%),rgba(2,4,11,.82);" +
     "-webkit-backdrop-filter:blur(16px) saturate(120%);backdrop-filter:blur(16px) saturate(120%)}" +
@@ -380,7 +406,13 @@
     foot.innerHTML =
       "<span>© Deputations.github.io</span>" +
       "<span class='sep'>·</span>" +
-      "<button type='button' class='disc'>Disclaimer</button>";
+      "<span class='src'>Source: Employment News &amp; official circulars</span>" +
+      "<span class='sep'>·</span>" +
+      "<span class='src'>Unofficial site — verify with the original notification</span>" +
+      "<span class='sep'>·</span>" +
+      "<button type='button' class='disc'>Disclaimer</button>" +
+      "<span class='sep'>·</span>" +
+      "<a class='flink' href='" + rootPrefix() + "contact.html'>Contact</a>";
     document.body.appendChild(foot);
 
     var paras = [
@@ -428,6 +460,58 @@
     foot.querySelector(".disc").addEventListener("click", open);
     modal.querySelector(".cls").addEventListener("click", close);
     modal.addEventListener("click", function (e) { if (e.target === modal) close(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+  }
+
+  /* ===================== MOBILE NAV (hamburger + bottom sheet) ============ */
+  /* The nav row silently cuts off on small screens (review M2): several links
+     were undiscoverable. A hamburger (<=768px via CSS) opens a bottom sheet
+     cloned from .nav-links, so all pages get it from this one injection point. */
+  function buildMobileNav() {
+    var topNav = document.querySelector(".top-nav");
+    var links = topNav && topNav.querySelector(".nav-links");
+    if (!topNav || !links || document.querySelector(".sw-menu-btn")) return;
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "sw-menu-btn";
+    btn.setAttribute("aria-label", "Open menu");
+    btn.setAttribute("aria-expanded", "false");
+    btn.setAttribute("aria-controls", "swNavSheet");
+    btn.innerHTML = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' aria-hidden='true'><path d='M4 7h16M4 12h16M4 17h16'/></svg>";
+    topNav.appendChild(btn);
+
+    var sheet = document.createElement("div");
+    sheet.className = "sw-sheet";
+    sheet.id = "swNavSheet";
+    sheet.setAttribute("role", "dialog");
+    sheet.setAttribute("aria-modal", "true");
+    sheet.setAttribute("aria-label", "Site menu");
+    sheet.innerHTML =
+      "<div class='panel'>" +
+        "<div class='hdr'><span class='ttl'>Menu</span>" +
+        "<button type='button' class='x' aria-label='Close menu'>×</button></div>" +
+        "<nav>" + links.innerHTML + "</nav>" +
+      "</div>";
+    document.body.appendChild(sheet);
+
+    function open() {
+      sheet.classList.add("open");
+      btn.setAttribute("aria-expanded", "true");
+      var first = sheet.querySelector("nav a.active") || sheet.querySelector("nav a");
+      if (first) first.focus();
+    }
+    function close() {
+      if (!sheet.classList.contains("open")) return;
+      sheet.classList.remove("open");
+      btn.setAttribute("aria-expanded", "false");
+      btn.focus();
+    }
+    btn.addEventListener("click", function () {
+      if (sheet.classList.contains("open")) close(); else open();
+    });
+    sheet.querySelector(".x").addEventListener("click", close);
+    sheet.addEventListener("click", function (e) { if (e.target === sheet) close(); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
   }
 
@@ -483,6 +567,7 @@
     try { buildTypewriter(); } catch (e) {}
     try { buildCounter(); } catch (e) {}
     try { buildDisclaimer(); } catch (e) {}
+    try { buildMobileNav(); } catch (e) {}
     if (ENABLE_FEEDBACK) { try { buildFeedback(); } catch (e) {} }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
