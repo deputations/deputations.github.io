@@ -43,10 +43,13 @@ Deno.serve(async (req) => {
 
   const since = new Date(Date.now() - WINDOW_DAYS * 86400_000).toISOString();
 
-  // newly-approved, not-yet-expired vacancies in the window
+  // newly-approved, not-yet-expired vacancies in the window.
+  // NOTE: the table has no days_left column (that's computed client-side from
+  // last_date_to_apply, an ISO 'YYYY-MM-DD' text column) — filter on that instead.
+  const today = new Date().toISOString().slice(0, 10);
   const { data: vacs, error: vErr } = await admin
     .from("vacancies")
-    .select("vacancy_id, post_name, ministry, level_text, req_level1, req_level2, days_left, last_date_to_apply, created_at")
+    .select("vacancy_id, post_name, ministry, level_text, req_level1, req_level2, last_date_to_apply, created_at")
     .eq("status", "approved")
     .gte("created_at", since)
     .order("created_at", { ascending: false })
@@ -54,7 +57,7 @@ Deno.serve(async (req) => {
   if (vErr) return json({ ok: false, message: vErr.message }, 500);
 
   const vacancies = (vacs ?? []).filter((v: any) =>
-    v.vacancy_id && (v.days_left == null || Number(v.days_left) >= 0)
+    v.vacancy_id && (!v.last_date_to_apply || v.last_date_to_apply >= today)
   );
   if (!vacancies.length) return json({ ok: true, sent: 0, note: "no new vacancies in window" });
 
@@ -72,7 +75,8 @@ Deno.serve(async (req) => {
   function matches(sub: any, v: any): boolean {
     const lvl = sub.pay_level;
     if (lvl != null) {
-      const ok = v.req_level1 === lvl || v.req_level2 === lvl || levelInt(v.level_text) === lvl;
+      // req_level1/req_level2 are stored as text — parse before comparing to the int pay_level
+      const ok = levelInt(v.req_level1) === lvl || levelInt(v.req_level2) === lvl || levelInt(v.level_text) === lvl;
       if (!ok) return false;
     }
     const mins: string[] = sub.ministries || [];
