@@ -29,3 +29,7 @@ data/whatsapp_posted.json
 # these contain internal Supabase/project details.
 session-archive_*/
 _archive_chat.py
+
+# VAPID push private key — NEVER commit (set as a Supabase secret instead)
+supabase/.vapid.keys
+*.vapid.keys

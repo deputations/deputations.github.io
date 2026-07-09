@@ -28,3 +28,14 @@ window.SUPABASE_READY = function () {
     (window.SUPABASE_ANON_KEY || "").length > 20 &&
     !/YOUR_/.test(window.SUPABASE_ANON_KEY || "");
 };
+
+/* Web Push (vacancy alerts). The VAPID PUBLIC key is safe to expose — it only
+ * identifies this server to the browser's push service; the matching PRIVATE
+ * key lives only in the Supabase `push-notify` function's secrets. Push stays
+ * disabled until this is a real key and the push-subscribe function is live. */
+window.VAPID_PUBLIC_KEY = "BFwXP5B3Vt7GEck0voyf0cYBoibKwxJuwDk94AlHcBIwI0w2aUVr9u5G051v1KdN8st9Fqm2EPtxiTNHdTEiETI";
+window.PUSH_READY = function () {
+  return window.SUPABASE_READY() &&
+    typeof window.VAPID_PUBLIC_KEY === "string" &&
+    window.VAPID_PUBLIC_KEY.length > 80;
+};

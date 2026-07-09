@@ -1,0 +1,29 @@
+name: Send vacancy push alerts
+
+# Fires the Supabase push-notify function once a day, shortly AFTER the data
+# build (build-data runs 03:35 UTC), so freshly-approved vacancies are alerted.
+# The function itself decides who matches and dedupes via push_log.
+#
+# Required GitHub Actions secret:
+#   PUSH_CRON_KEY  — same long random string set as the Supabase function secret.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "10 4 * * *" # ~09:40 IST daily (after build-data at ~09:05 IST)
+
+jobs:
+  push-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call push-notify Edge Function
+        run: |
+          code=$(curl -s -o /tmp/resp.json -w "%{http_code}" -X POST \
+            "https://djaxutkmhazufsxeobal.supabase.co/functions/v1/push-notify" \
+            -H "Content-Type: application/json" \
+            -H "x-cron-key: ${{ secrets.PUSH_CRON_KEY }}" \
+            --data '{}')
+          echo "HTTP $code"
+          cat /tmp/resp.json
+          echo
+          test "$code" = "200"

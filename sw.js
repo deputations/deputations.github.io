@@ -94,3 +94,35 @@ self.addEventListener("fetch", function (event) {
     );
   }
 });
+
+/* ===== Web Push vacancy alerts (review P1-3/P1-4) =====
+ * push-notify sends { title, body, url, tag }. Show it; on click, focus an
+ * existing tab or open the deep link (/?v=<id> opens the vacancy modal). */
+self.addEventListener("push", function (event) {
+  var data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) { data = {}; }
+  var title = data.title || "New deputation vacancy";
+  var options = {
+    body: data.body || "",
+    tag: data.tag || "deputation-vacancy",
+    icon: "/assets/brand/apple-touch-icon.png",
+    badge: "/assets/brand/favicon.svg",
+    data: { url: data.url || "/" },
+    renotify: true,
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", function (event) {
+  event.notification.close();
+  var target = (event.notification.data && event.notification.data.url) || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (list) {
+      for (var i = 0; i < list.length; i++) {
+        var c = list[i];
+        if ("focus" in c) { c.navigate(target); return c.focus(); }
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(target);
+    })
+  );
+});
