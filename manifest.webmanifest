@@ -1,0 +1,25 @@
+{
+  "name": "Deputations — Central Deputation Vacancies",
+  "short_name": "Deputations",
+  "description": "Live, searchable Central Government deputation vacancies — filter by pay level, eligibility, ministry, location and closing date.",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#02040b",
+  "theme_color": "#02040b",
+  "icons": [
+    {
+      "src": "/assets/brand/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/brand/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

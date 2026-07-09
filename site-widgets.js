@@ -568,6 +568,13 @@
     try { buildCounter(); } catch (e) {}
     try { buildDisclaimer(); } catch (e) {}
     try { buildMobileNav(); } catch (e) {}
+    // PWA offline shell (review P1-2). Production origin only, so local dev
+    // servers never serve stale cached assets while iterating.
+    try {
+      if ("serviceWorker" in navigator && location.hostname === "deputations.github.io") {
+        navigator.serviceWorker.register("/sw.js");
+      }
+    } catch (e) {}
     if (ENABLE_FEEDBACK) { try { buildFeedback(); } catch (e) {} }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

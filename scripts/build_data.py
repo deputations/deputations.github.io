@@ -4,6 +4,8 @@ import re
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
+from xml.sax.saxutils import escape
 
 import pandas as pd
 from dateutil import parser as date_parser
@@ -16,6 +18,8 @@ OUTPUT_VACANCIES = DATA_DIR / "vacancies.json"
 OUTPUT_FILTERS = DATA_DIR / "filters.json"
 OUTPUT_STATS = DATA_DIR / "stats.json"
 OUTPUT_META = DATA_DIR / "meta.json"
+OUTPUT_FEED = Path("feed.xml")          # site root, next to sitemap.xml
+SITE_URL = "https://deputations.github.io"
 
 REQUIRED_COLUMNS = [
     "Vacancy_ID",
@@ -422,6 +426,69 @@ def write_json(path: Path, data: Any) -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
+def _rfc822(iso_date: str) -> str:
+    """'2026-01-30' -> 'Fri, 30 Jan 2026 00:00:00 GMT' ('' when unparseable)."""
+    try:
+        return datetime.strptime(str(iso_date)[:10], "%Y-%m-%d").strftime(
+            "%a, %d %b %Y 00:00:00 GMT"
+        )
+    except (ValueError, TypeError):
+        return ""
+
+
+def build_feed(vacancies: list) -> str:
+    """RSS 2.0 feed of the newest active vacancies (review P1-5).
+
+    Cheap alert channel for people who won't install the PWA: items deep-link
+    to the dashboard modal via /?v=<Vacancy_ID> (already handled by app.js).
+    """
+    items = [v for v in vacancies if str(v.get("Status", "")).strip().lower() == "active"]
+    items.sort(key=lambda v: str(v.get("Notification_Date") or ""), reverse=True)
+    items = items[:30]
+
+    now = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
+    out = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+        "<channel>",
+        "<title>Deputations — new Central deputation vacancies</title>",
+        f"<link>{SITE_URL}/</link>",
+        "<description>Newest Central Government deputation vacancies from Employment News and official circulars.</description>",
+        "<language>en-in</language>",
+        f"<lastBuildDate>{now}</lastBuildDate>",
+        f'<atom:link href="{SITE_URL}/feed.xml" rel="self" type="application/rss+xml"/>',
+    ]
+    for v in items:
+        vid = str(v.get("Vacancy_ID") or "").strip()
+        link = f"{SITE_URL}/?v={quote(vid)}" if vid else f"{SITE_URL}/"
+        title_bits = [str(v.get("Post_Name") or "").strip() or "Vacancy"]
+        if v.get("Ministry"):
+            title_bits.append(str(v["Ministry"]).strip())
+        desc_bits = []
+        for label, key in (
+            ("Level", "Level_Text"),
+            ("Organisation", "Organisation"),
+            ("Location", "Location_City"),
+            ("Closes", "Last_Date_To_Apply"),
+            ("Posts", "No_of_Posts"),
+        ):
+            val = str(v.get(key) or "").strip()
+            if val:
+                desc_bits.append(f"{label}: {val}")
+        pub = _rfc822(v.get("Notification_Date") or "")
+        out.append("<item>")
+        out.append(f"<title>{escape(' — '.join(title_bits))}</title>")
+        out.append(f"<link>{escape(link)}</link>")
+        out.append(f'<guid isPermaLink="true">{escape(link)}</guid>')
+        if pub:
+            out.append(f"<pubDate>{pub}</pubDate>")
+        out.append(f"<description>{escape(' · '.join(desc_bits))}</description>")
+        out.append("</item>")
+    out.append("</channel>")
+    out.append("</rss>")
+    return "\n".join(out) + "\n"
+
+
 def main() -> None:
     sheet_id = os.getenv("GOOGLE_SHEET_ID", "").strip()
     if not sheet_id:
@@ -439,12 +506,14 @@ def main() -> None:
     write_json(OUTPUT_FILTERS, filters)
     write_json(OUTPUT_STATS, stats)
     write_json(OUTPUT_META, meta)
+    OUTPUT_FEED.write_text(build_feed(vacancies), encoding="utf-8")
 
     print(f"Built {len(vacancies)} approved vacancies.")
     print(f"Wrote: {OUTPUT_VACANCIES}")
     print(f"Wrote: {OUTPUT_FILTERS}")
     print(f"Wrote: {OUTPUT_STATS}")
     print(f"Wrote: {OUTPUT_META}")
+    print(f"Wrote: {OUTPUT_FEED}")
 
 
 if __name__ == "__main__":
