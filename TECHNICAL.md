@@ -1,222 +1,279 @@
-# Technical Reference — Deputations.site
+# TECHNICAL — architecture reference
 
-> **Audience:** AI sessions (Claude Code or compatible). Human-readable but
-> optimized for AI comprehension. No marketing voice, no narrative padding.
-> **Read this first** on every cold start, then `HANDOVER.md` (latest block),
-> then `CHANGELOG.md`, then `WEBSITE-REVIEW.md`.
+```
+scope: AI-only
+read_order: 1 (first on every cold start)
+companion_files: HANDOVER.md, CHANGELOG.md, WEBSITE-REVIEW.md
+table_of_contents:
+  §1  identity
+  §2  architecture (frontend, data, pages, PWA)
+  §3  data model
+  §4  localStorage keys
+  §5  URL conventions
+  §6  SEO/bot strategy
+  §7  CSS architecture
+  §8  non-obvious conventions
+  §9  things that look broken but are not
+  §10 decision log
+  §11 open work
+  §12 cold-start protocol
+```
 
 ---
 
-## 1. What this is
+## §1 identity
 
-- **Repo:** `deputations.github.io` — single GitHub Pages site for Indian
-  central government deputation vacancies.
-- **URL:** https://deputations.github.io/
-- **Owner:** Vivek Vishal, Section Officer (independent, non-official portal —
-  see disclaimer modal in `site-widgets.js`).
-- **Audience:** Central Government officers seeking deputation postings.
-- **Strict invariant:** "Unofficial site — verify with the original
-  notification." Footer + modal in every page.
+| field | value |
+|---|---|
+| repo | `deputations.github.io` |
+| url | https://deputations.github.io/ |
+| owner | Vivek Vishal, Section Officer |
+| audience | Central Government officers seeking deputation |
+| disclaimer | "Unofficial site — verify with the original notification" |
+| invariant | footer trust line must remain visible on every page |
 
-## 2. Architecture snapshot
+---
 
-### 2.1 Frontend
-- **Stack:** Vanilla HTML/CSS/JS. **No** bundler, **no** framework, **no**
-  build step for the frontend assets. Scripts loaded as plain `<script src>`.
-- **Cache busting:** manual `?v=` query strings (inconsistent: `?v=ms28`,
-  `?v=2`, `?v=13`, `?v=21`, `?v=sb1`). This counter **is** the project's
-  semantic version. See CHANGELOG.md.
-- **Self-hosted:** every page has an inline theme-bootstrap script in `<head>`
-  setting `data-theme` to avoid FOUC. Persisted in `localStorage` as
-  `deputation_theme_v1`.
-- **Shared injection point:** `site-widgets.js` (deferred) — every page loads
-  it. Injects visitor counter, disclaimer footer/modal, typewriter on
-  `[data-tw]` headlines, mobile nav enhancement.
+## §2 architecture
 
-### 2.2 Data pipeline (two layers)
+### §2.1 frontend
+- stack: vanilla HTML/CSS/JS; no bundler, no framework, no build step
+- scripts: plain `<script src>` with `?v=` cache-busting
+- version scheme: `?v=` counter IS the project's semantic version
+  (see CHANGELOG.md for the `msNN` / `NN` / `sbNN` convention; counters
+  are per-asset, bumped on content change)
+- theme bootstrap: inline script in `<head>` reads
+  `localStorage.deputation_theme_v1`, sets `data-theme` to avoid FOUC
+- shared injector: `site-widgets.js` (deferred); every page loads it
+- icon sprite: inline `<svg defs>` at top of every HTML (no CDN)
+- fonts: Google Fonts (Plus Jakarta Sans, Sora, Unbounded); render-blocking
 
-1. **Static JSON** (built & committed, primary data feed):
-   - `scripts/build_data.py` reads a private Google Sheet via Sheets API →
-     normalizes → writes `data/vacancies.json`, `data/filters.json`,
-     `data/stats.json`, `data/meta.json`, `data/ministries.json`.
-   - `scripts/build_defex.py` reads `anonymised-deputation-data.xlsx` →
-     writes `data/defex/*.json`. Has a safety gate that FAILS the build
-     if a `Suspect_Bribe` column leaks into public files.
-   - Scheduled by `.github/workflows/build-data.yml` (daily ~09:05 IST)
-     and `.github/workflows/build-defex.yml` (weekly Monday).
-   - The bot commits JSON back to `main`.
-2. **Supabase** (live source of truth when configured):
-   - `config.js` exposes `SUPABASE_URL` + `SUPABASE_ANON_KEY` (intentionally
-     public — anon key is safe by design thanks to RLS).
-   - RLS limits anon role to `status='approved'` rows.
-   - `data/vacancies.json` is ONLY a fallback / SEO baseline.
-   - Edge Functions (Deno) in `supabase/functions/`:
-     - `submit` — public form intake (vacancy report, contact feedback)
-       with honeypot.
-     - `extract` — Gemini-powered PDF → draft vacancy (admin-triggered).
-     - `enrich` — Gemini + Google Search grounding to fill draft fields.
-     - `gc_sources` — orphan-source cleanup.
-     - `push-subscribe` + `push-notify` — web push (Dormant until
-       PUSH-SETUP.md completed; deploys done, see HANDOVER).
-3. **Legacy fallback:** `apps-script/*.gs` — Google Apps Script endpoint,
-  wired as runtime fallback in `contact.js` + `report-vacancy.js` +
-  `admin-ingest.js`. **Do not add new features to Apps Script** — retire
-  it once Supabase stability is confirmed (P3-5).
+### §2.2 data
+| layer | source | writer | schedule | consumer |
+|---|---|---|---|---|
+| static JSON | private Google Sheet | `scripts/build_data.py` via Sheets API | daily `35 3 * * *` (~09:05 IST) + on push to scripts/ | homepage (fallback) |
+| static DeFeX | `anonymised-deputation-data.xlsx` | `scripts/build_defex.py` | weekly Monday | defex.html |
+| live Supabase | approved rows | `extract` + `enrich` + admin review | event-driven | homepage (primary) |
+| legacy Apps Script | incoming forms | n/a | runtime fallback | contact, report-vacancy |
 
-### 2.3 Pages
-- `index.html` (home, 382 vacancies / 155 active at last fetch) — table+card
-  view, deep-linkable modal (`?v=<id>`), share links, copy-link, watchlist.
-- `defex.html` — DeFeX friendliness index (only page with inline `on*`
-  handlers, intentional).
-- `my-deputation.html` — personal cockpit, **all localStorage**, no auth.
-  82KB of JS rendering overview/bookmarks/searches/tracker/documents/
-  calendar/cooling-period/profile.
-- `contact.html` — feedback form → Supabase `submit` (or Apps Script).
-- `report-vacancy.html` — submit a vacancy → admin review queue.
-- `rules.html` — 151KB **single static document** (consolidated guidelines).
-- `faq.html` — moved from `/Rules/faq.html` (P0-11). Old path kept as a
-  redirect stub.
-- `admin-ingest.html/.js` — admin console, Supabase-auth-gated, 126KB JS.
-- `upcoming-projects.html` — V² roadmap; nav-hidden at owner's request.
-- `Rules/faq.html` → 301-equivalent to `/faq.html` (meta refresh + JS).
+Supabase specifics:
+- `config.js` exposes `SUPABASE_URL` + anon key (public by design; RLS limits
+  anon to `status='approved'` rows)
+- Edge Functions:
+  - `submit` — public form intake (honeypot)
+  - `extract` — Gemini PDF → draft (admin-triggered)
+  - `enrich` — Gemini + Google Search grounding
+  - `gc_sources` — orphan-source cleanup
+  - `push-subscribe` + `push-notify` — web push (live as of 2026-07-09)
+- 14 SQL migrations in `supabase/migrations/`
 
-### 2.4 PWA
-- `manifest.webmanifest` — installable, icons = favicon.svg + apple-touch-icon.
-- `sw.js` — service worker. Registration gated to `deputations.github.io`
-  origin only — local dev never caches. Network-first navigations,
-  stale-while-revalidate for same-origin assets + `/data/`, network-first
-  with cache fallback for Supabase GETs. No precache list (runtime caching
-  coexists with `?v=` busting).
-- `feed.xml` — RSS 2.0 of active vacancies with `?v=` deep links. Generated
-  by `scripts/build_data.py::build_feed()`.
+Build actions:
+- `.github/workflows/build-data.yml` (daily; bot commits back to main)
+- `.github/workflows/build-defex.yml` (weekly Monday; has Suspect_Bribe safety gate)
+- `.github/workflows/push-notify.yml` (daily cron; x-cron-key gate)
 
-## 3. Data model (canonical fields)
+DeFeX build guard: build FAILS if `Suspect_Bribe` column leaks into public JSON.
 
-Stored in `data/vacancies.json` (Sheet → Supabase columns):
-
-| Field | Type | Source | Notes |
+### §2.3 pages
+| file | role | data | auth |
 |---|---|---|---|
-| `Vacancy_ID` | string | sheet | Used as `?v=` deep link fragment |
-| `Post_Name` | string | sheet | Used in search suggestions |
-| `Ministry` | string | sheet | Filter axis |
-| `Department_Organisation` | string | sheet | |
-| `Location_City` / `Location_State` | string | sheet | |
+| `index.html` | dashboard (table+card views, deep-link modal) | supabase or static | none |
+| `defex.html` | DeFeX friendliness index | defex/* JSON | none |
+| `my-deputation.html` | personal cockpit (bookmarks/tracker/docs/calendar) | localStorage | none |
+| `contact.html` | feedback form | supabase `submit` | none |
+| `report-vacancy.html` | public vacancy submission | supabase `submit` → draft queue | none |
+| `rules.html` | consolidated guidelines (151KB single doc) | static | none |
+| `faq.html` | community FAQ (was `/Rules/faq.html`, moved) | static | none |
+| `admin-ingest.html` | review console (126KB) | supabase | supabase auth |
+| `upcoming-projects.html` | V² roadmap; nav-hidden by owner | static | none |
+| `Rules/faq.html` | redirect stub → /faq.html (meta refresh + JS) | — | — |
+
+Notable:
+- `defex.html` is the only page with inline `on*` handlers (intentional)
+- `my-deputation.html` is 82KB JS, 100% localStorage, no server
+- `Rules/faq.html` kept for back-compat (P0-11)
+
+### §2.4 PWA
+| asset | behaviour |
+|---|---|
+| `manifest.webmanifest` | installable; icons = favicon.svg (any) + apple-touch-icon.png 180×180 |
+| `sw.js` | service worker |
+| `feed.xml` | RSS 2.0 active vacancies with `?v=` deep links |
+
+Service worker specifics:
+- origin-gated registration: only `deputations.github.io`; localhost never
+  cached (allows untainted local dev)
+- navigations: network-first
+- same-origin + `/data/`: stale-while-revalidate
+- Supabase GETs: network-first with cache fallback
+- no precache list (runtime caching + `?v=` busting coexist)
+
+---
+
+## §3 data model
+
+### §3.1 vacancy row
+| field | type | source | notes |
+|---|---|---|---|
+| `Vacancy_ID` | string | sheet | used as `?v=` deep link fragment |
+| `Post_Name` | string | sheet | search suggestions |
+| `Ministry` | string | sheet | filter axis |
+| `Department_Organisation` | string | sheet | filter axis |
+| `Location_City` | string | sheet | location filter |
+| `Location_State` | string | sheet | location filter |
 | `Level` | string | sheet | "Level-12" form |
-| `Pay_Level` | int | sheet | Compares against user's `pay_level` |
-| `Eligibility` | string | sheet | Drives pay-level filtering |
-| `Eligibility_Level_From` / `_To` | int | sheet | Used by "Display deputations for me" |
-| `Years_Required_At_Level` | int | sheet | Year threshold for personalized filter |
-| `Last_Date_To_Apply` | ISO date string | sheet | **THE** date; `days_left` is computed at query time |
-| `Notification_Date` | ISO date string | sheet | Default sort key |
-| `Official_Notification_Link` | URL string | sheet | Drives the "Source PDF" link |
-| `Status` | enum | derived | `Active` / `Inactive` — `expired` if `days_left < 0` |
-| `Days_Left` | int | derived (client) | **`last_date_to_apply` − now** — never stored |
+| `Pay_Level` | int | sheet | compared to subscriber int |
+| `Eligibility` | string | sheet | shown in modal |
+| `Eligibility_Level_From` | int | sheet | drives personalised filter |
+| `Eligibility_Level_To` | int | sheet | drives personalised filter |
+| `Years_Required_At_Level` | int | sheet | year threshold for personalised filter |
+| `Last_Date_To_Apply` | ISO date string | sheet | **the** date; `days_left` derived at query time |
+| `Notification_Date` | ISO date string | sheet | default sort key |
+| `Official_Notification_Link` | URL string | sheet | drives "Source PDF" link |
+| `Status` | enum | derived | `Active` if `days_left >= 0`, else `Inactive` |
+| `Days_Left` | int | derived client-side | `last_date_to_apply - now`; never stored |
 
-**Critical pitfall (logged from commit `310c8f5`):** there is **no
-`days_left` column** in `vacancies`. Any code that does
-`SELECT days_left FROM vacancies` returns null silently. Compute it from
-`last_date_to_apply` (ISO text — parse via JS `new Date()`).
+### §3.2 critical pitfalls
+- **`vacancies.days_left` does NOT exist.** Compute from
+  `last_date_to_apply`. Any code doing `SELECT days_left` returns null.
+  Reference fix: commit `310c8f5`.
+- **`req_level1` / `req_level2` are TEXT, not int.** Parse before comparing
+  to subscriber's int `pay_level`. Reference fix: commit `310c8f5`.
+- `Eligibility_Level_From` may be empty string; treat as `null`.
 
-## 4. LocalStorage keys (do not collide)
+---
 
-| Key | Owner | Purpose |
+## §4 localStorage keys
+
+| key | owner page | shape | purpose |
+|---|---|---|---|
+| `deputation_theme_v1` | every | `dark` \| `light` | theme |
+| `deputations_watchlist_v1` | index | string[] of `Vacancy_ID` | homepage watchlist |
+| `dep_profile_v1` | index + my-deputation | `{pay_level, years, ministries[]}` | personalised filter + push prefill |
+| `dep_saved_searches_v1` | my-deputation | `[{name, filters}]` | saved filter presets |
+| `dep_documents_v1` | my-deputation | `[{id, name, checked}]` | checklist |
+| `dep_tracker_v1` | my-deputation | `[{vacancy_id, status, notes}]` | application tracker |
+| `dep_calendar_v1` | my-deputation | `[{date, label, kind}]` | cooling-period + reminders |
+| `sw_visit` | site-widgets | `{total, today}` | counter cache (session) |
+| `sw_sid` | site-widgets | string UUID | counter per-tab session id |
+| `sw_voted_<page>` | site-widgets | `"up"` \| `"down"` | like/dislike per page |
+| `sw_updated` | site-widgets | date string | "Updated on" chip |
+
+Namespace prefixes: `deputation*`, `deputations*`, `dep_*`, `sw_*`. Do not
+introduce new prefixes without updating this table.
+
+---
+
+## §5 URL conventions
+
+| pattern | use |
+|---|---|
+| `/index.html?v=<Vacancy_ID>` | open vacancy modal directly |
+| `/index.html?search=...&payLevel=...&level=...&ministry=...&location=...&status=...` | filter state restore |
+| `/Rules/faq.html` | legacy; meta-refreshes to /faq.html |
+| `/Rules/Documents/*.html` | source circulars (no nav back) |
+| no trailing slash; keep `.html` for GH Pages |
+
+Theme is localStorage-only; never URL-driven.
+
+---
+
+## §6 SEO/bot strategy
+
+| state | bot sees |
+|---|---|
+| no JS | `<div id="resultsCount">Loading vacancies...</div>` placeholder; nothing else |
+| JS executes | rows render via `renderDashboard()`; JSON-LD `ItemList` injected via `injectJsonLd()` (app.js ~line 593) |
+| static fallback | `data/vacancies.json` exists for fetch (not HTML) |
+
+Gap: no SSR; non-JS crawlers see no content. Mitigation in P2 (Astro
+static prerender — see WEBSITE-REVIEW §3 P2-3).
+
+---
+
+## §7 CSS architecture
+
+| file | size | role |
 |---|---|---|
-| `deputation_theme_v1` | every page | theme: `dark` \| `light` |
-| `deputations_watchlist_v1` | index | bookmarked vacancy IDs |
-| `dep_profile_v1` | index + my-deputation | user's pay level + years + ministry prefs |
-| `dep_saved_searches_v1` | my-deputation | saved filter presets |
-| `dep_documents_v1` | my-deputation | checklist state |
-| `dep_tracker_v1` | my-deputation | application tracker (status per vacancy) |
-| `dep_calendar_v1` | my-deputation | cooling-period + reminders |
-| `sw_visit`, `sw_sid`, `sw_voted_*`, `sw_updated` | site-widgets | counter + vote state (per page) |
+| `style.css` | 164 KB | tokens + global |
+| `navbar.css` | small | shared top nav |
+| `defex.css`, `my-deputation.css`, `report-vacancy.css`, `contact.css`, `upcoming-projects.css` | small | per-page additions |
 
-## 5. URL conventions
+Token system: `:root` in `style.css` for dark default; `[data-theme="light"]`
+override block for light. 31 `@media` blocks. Mobile rules live in
+`@media (max-width: 640px)` and `(max-width: 768px)` blocks.
 
-- Home deep link: `/index.html?v=<Vacancy_ID>` opens the modal.
-- Filter state sync: query params `search`, `payLevel`, `level`, `ministry`,
-  `location` (comma-sep), `status`.
-- Theme: stored locally; not URL-driven.
-- No trailing slash. No `.html` for non-root pages (keep as-is for GH Pages).
+---
 
-## 6. Bot-vs-JS strategy
+## §8 non-obvious conventions
 
-GitHub Pages cannot pre-render. The current solution:
-- Static `data/vacancies.json` exists at `/data/vacancies.json` (so
-  crawlers see *something*), but the homepage HTML ships only
-  "Loading vacancies..." markup until JS executes.
-- **SEO gap:** JSON-LD `ItemList` is injected only post-load.
-  Mitigation in P2 (Astro static prerender — see WEBSITE-REVIEW §3 P2-3).
+| rule |
+|---|
+| every page has the same inline SVG sprite at top of body; add new icons to index.html AND replicate to every other HTML until P2-1 lands |
+| prefer custom dropdowns `createSingleSelect` / `createMultiSelect` over native `<select>` so design tokens flow through |
+| matching whitespace: spaces or tabs per file convention; do not mix |
+| all scripts `defer` or at end of `<body>`; never render-blocking above existing Google Fonts preconnect |
+| `?v=` bumps on every content change of style.css / app.js / site-widgets.js; per-page scripts have their own counter |
+| `[data-tw]` attribute triggers typewriter in site-widgets.js; opt out by removing attribute |
+| OG/Twitter meta is static and identical across pages; share-* embeds vacancy detail in the share text itself |
+| VAPID keys: `supabase/.vapid.keys` is gitignored; never commit; rotate via PUSH-SETUP.md |
+| inline HTML icon sprite: 22 symbols in index.html `defs` |
 
-## 7. CSS architecture
+---
 
-- `style.css` (single file, ~164 KB) — full `:root` token system,
-  glassmorphism dark default, `[data-theme="light"]` overrides.
-- `navbar.css` — shared top nav.
-- `defex.css`, `my-deputation.css`, `report-vacancy.css`,
-  `contact.css`, `upcoming-projects.css` — per-page additions.
-- 31 `@media` blocks in `style.css`. Mobile rules live in the existing
-  `@media (max-width: 640px)` block — see P0-3 for the compact KPI strip.
-- **Do NOT add a CSS-in-JS layer.** Static CSS is intentional.
+## §9 things that look broken but are not
 
-## 8. Non-obvious conventions
+| phenomenon | actual |
+|---|---|
+| "Loading vacancies..." in crawler HTML | known; see §6 |
+| `style-legacy.css` referenced anywhere? | no; deleted in P0 |
+| Apps Script still wired | intentional fallback; P3-5 retires it |
+| "Updating" build markers | daily `chore: build` commits |
 
-- **HTML icon sprite** is inline at the top of every page (avoids icon CDN).
-  Add new icons to `index.html`'s `<svg defs>` block AND replicate in every
-  other HTML file (until P2-1's Layout component lands).
-- **Custom dropdowns** (`createSingleSelect` / `createMultiSelect` in
-  `app.js`) implement Escape/focus-return — **prefer them** over native
-  `<select>` so the design tokens flow through consistently.
-- **Whitespace in HTML is significant** — repo uses spaces, tabs in some
-  files. Match the file you're editing.
-- **All script tags use `defer` or are at the end of `<body>`** — never
-  put anything render-blocking above the existing Google Fonts preconnect.
-- **Cache-bust discipline:** when editing `style.css`, bump `?v=msNN` in
-  every HTML that links it (and the line in `index.html`'s `<link>` +
-  every other page). Same for `app.js` (`?v=msNN`). Bump `?v=NN` for
-  per-page scripts (no shared scheme — see CHANGELOG for the convention).
-- **The `data-tw` attribute** triggers the typewriter animation in
-  `site-widgets.js`. Remove the attribute to opt a headline out.
-- **Open Graph / Twitter meta** are static and identical across all pages
-  (the share-* function embeds vacancy detail in the share text itself,
-  not the meta tag). See `<head>` of any page.
+---
 
-## 9. Things that look broken but aren't
+## §10 decision log
 
-- The "Loading vacancies..." placeholder seen by crawlers → known, see §6.
-- The README for SETUP.md mentions local-only steps that assume
-  `python -m http.server` + a populated `data/vacancies.json`. Local dev
-  is fine; nothing on the public site depends on this.
-- The `style-legacy.css` deletion is intentional — was unreferenced.
-
-## 10. Decision log (AI-extractable)
-
-| Date | Decision | Rationale | Source |
+| date | decision | rationale | source |
 |---|---|---|---|
-| 2026-07-08 | Keep neon-glassmorphism look | Owner decision: "vibrant look is intentional brand identity" | WEBSITE-REVIEW.md P1-6 SKIP |
-| 2026-07-08 | Lazy-load WebGL hero | Phones get CPU-budget relief | commit `b666711` |
-| 2026-07-09 | Cache-bust counter = semantic version | Already the de-facto versioning; formalize without behavior change | this doc |
-| 2026-07-09 | 4-file documentation split (HANDOVER/TECHNICAL/CHANGELOG/WEBSITE-REVIEW) | Each has a single audience + purpose | this doc |
-| 2026-07-09 | HANDOVER is append-only | Idempotency + simple grep/diff | HANDOVER.md preamble |
+| 2026-07-08 | keep neon-glassmorphism look | owner: "vibrant look is intentional brand identity" | WEBSITE-REVIEW.md P1-6 SKIP |
+| 2026-07-08 | lazy-load WebGL hero | phone CPU budget | commit `b666711` |
+| 2026-07-09 | cache-bust counter = semantic version | already the de-facto version | CHANGELOG.md |
+| 2026-07-09 | 4-file doc split (HANDOVER/TECHNICAL/CHANGELOG/WEBSITE-REVIEW) | one audience per file | TECHNICAL.md §0 |
+| 2026-07-09 | HANDOVER is append-only markdown (not JSONL) | `git diff` readability + deterministic regex parse | HANDOVER.md schema block |
+| 2026-07-09 | docs are not in sitemap.xml + not linked from HTML | humans should not land on them | session -002 decisions |
+| 2026-05-31 | `vacancies.days_left` is computed, not stored | the schema never had it; push-notify bug exposed this | commit `310c8f5` |
 
-## 11. Open work (from WEBSITE-REVIEW §3)
+---
 
-| Tier | Next | Effort | Note |
-|---|---|---|---|
-| P2-1 | Astro scaffold | L | Foundation for static prerender + per-vacancy pages |
-| P2-3 | Per-vacancy `/vacancy/{id}/` + JobPosting JSON-LD | M | SEO unlock |
-| P3-2 | AI eligibility explainer (Gemini) | L | Flagship "modern tech" feature |
+## §11 open work
 
-P1-6/P1-7 (visual calm-down + self-host fonts) are on OWNER HOLD —
-do not pick up without explicit approval.
+| tier | id | title | effort | notes |
+|---|---|---|---|---|
+| P2 | 2-1 | Astro scaffold | L | foundation for static prerender + per-vacancy pages |
+| P2 | 2-3 | per-vacancy `/vacancy/{id}/` + JobPosting JSON-LD | M | SEO unlock |
+| P3 | 3-2 | AI eligibility explainer (Gemini Edge Function) | L | flagship modern feature |
 
-## 12. Reading order on every cold start
+Hold:
+- P1-6 (visual calm-down) — owner decision, do not pick up
+- P1-7 (font self-host, drop 3rd family) — bundled with P1-6 on hold
+- P1-8 (KPI sparklines) — blocked on no data history source
 
-1. **TECHNICAL.md** — this file (the doc you're reading). Sets
-   architecture context.
-2. **HANDOVER.md** — read ONLY the latest session block + check the
-   `ending_head`. If your session is a continuation, append a new
-   block; never edit previous ones.
-3. **CHANGELOG.md** — user-facing version log. Confirms what shipped.
-4. **WEBSITE-REVIEW.md** — current roadmap + status.
+---
 
-Total: ~2500 lines. ~3k tokens. Cheap.
+## §12 cold-start protocol
+
+1. read TECHNICAL.md (this file)
+2. read HANDOVER.md — find last `## session` block at file bottom
+3. read CHANGELOG.md — find latest version section
+4. read WEBSITE-REVIEW.md — §3 Backlog Status column only
+
+Total: ~3k tokens. Stop reading evidence sections in WEBSITE-REVIEW.md §1/§2 —
+they exist for the owner's quarterly skim, not for decision-making.
+
+On session end:
+1. append a new block to HANDOVER.md (do not edit prior blocks)
+2. if any visible UI changed, bump the relevant `?v=` counters
+3. extend CHANGELOG.md `[Unreleased]` if shipping
+4. update WEBSITE-REVIEW.md §3 Status column if any backlog row moved
+5. commit; push to origin
