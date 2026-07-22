@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const searchPost = document.getElementById('searchPost');
     const filterMyPayLevel = createSingleSelect(document.getElementById('filterMyPayLevelSS'), {
-      placeholder: 'Any Level',
+      placeholder: 'Your Pay Level',
     });
     const filterExperience = createSingleSelect(document.getElementById('filterExperienceSS'), {
       placeholder: 'Any',
@@ -296,6 +296,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const filterMinistry = createSingleSelect(document.getElementById('filterMinistrySS'), {
       placeholder: 'All Ministries',
+    });
+    const filterOrgType = createSingleSelect(document.getElementById('filterOrgTypeSS'), {
+      placeholder: 'All Types',
+    });
+    const filterRegion = createSingleSelect(document.getElementById('filterRegionSS'), {
+      placeholder: 'All Regions',
     });
     const filterLocation = createMultiSelect(document.getElementById('filterLocationMS'), {
       placeholder: 'All Locations',
@@ -369,6 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let vtDiscrete = false;
 
     let quickFilters = {
+        newOnly: false,
         closing7: false,
         delhiNcr: false,
         closingToday: false
@@ -378,9 +385,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let searchDatalist = null;
     let quickFiltersBar = null;
 
+    // EXPERIMENT: automatic link preview. Vacancy_ID -> pre-rendered thumbnail
+    // path for the Official_Notification_Link (data/link_previews.json, built by
+    // scripts/build_link_previews.py). Empty when the manifest is missing.
+    let linkPreviews = {};
+
    initializeEnhancements();
 initializeMobileFilterAccordion();
 initDesktopFilterCollapse();
+setupScrollProgress();
 initializeModal();
 updateWatchlistUI();
 setLoadingUI();
@@ -471,9 +484,10 @@ function hideToastEl(t) {
 }   
 
 function loadDataFromJSON() {
-    fetchVacancies()
-        .then(data => {
+    Promise.all([fetchVacancies(), loadLinkPreviews(), loadMeta()])
+        .then(([data, previews, meta]) => {
             rawData = data;
+            linkPreviews = previews;
 
             reconcileWatchlistWithData();
             populateFilters();
@@ -486,6 +500,8 @@ function loadDataFromJSON() {
             renderDashboard();
             openVacancyFromUrl();
             injectJsonLd();
+            initLinkPreview();
+            setDataUpdated(meta);
 
             console.log('✅ Loaded', rawData.length, 'vacancies');
         })
@@ -529,6 +545,144 @@ function fetchVacancies() {
     return fetch('data/vacancies.json').then(res => res.json());
 }
 
+// EXPERIMENT: automatic link preview. Pre-rendered thumbnail manifest. Never
+// rejects — a missing/broken manifest just disables previews, nothing breaks.
+function loadLinkPreviews() {
+    return fetch('data/link_previews.json')
+        .then(res => (res.ok ? res.json() : {}))
+        .catch(() => ({}));
+}
+
+// Build metadata (data/meta.json, written by the daily build). Never rejects;
+// a missing file just leaves the "Updated on" chip hidden.
+function loadMeta() {
+    return fetch('data/meta.json')
+        .then(res => (res.ok ? res.json() : null))
+        .catch(() => null);
+}
+
+// "Updated <date>" chip in the results bar — the daily data-refresh date from
+// meta.generated_at_utc. Self-contained (no dependency on the nested date
+// helpers) so it can run from the top-level load flow.
+function setDataUpdated(meta) {
+    if (!meta || !meta.generated_at_utc) return;
+    const dt = new Date(meta.generated_at_utc);
+    if (Number.isNaN(dt.getTime())) return;
+    const text = 'Updated ' + dt.toLocaleDateString('en-IN', {
+        day: '2-digit', month: 'short', year: 'numeric'
+    });
+    // Show it in the disclaimer footer (bottom-right). That footer is injected by
+    // the deferred site-widgets.js, so retry until it exists.
+    let tries = 0;
+    const place = () => {
+        const foot = document.querySelector('.sw-footer');
+        if (!foot) return false;
+        let span = foot.querySelector('.sw-updated');
+        if (!span) {
+            span = document.createElement('span');
+            span.className = 'sw-updated';   // positioned bottom-right by site-widgets CSS
+            foot.appendChild(span);
+        }
+        span.textContent = text;
+        return true;
+    };
+    if (place()) return;
+    const t = setInterval(() => { if (place() || ++tries > 25) clearInterval(t); }, 200);
+}
+
+// Returns a data-link-preview="<path>" attribute for an item's notification
+// link if a thumbnail exists, else ''. Stamped onto the notification <a> tags.
+function notifPreviewAttr(item) {
+    const src = linkPreviews[safe(item && item.Vacancy_ID)];
+    return src ? ` data-link-preview="${escapeHtml(src)}"` : '';
+}
+
+// EXPERIMENT: automatic link preview — a floating thumbnail of the notification
+// document that fades in by the cursor on hover and follows it. Fine-pointer
+// (desktop) only; touch gets nothing. Revert the whole feature by removing this
+// function + its call, the notifPreviewAttr() calls, loadLinkPreviews(), and
+// the fenced #linkPreviewCard CSS block.
+function initLinkPreview() {
+    if (!window.matchMedia || !window.matchMedia('(pointer: fine)').matches) return;
+    if (document.getElementById('linkPreviewCard')) return; // run once
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const card = document.createElement('div');
+    card.id = 'linkPreviewCard';
+    card.setAttribute('aria-hidden', 'true');
+    // Inner element carries the reveal/hide animation (scale + slide + fade);
+    // the wrapper only ever gets a translate from JS, so follow stays instant.
+    const inner = document.createElement('div');
+    inner.className = 'lp-inner';
+    const img = document.createElement('img');
+    img.alt = '';
+    img.decoding = 'async';
+    const cap = document.createElement('span');
+    cap.className = 'lp-cap';
+    cap.textContent = 'Official Notification';
+    inner.append(img, cap);
+    card.appendChild(inner);
+    document.body.appendChild(card);
+
+    const OFFSET = 18;   // gap from the cursor
+    const DELAY = 120;   // hover dwell before the card appears
+    let current = null;  // the <a> currently previewed
+    let showTimer = 0;
+    let visible = false;
+    let lastX = 0, lastY = 0;
+
+    const hide = () => {
+        clearTimeout(showTimer);
+        showTimer = 0;
+        current = null;
+        if (!visible) return;
+        visible = false;
+        card.classList.remove('show');
+    };
+
+    const place = (x, y) => {
+        const w = card.offsetWidth || 240;
+        const h = card.offsetHeight || 180;
+        let left = x + OFFSET;
+        let top = y + OFFSET;
+        if (left + w > window.innerWidth - 8) left = x - OFFSET - w;  // flip left
+        if (top + h > window.innerHeight - 8) top = y - OFFSET - h;   // flip up
+        card.style.transform = `translate(${Math.max(8, left)}px, ${Math.max(8, top)}px)`;
+    };
+
+    img.addEventListener('error', hide);                 // 404 / decode fail → no card
+    img.addEventListener('load', () => { if (current) place(lastX, lastY); });
+
+    document.addEventListener('pointerover', (e) => {
+        const a = e.target.closest && e.target.closest('[data-link-preview]');
+        if (!a || a === current) return;
+        current = a;
+        const src = a.getAttribute('data-link-preview');
+        clearTimeout(showTimer);
+        showTimer = setTimeout(() => {
+            if (current !== a) return;
+            if (img.getAttribute('src') !== src) img.src = src;
+            place(lastX, lastY);
+            visible = true;
+            card.classList.add('show');
+        }, reduce ? 0 : DELAY);
+    });
+
+    document.addEventListener('pointermove', (e) => {
+        lastX = e.clientX; lastY = e.clientY;
+        if (visible) place(lastX, lastY);
+    });
+
+    document.addEventListener('pointerout', (e) => {
+        const a = e.target.closest && e.target.closest('[data-link-preview]');
+        if (a && a === current && (!e.relatedTarget || !a.contains(e.relatedTarget))) hide();
+    });
+
+    window.addEventListener('scroll', hide, { passive: true });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
+}
+
 function hydrateFiltersFromUrl() {
     try {
         const params = new URLSearchParams(window.location.search);
@@ -545,6 +699,8 @@ function hydrateFiltersFromUrl() {
         setIfPresent('experience', filterExperience);
         setIfPresent('level', filterLevel);
         setIfPresent('ministry', filterMinistry);
+        setIfPresent('orgType', filterOrgType);
+        setIfPresent('region', filterRegion);
         // multi-select: ?location=a,b,c
         if (params.has('location')) {
           const arr = (params.get('location') || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -553,6 +709,7 @@ function hydrateFiltersFromUrl() {
         if (params.has('status')) filterStatus.value = params.get('status');
 
         const quick = (params.get('quick') || '').split(',').filter(Boolean);
+        if (quick.includes('newOnly')) quickFilters.newOnly = true;
         if (quick.includes('closing7')) quickFilters.closing7 = true;
         if (quick.includes('closingToday')) quickFilters.closingToday = true;
         if (quick.includes('delhiNcr')) quickFilters.delhiNcr = true;
@@ -728,33 +885,116 @@ function getDateSortValue(value) {
 // sits beside the KPIs by default (body.filters-collapsed, set in the markup so
 // there's no flash); "Show more filters" restores the full left sidebar.
 // Mobile (≤768px) keeps its own Show Filters accordion untouched.
+// Reading/scroll progress bar (matches the Rules page). Widens the fixed top
+// bar in proportion to how far the page is scrolled; throttled via rAF.
+function setupScrollProgress() {
+  const bar = document.getElementById('scrollProgress');
+  if (!bar) return;
+  let ticking = false;
+  const update = () => {
+    const h = document.documentElement;
+    const max = (h.scrollHeight - h.clientHeight) || 1;
+    bar.style.width = Math.min(100, (h.scrollTop / max) * 100) + '%';
+    ticking = false;
+  };
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(update);
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  update();
+}
+
 function initDesktopFilterCollapse() {
   const btn = document.getElementById('desktopFilterToggle');
   if (!btn) return;
   const label = btn.querySelector('span');
+  const sidebar = document.querySelector('.filters-sidebar');
 
-  const apply = (expanded) => {
-    document.body.classList.toggle('filters-collapsed', !expanded);
+  const applyLabel = (expanded) => {
     btn.setAttribute('aria-expanded', String(expanded));
-    if (label) label.textContent = expanded ? 'Hide filters' : 'Show more filters';
+    if (label) label.textContent = expanded ? 'Hide filters' : 'Many more filters';
+  };
+  const applyLayout = (expanded) => {
+    document.body.classList.toggle('filters-collapsed', !expanded);
+    updateHiddenFilterCue(); // cue only shows while collapsed
   };
 
   // Always load collapsed — expanding is a per-visit choice, not remembered.
   let expanded = false;
-  apply(expanded);
+  applyLayout(expanded);
+  applyLabel(expanded);
 
-  btn.addEventListener('click', () => {
-    expanded = !expanded;
+  // Sequenced morph: rows shift before the filter content drops in (expand),
+  // filter content folds before the rows expand back (collapse). Reuses the
+  // existing vt-filters View Transition for the grid-template swap.
+  let busy = false;
+  const FOLD_MS = 380;       // matches CSS .filter-group transition + stagger
+  const REVEAL_DELAY = 40;   // let the VT settle before content unfurls
 
-    // Animate the layout morph (slower, scoped via html.vt-filters) where the
-    // View Transitions API exists; instant elsewhere / for reduced motion.
+  const waitFold = () => new Promise((resolve) => {
+    if (!sidebar) return resolve();
+    const groups = sidebar.querySelectorAll('.filter-group:not(.fg-primary)');
+    if (!groups.length) return resolve();
+    let done = false;
+    const last = groups[groups.length - 1];
+    const onEnd = (e) => {
+      if (e.propertyName !== 'max-height') return;
+      done = true;
+      last.removeEventListener('transitionend', onEnd);
+      resolve();
+    };
+    last.addEventListener('transitionend', onEnd);
+    // Fallback in case transitionend doesn't fire (display:none ancestors, etc.)
+    setTimeout(() => { if (!done) { last.removeEventListener('transitionend', onEnd); resolve(); } }, FOLD_MS + 120);
+  });
+
+  btn.addEventListener('click', async () => {
+    if (busy) return;
     const motionOk = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (typeof document.startViewTransition === 'function' && motionOk) {
-      document.documentElement.classList.add('vt-filters');
-      const t = document.startViewTransition(() => apply(expanded));
-      t.finished.finally(() => document.documentElement.classList.remove('vt-filters'));
-    } else {
-      apply(expanded);
+    const canVT = typeof document.startViewTransition === 'function';
+    const next = !expanded;
+
+    if (!motionOk || !canVT) {
+      expanded = next;
+      applyLayout(expanded);
+      applyLabel(expanded);
+      return;
+    }
+
+    busy = true;
+    applyLabel(next); // flip label/aria immediately so spam-clicks see latest
+
+    try {
+      if (next) {
+        // EXPAND: phase 1 — rows shift right (VT layout morph, sidebar empty);
+        // phase 2 — filter groups cascade into the freed column.
+        document.body.classList.add('filters-pending-reveal');
+        document.documentElement.classList.add('vt-filters');
+        const t = document.startViewTransition(() => applyLayout(true));
+        await t.finished.catch(() => {});
+        document.documentElement.classList.remove('vt-filters');
+        // small beat, then drop the gate → CSS reveal kicks in with stagger
+        await new Promise((r) => setTimeout(r, REVEAL_DELAY));
+        document.body.classList.remove('filters-pending-reveal');
+      } else {
+        // COLLAPSE: phase 1 — fold filter groups while sidebar still occupies
+        // the left column; phase 2 — VT morphs rows back to full width.
+        document.body.classList.add('filters-folding');
+        await waitFold();
+        document.documentElement.classList.add('vt-filters');
+        const t = document.startViewTransition(() => {
+          applyLayout(false);
+          document.body.classList.remove('filters-folding');
+        });
+        await t.finished.catch(() => {});
+        document.documentElement.classList.remove('vt-filters');
+      }
+      expanded = next;
+    } finally {
+      busy = false;
     }
   });
 }
@@ -953,7 +1193,7 @@ function renderTable(data) {
     return `
       <tr class="clickable-row ${saved ? 'row-bookmarked' : ''}" data-open-details="${escapeHtml(vacancyId)}">
         <td class="post-col" data-label="Post Name">
-          <strong>${escapeHtml(safe(item.Post_Name) || '—')}</strong>
+          <strong>${escapeHtml(safe(item.Post_Name) || '—')}</strong>${isNewVacancy(item) ? ' <span class="vx-new table-new" title="Added in the last 7 days">NEW</span>' : ''}
           <div class="table-subtext">
             ${escapeHtml(safe(item.Department_Organisation) || orgDisplayName(item) || '')}
           </div>
@@ -993,16 +1233,16 @@ function renderTable(data) {
           ${escapeHtml(notificationDateText)}
         </td>
 
-        <td class="table-link-cell" data-label="Notification">
+        <td class="table-link-cell" data-label="Source PDF">
           ${notificationLink ? `
             <a
               class="table-link-btn"
               href="${escapeHtml(notificationLink)}"
               target="_blank"
               rel="noopener noreferrer"
-              onclick="event.stopPropagation();"
+              onclick="event.stopPropagation();"${notifPreviewAttr(item)}
             >
-              Notification
+              Source PDF
             </a>
           ` : '—'}
           ${item.Source_Ref
@@ -1040,7 +1280,7 @@ function renderTable(data) {
             ${renderSortableHeader('Location', 'Location', 'location-col')}
             ${renderSortableHeader('Days Left', 'Days_Left', 'days-col')}
             ${renderSortableHeader('Notification Date', 'Notification_Date', 'notification-date-col')}
-            <th class="table-link-cell">Notification</th>
+            <th class="table-link-cell">Source PDF</th>
             <th
               class="save-col save-col-heading ${hasSavedAny ? 'has-saved' : ''}"
               title="${hasSavedAny ? 'Bookmarks saved' : 'No bookmarks yet'}"
@@ -1063,7 +1303,7 @@ function renderTable(data) {
         // changes filters), so we tally them ONCE here — in a single pass — rather
         // than recomputing per filter change.
         const activeRows = [];
-        const levelCounts = {}, ministryCounts = {}, locationCounts = {};
+        const levelCounts = {}, ministryCounts = {}, locationCounts = {}, orgTypeCounts = {}, regionCounts = {};
         let inactiveCount = 0;
         rawData.forEach(i => {
             const st = safe(i.Status);
@@ -1072,6 +1312,8 @@ function renderTable(data) {
                 const lv = safe(i.Level_Text);   if (lv)  levelCounts[lv]    = (levelCounts[lv]    || 0) + 1;
                 const mn = safe(i.Ministry);      if (mn)  ministryCounts[mn] = (ministryCounts[mn] || 0) + 1;
                 const loc = formatLocation(i);    if (loc) locationCounts[loc] = (locationCounts[loc] || 0) + 1;
+                const ot = safe(i.Organisation_Type); if (ot) orgTypeCounts[ot] = (orgTypeCounts[ot] || 0) + 1;
+                const rg = safe(i.Region);        if (rg)  regionCounts[rg]   = (regionCounts[rg]   || 0) + 1;
             } else if (st === 'Inactive') {
                 inactiveCount++;
             }
@@ -1125,6 +1367,25 @@ function renderTable(data) {
             ministries.map(m => ({ value: m, name: m, count: ministryCounts[m] }))
         ));
 
+        // ORGANISATION TYPE — active vacancies per type, most common first.
+        const orgTypes = Object.keys(orgTypeCounts).sort((a, b) =>
+            (orgTypeCounts[b] - orgTypeCounts[a]) || a.localeCompare(b));
+        filterOrgType.populate([{ value: '', name: 'All Types', count: null }].concat(
+            orgTypes.map(t => ({ value: t, name: t, count: orgTypeCounts[t] }))
+        ));
+
+        // REGION — derived client-side from the location's state (enrich.js). Shown
+        // in a fixed geographic order; only regions with ≥1 active vacancy appear.
+        const REGION_ORDER = ['North', 'South', 'East', 'West', 'Central', 'NorthEast'];
+        const REGION_LABEL = { NorthEast: 'North-East' };
+        const regions = Object.keys(regionCounts).sort((a, b) => {
+            const ia = REGION_ORDER.indexOf(a), ib = REGION_ORDER.indexOf(b);
+            return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
+        });
+        filterRegion.populate([{ value: '', name: 'All Regions', count: null }].concat(
+            regions.map(r => ({ value: r, name: REGION_LABEL[r] || r, count: regionCounts[r] }))
+        ));
+
         // STATUS — count per status. Preserve the default "Active" selection.
         filterStatus.populate([
             { value: '', name: 'All', count: null },
@@ -1167,17 +1428,65 @@ function renderTable(data) {
         refreshSearchSuggestions('');
     }
 
+    // Typewriter-cycle the search placeholder through several angles so users see
+    // they can search by more than the post name. Pauses while the box is focused
+    // or has text; shows a static hint under prefers-reduced-motion.
+    function cycleSearchPlaceholder(input) {
+        if (!input) return;
+        // Only the moving word gets the gradient; "Search by" stays solid.
+        const hints = ['post name', 'keywords', 'location', 'department', 'organisation', 'Ministry'];
+        const ph = input.closest('.input-icon') && input.closest('.input-icon').querySelector('.search-ph');
+        // No overlay element → fall back to the native placeholder.
+        if (!ph) { input.placeholder = 'Search by post, keywords, ministry…'; return; }
+        // Match the input's font so the overlay lines up exactly with typed text.
+        const cs = getComputedStyle(input);
+        ph.style.fontSize = cs.fontSize;
+        ph.style.fontFamily = cs.fontFamily;
+        ph.style.letterSpacing = cs.letterSpacing;
+        ph.innerHTML = 'Search by <span class="search-ph-word"></span>';
+        const word = ph.querySelector('.search-ph-word');
+        input.placeholder = '';                          // overlay replaces it
+        const show = (on) => { ph.style.display = on ? '' : 'none'; };
+        input.addEventListener('input', () => show(input.value.length === 0));
+        const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduced) { word.textContent = 'post, keywords, ministry…'; show(input.value.length === 0); return; }
+        let hi = 0, ci = 0, erasing = false;
+        (function tick() {
+            if (input.value.length > 0) { show(false); setTimeout(tick, 700); return; }
+            show(true);
+            if (document.activeElement === input) { setTimeout(tick, 500); return; } // freeze while focused
+            const w = hints[hi];
+            if (!erasing) {
+                ci++;
+                word.textContent = w.slice(0, ci) + '…';
+                if (ci >= w.length) { erasing = true; setTimeout(tick, 1500); return; }
+                setTimeout(tick, 70);
+            } else {
+                ci--;
+                word.textContent = w.slice(0, ci) + (ci ? '…' : '');
+                if (ci <= 0) { erasing = false; hi = (hi + 1) % hints.length; setTimeout(tick, 350); return; }
+                setTimeout(tick, 35);
+            }
+        })();
+    }
+
     function bindEvents() {
+  // Debounce the full re-filter + rebuild (150ms); suggestions stay instant.
+  let searchDebounceTimer = null;
   searchPost.addEventListener('input', () => {
     refreshSearchSuggestions(searchPost.value);
-    onFilterChange();
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(onFilterChange, 150);
   });
+  cycleSearchPlaceholder(searchPost);
 
   [
     filterMyPayLevel,
     filterExperience,
     filterLevel,
     filterMinistry,
+    filterOrgType,
+    filterRegion,
     filterLocation,
     filterStatus
   ].forEach((el) => {
@@ -1207,12 +1516,15 @@ function renderTable(data) {
     if (filterExperience) filterExperience.value = '';
     filterLevel.value = '';
     filterMinistry.value = '';
+    filterOrgType.value = '';
+    filterRegion.value = '';
     filterLocation.setValues([]);
     filterStatus.value = 'Active';
     showWatchlistOnly = false;
     kpiFilter = 'all';
 
     quickFilters = {
+      newOnly: false,
       closing7: false,
       delhiNcr: false,
       closingToday: false
@@ -1252,6 +1564,8 @@ function renderTable(data) {
     if (filterName === 'experience' && filterExperience) filterExperience.value = '';
     if (filterName === 'level') filterLevel.value = '';
     if (filterName === 'ministry') filterMinistry.value = '';
+    if (filterName === 'orgType') filterOrgType.value = '';
+    if (filterName === 'region') filterRegion.value = '';
     if (filterName === 'location') filterLocation.setValues([]);
     if (filterName && filterName.startsWith('location:')) {
       const v = filterName.slice('location:'.length);
@@ -1457,6 +1771,7 @@ kpiGrid.addEventListener('click', (e) => {
   const paint = () => {
     renderKPIs(baseFilteredData);
     renderActiveFilterChips();
+    updateHiddenFilterCue();
 
     if (currentView === 'card') {
       // Cards group sibling posts (same org + post + level + notification),
@@ -1469,9 +1784,7 @@ kpiGrid.addEventListener('click', (e) => {
       renderCardResults(shown, groups.length, filteredData.length, shownRows);
 
       resultsCount.textContent = filteredData.length
-        ? (groups.length === filteredData.length
-            ? `Showing ${shownRows} of ${filteredData.length} vacancies`
-            : `Showing ${shownRows} of ${filteredData.length} vacancies · ${groups.length} cards`)
+        ? `Showing ${shownRows} of ${filteredData.length} vacancies`
         : '0 vacancies';
     } else {
       const pageSize = getCurrentPageSize();
@@ -1555,6 +1868,8 @@ function isNewVacancy(item) {
   const myYears = filterExperience ? filterExperience.value : '';
   const level = filterLevel.value;
   const ministry = filterMinistry.value;
+  const orgType = filterOrgType.value;
+  const region = filterRegion.value;
   const locations = filterLocation.values;
   const locationSet = locations.length ? new Set(locations) : null;
   const status = filterStatus.value;
@@ -1586,6 +1901,8 @@ function isNewVacancy(item) {
     if (search && !fuzzyIncludes(search, searchableText)) return false;
     if (level && itemLevel !== level) return false;
     if (ministry && itemMinistry !== ministry) return false;
+    if (orgType && safe(item.Organisation_Type) !== orgType) return false;
+    if (region && safe(item.Region) !== region) return false;
     if (locationSet && !locationSet.has(itemLocation)) return false;
     if (applyStatusFilter && status && itemStatus !== status) return false;
 
@@ -1601,6 +1918,8 @@ function isNewVacancy(item) {
 
     if (showWatchlistOnly && !watchlist.has(itemId)) return false;
     if (applyStatusFilter && !Number.isNaN(itemDaysLeft) && status === 'Active' && itemDaysLeft < 0) return false;
+
+    if (quickFilters.newOnly && !isNewVacancy(item)) return false;
 
     if (quickFilters.closing7) {
       if (Number.isNaN(itemDaysLeft) || itemDaysLeft < 0 || itemDaysLeft > 7) return false;
@@ -1727,10 +2046,13 @@ function isNewVacancy(item) {
 }
 
    function buildKpiCard(title, value, icon, tone, delta, filterKey = 'all') {
-  const trendClass = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
-  const trendSymbol = delta > 0 ? '↑' : delta < 0 ? '↓' : '•';
-  const trendText = delta === 0 ? 'No change' : `${trendSymbol} ${Math.abs(delta)}`;
+  const trendClass = delta > 0 ? 'up' : 'down';
+  const trendSymbol = delta > 0 ? '↑' : '↓';
   const isSelected = kpiFilter === filterKey;
+  // "No change" is noise — render the delta line only when nonzero (review V4).
+  const trendHtml = delta === 0
+    ? ''
+    : `<div class="kpi-trend ${trendClass}">${trendSymbol} ${Math.abs(delta)}</div>`;
 
   return `
     <button
@@ -1745,9 +2067,7 @@ function isNewVacancy(item) {
       </div>
       <div class="kpi-title">${title}</div>
       <div class="kpi-value" data-count="${value}">0</div>
-      <div class="kpi-trend ${trendClass}">
-        ${trendText}
-      </div>
+      ${trendHtml}
     </button>
   `;
 }
@@ -1814,6 +2134,8 @@ function isNewVacancy(item) {
   if (filterExperience && filterExperience.value) chips.push(makeChip('experience', `Experience: ${filterExperience.value === '10' ? '10+' : escapeHtml(filterExperience.value)} yr`));
   if (filterLevel.value) chips.push(makeChip('level', `Pay Level: ${escapeHtml(filterLevel.value)}`));
   if (filterMinistry.value) chips.push(makeChip('ministry', `Ministry: ${escapeHtml(filterMinistry.value)}`));
+  if (filterOrgType.value) chips.push(makeChip('orgType', `Type: ${escapeHtml(filterOrgType.value)}`));
+  if (filterRegion.value) chips.push(makeChip('region', `Region: ${escapeHtml(filterRegion.value === 'NorthEast' ? 'North-East' : filterRegion.value)}`));
   filterLocation.values.forEach(loc => {
     chips.push(makeChip(`location:${loc}`, `Location: ${escapeHtml(loc)}`));
   });
@@ -1824,6 +2146,45 @@ function isNewVacancy(item) {
   if (kpiFilter === 'closingSoon') chips.push(makeChip('kpi', 'KPI: Closing Soon'));
 
   activeFilters.innerHTML = chips.join('');
+}
+
+// When the sidebar is collapsed, the filters living in the "Many more filters"
+// drawer (everything except My Pay Level + Search) are hidden — yet they may still
+// be narrowing the results. Flag that on the toggle button (brand-gradient fill +
+// a count) so the user isn't confused by an unseen filter. Expanded = normal look.
+function countHiddenActiveFilters() {
+  let n = 0;
+  if (filterExperience && filterExperience.value) n++;
+  if (filterLevel.value) n++;
+  if (filterMinistry.value) n++;
+  if (filterOrgType.value) n++;
+  if (filterRegion.value) n++;
+  if (filterLocation.values.length) n++;
+  if (filterStatus.value && filterStatus.value !== 'Active') n++; // Active is the default
+  return n;
+}
+
+function updateHiddenFilterCue() {
+  const btn = document.getElementById('desktopFilterToggle');
+  if (!btn) return;
+  const n = countHiddenActiveFilters();
+  const show = document.body.classList.contains('filters-collapsed') && n > 0;
+
+  btn.classList.toggle('filters-more-btn--cue', show);
+  btn.title = show
+    ? `${n} active filter${n > 1 ? 's' : ''} hidden in here — click to view`
+    : '';
+
+  let badge = btn.querySelector('.filters-more-count');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.className = 'filters-more-count';
+    badge.setAttribute('aria-hidden', 'true');
+    const caret = btn.querySelector('.filters-more-caret');
+    if (caret) caret.insertAdjacentElement('beforebegin', badge);
+    else btn.appendChild(badge);
+  }
+  badge.textContent = String(n);
 }
 
     function makeChip(filterName, label) {
@@ -1956,7 +2317,7 @@ function cardFootHtml(item) {
     <div class="vx-foot">
       ${pdf ? `
         <a class="vx-link" href="${escapeHtml(pdf)}" target="_blank" rel="noopener noreferrer"
-           title="Open the official notification PDF" onclick="event.stopPropagation();">
+           title="Open the official notification PDF" onclick="event.stopPropagation();"${notifPreviewAttr(item)}>
           ${svgIcon('external')} Notification PDF
         </a>` : `
         <span class="vx-link vx-link-muted" title="Open full details">View details</span>`}
@@ -2232,6 +2593,7 @@ function syncCardSortUI() {
         ]);
 
         const detailedEligibility = getFirstNonEmpty(item, ['Detailed_Eligibility']);
+        const additionalDetails = getFirstNonEmpty(item, ['Additional_Details']);
 
         const essentialQualification = getFirstNonEmpty(item, [
             'Essential_Qualification',
@@ -2297,7 +2659,7 @@ function syncCardSortUI() {
                         ${buildModalField('Closing Date', `<span class="${closingDateDays !== null && closingDateDays >= 0 && closingDateDays <= 15 ? 'closing-date-text' : ''}">${escapeHtml(closingDate)}</span>`, true)}
                         ${buildModalField('Notification Date', notificationDate)}
                         ${sourceDisplay ? buildModalField('Source', sourceDisplay, true) : ''}
-                        ${buildModalField('Mode of Application', renderModeBadge(modeOfApplication), true)}
+                        ${buildModalField('Mode of Application', renderModeBadge(modeOfApplication), true, 'modal-field--wide')}
                         ${tenure ? buildModalField('Tenure', tenure) : ''}
                         ${ageLimit ? buildModalField('Age Limit', ageLimit) : ''}
                         ${payScale ? buildModalField('Pay / Scale', payScale) : ''}
@@ -2309,6 +2671,7 @@ function syncCardSortUI() {
                 ${renderModalRichSection('Desirable Qualification', desirableQualification)}
                 ${renderModalRichSection('Experience', experience)}
                 ${renderModalRichSection('Description / Remarks', description)}
+                ${renderModalRichSection('Additional Details', additionalDetails)}
 
                 <div class="modal-actions">
                     <button
@@ -2321,7 +2684,7 @@ function syncCardSortUI() {
                     </button>
 
                     ${detailedNotificationLink ? `
-                        <a class="card-action-btn secondary" href="${escapeHtml(detailedNotificationLink)}" target="_blank" rel="noopener noreferrer">
+                        <a class="card-action-btn secondary" href="${escapeHtml(detailedNotificationLink)}" target="_blank" rel="noopener noreferrer"${notifPreviewAttr(item)}>
                             ${svgIcon('external')} Official Notification PDF
                         </a>
                     ` : ''}
@@ -2557,9 +2920,9 @@ function syncCardSortUI() {
         }
     }
 
-    function buildModalField(label, value, isHtml = false) {
+    function buildModalField(label, value, isHtml = false, extraClass = '') {
         return `
-            <div class="modal-field">
+            <div class="modal-field ${extraClass}">
                 <div class="modal-field-label">${escapeHtml(label)}</div>
                 <div class="modal-field-value">${isHtml ? value : escapeHtml(value)}</div>
             </div>
@@ -2646,6 +3009,9 @@ function syncCardSortUI() {
         if (!quickFiltersBar) return;
 
         quickFiltersBar.innerHTML = `
+            <button type="button" class="quick-pill quick-pill--new ${quickFilters.newOnly ? 'active' : ''}" data-quick-filter="newOnly">
+                New
+            </button>
             <button type="button" class="quick-pill ${quickFilters.closing7 ? 'active' : ''}" data-quick-filter="closing7">
                 Closing in 7 days
             </button>
@@ -2860,10 +3226,35 @@ function syncCardSortUI() {
   return 'safe';
 }
 
+    // Turn a dense eligibility / details paragraph into readable, broken-up lines:
+    //  • **labels** become bold subheadings;
+    //  • numbered/lettered points "(1)/(i)/(a)", "Note:", "OR" tiers, and sentence
+    //    boundaries each start a new line (abbreviations like "O.M.", "No." kept intact);
+    //  • key facts (pay levels, service years, age, post count) get a sober accent.
     function formatRichText(value) {
-        return escapeHtml(safe(value))
-            .replace(/\*\*(.+?)\*\*/g, '<strong class="rich-subhead">$1</strong>')
-            .replace(/\n/g, '<br>');
+        let s = escapeHtml(safe(value));
+        // bold subheadings
+        s = s.replace(/\*\*(.+?)\*\*/g, '<strong class="rich-subhead">$1</strong>');
+        // new line before structured markers
+        s = s
+            .replace(/\s+(?=\((?:\d{1,2}|[ivxlcdm]{1,4}|[a-h])\)\s)/gi, '\n')
+            .replace(/\s*(Note\s*:|Eligibility criteria\s*:|Age\s*limit\s*:|Experience\s*:|Qualifications?\s*:|Address\s*:|Desirable\s*:)/gi, '\n$1')
+            .replace(/\s*;?\s+OR\s+/g, '\nOR ');
+        // gentle sentence breaks — skip single-capital abbreviations (O.M., G.S.R.) and "No. 2"
+        s = s.replace(/(?<![A-Z])\.\s+(?=[A-Z])/g, '.\n');
+        // sober highlights for the facts that matter most
+        s = s
+            .replace(/\b(Pay Level\s*\d{1,2}[A-Z]?|Level[\s-]?\d{1,2}[A-Z]?)\b/g, '<span class="rich-key">$1</span>')
+            .replace(/\b((?:one|two|three|four|five|six|seven|eight|nine|ten)\s+years?|\d{1,2}\s*years?)\b/gi, '<span class="rich-key">$1</span>')
+            .replace(/\b(\d{1,3}\s*Posts?)\b/gi, '<span class="rich-key">$1</span>');
+        // explicit newlines from the source too
+        s = s.replace(/\r/g, '');
+        // split into blocks, wrap (points get a hanging indent)
+        const blocks = s.split('\n').map(b => b.trim()).filter(Boolean);
+        return blocks.map(b => {
+            const isPoint = /^(\((?:\d{1,2}|[ivxlcdm]{1,4}|[a-h])\)|OR\b)/i.test(b);
+            return `<span class="rich-line${isPoint ? ' rich-point' : ''}">${b}</span>`;
+        }).join('');
     }
 
     function normalizeUrl(value) {
@@ -2922,7 +3313,10 @@ function syncCardSortUI() {
 
     function renderModeBadge(mode) {
         const safeMode = safe(mode) || 'Not specified';
-        return `<span class="application-mode-badge ${getApplicationModeClass(safeMode)}">${escapeHtml(safeMode)}</span>`;
+        // Short modes (Online/Offline/Both) stay as a compact pill; long sentences
+        // render as a readable block box instead of a giant bold pill.
+        const longCls = safeMode.length > 28 ? ' mode-long' : '';
+        return `<span class="application-mode-badge ${getApplicationModeClass(safeMode)}${longCls}">${escapeHtml(safeMode)}</span>`;
     }
 
     function uniqueSorted(arr) {

@@ -42,14 +42,30 @@ jobs:
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
         run: python scripts/build_data.py
 
+      - name: Install Chromium for link previews
+        run: python -m playwright install --with-deps chromium
+
+      - name: Render notification link previews
+        run: python scripts/build_link_previews.py
+
       - name: Commit generated files if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/*.json
+          git add data/*.json assets/previews
           if git diff --cached --quiet; then
             echo "No data changes to commit"
           else
             git commit -m "chore: build deputation data"
-            git push
+            # The link-preview render can take ~15 min, during which another
+            # workflow (e.g. build-defex) may push. Rebase-and-retry so we don't
+            # lose the run to a non-fast-forward rejection.
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase --autostash origin main \
+                && git push && { echo "pushed on attempt $attempt"; exit 0; }
+              echo "push attempt $attempt failed; retrying in 10s"
+              sleep 10
+            done
+            echo "::error::Could not push after 5 attempts"
+            exit 1
           fi

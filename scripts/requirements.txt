@@ -6,6 +6,12 @@ google-auth==2.40.1
 google-auth-httplib2==0.2.0
 requests==2.32.3
 
-# WhatsApp Channel auto-poster (scripts/whatsapp_watcher.py).
+# WhatsApp Channel auto-poster (scripts/whatsapp_watcher.py) and the
+# notification link-preview renderer (scripts/build_link_previews.py).
 # After install run once:  python -m playwright install chromium
 playwright>=1.40
+
+# Link-preview thumbnails (scripts/build_link_previews.py): PDF page-1 render
+# (PyMuPDF) + image downscaling to WebP (Pillow).
+pymupdf>=1.24
+Pillow>=10.0

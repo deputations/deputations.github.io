@@ -15,19 +15,19 @@
         },
         {
           "name": "Department of Agricultural Research & Education (DARE)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Agriculture & Farmers Welfare",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Animal Husbandry & Dairying",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Fisheries",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Indian Council of Agricultural Research (ICAR)",
@@ -80,7 +80,7 @@
         },
         {
           "name": "Department of AYUSH (Administration)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "National Institute of Ayurveda (NIA), Jaipur",
@@ -117,15 +117,15 @@
         },
         {
           "name": "Department of Chemicals & Petrochemicals",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Fertilizers",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Pharmaceuticals",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Fertilizer Quality Control Laboratories (FQCLs)",
@@ -170,7 +170,7 @@
         },
         {
           "name": "Ministry of Civil Aviation (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "Rajiv Gandhi National Aviation University (RGNAU)",
@@ -199,7 +199,7 @@
         },
         {
           "name": "Ministry of Coal (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Institute of Miners’ Health (NIMH)",
@@ -224,7 +224,7 @@
         },
         {
           "name": "Department of Commerce",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Directorate General of Foreign Trade (DGFT)",
@@ -269,11 +269,11 @@
         },
         {
           "name": "Department of Posts (India Post)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Telecommunications (DoT)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Postal Directorate Field Offices",
@@ -314,11 +314,11 @@
         },
         {
           "name": "Department of Consumer Affairs",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Food & Public Distribution",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Directorate of Marketing & Inspection (DMI)",
@@ -347,7 +347,7 @@
         },
         {
           "name": "Ministry of Cooperation (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Cooperative Development Corporation (NCDC)",
@@ -380,7 +380,7 @@
         },
         {
           "name": "Ministry of Corporate Affairs (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Company Law Appellate Tribunal (NCLAT)",
@@ -441,7 +441,7 @@
         },
         {
           "name": "Ministry of Culture (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Archives of India (NAI)",
@@ -510,19 +510,19 @@
         },
         {
           "name": "Department of Defence",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Defence Production",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Ex-Servicemen Welfare",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Military Affairs",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Directorate General of Aeronautical Quality Assurance (DGAQA)",
@@ -575,7 +575,7 @@
       "organisations": [
         {
           "name": "Ministry of DoNER (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "NEC Regional / Field Offices",
@@ -616,7 +616,7 @@
         },
         {
           "name": "Ministry of Earth Sciences (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Centre for Coastal Research (NCCR)",
@@ -649,11 +649,11 @@
         },
         {
           "name": "Department of Higher Education",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of School Education & Literacy",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Indian Institutes of Management (IIMs)",
@@ -718,7 +718,7 @@
         },
         {
           "name": "Ministry of Electronics & Information Technology (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National e-Governance Division (NeGD)",
@@ -783,7 +783,7 @@
         },
         {
           "name": "Ministry of Environment, Forest & Climate Change (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Biodiversity Authority (NBA)",
@@ -848,7 +848,7 @@
         },
         {
           "name": "Ministry of External Affairs (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "Passport Offices (CPV network)",
@@ -885,23 +885,23 @@
         },
         {
           "name": "Department of Economic Affairs",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Expenditure",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Financial Services",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Investment & Public Asset Management (DIPAM)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Revenue",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "GST & Customs Field Formations",
@@ -978,11 +978,11 @@
         },
         {
           "name": "Department of Animal Husbandry & Dairying",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Fisheries",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Fisheries Development Field Offices",
@@ -1031,7 +1031,7 @@
         },
         {
           "name": "Ministry of Food Processing Industries (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Institute of Food Technology, Entrepreneurship & Management (NIFTEM), Kundli",
@@ -1068,11 +1068,11 @@
         },
         {
           "name": "Department of Health and Family Welfare (DoHFW)",
-          "type": "Departments"
+          "type": "Department"
         },
         {
           "name": "Department of Health Research (DHR)",
-          "type": "Departments"
+          "type": "Department"
         },
         {
           "name": "Medical Stores Organisation, Ministry of Health and Family Welfare",
@@ -1125,7 +1125,7 @@
         },
         {
           "name": "Ministry of Heavy Industries (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         }
       ]
     },
@@ -1186,7 +1186,7 @@
         },
         {
           "name": "Ministry of Home Affairs (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Crime Records Bureau (NCRB)",
@@ -1247,7 +1247,7 @@
         },
         {
           "name": "Ministry of Housing & Urban Affairs (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Buildings Organisation (NBO)",
@@ -1304,7 +1304,7 @@
         },
         {
           "name": "Ministry of Information & Broadcasting (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Film Development Corporation (NFDC)",
@@ -1361,11 +1361,11 @@
         },
         {
           "name": "Department of Drinking Water & Sanitation",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Water Resources, River Development & Ganga Rejuvenation",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Ganga Basin Field Directorates",
@@ -1435,11 +1435,11 @@
         },
         {
           "name": "Department of Justice",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Legal Affairs",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "High Court / Subordinate Court Coordination Units",
@@ -1484,7 +1484,7 @@
         },
         {
           "name": "Ministry of MSME (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "MSME Development Institutes (MSME-DIs)",
@@ -1529,7 +1529,7 @@
         },
         {
           "name": "Ministry of Mines (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "MOIL Limited – Policy / Admin",
@@ -1562,7 +1562,7 @@
         },
         {
           "name": "Ministry of Minority Affairs (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Commission for Minorities (NCM)",
@@ -1595,7 +1595,7 @@
         },
         {
           "name": "Ministry of New & Renewable Energy (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "MNRE Regional / Project Monitoring Units",
@@ -1636,7 +1636,7 @@
         },
         {
           "name": "Ministry of Panchayati Raj (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Institute of Rural Development & Panchayati Raj (NIRDPR)",
@@ -1657,7 +1657,7 @@
       "organisations": [
         {
           "name": "Ministry of Parliamentary Affairs (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "Parliamentary Coordination & Legislation Division",
@@ -1686,15 +1686,15 @@
         },
         {
           "name": "Department of Administrative Reforms & Public Grievances (DARPG)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Pensions & Pensioners’ Welfare",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Personnel & Training (DoPT)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "DoPT Cadre Units / Establishment Sections",
@@ -1743,7 +1743,7 @@
         },
         {
           "name": "Ministry of Petroleum & Natural Gas (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "Natural Gas Division",
@@ -1808,7 +1808,7 @@
         },
         {
           "name": "Ministry of Ports, Shipping & Waterways (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Shipping Board (NSB)",
@@ -1865,7 +1865,7 @@
         },
         {
           "name": "Ministry of Power (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "NTPC Limited (Policy / Admin)",
@@ -1987,7 +1987,7 @@
         },
         {
           "name": "Ministry of Road Transport & Highways (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Highways Authority of India (NHAI)",
@@ -2036,19 +2036,19 @@
         },
         {
           "name": "Department of Biotechnology (DBT)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Science & Technology (DST)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Science & Technology – Autonomous Institutions (IISc / IISERs – Coord.)",
-          "type": "Autonomous Body"
+          "type": "Department"
         },
         {
           "name": "Department of Scientific & Industrial Research (DSIR)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "DST / DBT Programme Management Units",
@@ -2093,7 +2093,7 @@
         },
         {
           "name": "Ministry of Skill Development & Entrepreneurship (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Council for Vocational Education & Training (NCVET)",
@@ -2126,11 +2126,11 @@
         },
         {
           "name": "Department of Empowerment of Persons with Disabilities (DEPwD)",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Social Justice & Empowerment",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Dr. Ambedkar Foundation",
@@ -2187,7 +2187,7 @@
         },
         {
           "name": "Ministry of Statistics & Programme Implementation (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Statistical Office (NSO)",
@@ -2228,7 +2228,7 @@
         },
         {
           "name": "Ministry of Steel (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "MOIL Limited – Policy / Admin",
@@ -2289,7 +2289,7 @@
         },
         {
           "name": "Ministry of Textiles (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Institute of Design (NID) – Coordination",
@@ -2342,7 +2342,7 @@
         },
         {
           "name": "Ministry of Tourism (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Council for Hotel Management & Catering Technology (NCHMCT)",
@@ -2371,7 +2371,7 @@
         },
         {
           "name": "Ministry of Tribal Affairs (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "National Commission for Scheduled Tribes (NCST) – Coordination",
@@ -2416,7 +2416,7 @@
         },
         {
           "name": "Ministry of Women & Child Development (Secretariat)",
-          "type": "Attached Office"
+          "type": "Ministry"
         },
         {
           "name": "Mission POSHAN 2.0 Division",
@@ -2457,11 +2457,11 @@
       "organisations": [
         {
           "name": "Department of Sports",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Department of Youth Affairs",
-          "type": "Attached Office"
+          "type": "Department"
         },
         {
           "name": "Khelo India Division",

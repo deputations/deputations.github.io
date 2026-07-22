@@ -41,12 +41,13 @@ var FEEDBACK_HEADERS = [
   'Name', 'Email', 'Subject', 'Message',
   'Related Page', 'Relevant Link',
   'User Agent', 'Page Context',
-  'Admin Notes', 'Resolved By', 'Resolved At'
+  'Admin Notes', 'Resolved By', 'Resolved At',
+  'Page', 'Page Label'
 ];
 
 var FEEDBACK_ALLOWED_CATEGORIES = [
   'General Feedback', 'Report a Bug', 'Suggest a Feature',
-  'Vacancy Correction', 'Policy Clarification',
+  'Vacancy Correction', 'New Rule/Circular', 'Policy Clarification',
   'WhatsApp Group Issue', 'Other'
 ];
 
@@ -126,7 +127,9 @@ function handleFeedbackPost_(payload) {
       String(payload.pageContext || '').slice(0, 400),
       '', // Admin Notes
       '', // Resolved By
-      ''  // Resolved At
+      '', // Resolved At
+      String(payload.page || '').slice(0, 200),
+      String(payload.pageLabel || '').slice(0, 200)
     ];
     sheet.appendRow(row);
 

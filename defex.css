@@ -22,6 +22,12 @@
 
 .dex-page { max-width: 1240px; padding-top: 1.25rem; }
 
+/* Lift muted text to WCAG AA on dark DeFeX surfaces (#64748b ≈ 3.4:1 → ≈ 5.5:1).
+   Scoped to DeFeX so shared chrome is untouched; light theme keeps its value. */
+.dex-page, .dex-drawer { --text-muted: #828fa6; }
+[data-theme="light"] .dex-page,
+[data-theme="light"] .dex-drawer { --text-muted: #64748b; }
+
 /* ============== SCROLL PROGRESS + BACK TO TOP ============== */
 .dex-progress {
   position: fixed; top: 0; left: 0; height: 3px; width: 0;
@@ -439,12 +445,15 @@
 }
 .dex-filter { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.82rem; color: var(--text-secondary); }
 .dex-filter span { font-weight: 600; letter-spacing: 0.02em; }
-.dex-filter select, .dex-filter input[type="date"] {
+.dex-filter select, .dex-filter input[type="date"], .dex-filter input[type="search"] {
   background: rgba(2, 4, 11, 0.55); border: 1px solid var(--dex-line-strong);
   color: var(--text-primary); border-radius: 10px; padding: 0.55rem 0.7rem;
   font-family: inherit; font-size: 0.92rem;
 }
-.dex-filter select:focus, .dex-filter input[type="date"]:focus { outline: none; border-color: var(--dex-mint); }
+.dex-filter select:focus, .dex-filter input[type="date"]:focus, .dex-filter input[type="search"]:focus { outline: none; border-color: var(--dex-mint); }
+.dex-filter--search { grid-column: 1 / -1; }
+.dex-result-count { color: var(--text-secondary); font-size: 0.85rem; margin: 0 0 0.75rem; }
+.dex-more { text-align: center; margin-top: 1rem; }
 .dex-filter--check { flex-direction: row; align-items: center; gap: 0.5rem; }
 .dex-filter--check input { accent-color: var(--dex-mint); }
 .dex-filter-reset { align-self: end; }
@@ -460,9 +469,25 @@
   font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--text-secondary); font-weight: 700;
   border-bottom: 1px solid var(--dex-line); background: rgba(2, 4, 11, 0.35);
-  cursor: pointer; user-select: none; white-space: nowrap;
+  user-select: none; white-space: nowrap;
 }
-.dex-table th:hover { color: var(--text-primary); }
+.dex-table th[data-sort] { cursor: pointer; }
+.dex-table th[data-sort]:hover { color: var(--text-primary); }
+/* Active-sort caret — driven by aria-sort so the visual + AT state stay in sync */
+.dex-table th[aria-sort]::after {
+  margin-left: 0.4em; font-size: 0.7em; color: var(--dex-mint);
+  display: inline-block; vertical-align: middle;
+}
+.dex-table th[aria-sort="ascending"]::after  { content: "\25B2"; }
+.dex-table th[aria-sort="descending"]::after { content: "\25BC"; }
+
+/* Keyboard focus ring for click-only widgets (inset — the table wrap clips overflow) */
+.dex-card:focus-visible,
+#dex-tbody tr:focus-visible,
+.dex-table th[data-sort]:focus-visible {
+  outline: 2px solid var(--dex-mint);
+  outline-offset: -2px;
+}
 .dex-table th.num, .dex-table td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--dex-mono); }
 .dex-table td {
   padding: 0.85rem 1rem; border-bottom: 1px solid var(--dex-line);
@@ -477,6 +502,18 @@
 .dex-row-dex { font-weight: 700; }
 
 .dex-empty { padding: 2rem; text-align: center; color: var(--text-secondary); }
+.dex-card-grid .dex-empty { grid-column: 1 / -1; }
+
+/* Loading skeletons + load-error */
+.dex-card--skeleton { min-height: 175px; pointer-events: none; position: relative; overflow: hidden; }
+.dex-card--skeleton::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.10), transparent);
+  animation: dex-shimmer 1.3s ease-in-out infinite;
+}
+@keyframes dex-shimmer { 100% { transform: translateX(100%); } }
+.dex-load-error { display: flex; flex-direction: column; gap: 0.85rem; align-items: center; }
+@media (prefers-reduced-motion: reduce) { .dex-card--skeleton::after { animation: none; } }
 
 /* ============== CHECKLIST ============== */
 .dex-checklist {
@@ -580,6 +617,7 @@
 
 /* ============== DRAWER ============== */
 .dex-drawer { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
+body.dex-drawer-open { overflow: hidden; }   /* scroll-lock the page behind the open drawer */
 .dex-drawer[aria-hidden="false"] { pointer-events: auto; }
 .dex-drawer-scrim {
   position: absolute; inset: 0; background: rgba(2, 4, 11, 0.6);
@@ -679,8 +717,17 @@
   .dex-page { padding-left: 1rem; padding-right: 1rem; }
   .dex-hero { padding: 2.25rem 1rem 1.5rem; }
   .dex-table th, .dex-table td { padding: 0.65rem 0.6rem; font-size: 0.85rem; }
-  .dex-table th:nth-child(4), .dex-table td:nth-child(4) { display: none; }
+  /* Keep the DeFeX score on mobile (headline metric) — drop Ministry + Reports instead */
+  .dex-table th:nth-child(3), .dex-table td:nth-child(3) { display: none; }
   .dex-table th:nth-child(7), .dex-table td:nth-child(7) { display: none; }
+
+  /* Touch tap targets ≥ 44px */
+  .dex-chip, .dex-tab { min-height: 44px; display: inline-flex; align-items: center; }
+  .dex-btn, .dex-filter select, .dex-filter input[type="date"],
+  .dex-filter input[type="search"], .dex-filter--check { min-height: 44px; }
+
+  /* Drop backdrop-blur on mobile — costly on low-end devices */
+  .dex-coverage-tile, .dex-card, .dex-search-suggestions { backdrop-filter: none; }
 }
 
 /* ============================================================
@@ -864,13 +911,15 @@
 }
 [data-theme="light"] .dex-filter { color: #475569; }
 [data-theme="light"] .dex-filter select,
-[data-theme="light"] .dex-filter input[type="date"] {
+[data-theme="light"] .dex-filter input[type="date"],
+[data-theme="light"] .dex-filter input[type="search"] {
   background: #ffffff;
   border-color: var(--dex-line-strong);
   color: #0f172a;
 }
 [data-theme="light"] .dex-filter select:focus,
-[data-theme="light"] .dex-filter input[type="date"]:focus { border-color: var(--dex-mint); }
+[data-theme="light"] .dex-filter input[type="date"]:focus,
+[data-theme="light"] .dex-filter input[type="search"]:focus { border-color: var(--dex-mint); }
 
 /* Leaderboard table */
 [data-theme="light"] .dex-table-wrap {

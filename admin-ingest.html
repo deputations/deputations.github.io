@@ -46,6 +46,10 @@
     .draft .head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
     .draft .acts{display:flex;gap:8px}
     .jobhdr{margin:22px 0 6px;font-size:14px;color:var(--muted);border-bottom:1px dashed var(--line);padding-bottom:6px}
+    .fb-cat-hdr{margin:26px 0 4px;font-size:16px;font-weight:700;color:var(--accent);
+      border-bottom:1px solid var(--line);padding-bottom:6px}
+    .fb-cat-hdr:first-child{margin-top:4px}
+    .fb-page-hdr{margin:14px 0 4px;font-size:13px;font-weight:600;color:var(--muted)}
     .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
       background:var(--panel);border:1px solid var(--line);padding:12px 18px;border-radius:10px;
       box-shadow:0 8px 30px rgba(0,0,0,.4);font-size:14px;opacity:0;transition:.2s;pointer-events:none}
@@ -89,6 +93,7 @@
     .dl-closing{color:var(--warn);border-color:rgba(245,158,11,.55)}
     .dl-critical{color:#fb923c;border-color:rgba(251,146,60,.6);background:rgba(251,146,60,.08)}
     .dl-expired{color:var(--bad);border-color:rgba(239,68,68,.6);background:rgba(239,68,68,.1);font-weight:600}
+    .pill.mark-badge{color:#fbbf24;border-color:rgba(251,191,36,.6);background:rgba(251,191,36,.1);font-weight:600;margin-left:6px}
     /* missing-critical-field chips */
     .gap{display:inline-block;font-size:11px;padding:2px 7px;border-radius:999px;margin-left:6px;
       border:1px dashed rgba(251,191,36,.6);color:#fbbf24;vertical-align:middle;white-space:nowrap}
@@ -142,9 +147,12 @@
       <div class="tabs">
         <button id="tabIngest" class="active" data-tab="ingest">⬆️ Ingest</button>
         <button id="tabReview" data-tab="review">📝 Review queue <span id="draftCount"></span></button>
+        <button id="tabMarked" data-tab="marked">🚩 Marked <span id="markedCount"></span></button>
         <button id="tabManage" data-tab="manage">🗂 Manage data</button>
         <button id="tabUpdates" data-tab="updates">🔀 Updates <span id="updatesCount"></span></button>
         <button id="tabFlags" data-tab="flags">⚑ Flags <span id="flagCount"></span></button>
+        <button id="tabFeedback" data-tab="feedback">✉️ Feedback <span id="fbCount"></span></button>
+        <button id="tabProjects" data-tab="projects">🚀 Projects <span id="projCount"></span></button>
       </div>
 
       <!-- INGEST -->
@@ -237,7 +245,7 @@
             <button id="refreshBtn">↻ Refresh</button>
           </div>
         </div>
-        <p class="muted">Click <b>Edit</b> to change fields, then <b>Approve</b> (publishes live) or <b>Reject</b> (moves to Manage → Rejected; undoable). Approve without editing publishes the row as-is. Tick the checkboxes to <b>approve / reject in bulk</b>. Click <b>📄 source</b> to view the original page beside it. Press <kbd>?</kbd> for keyboard shortcuts.</p>
+        <p id="reviewHint" class="muted">Click <b>Edit</b> to change fields, then <b>Approve</b> (publishes live) or <b>Reject</b> (moves to Manage → Rejected; undoable). Approve without editing publishes the row as-is. Tick the checkboxes to <b>approve / reject in bulk</b>. Click <b>📄 source</b> to view the original page beside it. Press <kbd>?</kbd> for keyboard shortcuts.</p>
         <div id="draftQuick" class="quick">
           <button type="button" data-q="high">High</button>
           <button type="button" data-q="medium">Med</button>
@@ -257,6 +265,10 @@
             <span class="muted" id="draftBulkCount" style="font-size:13px">0 selected</span>
             <button id="bulkApproveBtn" class="good">✓ Approve checked</button>
             <button id="bulkRejectBtn" class="bad">🗑 Reject checked</button>
+          </div>
+          <div id="draftFilteredBar" style="display:none;align-items:center;gap:8px">
+            <button id="filtApproveBtn" class="good" title="Approve &amp; publish every draft matching the current search / filter chips — all pages, not just this one">✓ Approve filtered</button>
+            <button id="filtRejectBtn" class="bad" title="Reject every draft matching the current search / filter chips — all pages; undoable">🗑 Reject filtered</button>
           </div>
         </div>
         <div id="draftPager" class="pager"></div>
@@ -281,9 +293,13 @@
             <select id="mgStatus" style="width:auto">
               <option value="approved">Approved (live)</option>
               <option value="draft">Draft</option>
+              <option value="marked">🚩 Marked</option>
               <option value="rejected">Rejected</option>
               <option value="all">All</option>
             </select>
+            <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Source:
+              <select id="mgSource" style="width:auto"><option value="">All</option></select>
+            </label>
             <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Sort:
               <select id="mgSort" style="width:auto"></select>
             </label>
@@ -295,6 +311,7 @@
           </div>
         </div>
         <p class="muted">Edit any field then <b>Save</b>, change <b>Status</b> to publish/unpublish, or <b>Delete</b> a row. Click <b>📄 source</b> if a PDF is attached.</p>
+        <div id="mgPager" class="pager"></div>
         <div id="manageList"></div>
       </section>
 
@@ -316,6 +333,23 @@
         <div id="flagsList"></div>
       </section>
 
+      <!-- FEEDBACK (contact-form submissions) -->
+      <section id="paneFeedback" class="card hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">Feedback <span id="fbHdrCount" class="muted"></span></h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="fbStatus" style="width:auto">
+              <option value="new">New</option>
+              <option value="resolved">Resolved</option>
+              <option value="all">All</option>
+            </select>
+            <button id="fbRefresh">↻</button>
+          </div>
+        </div>
+        <p class="muted">Messages sent from the Contact page “Send feedback” form. Each shows the page it’s about. Mark <b>✓ Resolved</b> when handled, or <b>Re-open</b> to revisit.</p>
+        <div id="fbList"></div>
+      </section>
+
       <!-- UPDATES (pending merges + duplicate suggestions) -->
       <section id="paneUpdates" class="card hidden">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
@@ -329,6 +363,70 @@
         </div>
         <p class="muted">A re-upload that matches a <b>live</b> vacancy queues here as an <b>update</b> — <b>Apply</b> to enrich the live row with the new data. A re-upload that looks like the same post on a <b>different date</b> shows as a <b>possible duplicate</b> — <b>Merge into existing</b> (update the live row) or <b>Create as new</b> (keep both). Identical re-uploads are skipped automatically.</p>
         <div id="updatesList"></div>
+      </section>
+
+      <!-- PROJECTS (V² upcoming-projects CMS) -->
+      <section id="paneProjects" class="card hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">🚀 Upcoming Projects <span id="projHdrCount" class="muted"></span></h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button id="projRefresh">↻</button>
+            <button id="projAddBtn" class="primary">+ Add project</button>
+          </div>
+        </div>
+        <p class="muted">These power the public <a href="/upcoming-projects.html" target="_blank" rel="noopener">V² Upcoming Projects</a> page. Add, edit, reorder (▲▼), publish/unpublish or delete. <b>Order</b> ascending — lower shows first. <b>Slug</b> is the stable vote key (<code>project:&lt;slug&gt;</code>) — don't change it once a project has votes.</p>
+
+        <!-- add / edit form (toggled) -->
+        <div id="projForm" class="card hidden" style="background:var(--panel2)">
+          <h3 id="projFormTitle" style="margin-top:0">Add project</h3>
+          <input type="hidden" id="pf_id" />
+          <div class="row">
+            <div><label>Title</label><input id="pf_title" placeholder="V² PDF Reader" /></div>
+            <div><label>Slug (lowercase-dashes — stable vote key)</label><input id="pf_slug" placeholder="v2-pdf-reader" /></div>
+          </div>
+          <label>Blurb</label>
+          <textarea id="pf_blurb" rows="3" placeholder="1–3 sentence description"></textarea>
+          <div class="row">
+            <div><label>Status</label>
+              <select id="pf_status">
+                <option value="concept">Concept</option>
+                <option value="design">In design</option>
+                <option value="planned">Planned</option>
+              </select>
+            </div>
+            <div><label>Icon (placeholder art glyph)</label>
+              <select id="pf_icon">
+                <option value="spark">spark</option>
+                <option value="file">file</option>
+                <option value="pulse">pulse (health)</option>
+                <option value="heart">heart</option>
+                <option value="bell">bell</option>
+                <option value="calculator">calculator</option>
+                <option value="users">users</option>
+                <option value="folder">folder</option>
+                <option value="tag">tag (market)</option>
+                <option value="home">home (neighbourhood)</option>
+                <option value="shield">shield (club)</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div><label>Tags (comma-separated)</label><input id="pf_tags" placeholder="Desktop, Windows, Productivity" /></div>
+            <div><label>Order (lower = first)</label><input id="pf_order" type="number" value="0" /></div>
+          </div>
+          <label>Image URL (optional — falls back to gradient art)</label>
+          <input id="pf_image" placeholder="https://…/screenshot.png" />
+          <label style="display:flex;gap:8px;align-items:center;margin-top:12px">
+            <input type="checkbox" id="pf_pub" checked style="width:auto" /> Published (visible on the public page)
+          </label>
+          <div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button id="pf_save" class="primary">Save project</button>
+            <button id="pf_cancel">Cancel</button>
+            <span id="pf_msg" class="muted"></span>
+          </div>
+        </div>
+
+        <div id="projList"></div>
       </section>
     </div>
   </div>
@@ -345,8 +443,8 @@
   </div>
 
   <script src="config.js?v=sb1"></script>
-  <script src="enrich.js?v=sb8"></script>
+  <script src="enrich.js?v=sb13"></script>
   <script src="shared/vacancy-utils.js?v=sb3"></script>
-  <script src="admin-ingest.js?v=sb43"></script>
+  <script src="admin-ingest.js?v=sb51"></script>
 </body>
 </html>

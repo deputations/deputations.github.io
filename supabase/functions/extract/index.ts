@@ -95,6 +95,7 @@ const VACANCY_ITEM = {
     functional_area: { type: "string" },
     essential_qualification: { type: "string" },
     detailed_eligibility: { type: "string" },
+    additional_details: { type: "string" },
     eligible_service: { type: "string" },
     mode_of_application: { type: "string" },
     tags_keywords: { type: "string" },
@@ -154,13 +155,19 @@ Also capture, when present:
   the source's OWN label wording; do NOT invent headings. If the source is a single
   unlabelled paragraph, return it as-is without adding any heading. Return "" if the
   ad states no such conditions.
+- additional_details: any other important information about THIS post that is not
+  captured by the other fields — e.g. special instructions, relaxations, age/fee
+  concessions, reservations, number/category of posts breakup, contact details, or
+  miscellaneous remarks/notes/conditions printed in the ad. Copy the relevant text;
+  preserve wording. Do NOT duplicate eligibility/qualification text already placed in
+  detailed_eligibility/essential_qualification. Return "" if there is nothing extra.
 If you cannot determine a field, return an empty string "".
 Set confidence to "high" only when the post, level, location and a date are all
 clearly stated; otherwise "medium" or "low".
 
 Output ONLY a JSON array (no prose, no markdown fences). Each object MUST use
 EXACTLY these keys (empty string "" when unknown):
-{"is_deputation","ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","detailed_eligibility","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
+{"is_deputation","ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","detailed_eligibility","additional_details","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
 `;
 
 const PROMPTS: Record<string, string> = {
@@ -285,7 +292,7 @@ const CONTENT_FIELDS = [
   "eligibility_tiers", "no_of_posts", "deputation_period_years", "deputation_type",
   "notification_date", "last_date_to_apply", "official_notification_link",
   "application_form_link", "source_website", "functional_area",
-  "essential_qualification", "eligible_service", "mode_of_application", "tags_keywords",
+  "essential_qualification", "additional_details", "eligible_service", "mode_of_application", "tags_keywords",
 ];
 
 const normPart = (s: unknown) =>

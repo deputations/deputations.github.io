@@ -10,6 +10,7 @@
 
   const RANKED_MIN_REPORTS = 1;          // MVP: one anonymised row is the starter signal
   const RANKED_MIN_CONF    = 0.20;       // require at least Low confidence to rank
+  const PAGE_SIZE          = 50;         // leaderboard rows per page ("Show more" reveals the next 50)
 
   const state = {
     organisations: [],
@@ -21,13 +22,19 @@
     tab: "ranked",
     explorerBand: "all",
     sort: { key: "dex", dir: "desc" },
-    filters: { ministry: "", band: "", confidence: "", om: false },
+    filters: { q: "", ministry: "", band: "", confidence: "", om: false },
+    limit: PAGE_SIZE,
   };
+
+  // Pagination + drawer-history bookkeeping (module scope).
+  let lastTableSig = "";        // (tab+filters+sort) signature — resets pagination on change
+  let drawerReturnFocus = null; // element to refocus when the drawer closes
+  let drawerPushed = false;     // did we push a history entry for the open drawer?
 
   // ---------- load ----------------------------------------------------------
   async function load() {
     // Cache-bust by version — bump along with defex.js's ?v= query.
-    const V = "ms5";
+    const V = "ms12";
     const get = (p) => fetch(`${p}?v=${V}`).then(r => r.json());
     const [orgs, scores, reports, method, upd] = await Promise.all([
       get("data/defex/organisations.json"),
@@ -99,6 +106,10 @@
   const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g,
     m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 
+  // The policy snapshot for an org — never assume it's reports[0]; the reports
+  // array may include other record types (e.g. experience timelines) in any order.
+  const policyOf = (reports) => (reports || []).find(r => r.type === "policy") || null;
+
   function bandColor(band) {
     return {
       "Deputation-friendly":  "var(--dex-mint)",
@@ -132,10 +143,8 @@
     const grid = $("#dex-featured");
     const band = state.explorerBand;
     let pool = state.organisations.filter(o => o.rated);
-    if (band === "friendly")     pool = pool.filter(o => o.dex >= 65);
-    else if (band === "mixed")        pool = pool.filter(o => o.dex >= 50 && o.dex < 65);
-    else if (band === "restrictive")  pool = pool.filter(o => o.dex < 50);
-    else if (band === "om")           pool = pool.filter(o => o.has_om);
+    if (band === "om") pool = pool.filter(o => o.has_om);
+    else if (band !== "all") pool = pool.filter(o => o.band === band);
 
     // Sort by confidence desc then dex desc, take top 9
     pool.sort((a, b) => (b.confidence - a.confidence) || (b.dex - a.dex));
@@ -146,8 +155,7 @@
       return;
     }
     grid.innerHTML = pool.map(orgCard).join("");
-    $$(".dex-card", grid).forEach(el => el.addEventListener("click",
-      () => openDrawer(el.dataset.orgId)));
+    // Cards open via a delegated listener bound once in bindExplorerChips().
   }
 
   function orgCard(o) {
@@ -157,7 +165,7 @@
       : `<div class="dex-ring-mini dex-ring-mini--unrated">
            <span class="dex-ring-mini-value">N/R</span></div>`;
     return `
-      <article class="dex-card" data-org-id="${escapeHtml(o.id)}">
+      <article class="dex-card" data-org-id="${escapeHtml(o.id)}" tabindex="0" role="button" aria-label="${escapeHtml(o.name)} — open profile">
         <header class="dex-card-head">
           <div>
             <div class="dex-card-min">${escapeHtml(o.ministry)}</div>
@@ -240,6 +248,11 @@
       state.explorerBand = b.dataset.explorerBand;
       renderFeatured();
     }));
+    // Featured cards open via delegation (one listener; survives re-renders).
+    $("#dex-featured").addEventListener("click", (e) => {
+      const card = e.target.closest(".dex-card[data-org-id]");
+      if (card) openDrawer(card.dataset.orgId);
+    });
   }
 
   // ---------- leaderboard ---------------------------------------------------
@@ -269,8 +282,11 @@
   function applyFilters(pool) {
     const f = state.filters;
     return pool.filter(o => {
+      if (f.q) {
+        const q = f.q.toLowerCase();
+        if (!o.name.toLowerCase().includes(q) && !o.ministry.toLowerCase().includes(q)) return false;
+      }
       if (f.ministry && o.ministry !== f.ministry) return false;
-      if (f.type && o.type !== f.type) return false;
       if (f.band && o.band !== f.band) return false;
       if (f.confidence && o.confidence_band !== f.confidence) return false;
       if (f.om && !o.has_om) return false;
@@ -282,7 +298,6 @@
     const { key, dir } = state.sort;
     const mul = dir === "asc" ? 1 : -1;
     const getter = {
-      rank: (o, i) => i,
       name: o => o.name.toLowerCase(),
       ministry: o => o.ministry.toLowerCase(),
       type: o => (o.type || "").toLowerCase(),
@@ -300,16 +315,44 @@
   }
 
   function renderTable() {
-    let pool = tabPool();
-    pool = applyFilters(pool);
+    // Reflect the current sort on the headers: visual caret (CSS) + aria-sort for AT.
+    $$(".dex-table th[data-sort]").forEach(th => {
+      if (th.dataset.sort === state.sort.key)
+        th.setAttribute("aria-sort", state.sort.dir === "asc" ? "ascending" : "descending");
+      else
+        th.removeAttribute("aria-sort");
+    });
+    const base = tabPool();
+    let pool = applyFilters(base);
     pool = sortRows(pool);
+
+    // Reset pagination whenever the result context (tab/filters/sort) changes.
+    const sig = JSON.stringify([state.tab, state.filters, state.sort]);
+    if (sig !== lastTableSig) { state.limit = PAGE_SIZE; lastTableSig = sig; }
+
+    // "Showing X of Y" count
+    const countEl = $("#dex-result-count");
+    if (countEl) countEl.textContent = (pool.length === base.length)
+      ? `${base.length} organisation${base.length === 1 ? "" : "s"}`
+      : `Showing ${pool.length} of ${base.length}`;
+
     const tbody = $("#dex-tbody");
     if (!pool.length) {
-      tbody.innerHTML = ""; $("#dex-empty").hidden = false; return;
+      tbody.innerHTML = ""; $("#dex-empty").hidden = false; $("#dex-more").hidden = true; return;
     }
     $("#dex-empty").hidden = true;
-    tbody.innerHTML = pool.map((o, i) => row(o, i + 1)).join("");
-    $$("#dex-tbody tr").forEach(tr => tr.addEventListener("click", () => openDrawer(tr.dataset.orgId)));
+
+    const shown = pool.slice(0, state.limit);
+    tbody.innerHTML = shown.map((o, i) => row(o, i + 1)).join("");
+    // Rows open via a delegated listener bound once in bindLeaderboard().
+
+    const more = $("#dex-more");
+    if (pool.length > state.limit) {
+      more.hidden = false;
+      $("#dex-more-btn").textContent = `Show ${Math.min(PAGE_SIZE, pool.length - state.limit)} more — ${state.limit} of ${pool.length}`;
+    } else {
+      more.hidden = true;
+    }
 
     // tab counts
     $("[data-tab-count='ranked']").textContent =
@@ -323,7 +366,7 @@
     const dexCell = o.rated
       ? `<span class="dex-row-dex" style="color:${bandColor(o.band)}">${o.dex}</span>`
       : `<span class="dex-row-dex" style="color:var(--text-muted)">—</span>`;
-    return `<tr data-org-id="${escapeHtml(o.id)}">
+    return `<tr data-org-id="${escapeHtml(o.id)}" tabindex="0">
       <td class="num dex-row-rank">${rank}</td>
       <td><div class="dex-row-name">${escapeHtml(o.name)}</div></td>
       <td class="dex-row-min">${escapeHtml(o.ministry)}</td>
@@ -350,7 +393,8 @@
     $("#filter-confidence").addEventListener("change", e => { state.filters.confidence = e.target.value; renderTable(); });
     $("#filter-om").addEventListener("change",       e => { state.filters.om = e.target.checked; renderTable(); });
     $("#filter-reset").addEventListener("click", () => {
-      state.filters = { ministry: "", band: "", confidence: "", om: false };
+      state.filters = { q: "", ministry: "", band: "", confidence: "", om: false };
+      const s = $("#filter-search"); if (s) s.value = "";
       $("#filter-ministry").value = "";
       $("#filter-band").value = ""; $("#filter-confidence").value = "";
       $("#filter-om").checked = false;
@@ -363,10 +407,21 @@
       else state.sort = { key: k, dir: k === "dex" || k === "confidence" || k === "reports" ? "desc" : "asc" };
       renderTable();
     }));
+
+    // Rows open via delegation (one listener; survives re-render + pagination).
+    $("#dex-tbody").addEventListener("click", (e) => {
+      const tr = e.target.closest("tr[data-org-id]");
+      if (tr) openDrawer(tr.dataset.orgId);
+    });
+    // In-table search
+    const search = $("#filter-search");
+    if (search) search.addEventListener("input", (e) => { state.filters.q = e.target.value.trim(); renderTable(); });
+    // Pagination
+    $("#dex-more-btn").addEventListener("click", () => { state.limit += PAGE_SIZE; renderTable(); });
   }
 
   // ---------- drawer --------------------------------------------------------
-  function openDrawer(orgId) {
+  function openDrawer(orgId, opts = {}) {
     const org = state.organisations.find(o => o.id === orgId);
     if (!org) return;
     const score = state.scores.get(orgId);
@@ -412,22 +467,40 @@
 
     // open
     const drawer = $("#dex-drawer");
+    drawerReturnFocus = opts.restoreTo || document.activeElement;
     drawer.setAttribute("aria-hidden", "false");
-    drawer.focus();
-    history.replaceState(null, "", `#org=${encodeURIComponent(orgId)}`);
+    document.body.classList.add("dex-drawer-open");           // scroll-lock the page behind
+    if (opts.push !== false) {
+      history.pushState({ dexDrawer: orgId }, "", `#org=${encodeURIComponent(orgId)}`);  // Back closes it
+      drawerPushed = true;
+    } else {
+      drawerPushed = false;
+    }
+    ($(".dex-drawer-close", drawer) || drawer).focus();        // move focus into the dialog
 
     // default tab
     $$(".dex-drawer-tab").forEach(t => t.classList.toggle("dex-drawer-tab--active", t.dataset.drawerTab === "rules"));
     $$(".dex-drawer-pane").forEach(p => p.classList.toggle("dex-drawer-pane--active", p.dataset.drawerPane === "rules"));
   }
 
-  function closeDrawer() {
-    $("#dex-drawer").setAttribute("aria-hidden", "true");
-    if (location.hash.startsWith("#org=")) history.replaceState(null, "", location.pathname);
+  function closeDrawer(opts = {}) {
+    const drawer = $("#dex-drawer");
+    if (drawer.getAttribute("aria-hidden") === "true") return;   // already closed
+    drawer.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("dex-drawer-open");           // unlock page scroll
+    const hadPush = drawerPushed;
+    drawerPushed = false;
+    if (opts.pop !== false && hadPush && location.hash.startsWith("#org=")) {
+      history.back();                                            // pop our pushed entry
+    } else if (location.hash.startsWith("#org=")) {
+      history.replaceState(null, "", location.pathname);         // deep-link open: just clear the hash
+    }
+    drawerReturnFocus?.focus?.();                                // restore focus to the opener
+    drawerReturnFocus = null;
   }
 
   function bindDrawer() {
-    $$("[data-drawer-close]").forEach(el => el.addEventListener("click", closeDrawer));
+    $$("[data-drawer-close]").forEach(el => el.addEventListener("click", () => closeDrawer()));
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
     $$(".dex-drawer-tab").forEach(t => t.addEventListener("click", () => {
       $$(".dex-drawer-tab").forEach(x => x.classList.remove("dex-drawer-tab--active"));
@@ -435,11 +508,23 @@
       const target = t.dataset.drawerTab;
       $$(".dex-drawer-pane").forEach(p => p.classList.toggle("dex-drawer-pane--active", p.dataset.drawerPane === target));
     }));
+
+    // Focus trap — keep Tab within the open dialog.
+    $("#dex-drawer").addEventListener("keydown", (e) => {
+      if (e.key !== "Tab") return;
+      const panel = $(".dex-drawer-panel");
+      const f = $$('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea, [tabindex]:not([tabindex="-1"])', panel)
+        .filter(el => el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
   }
 
   function renderPaneRules(org, reports) {
-    const p = reports[0]; // policy-type record (MVP one row per org)
-    if (!p || p.type !== "policy") {
+    const p = policyOf(reports); // the policy snapshot — not necessarily reports[0]
+    if (!p) {
       $("#pane-rules").innerHTML = `<p>We don't yet have a policy snapshot on file for this organisation. Once a community member submits the relevant OM or a structured report, it appears here.</p>`;
       return;
     }
@@ -486,7 +571,7 @@
   }
 
   function renderPaneActions(org, score, reports) {
-    const p = reports[0] || {};
+    const p = policyOf(reports) || {};
     const c = p.conditions || {};
     const actions = [];
 
@@ -550,13 +635,14 @@
       return;
     }
     const m = state.methodology;
-    const base = m.formula.base_scores[(state.reports.get(org.id)?.[0]?.deputation_allowed)] ?? "?";
-    let lines = [`<strong>B</strong> = ${base}  <span style="color:var(--text-muted)">(${state.reports.get(org.id)?.[0]?.deputation_allowed})</span>`];
+    const p = policyOf(state.reports.get(org.id));
+    const base = m.formula.base_scores[p?.deputation_allowed] ?? "?";
+    let lines = [`<strong>B</strong> = ${base}  <span style="color:var(--text-muted)">(${p?.deputation_allowed ?? "—"})</span>`];
     (score?.signals || []).forEach(s => {
       if (s.weight < 0) lines.push(`<strong>P</strong> ${escapeHtml(s.label)} <span class="delta-neg">${s.weight}</span>`);
     });
-    const personal = state.reports.get(org.id)?.[0]?.sources?.personal;
-    const om = state.reports.get(org.id)?.[0]?.sources?.om;
+    const personal = p?.sources?.personal;
+    const om = p?.sources?.om;
     if (om) lines.push(`<strong>E</strong> Official OM on file <span class="delta-pos">+8</span>`);
     else if (personal) lines.push(`<strong>E</strong> Community source <span class="delta-pos">+2</span>`);
     lines.push(`<strong>= DeFeX ${org.dex}</strong>`);
@@ -569,7 +655,7 @@
     const h = location.hash;
     if (h.startsWith("#org=")) {
       const id = decodeURIComponent(h.slice("#org=".length));
-      if (state.organisations.find(o => o.id === id)) openDrawer(id);
+      if (state.organisations.find(o => o.id === id)) openDrawer(id, { push: false });
     }
   }
 
@@ -620,7 +706,7 @@
       }
 
       // Org-specific
-      const p = reports[0] || {};
+      const p = policyOf(reports) || {};
       const c = p.conditions || {};
       if (p.deputation_allowed === "No") {
         items.push(action("risk", "Parent does not currently permit deputation on file",
@@ -679,12 +765,42 @@
     toTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   }
 
+  // ---------- keyboard activation for click-only widgets -------------------
+  // Cards, table rows and sortable headers are activated by click; mirror that
+  // for keyboard users (Enter/Space) without re-binding on every re-render.
+  function bindKeyActivation() {
+    const sel = ".dex-card, #dex-tbody tr, .dex-table th[data-sort]";
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      if (e.target.matches?.(sel)) { e.preventDefault(); e.target.click(); }
+    });
+  }
+
+  // ---------- loading / error states ---------------------------------------
+  function showSkeleton() {
+    const grid = $("#dex-featured");
+    if (grid) grid.innerHTML = Array.from({ length: 6 },
+      () => `<div class="dex-card dex-card--skeleton" aria-hidden="true"></div>`).join("");
+  }
+  function showLoadError() {
+    const host = $("#dex-featured");
+    if (!host) return;
+    host.innerHTML = `<div class="dex-empty dex-load-error" role="alert">
+      <p><strong>Couldn't load DeFeX data.</strong> Please check your connection and try again.</p>
+      <button class="dex-btn dex-btn-primary" id="dex-reload">Reload</button>
+    </div>`;
+    const b = $("#dex-reload");
+    if (b) b.addEventListener("click", () => location.reload());
+  }
+
   // ---------- init ---------------------------------------------------------
   async function init() {
+    showSkeleton();
     try {
       await load();
     } catch (e) {
       console.error("DeFeX data load failed", e);
+      showLoadError();
       return;
     }
     bindMeta();
@@ -695,10 +811,21 @@
     bindDrawer();
     bindChecklist();
     bindScroll();
+    bindKeyActivation();
     renderFeatured();
     renderTable();
     handleHash();
-    window.addEventListener("hashchange", handleHash);
+    // Sync drawer to history: Back closes it; Forward / deep links reopen it.
+    window.addEventListener("popstate", () => {
+      const h = location.hash;
+      if (h.startsWith("#org=")) {
+        const id = decodeURIComponent(h.slice("#org=".length));
+        if (state.organisations.find(o => o.id === id)) openDrawer(id, { push: false });
+        else closeDrawer({ pop: false });
+      } else {
+        closeDrawer({ pop: false });
+      }
+    });
   }
 
   document.addEventListener("DOMContentLoaded", init);

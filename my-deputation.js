@@ -112,6 +112,17 @@
   let vacancyById = new Map();
   let currentTab = 'overview';
 
+  // Render Lucide icons without ever letting a CDN/library hiccup break control
+  // flow. createIcons() runs inside showModal() and the render fns; if it threw
+  // (e.g. a bad build served by the CDN), every listener attached *after* the
+  // call — including the modal form submit handlers — would silently fail to
+  // bind, so e.g. "New search → Save" would do nothing. Swallow any error so
+  // icons degrade gracefully instead of taking the feature down with them.
+  function drawIcons() {
+    try { if (window.lucide && window.lucide.createIcons) window.lucide.createIcons(); }
+    catch (e) { console.warn('lucide.createIcons() failed; icons skipped:', e); }
+  }
+
   // ---------- Init ----------
   document.addEventListener('DOMContentLoaded', init);
 
@@ -174,7 +185,7 @@
     document.documentElement.setAttribute('data-theme', theme);
     const icon = document.querySelector('#themeToggle i');
     if (icon) icon.setAttribute('data-lucide', theme === 'light' ? 'sun' : 'moon');
-    if (window.lucide) lucide.createIcons();
+    drawIcons();
   }
 
   // ---------- Tab routing ----------
@@ -215,7 +226,7 @@
       case 'calendar':  renderCalendar(); break;
       case 'profile':   renderProfile(); break;
     }
-    if (window.lucide) lucide.createIcons();
+    drawIcons();
   }
 
   // ---------- Welcome strip ----------
@@ -565,7 +576,7 @@
       <h2 style="font-family:Sora,sans-serif;letter-spacing:-0.02em;margin:0 0 1rem;">${existing ? 'Edit search' : 'New saved search'}</h2>
       <form class="md-modal-form" id="mdSearchForm">
         <div>
-          <label>Name</label>
+          <label>Name the saved search</label>
           <input class="md-input" name="name" required value="${U.escapeHtml(existing?.name || '')}" placeholder="e.g. Level 12–13 · Delhi · Defence">
         </div>
         <div class="row">
@@ -618,7 +629,7 @@
       closeModal(); renderActive(); updateTabBadges(); toast('Search saved');
     });
     document.querySelector('[data-cancel]')?.addEventListener('click', closeModal);
-    if (window.lucide) lucide.createIcons();
+    drawIcons();
   }
 
   function autoSearchName(f) {
@@ -779,7 +790,7 @@
       syncRemindersFromTracker();
       closeModal(); renderActive(); renderWelcome(); updateTabBadges(); toast(`${ids.length} added to tracker`);
     });
-    if (window.lucide) lucide.createIcons();
+    drawIcons();
   }
 
   function openTrackerModal(vacancyId, createIfMissing) {
@@ -868,7 +879,7 @@
       syncRemindersFromTracker();
       closeModal(); renderActive(); renderWelcome(); updateTabBadges(); toast('Removed from tracker');
     });
-    if (window.lucide) lucide.createIcons();
+    drawIcons();
   }
 
   // ---------- Documents ----------
@@ -1109,7 +1120,7 @@
       openReminderModal();
       setTimeout(() => { const el = document.querySelector('#mdReminderForm input[name=dueAt]'); if (el) el.value = dateKeyStr; }, 60);
     });
-    if (window.lucide) lucide.createIcons();
+    drawIcons();
   }
 
   // ---------- Cooling-off widget ----------
@@ -1404,7 +1415,7 @@
       closeModal(); renderActive(); renderWelcome(); toast('Reminder added');
     });
     document.querySelector('[data-cancel]')?.addEventListener('click', closeModal);
-    if (window.lucide) lucide.createIcons();
+    drawIcons();
   }
 
   // ---------- Match score ----------
@@ -1532,7 +1543,7 @@
     modal.querySelector('.modal-content')?.classList.remove('md-manual-modal');
     document.getElementById('modalBody').innerHTML = html;
     modal.style.display = 'flex';
-    if (window.lucide) lucide.createIcons();
+    drawIcons();
   }
   function openManualModal() {
     const modal = document.getElementById('modal');
@@ -1573,13 +1584,17 @@
   }
 
   function updateTabBadges() {
-    const bm = document.getElementById('tabBadgeBookmarks');
-    const count = store.bookmarks().length;
-    if (bm) { bm.textContent = count; bm.hidden = !count; }
-
-    const ss = document.getElementById('tabBadgeSearches');
-    const totalNew = store.searches().reduce((sum, s) => sum + computeSearchNewCount(s), 0);
-    if (ss) { ss.textContent = totalNew; ss.hidden = !totalNew; }
+    // CSS sets .md-tab-badge { display:inline-block }, which beats the [hidden]
+    // attribute — so toggle inline display too, otherwise a 0 count stays on screen.
+    const setBadge = (el, n) => {
+      if (!el) return;
+      const show = Number(n) > 0;
+      el.textContent = n;
+      el.hidden = !show;
+      el.style.display = show ? '' : 'none';
+    };
+    setBadge(document.getElementById('tabBadgeBookmarks'), store.bookmarks().length);
+    setBadge(document.getElementById('tabBadgeSearches'), store.searches().length);
   }
 
   function toast(message) {

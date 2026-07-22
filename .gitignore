@@ -23,3 +23,13 @@ venv/
 # not committed, so the daily GitHub Actions build never collides with it).
 # The Playwright browser profile lives outside the repo (~/.deputations-wa).
 data/whatsapp_posted.json
+
+# Session archives — full chat transcripts saved locally for continuity / handoff
+# across machines (Drive-synced). MUST NOT be published: the repo is public and
+# these contain internal Supabase/project details.
+session-archive_*/
+_archive_chat.py
+
+# VAPID push private key — NEVER commit (set as a Supabase secret instead)
+supabase/.vapid.keys
+*.vapid.keys

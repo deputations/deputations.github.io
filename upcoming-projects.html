@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upcoming Projects | Deputations</title>
+  <meta name="description" content="Vote on the next things we should build for the deputation community, and share your suggestions. Help shape what gets made.">
+  <link rel="canonical" href="https://deputations.github.io/upcoming-projects.html">
+
+  <!-- identity -->
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#02040b">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f7f9">
+
+  <!-- link previews — shared site card -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Deputations">
+  <meta property="og:title" content="Upcoming Projects — Deputations">
+  <meta property="og:description" content="Vote on what we build next and share your suggestions.">
+  <meta property="og:url" content="https://deputations.github.io/upcoming-projects.html">
+  <meta property="og:image" content="https://deputations.github.io/assets/brand/og-home.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Upcoming Projects — Deputations">
+  <meta name="twitter:description" content="Vote on what we build next and share your suggestions.">
+  <meta name="twitter:image" content="https://deputations.github.io/assets/brand/og-home.png">
+
+  <!-- theme bootstrap (before stylesheets, prevents FOUC) -->
+  <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Unbounded:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css?v=ms48">
+  <link rel="stylesheet" href="navbar.css?v=2">
+  <link rel="stylesheet" href="upcoming-projects.css?v=8">
+  <script src="config.js?v=sb2"></script>
+</head>
+<body>
+  <nav class="top-nav" aria-label="Primary site navigation">
+    <a class="nav-brand" href="/index.html" aria-label="Deputations — home">
+      <svg class="nav-brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <defs><linearGradient id="nbGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+        <rect width="32" height="32" rx="9" fill="url(#nbGrad)"/>
+        <path d="M12 9.5h4.4a6.5 6.5 0 0 1 0 13H12z" fill="none" stroke="#04111c" stroke-width="2.6" stroke-linejoin="round"/>
+      </svg>
+      <span class="nav-brand-name">Deputations</span>
+    </a>
+    <div class="nav-links">
+      <a href="/index.html">Home</a>
+      <a href="/rules.html">Rules</a>
+      <a href="/faq.html">FAQs</a>
+      <a href="/defex.html">DeFeX</a>
+      <a href="/report-vacancy.html">Report Vacancy</a>
+      <a href="/contact.html">Contact</a>
+      <a href="/my-deputation.html">My Deputation</a>
+      <a href="/upcoming-projects.html" class="active">Upcoming Projects</a>
+    </div>
+  </nav>
+
+  <button type="button" id="upThemeToggle" class="up-theme-btn" aria-label="Toggle light or dark theme" title="Toggle light / dark theme">
+    <svg class="up-theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <svg class="up-theme-sun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+  </button>
+
+  <!-- scroll progress rail (CSS scroll-timeline; JS-free) -->
+  <div class="up-rail" aria-hidden="true"></div>
+
+  <main class="up-shell">
+    <!-- atmosphere: aurora light-leaks (above the WebGL wave, below text) + static grain -->
+    <div class="up-aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="up-grain" aria-hidden="true"></div>
+
+    <!-- liquid-glass displacement filter for the eyebrow jewel (progressive enhancement) -->
+    <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+      <filter id="up-liquid"><feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="8"/></filter>
+    </svg>
+
+    <!-- ============ HERO / RESULTS DESK ============ -->
+    <section class="up-hero">
+      <img class="up-logo" src="/assets/brand/v2-logo.png" alt="V² — V Square" width="116" height="116" decoding="async">
+      <span class="up-eyebrow">
+        <span class="up-eyebrow-dot" aria-hidden="true"></span>
+        V² · public roadmap · your vote shapes what's next
+      </span>
+      <h1 class="up-title"><span class="gradient-text" data-tw>Upcoming Projects</span></h1>
+      <p class="up-sub">The public roadmap for <strong>V² (V&nbsp;Square)</strong> — the products and tools we're considering building next. <strong>Vote the ones you'd love</strong>, pass on the ones you wouldn't, and <strong>tell us how to make them better</strong>. Popularity here decides what we build first.</p>
+      <dl class="up-stats" aria-label="Roadmap stats">
+        <div class="up-stat"><dt>Ideas in the mix</dt><dd data-stat="projects">—</dd></div>
+        <div class="up-stat"><dt>Votes cast</dt><dd data-stat="votes">—</dd></div>
+        <div class="up-stat"><dt>Your voice</dt><dd>counts</dd></div>
+      </dl>
+      <p class="up-turnout">The community has cast <b data-turnout-votes>0</b> votes across <b data-turnout-ideas>0</b> ideas.</p>
+      <div class="up-turnout-bar" aria-hidden="true"><i></i></div>
+    </section>
+
+    <!-- ============ PROJECT FEED (rendered by JS) ============ -->
+    <section class="up-feed" id="upFeed" aria-label="Upcoming projects">
+      <div class="up-skeleton" aria-hidden="true"></div>
+      <div class="up-skeleton" aria-hidden="true"></div>
+    </section>
+
+    <!-- ============ CTA FOOTER ============ -->
+    <section class="up-cta">
+      <h2>Have a different idea entirely?</h2>
+      <p>Tell us what you wish V² would build next.</p>
+      <a class="up-cta-btn" href="/contact.html?ref=%2Fupcoming-projects.html#ctFormCard">
+        Suggest a new project
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+    </section>
+
+    <!-- polite live region for vote / suggestion announcements -->
+    <div class="up-sr" aria-live="polite"></div>
+  </main>
+
+  <script src="upcoming-projects.js?v=8"></script>
+  <script defer src="site-widgets.js?v=21"></script>
+  <!-- BEGIN hero-wave -->
+  <script type="importmap">
+  { "imports": { "three": "/vendor/three.module.js?v=170" } }
+  </script>
+  <script type="module" src="/hero-wave.js?v=2"></script>
+  <!-- END hero-wave -->
+</body>
+</html>

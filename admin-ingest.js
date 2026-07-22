@@ -17,6 +17,8 @@ const ANON = window.SUPABASE_ANON_KEY;
 const SS_KEY = 'dep_admin_sess_v1';
 
 const $ = (id) => document.getElementById(id);
+// single shared implementation — shared/vacancy-utils.js loads before this file
+const escapeHtml = (s) => window.DepUtils.escapeHtml(s);
 const toast = (msg) => {
   const t = $('toast'); t.textContent = msg; t.classList.add('show');
   clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 3500);
@@ -98,11 +100,28 @@ async function refreshIfNeeded(sess) {
 
 /* ---------------- authed REST helper ---------------- */
 let TOKEN = '';
-function api(path, opts = {}) {
-  return fetch(`${SB}${path}`, {
+// A JWT lasts ~1h and a long triage session outlives it. On 401, refresh the
+// session once (a single in-flight refresh shared by concurrent calls) and
+// retry the request; if the refresh fails, fall back to the login card.
+let _refreshing = null;
+async function api(path, opts = {}) {
+  const go = () => fetch(`${SB}${path}`, {
     ...opts,
     headers: { apikey: ANON, Authorization: `Bearer ${TOKEN}`, ...(opts.headers || {}) },
   });
+  let r = await go();
+  if (r.status === 401 && TOKEN) {
+    if (!_refreshing) {
+      // force the refresh path even if the stored expiry still looks valid
+      _refreshing = refreshIfNeeded({ ...(loadSess() || {}), expires_at: 0 })
+        .finally(() => { _refreshing = null; });
+    }
+    const sess = await _refreshing;
+    if (!sess) { showLogin('Session expired — sign in again.'); return r; }
+    TOKEN = sess.access_token;
+    r = await go();
+  }
+  return r;
 }
 
 // Count-only query (no rows transferred) via the content-range header.
@@ -111,6 +130,20 @@ async function countOf(pathFilter) {
     const r = await api(`/rest/v1/${pathFilter}${pathFilter.includes('?') ? '&' : '?'}select=id&limit=1`, { headers: { Prefer: 'count=exact' } });
     return parseInt(((r.headers.get('content-range') || '/0').split('/')[1]) || '0', 10) || 0;
   } catch { return 0; }
+}
+
+// Fetch EVERY row of a REST query in 1000-row pages. Supabase's default
+// PostgREST max-rows cap is 1000, so a single GET silently truncates past it
+// (the Review queue / Manage list would just show a partial dataset).
+async function fetchAll(pathQuery) {
+  const out = [];
+  for (let from = 0; ; from += 1000) {
+    const r = await api(`/rest/v1/${pathQuery}&limit=1000&offset=${from}`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const chunk = await r.json();
+    out.push(...chunk);
+    if (chunk.length < 1000) return out;
+  }
 }
 
 // Undo toast for approve/reject status changes: Undo restores the rows to
@@ -125,8 +158,9 @@ function undoableStatus(ids, msg) {
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
     }
-    toast(`↩ Restored ${ids.length} row(s) to the Review queue`);
+    toast(`↩ Restored ${ids.length} row(s) to draft`);
     loadDrafts();
+    refreshReviewBadges();
   }, { onExpire: scheduleGc });
 }
 
@@ -138,6 +172,7 @@ const FIELDS = [
   ['deputation_period_years', 'Deputation period (yrs)'],
   ['notification_date', 'Notification date'], ['last_date_to_apply', 'Last date'],
   ['essential_qualification', 'Essential qualification'], ['eligible_service', 'Eligible service'],
+  ['additional_details', 'Additional details'],
   ['functional_area', 'Functional area / duties'], ['tags_keywords', 'Tags / keywords'],
   ['mode_of_application', 'Mode of application'], ['official_notification_link', 'Official link'],
   ['application_form_link', 'Application form link'], ['source_website', 'Source website'],
@@ -150,16 +185,9 @@ const FIELDS = [
 // Pay levels: 1–18 plus the exceptional "13A" (between 13 and 14).
 //   levelTok(v)  → canonical display token: "13", "13A", '' if none
 //   levelRank(v) → comparable number: "13A" → 13.5 (so sort/equality just work)
-// The A suffix needs a word boundary so "13 and above" stays 13.
-const LEVEL_RX = /(\d+)([\s-]*A\b)?/;
-function levelTok(v) {
-  const m = String(v ?? '').trim().toUpperCase().match(LEVEL_RX);
-  return m ? m[1] + (m[2] ? 'A' : '') : '';
-}
-function levelRank(v) {
-  const m = String(v ?? '').trim().toUpperCase().match(LEVEL_RX);
-  return m ? parseInt(m[1], 10) + (m[2] ? 0.5 : 0) : null;
-}
+// Both delegate to shared/vacancy-utils.js so the parsing lives in one place.
+const levelTok = (v) => window.DepUtils.levelLabel(v);
+const levelRank = (v) => window.DepUtils.parseLevelValue(v);
 
 function tiersFor(obj) {
   if (window.DepEnrich && window.DepEnrich.parseTiers) return window.DepEnrich.parseTiers(obj);
@@ -294,10 +322,13 @@ function toISODateInput(v) {
   return '';
 }
 
+// Long free-text fields get a multi-line textarea so pasted blocks are editable.
+const LONG_FIELDS = new Set(['essential_qualification', 'additional_details', 'functional_area']);
 function fieldHtml(k, lbl, r) {
   const val = r[k] || '';
   if (k === 'organisation_type') return buildSelect(k, lbl, val, ORG_TYPES, (s) => String(s || '').toLowerCase().trim());
   if (k === 'ministry') return buildSelect(k, lbl, val, MINISTRY_NAMES, normMinistry);
+  if (LONG_FIELDS.has(k)) return `<div><label>${escapeHtml(lbl)}</label><textarea data-k="${escapeHtml(k)}" rows="3">${escapeHtml(val)}</textarea></div>`;
   if (DATE_FIELDS.has(k)) {
     const iso = toISODateInput(val);
     // Empty or coercible -> native date picker (stores yyyy-mm-dd).
@@ -345,7 +376,7 @@ Output ONE object per (post × location/bench × pay level). Never collapse mult
 
 ## Output Format
 Return ONLY a JSON array — no prose, no markdown fences. Each object uses EXACTLY these keys (use "" when unknown):
-{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","detailed_eligibility","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
+{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","detailed_eligibility","additional_details","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
 
 ## Field Rules
 - ministry: standard GoI ministry name WITHOUT the "Ministry of" / "Department of" prefix (e.g. "Agriculture and Farmers Welfare", "Home Affairs", "Personnel, Public Grievances and Pensions").
@@ -355,6 +386,7 @@ Return ONLY a JSON array — no prose, no markdown fences. Each object uses EXAC
 - notification_date, last_date_to_apply: ISO yyyy-mm-dd. If a deadline is "within N days of the notification/advertisement", compute last_date_to_apply = notification_date + N days.
 - official_notification_link: official sources ONLY — the DIRECT ".pdf" link or the specific circular/notification page that opens this vacancy. NEVER a generic homepage, a careers/"current vacancies" listing, or a third-party aggregator. If unsure a link is real, leave it empty. Never invent a URL.
 - detailed_eligibility: COPY VERBATIM the complete eligibility / qualification conditions block exactly as printed in the source for THIS post (feeder grades & pay levels, essential and desirable qualifications, experience, age limit). Do NOT paraphrase, summarise, or reorder. "" if the ad states none.
+- additional_details: any other important info about THIS post not captured by the other fields (special instructions, relaxations/concessions, reservations, post breakup, contact details, remarks/notes/conditions). Copy the relevant text; do NOT duplicate eligibility text. "" if nothing extra.
 - functional_area: short summary of duties / job description.
 - source_page: the PDF page number of the ad in the issue, as a string (for side-by-side verification).
 - confidence: "high" ONLY if details came from the official notification AND post, level, location and a date are all clear; otherwise "medium" or "low".
@@ -372,7 +404,7 @@ const NOTIF_PROMPT = `You are extracting Government of India DEPUTATION vacancie
 4) You may use web search to confirm the organisation's official website or any field the PDF leaves ambiguous.
 
 Output ONLY a JSON array. Each object must use EXACTLY these keys (use "" when unknown):
-{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","detailed_eligibility","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
+{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","detailed_eligibility","additional_details","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
 
 Rules:
 - official_notification_link must be the ACTUAL notification document (direct ".pdf" preferred), or the specific circular page — NEVER a generic homepage / listing / aggregator. Leave empty if not found. Never invent a URL.
@@ -382,6 +414,7 @@ Rules:
 - ministry = standard GoI name WITHOUT the "Ministry of"/"Department of" prefix.
 - organisation_type: EXACTLY one of — Ministry; Department; Attached and Subordinate Offices; Constitutional Bodies; Statutory Bodies; Autonomous Bodies; Central Public Sector Enterprises (CPSEs).
 - detailed_eligibility = COPY VERBATIM the complete eligibility / qualification conditions block exactly as printed for THIS post (feeder grades & pay levels, qualifications, experience, age limit). Do NOT paraphrase or summarise. "" if none stated.
+- additional_details = any other important info about THIS post not captured by the other fields (special instructions, relaxations/concessions, reservations, post breakup, contact details, remarks/notes). Copy the relevant text; do NOT duplicate eligibility text. "" if nothing extra.
 - source_page = PDF page number of the post (string).
 - confidence: "high" only if post, level, location AND a date are all clear.`;
 
@@ -418,6 +451,7 @@ function mapPasted(it, jobId, label, year, i, sourceFileUrl) {
     deputation_type: it.deputation_type || '', notification_date: it.notification_date || '', last_date_to_apply: it.last_date_to_apply || '',
     official_notification_link: it.official_notification_link || '', application_form_link: it.application_form_link || '',
     source_website: it.source_website || '', essential_qualification: it.essential_qualification || '',
+    additional_details: it.additional_details || '',
     eligible_service: it.eligible_service || '', mode_of_application: it.mode_of_application || '',
     functional_area: it.functional_area || '', tags_keywords: it.tags_keywords || '',
     status: 'draft', confidence: (it.confidence || 'medium'), source_type: 'employment_news',
@@ -445,7 +479,7 @@ const CONTENT_FIELDS = [
   'eligibility_tiers', 'no_of_posts', 'deputation_period_years', 'deputation_type',
   'notification_date', 'last_date_to_apply', 'official_notification_link',
   'application_form_link', 'source_website', 'functional_area',
-  'essential_qualification', 'eligible_service', 'mode_of_application', 'tags_keywords',
+  'essential_qualification', 'additional_details', 'eligible_service', 'mode_of_application', 'tags_keywords',
 ];
 const normPart = (s) => String(s ?? '').replace(/[^a-zA-Z0-9]+/g, ' ').trim().toLowerCase();
 // Keeps the A of "13A" (lowercased) so 13 and 13A posts get distinct keys.
@@ -610,7 +644,10 @@ async function importPasted(label, st) {
   let enPdfPath = '';
   const enFile = $('enPdf').files[0];
   if (enFile) {
-    if (enFile.size > 15 * 1024 * 1024) throw new Error('EN PDF exceeds 15 MB');
+    // Explicit client cap (Edge Function payload + base64 inflation make
+    // larger uploads unreliable). Hard-refresh the page if the old 15 MB
+    // message is still showing — that came from a cached build.
+    if (enFile.size > 20 * 1024 * 1024) throw new Error(`EN PDF is ${(enFile.size / 1048576).toFixed(1)} MB — limit is 20 MB. Compress it (e.g. ilovepdf.com → Compress PDF) or split the issue and import each half.`);
     st.innerHTML = '<span class="spinner"></span> Uploading EN PDF…';
     const b64 = await fileToBase64(enFile);
     const upRes = await api('/functions/v1/extract', {
@@ -710,6 +747,7 @@ async function boot() {
     $('paneIngest').classList.add('hidden');
     $('paneReview').classList.remove('hidden');
   }
+  refreshReviewBadges();   // ensure the Marked badge populates even if Marked isn't the active tab
 }
 
 /* ---------------- WhatsApp channel poster (local bridge) ---------------- */
@@ -776,25 +814,41 @@ async function loadOverview() {
   const strip = $('ovStrip');
   if (!strip) return;
   const iso = (d) => d.toISOString().slice(0, 10);
-  const [drafts, updates, flags, closing] = await Promise.all([
-    countOf('vacancies?status=eq.draft'),
+  const [drafts, marked, updates, flags, closing, feedbackNew] = await Promise.all([
+    countOf('vacancies?status=eq.draft&marked_for_review=eq.false'),
+    countOf('vacancies?status=eq.draft&marked_for_review=eq.true'),
     countOf('vacancy_updates?status=eq.pending'),
     countOf('vacancy_flags?status=eq.open'),
     countOf(`vacancies?status=eq.approved&last_date_to_apply=gte.${iso(new Date())}&last_date_to_apply=lte.${iso(new Date(Date.now() + 7 * 86400000))}`),
+    countOf('feedback?status=eq.new'),
   ]);
   const chip = (n, label, tab, tone) => `<button type="button" class="ov${n && tone ? ' ' + tone : ''}" data-goto="${tab}"><b>${n}</b> ${label}</button>`;
   strip.innerHTML =
     chip(drafts, 'drafts to review', 'review', 'warn') +
+    chip(marked, '🚩 marked for review', 'marked', '') +
     chip(updates, 'pending updates', 'updates', 'warn') +
     chip(flags, 'open flags', 'flags', 'bad') +
+    chip(feedbackNew, 'new feedback', 'feedback', 'warn') +
     chip(closing, 'live, closing ≤7d', 'manage', '');
   strip.querySelectorAll('[data-goto]').forEach((b) => {
-    b.onclick = () => document.querySelector(`.tabs button[data-tab="${b.dataset.goto}"]`)?.click();
+    b.onclick = () => {
+      if (b.dataset.goto === 'manage') {
+        // the "closing ≤7d" chip: land on live rows, soonest last-date first
+        if ($('mgStatus')) $('mgStatus').value = 'approved';
+        if ($('mgSearch')) $('mgSearch').value = '';
+        if ($('mgSort')) $('mgSort').value = 'lastdate_asc';
+        MG_PAGE = 1;
+        saveUI({ mgStatus: 'approved', mgSearch: '', mgSort: 'lastdate_asc', mgPage: 1 });
+      }
+      document.querySelector(`.tabs button[data-tab="${b.dataset.goto}"]`)?.click();
+    };
   });
   // keep the tab badges in sync from the same counts
   if ($('draftCount')) $('draftCount').textContent = drafts ? `(${drafts})` : '';
+  if ($('markedCount')) $('markedCount').textContent = marked ? `(${marked})` : '';
   if ($('updatesCount')) $('updatesCount').textContent = updates ? `(${updates})` : '';
   if ($('flagCount')) $('flagCount').textContent = flags ? `(${flags})` : '';
+  if ($('fbCount')) $('fbCount').textContent = feedbackNew ? `(${feedbackNew})` : '';
   loadRecentJobs();
   loadWaOverview();
 }
@@ -834,35 +888,52 @@ function wireApp() {
   const ui = loadUI();
   if (ui.draftSort) DRAFT_SORT = ui.draftSort;
   DRAFT_QUICK = new Set(Array.isArray(ui.draftQuick) ? ui.draftQuick : []);
+  // a stale saved state may predate the active↔expired mutual exclusion
+  if (DRAFT_QUICK.has('active') && DRAFT_QUICK.has('expired')) { DRAFT_QUICK.delete('active'); DRAFT_QUICK.delete('expired'); }
+  MG_PAGE = Math.max(1, parseInt(ui.mgPage, 10) || 1);
   RESTORE_LEVEL = ui.draftLevel || '';
   RESTORE_SOURCE = ui.draftSource || '';
+  RESTORE_MG_SOURCE = ui.mgSource || '';
   if ($('draftSearch')) $('draftSearch').value = ui.draftSearch || '';
   if ($('mgSearch')) $('mgSearch').value = ui.mgSearch || '';
   if (ui.mgStatus && $('mgStatus')) $('mgStatus').value = ui.mgStatus;
   if (ui.flagStatus && $('flagStatus')) $('flagStatus').value = ui.flagStatus;
+  if (ui.fbStatus && $('fbStatus')) $('fbStatus').value = ui.fbStatus;
 
-  // tabs
+  // tabs. Review queue and Marked share #paneReview — the only difference is
+  // which set of drafts loadDrafts() pulls (REVIEW_VIEW filter).
   document.querySelectorAll('.tabs button').forEach((b) => {
     b.onclick = () => {
       document.querySelectorAll('.tabs button').forEach((x) => x.classList.remove('active'));
       b.classList.add('active');
       const t = b.dataset.tab;
       saveUI({ tab: t });
+      const reviewish = (t === 'review' || t === 'marked');
       $('paneIngest').classList.toggle('hidden', t !== 'ingest');
-      $('paneReview').classList.toggle('hidden', t !== 'review');
+      $('paneReview').classList.toggle('hidden', !reviewish);
       $('paneManage').classList.toggle('hidden', t !== 'manage');
       $('paneFlags').classList.toggle('hidden', t !== 'flags');
+      $('paneFeedback').classList.toggle('hidden', t !== 'feedback');
       $('paneUpdates').classList.toggle('hidden', t !== 'updates');
+      $('paneProjects').classList.toggle('hidden', t !== 'projects');
       // leaving Manage by hand clears any flag-comparison context so it doesn't
       // re-trigger on a later manual visit (the flag's Open button re-sets it)
       if (t !== 'manage') ACTIVE_FLAG = null;
       if (t === 'ingest') loadOverview();
-      if (t === 'review') loadDrafts();
+      if (reviewish) { REVIEW_VIEW = (t === 'marked') ? 'marked' : 'review'; loadDrafts(); }
       if (t === 'manage') loadManage();
       if (t === 'flags') loadFlags();
+      if (t === 'feedback') loadFeedback();
       if (t === 'updates') loadUpdates();
+      if (t === 'projects') loadProjectsAdmin();
     };
   });
+
+  // Projects CMS (V² upcoming-projects) wiring
+  if ($('projRefresh')) $('projRefresh').onclick = loadProjectsAdmin;
+  if ($('projAddBtn')) $('projAddBtn').onclick = () => openProjectForm(null);
+  if ($('pf_save')) $('pf_save').onclick = saveProject;
+  if ($('pf_cancel')) $('pf_cancel').onclick = () => $('projForm').classList.add('hidden');
 
   if ($('updRefresh')) $('updRefresh').onclick = loadUpdates;
   if ($('updSort')) $('updSort').onchange = () => { saveUI({ updSort: $('updSort').value }); renderUpdates(); };   // client-side re-sort, no refetch
@@ -870,16 +941,24 @@ function wireApp() {
   $('flagRefresh').onclick = loadFlags;
   $('flagStatus').onchange = () => { saveUI({ flagStatus: $('flagStatus').value }); loadFlags(); };
 
+  $('fbRefresh').onclick = loadFeedback;
+  $('fbStatus').onchange = () => { saveUI({ fbStatus: $('fbStatus').value }); loadFeedback(); };
+
   $('mgRefresh').onclick = loadManage;
-  $('mgStatus').onchange = () => { saveUI({ mgStatus: $('mgStatus').value }); loadManage(); };
+  $('mgStatus').onchange = () => { MG_PAGE = 1; saveUI({ mgStatus: $('mgStatus').value, mgPage: 1 }); loadManage(); };
+  if ($('mgSource')) $('mgSource').onchange = () => {
+    const v = $('mgSource').value;
+    MG_PAGE = 1; saveUI({ mgSource: v, mgPage: 1 });
+    renderManage();
+  };
   // Populate all three sort dropdowns from the shared option list (keeps them
   // in sync). Review queue defaults to 'source'; Manage/Updates to 'upload'.
   if ($('draftSort')) $('draftSort').innerHTML = sortOptionsHtml(DRAFT_SORT);
   if ($('mgSort')) $('mgSort').innerHTML = sortOptionsHtml(ui.mgSort || 'upload');
   if ($('updSort')) $('updSort').innerHTML = sortOptionsHtml(ui.updSort || 'upload');
-  if ($('mgSort')) $('mgSort').onchange = () => { saveUI({ mgSort: $('mgSort').value }); renderManage(); };   // client-side re-sort, no refetch
+  if ($('mgSort')) $('mgSort').onchange = () => { MG_PAGE = 1; saveUI({ mgSort: $('mgSort').value, mgPage: 1 }); renderManage(); };   // client-side re-sort, no refetch
   let _mgFilterTimer = null;
-  $('mgSearch').oninput = () => { clearTimeout(_mgFilterTimer); _mgFilterTimer = setTimeout(() => { saveUI({ mgSearch: $('mgSearch').value }); renderManage(); }, 200); };
+  $('mgSearch').oninput = () => { clearTimeout(_mgFilterTimer); _mgFilterTimer = setTimeout(() => { MG_PAGE = 1; saveUI({ mgSearch: $('mgSearch').value, mgPage: 1 }); renderManage(); }, 200); };
   if ($('draftSort')) $('draftSort').onchange = () => { DRAFT_SORT = $('draftSort').value; saveUI({ draftSort: DRAFT_SORT }); DRAFT_PAGE = 1; renderDrafts(); };
   if ($('draftLevel')) $('draftLevel').onchange = () => { saveUI({ draftLevel: $('draftLevel').value }); DRAFT_PAGE = 1; renderDrafts(); };
   if ($('draftSource')) $('draftSource').onchange = () => { saveUI({ draftSource: $('draftSource').value }); DRAFT_PAGE = 1; renderDrafts(); };
@@ -999,13 +1078,6 @@ function wireApp() {
         $('dzText').textContent = pickedFile ? `📎 ${pickedFile.name}` : ''; }
     }));
 
-  const fileToB64 = (file) => new Promise((res, rej) => {
-    const fr = new FileReader();
-    fr.onload = () => res(String(fr.result).split(',')[1]);
-    fr.onerror = rej;
-    fr.readAsDataURL(file);
-  });
-
   $('ingestBtn').onclick = async () => {
     const srcType = $('srcType').value;
     const label = $('srcLabel').value.trim();
@@ -1023,7 +1095,7 @@ function wireApp() {
         if (pickedFile.size > 10 * 1024 * 1024) throw new Error('PDF exceeds 10 MB');
         st.innerHTML = '<span class="spinner"></span> Reading file…';
         payload.filename = pickedFile.name;
-        payload.file_base64 = await fileToB64(pickedFile);
+        payload.file_base64 = await fileToBase64(pickedFile);
       }
       st.innerHTML = '<span class="spinner"></span> Extracting with Gemini… (can take ~20s)';
       const r = await api('/functions/v1/extract', {
@@ -1061,6 +1133,8 @@ function wireApp() {
   };
   if ($('bulkApproveBtn')) $('bulkApproveBtn').onclick = () => bulkActOnChecked('approve');
   if ($('bulkRejectBtn')) $('bulkRejectBtn').onclick = () => bulkActOnChecked('reject');
+  if ($('filtApproveBtn')) $('filtApproveBtn').onclick = () => bulkActOnFiltered('approve');
+  if ($('filtRejectBtn')) $('filtRejectBtn').onclick = () => bulkActOnFiltered('reject');
 
   $('viewerClose').onclick = () => { $('viewerFrame').src = 'about:blank'; $('viewerPane').style.display = 'none'; };
 
@@ -1074,10 +1148,11 @@ function wireApp() {
     // fetch the matching rows up-front: exact count for the confirm + dates for
     // the expired warning (the PATCH itself re-applies the filter, so a race
     // just means a freshly-arrived draft also gets approved — same as before)
+    const viewFilt = `&marked_for_review=eq.${REVIEW_VIEW === 'marked'}`;
     const rows = [];
     try {
       for (let from = 0; ; from += 1000) {
-        const cr = await api(`/rest/v1/vacancies?status=eq.draft&${filt}&select=id,last_date_to_apply&order=id.asc&limit=1000&offset=${from}`);
+        const cr = await api(`/rest/v1/vacancies?status=eq.draft${viewFilt}&${filt}&select=id,last_date_to_apply&order=id.asc&limit=1000&offset=${from}`);
         if (!cr.ok) break;
         const chunk = await cr.json();
         rows.push(...chunk);
@@ -1102,7 +1177,7 @@ function wireApp() {
     const b = $('approveAllBtn'); b.disabled = true;
     try {
       // one PATCH; return=representation gives the exact ids for Undo
-      const r = await api(`/rest/v1/vacancies?status=eq.draft&${filt}&select=id`, {
+      const r = await api(`/rest/v1/vacancies?status=eq.draft${viewFilt}&${filt}&select=id`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
         body: JSON.stringify({ status: 'approved' }),
       });
@@ -1117,9 +1192,10 @@ function wireApp() {
     const n = CURRENT_DRAFT_IDS.length;
     if (!n) return toast('No drafts to reject');
     if (!confirm(`Reject ALL ${n} draft(s)?\nThey move to Manage → Rejected (and you can Undo for a few seconds).`)) return;
+    const viewFilt = `&marked_for_review=eq.${REVIEW_VIEW === 'marked'}`;
     const b = $('rejectAllBtn'); b.disabled = true;
     try {
-      const r = await api('/rest/v1/vacancies?status=eq.draft&select=id', {
+      const r = await api(`/rest/v1/vacancies?status=eq.draft${viewFilt}&select=id`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
         body: JSON.stringify({ status: 'rejected' }),
       });
@@ -1238,6 +1314,9 @@ const DRAFT_PAGE_SIZE = 25;
 let DRAFT_PAGE = 1;
 let DRAFT_SORT = 'source';   // default preserves the grouped-by-source view
 let DRAFT_ROWS = [];   // full current draft list (display source for pagination)
+// 'review' = drafts NOT marked-for-review · 'marked' = drafts that ARE marked.
+// Both views share #paneReview and the same workflow; only the loaded set differs.
+let REVIEW_VIEW = 'review';
 let DRAFT_QUICK = new Set();   // active quick-filter chips (confidence / gaps / deadline)
 // one-shot restore for the dynamic Level/Source dropdowns (their options only
 // exist after the first loadDrafts) — consumed by populateDraft*Filter below
@@ -1246,17 +1325,42 @@ let RESTORE_SOURCE = '';
 
 async function loadDrafts() {
   try {
-    const r = await api('/rest/v1/vacancies?status=eq.draft&select=*&order=ingest_job_id.asc,vacancy_id.asc');
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
+    // id.asc tiebreaker keeps the 1000-row pages stable across requests.
+    // Marked tab gets the same draft set, filtered to marked_for_review rows.
+    const markedFilter = `&marked_for_review=eq.${REVIEW_VIEW === 'marked'}`;
+    const data = await fetchAll(`vacancies?status=eq.draft${markedFilter}&select=*&order=ingest_job_id.asc,vacancy_id.asc,id.asc`);
     CURRENT_DRAFT_IDS = data.map((x) => x.id);   // whole queue — bulk ops use this
     DRAFT_ROWS = data;
     populateDraftSourceFilter();
     DRAFT_PAGE = 1;
-    $('draftCount').textContent = data.length ? `(${data.length})` : '';
     populateDraftLevelFilter();
     renderDrafts();
+    refreshReviewBadges();    // keep both tab badges in sync with this load
+    updateReviewHeading();
   } catch (e) { toast('Load error: ' + e.message); }
+}
+
+// Count-only refresh of the Review-queue and Marked tab badges. Called after
+// loadDrafts and after every mark / unmark / approve / reject so both numbers
+// stay correct even when a row moves between the two tabs.
+async function refreshReviewBadges() {
+  const [drafts, marked] = await Promise.all([
+    countOf('vacancies?status=eq.draft&marked_for_review=eq.false'),
+    countOf('vacancies?status=eq.draft&marked_for_review=eq.true'),
+  ]);
+  if ($('draftCount')) $('draftCount').textContent = drafts ? `(${drafts})` : '';
+  if ($('markedCount')) $('markedCount').textContent = marked ? `(${marked})` : '';
+}
+
+// Rewrites the Review pane's h2 + "what to do" hint based on which tab the
+// pane is currently representing (Review queue vs Marked).
+function updateReviewHeading() {
+  const h = document.querySelector('#paneReview h2');
+  const hint = $('reviewHint');
+  if (h) h.textContent = REVIEW_VIEW === 'marked' ? '🚩 Marked for review' : 'Review queue';
+  if (hint) hint.innerHTML = REVIEW_VIEW === 'marked'
+    ? 'Drafts you flagged for a closer look. Same workflow as the Review queue — <b>🚩 Marked</b> unmarks the row (it goes back to Review). Press <kbd>?</kbd> for keyboard shortcuts.'
+    : 'Click <b>Edit</b> to change fields, then <b>Approve</b> (publishes live) or <b>Reject</b> (moves to Manage → Rejected; undoable). Tick the checkboxes to <b>approve / reject in bulk</b>. Click <b>📄 source</b> to view the original page beside it. Press <kbd>?</kbd> for keyboard shortcuts.';
 }
 
 // Fill the Level filter with the distinct pay levels present in the current
@@ -1332,6 +1436,7 @@ function renderDrafts() {
   const rows = sortRows(applyDraftFilters(DRAFT_ROWS), DRAFT_SORT);
   const list = $('draftList');
   const pager = $('draftPager');
+  updateFilteredBar(rows.length);
   if (!rows.length) {
     list.innerHTML = `<p class="muted">${(q || src || lvl || DRAFT_QUICK.size) ? 'No drafts match the current filters.' : 'No drafts awaiting review. 🎉'}</p>`;
     if (pager) pager.innerHTML = '';
@@ -1426,6 +1531,69 @@ async function bulkActOnChecked(action) {
   updateBulkBar();
 }
 
+/* ---- approve / reject the FILTERED set (all pages) ---- */
+function draftFiltersActive() {
+  return Boolean(
+    (($('draftSearch') && $('draftSearch').value) || '').trim()
+    || ($('draftLevel') && $('draftLevel').value)
+    || ($('draftSource') && $('draftSource').value)
+    || DRAFT_QUICK.size,
+  );
+}
+
+// The "Approve/Reject filtered (N)" buttons only appear while a filter is
+// narrowing the queue — otherwise the existing whole-queue buttons apply.
+function updateFilteredBar(n) {
+  const bar = $('draftFilteredBar');
+  if (!bar) return;
+  const on = n > 0 && draftFiltersActive();
+  bar.style.display = on ? 'flex' : 'none';
+  if (on) {
+    $('filtApproveBtn').textContent = `✓ Approve filtered (${n})`;
+    $('filtRejectBtn').textContent = `🗑 Reject filtered (${n})`;
+  }
+}
+
+// Acts on EVERY draft matching the current filters (search + Level + Source +
+// quick chips) — all pages, not just the visible one. One id=in.() PATCH per
+// 100 rows; undoable like the other bulk paths. Unsaved inline edits are NOT
+// included (same caveat as Approve all).
+async function bulkActOnFiltered(action) {
+  const rows = applyDraftFilters(DRAFT_ROWS);
+  if (!rows.length) return toast('No drafts match the current filters');
+  const status = action === 'approve' ? 'approved' : 'rejected';
+  const verb = action === 'approve' ? 'Approve & PUBLISH' : 'Reject';
+  const warn = `${verb} ${rows.length} draft(s) matching the current filters — every page, not just this one.\n\n`
+    + `Unsaved inline edits aren't included — Save those first if needed.`;
+  if (rows.length >= 50) {
+    const typed = prompt(`${warn}\n\nThis is a large batch. Type the number ${rows.length} to confirm:`);
+    if (String(typed || '').trim() !== String(rows.length)) return toast('Cancelled — number did not match');
+  } else if (!confirm(warn)) {
+    return;
+  }
+  if (action === 'approve' && !confirmNotExpired(rows)) return;
+  const btns = [$('filtApproveBtn'), $('filtRejectBtn')].filter(Boolean);
+  btns.forEach((b) => { b.disabled = true; });
+  const ids = rows.map((r) => r.id);
+  const okIds = []; let fail = 0;
+  try {
+    for (let i = 0; i < ids.length; i += 100) {
+      const part = ids.slice(i, i + 100);
+      const r = await api(`/rest/v1/vacancies?id=in.(${part.join(',')})`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ status }),
+      });
+      if (r.ok) okIds.push(...part); else fail += part.length;
+    }
+  } finally { btns.forEach((b) => { b.disabled = false; }); }
+  const msg = `${action === 'approve' ? '✅ Approved' : 'Rejected'} ${okIds.length} filtered draft(s)${fail ? `, ${fail} failed` : ''}`;
+  if (okIds.length) undoableStatus(okIds, msg); else toast(msg);
+  // remove the affected visible cards so dropFromQueue re-renders the page
+  const gone = new Set(okIds.map(String));
+  $('draftList').querySelectorAll('.draft').forEach((c) => { if (gone.has(c.dataset.id)) c.remove(); });
+  dropFromQueue(okIds);
+}
+
 // Serialise an opened draft card's editor (mirrors the card-local collect()).
 function collectFromCard(el) {
   const editor = el.querySelector('.editor');
@@ -1438,19 +1606,24 @@ function collectFromCard(el) {
   return patch;
 }
 
-function renderDraftPager(pages, start, shown, total) {
-  const pager = $('draftPager');
+// Shared pager renderer (Review queue + Manage). flip(page) re-renders.
+function wirePager(pager, page, pages, start, shown, total, noun, flip) {
   if (!pager) return;
   if (pages <= 1) {
-    pager.innerHTML = `<span class="muted">${total} draft(s)</span>`;
+    pager.innerHTML = `<span class="muted">${total} ${noun}</span>`;
     return;
   }
   pager.innerHTML = `
-    <button data-pg="prev" ${DRAFT_PAGE <= 1 ? 'disabled' : ''}>‹ Prev</button>
-    <span class="muted">Page ${DRAFT_PAGE} / ${pages} · showing ${start + 1}-${start + shown} of ${total}</span>
-    <button data-pg="next" ${DRAFT_PAGE >= pages ? 'disabled' : ''}>Next ›</button>`;
-  pager.querySelector('[data-pg="prev"]')?.addEventListener('click', () => { if (DRAFT_PAGE > 1) { DRAFT_PAGE--; renderDrafts(); window.scrollTo(0, 0); } });
-  pager.querySelector('[data-pg="next"]')?.addEventListener('click', () => { if (DRAFT_PAGE < pages) { DRAFT_PAGE++; renderDrafts(); window.scrollTo(0, 0); } });
+    <button data-pg="prev" ${page <= 1 ? 'disabled' : ''}>‹ Prev</button>
+    <span class="muted">Page ${page} / ${pages} · showing ${start + 1}-${start + shown} of ${total}</span>
+    <button data-pg="next" ${page >= pages ? 'disabled' : ''}>Next ›</button>`;
+  pager.querySelector('[data-pg="prev"]')?.addEventListener('click', () => { if (page > 1) { flip(page - 1); window.scrollTo(0, 0); } });
+  pager.querySelector('[data-pg="next"]')?.addEventListener('click', () => { if (page < pages) { flip(page + 1); window.scrollTo(0, 0); } });
+}
+
+function renderDraftPager(pages, start, shown, total) {
+  wirePager($('draftPager'), DRAFT_PAGE, pages, start, shown, total, 'draft(s)',
+    (p) => { DRAFT_PAGE = p; renderDrafts(); });
 }
 
 // After cards are approved/rejected (and removed from the DOM): drop the rows
@@ -1463,6 +1636,7 @@ function dropFromQueue(ids) {
   CURRENT_DRAFT_IDS = CURRENT_DRAFT_IDS.filter((id) => !set.has(String(id)));
   $('draftCount').textContent = DRAFT_ROWS.length ? `(${DRAFT_ROWS.length})` : '';
   const total = applyDraftFilters(DRAFT_ROWS).length;
+  updateFilteredBar(total);
   const pages = Math.max(1, Math.ceil(total / DRAFT_PAGE_SIZE));
   if (DRAFT_PAGE > pages) DRAFT_PAGE = pages;
   const visible = $('draftList').querySelectorAll('.draft').length;
@@ -1658,13 +1832,16 @@ function draftCard(r) {
           <b>${escapeHtml(r.post_name || '(untitled)')}</b>
           <span class="muted"> · ${escapeHtml(r.organisation || '')}${r.level ? ' · L' + escapeHtml(r.level) : ''}${r.location_city ? ' · ' + escapeHtml(r.location_city) : ''}</span>
           <span class="pill ${conf}">${conf}</span>
+          ${r.marked_for_review ? '<span class="pill mark-badge" title="Marked for review">🚩 review</span>' : ''}
           <span class="muted"> · ${score}% complete</span>
           ${linkDomainBadge(r)}${deadlineBadge(r)}${gapChips(r)}
         </span>
       </div>
       <div class="acts">
         ${(r.source_file_url || r.official_notification_link) ? `<button data-act="source">📄 source${srcPage ? ' p.' + srcPage : ''}</button>` : ''}
+        ${r.official_notification_link ? `<button data-act="openlink" title="Open the captured Official link in a new tab">🔗 Open link</button>` : ''}
         <button data-act="gsearch" title="Open a Google search (new tab) for this post + organisation deputation PDF">🌐 Google</button>
+        <button data-act="mark" class="${r.marked_for_review ? 'good' : ''}" title="Flag this vacancy for a second look — find it later under Manage → Source → 🚩 Marked for review (keeps the row in this queue; can be marked whether draft or approved)">${r.marked_for_review ? '🚩 Marked' : '🚩 Mark'}</button>
         <button data-act="edit">Edit</button>
         <button data-act="enrich" title="Find the official notification PDF and fill blank fields">🔎 Official PDF</button>
         <button class="good" data-act="approve">Approve</button>
@@ -1756,6 +1933,34 @@ function draftCard(r) {
   };
   const srcBtn = el.querySelector('[data-act="source"]');
   if (srcBtn) srcBtn.onclick = (e) => { e.preventDefault(); openSource(r, srcPage); };
+
+  // Direct external link — opens whatever was captured in official_notification_link,
+  // even if a source PDF is also attached (distinct from "📄 source", which
+  // prefers the stored EN PDF for side-by-side review).
+  const lnkBtn = el.querySelector('[data-act="openlink"]');
+  if (lnkBtn) lnkBtn.onclick = () => {
+    const inp = el.querySelector('[data-k="official_notification_link"]');
+    const url = ((inp && inp.value.trim()) || r.official_notification_link || '').trim();
+    if (!url) return toast('No official link on this row');
+    window.open(/^https?:\/\//i.test(url) ? url : 'https://' + url, '_blank', 'noopener');
+  };
+
+  // Toggle the marked-for-review flag. A toggle MOVES the row to the other
+  // tab (Review ↔ Marked), so we drop it from the current view rather than
+  // updating in place — and refresh both tab badges so the counts shift too.
+  el.querySelector('[data-act="mark"]').onclick = async (e) => {
+    const btn = e.currentTarget;
+    const next = !r.marked_for_review;
+    btn.disabled = true;
+    try {
+      await patchRow({ marked_for_review: next });
+      r.marked_for_review = next;
+      el.remove();
+      dropFromQueue([r.id]);
+      refreshReviewBadges();
+      toast(next ? '🚩 Marked for review — moved to the Marked tab' : 'Unmarked — back in the Review queue');
+    } catch (err) { toast('Update failed: ' + err.message); btn.disabled = false; }
+  };
   return el;
 }
 
@@ -1778,12 +1983,12 @@ async function openSource(r, page) {
   const dm = src.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
   if (dm) {
     if (inReview) showInPane(`https://drive.google.com/file/d/${dm[1]}/preview`, (r.post_name || 'Source') + (page ? ` — p.${page}` : ''));
-    else window.open(`https://drive.google.com/file/d/${dm[1]}/view`, '_blank');
+    else window.open(`https://drive.google.com/file/d/${dm[1]}/view`, '_blank', 'noopener');
     return;
   }
   if (/^https?:\/\//i.test(src)) {
     // external gov links usually block iframing → always open a tab
-    window.open(src + (page ? `#page=${page}` : ''), '_blank');
+    window.open(src + (page ? `#page=${page}` : ''), '_blank', 'noopener');
     return;
   }
   // Supabase storage path → signed URL
@@ -1797,19 +2002,20 @@ async function openSource(r, page) {
   } catch { /* */ }
   if (!url) return toast('Could not open source');
   if (inReview) showInPane(url, (r.post_name || 'Source') + (page ? ` — p.${page}` : ''));
-  else window.open(url, '_blank');
+  else window.open(url, '_blank', 'noopener');
 }
 
 
 /* ---------------- manage (full CRUD over all rows) ---------------- */
+const MG_PAGE_SIZE = 25;
+let MG_PAGE = 1;
 let MANAGE_ROWS = [];
 
 function collectPatch(scopeEl) {
   const patch = {};
   scopeEl.querySelectorAll('[data-k]').forEach((inp) => { patch[inp.dataset.k] = (inp.value || '').trim(); });
   const lvl = levelTok(patch.level);                         // keeps "13A"
-  if ('level' in patch) patch.level = lvl;
-  patch.level_text = lvl ? `Level-${lvl}` : '';
+  if ('level' in patch) { patch.level = lvl; patch.level_text = lvl ? `Level-${lvl}` : ''; }
   if (patch.ministry) patch.min_code = MIN_CODE_BY_NAME[patch.ministry] || minCode(patch.ministry);
   applyTiersToPatch(patch, scopeEl);
   return patch;
@@ -1830,30 +2036,56 @@ async function refreshWaPending() {
 
 async function loadManage() {
   const status = $('mgStatus').value;
-  let url = '/rest/v1/vacancies?select=*&order=created_at.desc&limit=2000';
-  if (status !== 'all') url += `&status=eq.${status}`;
+  let q = 'vacancies?select=*&order=created_at.desc,id.asc';
+  // "marked" is a virtual status — it really means "any status, marked_for_review=true"
+  if (status === 'marked') q += '&marked_for_review=eq.true';
+  else if (status !== 'all') q += `&status=eq.${status}`;
   // non-blocking: 📣 badges pop in when the local bridge answers
   refreshWaPending().then(() => { if (WA_PENDING && !$('paneManage').classList.contains('hidden')) renderManage(); });
   try {
-    const r = await api(url);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    MANAGE_ROWS = await r.json();
+    MANAGE_ROWS = await fetchAll(q);
+    populateManageSourceFilter();
     renderManage();
   } catch (e) { toast('Load error: ' + e.message); }
 }
 
+// Mirror of populateDraftSourceFilter for Manage. (The Status dropdown's
+// "🚩 Marked" item handles the marked-for-review filter now.)
+let RESTORE_MG_SOURCE = '';
+function populateManageSourceFilter() {
+  const sel = $('mgSource');
+  if (!sel) return;
+  const prev = sel.value || RESTORE_MG_SOURCE; RESTORE_MG_SOURCE = '';
+  const srcs = [...new Set(MANAGE_ROWS.map((r) => String(r.source_category || r.source_type || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">All</option>'
+    + srcs.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  if (prev && srcs.includes(prev)) sel.value = prev;
+}
+
 function renderManage() {
   const q = ($('mgSearch').value || '').toLowerCase().trim();
-  const filtered = !q ? MANAGE_ROWS : MANAGE_ROWS.filter((r) => rowMatchesQuery(r, q));
+  const src = ($('mgSource') && $('mgSource').value || '').trim();
+  let filtered = !q ? MANAGE_ROWS : MANAGE_ROWS.filter((r) => rowMatchesQuery(r, q));
+  if (src) filtered = filtered.filter((r) => String(r.source_category || r.source_type || '').trim() === src);
   const mode = ($('mgSort') && $('mgSort').value) || 'upload';
   const rows = sortRows(filtered, mode);
   $('manageCount').textContent = `(${rows.length})`;
   const list = $('manageList');
+  const pager = $('mgPager');
   list.innerHTML = '';
-  if (!rows.length) { list.innerHTML = '<p class="muted">No matching rows.</p>'; return; }
+  if (!rows.length) {
+    list.innerHTML = '<p class="muted">No matching rows.</p>';
+    if (pager) pager.innerHTML = '';
+    return;
+  }
+  const pages = Math.max(1, Math.ceil(rows.length / MG_PAGE_SIZE));
+  if (MG_PAGE > pages) MG_PAGE = pages;
+  const start = (MG_PAGE - 1) * MG_PAGE_SIZE;
+  const slice = rows.slice(start, start + MG_PAGE_SIZE);
   const showHeaders = mode === 'source';
   let lastSrc = null;
-  rows.forEach((r) => {
+  slice.forEach((r) => {
     if (showHeaders) {
       const src = _sourceKey(r);
       if (src !== lastSrc) {
@@ -1866,6 +2098,8 @@ function renderManage() {
     }
     list.appendChild(manageCard(r, false));
   });
+  wirePager(pager, MG_PAGE, pages, start, slice.length, rows.length, 'row(s)',
+    (p) => { MG_PAGE = p; saveUI({ mgPage: p }); renderManage(); });
 }
 
 // Banner shown atop the editor when this row was opened from a flag. Compares
@@ -1906,16 +2140,29 @@ function manageCard(r, isNew) {
         ${isNew ? '' : `<span class="muted"> · ${escapeHtml(r.organisation || '')}${r.level ? ' · L' + escapeHtml(r.level) : ''}${r.location_city ? ' · ' + escapeHtml(r.location_city) : ''}</span>`}
         <span class="pill">${escapeHtml(isNew ? 'new' : (r.status || ''))}</span>
         ${isNew ? '' : linkDomainBadge(r)}${isNew ? '' : deadlineBadge(r)}
+        ${(!isNew && r.marked_for_review) ? '<span class="pill mark-badge" title="Marked for review">🚩 review</span>' : ''}
         ${(!isNew && r.status === 'approved' && WA_PENDING && WA_PENDING.has(r.vacancy_id)) ? '<span class="pill" style="color:#34d399;border-color:rgba(52,211,153,.5)" title="Approved but not yet posted to the WhatsApp channel">📣 not posted</span>' : ''}
         ${flagged ? '<span class="pill" style="background:rgba(244,63,94,.15);border-color:rgba(244,63,94,.4);color:#fda4af">⚑ flagged</span>' : ''}
       </div>
       <div class="acts">
         ${(!isNew && (r.source_file_url || r.official_notification_link)) ? '<button data-act="source">📄 source</button>' : ''}
-        <button data-act="toggle">${isNew ? 'Hide' : (flagged ? 'Hide' : 'Edit')}</button>
+        ${isNew ? '' : '<button data-act="gsearch" title="Open a Google search (new tab) for this post + organisation deputation PDF">🌐 Google</button>'}
+        ${isNew ? '' : `<button data-act="mark" class="${r.marked_for_review ? 'good' : ''}" title="Flag this vacancy for a second look — find it later under Source → 🚩 Marked for review">${r.marked_for_review ? '🚩 Marked' : '🚩 Mark'}</button>`}
+        <button data-act="toggle">${(isNew || flagged) ? 'Hide' : 'Edit'}</button>
         ${isNew ? '' : '<button class="bad" data-act="del">Delete</button>'}
       </div>
     </div>
-    <div class="editor" style="${(isNew || flagged) ? '' : 'display:none'}">
+    <div class="editor" style="display:none"></div>`;
+
+  const editor = el.querySelector('.editor');
+
+  // Built lazily on first open (same pattern as the Review cards): the full
+  // editor is 20+ inputs incl. the 50-option ministry select — far too heavy
+  // to render for every Manage row up-front. isNew/flagged cards start open,
+  // so they build immediately below.
+  const buildEditor = () => {
+    if (el.dataset.built) return;
+    editor.innerHTML = `
       ${flagBannerHtml(r)}
       ${(!isNew && r.raw_extraction && r.raw_extraction.detailed_eligibility) ? verbatimHtml(r.raw_extraction.detailed_eligibility) : ''}
       <div class="row">
@@ -1932,42 +2179,52 @@ function manageCard(r, isNew) {
       <div style="margin-top:10px;display:flex;gap:8px">
         <button class="good" data-act="save">${isNew ? 'Create' : 'Save changes'}</button>
         <button data-act="cancel">Cancel</button>
-      </div>
-    </div>`;
+      </div>`;
+    wireTiersEditor(el);
+    el.dataset.built = '1';
 
-  const editor = el.querySelector('.editor');
+    // Flag comparison: spotlight the flagged field's input + wire "Apply suggestion".
+    if (flagged) {
+      const banner = el.querySelector('[data-flag-banner]');
+      const col = banner && banner.dataset.col;
+      const targetInput = col ? editor.querySelector(`[data-k="${col}"]`) : null;
+      if (targetInput) targetInput.classList.add('flag-target');
+      const applyBtn = el.querySelector('[data-apply-suggestion]');
+      if (applyBtn && targetInput) {
+        applyBtn.onclick = () => {
+          targetInput.value = ACTIVE_FLAG.suggested_value || '';
+          targetInput.classList.add('flag-applied');
+          targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+          targetInput.focus();
+          toast('Suggestion filled in — review, then Save changes');
+        };
+      }
+    }
+
+    el.querySelector('[data-act="cancel"]').onclick = () => {
+      if (isNew) { el.remove(); return; }
+      editor.style.display = 'none';
+      el.querySelector('[data-act="toggle"]').textContent = 'Edit';
+    };
+
+    wireSave();
+  };
+
   el.querySelector('[data-act="toggle"]').onclick = (e) => {
+    buildEditor();
     const showing = editor.style.display !== 'none';
     editor.style.display = showing ? 'none' : 'block';
     e.currentTarget.textContent = showing ? 'Edit' : 'Hide';
   };
 
-  // Flag comparison: spotlight the flagged field's input + wire "Apply suggestion".
-  if (flagged) {
-    const banner = el.querySelector('[data-flag-banner]');
-    const col = banner && banner.dataset.col;
-    const targetInput = col ? el.querySelector(`.editor [data-k="${col}"]`) : null;
-    if (targetInput) targetInput.classList.add('flag-target');
-    const applyBtn = el.querySelector('[data-apply-suggestion]');
-    if (applyBtn && targetInput) {
-      applyBtn.onclick = () => {
-        targetInput.value = ACTIVE_FLAG.suggested_value || '';
-        targetInput.classList.add('flag-applied');
-        targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-        targetInput.focus();
-        toast('Suggestion filled in — review, then Save changes');
-      };
-    }
+  if (isNew || flagged) {
+    buildEditor();
+    editor.style.display = 'block';
     // scroll the flagged card into view once rendered
-    setTimeout(() => { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+    if (flagged) setTimeout(() => { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
   }
-  el.querySelector('[data-act="cancel"]').onclick = () => {
-    if (isNew) { el.remove(); return; }
-    editor.style.display = 'none';
-    el.querySelector('[data-act="toggle"]').textContent = 'Edit';
-  };
 
-  el.querySelector('[data-act="save"]').onclick = async () => {
+  function wireSave() { el.querySelector('[data-act="save"]').onclick = async () => {
     const patch = collectPatch(editor);
     if (!patch.post_name) return toast('Post name is required');
     try {
@@ -1998,7 +2255,7 @@ function manageCard(r, isNew) {
         el.replaceWith(manageCard(r, false));
       }
     } catch (e) { toast('Save failed: ' + e.message); }
-  };
+  }; }
 
   const delBtn = el.querySelector('[data-act="del"]');
   if (delBtn) delBtn.onclick = async () => {
@@ -2010,10 +2267,48 @@ function manageCard(r, isNew) {
     } catch (e) { toast('Delete failed: ' + e.message); }
   };
 
-  wireTiersEditor(el);
-
   const srcBtn = el.querySelector('[data-act="source"]');
   if (srcBtn) srcBtn.onclick = () => openSource(r, String((r.raw_extraction && r.raw_extraction.source_page) || '').replace(/\D/g, ''));
+
+  // Google search: prefers the live edited values if the editor is open,
+  // otherwise the row's saved values (same shape as the Review-queue button).
+  const gsBtn = el.querySelector('[data-act="gsearch"]');
+  if (gsBtn) gsBtn.onclick = () => {
+    const val = (k, fb) => {
+      const inp = editor.querySelector(`[data-k="${k}"]`);
+      return ((inp && inp.value.trim()) || fb || '').trim();
+    };
+    const post = val('post_name', r.post_name);
+    const org = val('organisation', r.organisation);
+    const q = `${post} ${org} "Deputation" "2026" "pdf"`.replace(/\s+/g, ' ').trim();
+    window.open('https://www.google.com/search?q=' + encodeURIComponent(q), '_blank', 'noopener');
+  };
+
+  // Mark / unmark for review — re-render the card so the badge, button label,
+  // and (for an empty Marked filter) the visible row count stay consistent.
+  const mkBtn = el.querySelector('[data-act="mark"]');
+  if (mkBtn) mkBtn.onclick = async () => {
+    const next = !r.marked_for_review;
+    mkBtn.disabled = true;
+    try {
+      const res = await api(`/rest/v1/vacancies?id=eq.${r.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ marked_for_review: next }),
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      r.marked_for_review = next;
+      const cached = MANAGE_ROWS.find((x) => x.id === r.id);
+      if (cached) cached.marked_for_review = next;
+      // if we're currently filtered to "Marked for review" and the row just
+      // got UNmarked, drop it from the page instead of re-rendering it visibly
+      // If we're currently filtered to "Marked" and the row just got UNmarked,
+      // drop it from view rather than re-rendering it as visible-but-unmarked.
+      const inMarkedView = $('mgStatus') && $('mgStatus').value === 'marked';
+      if (inMarkedView && !next) { el.remove(); renderManage(); }
+      else el.replaceWith(manageCard(r, false));
+      toast(next ? '🚩 Marked for review' : 'Unmarked');
+    } catch (e) { toast('Update failed: ' + e.message); mkBtn.disabled = false; }
+  };
   return el;
 }
 
@@ -2046,6 +2341,308 @@ const FLAG_FIELD_TO_COLUMN = {
 // to auto-expand the matching card and show the current-vs-suggested banner.
 let ACTIVE_FLAG = null;
 
+/* ---------------- feedback (contact-form submissions) ---------------- */
+async function loadFeedback() {
+  const status = $('fbStatus') ? $('fbStatus').value : 'new';
+  let url = '/rest/v1/feedback?select=*&order=created_at.desc&limit=500';
+  if (status !== 'all') url += `&status=eq.${status}`;
+  const list = $('fbList');
+  if (list) list.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const r = await api(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    renderFeedback(await r.json());
+  } catch (e) { if (list) list.innerHTML = `<p class="muted">Load error: ${escapeHtml(e.message)}</p>`; }
+  refreshFeedbackCount();
+}
+
+async function refreshFeedbackCount() {
+  const n = await countOf('feedback?status=eq.new');
+  if ($('fbCount')) $('fbCount').textContent = n ? `(${n})` : '';
+}
+
+// Category order mirrors the Contact page “Category” dropdown (contact.html).
+const FB_CATEGORY_ORDER = [
+  'General Feedback',
+  'Report a Bug',
+  'Suggest a Feature',
+  'Vacancy Correction',
+  'New Rule/Circular',
+  'Policy Clarification',
+  'WhatsApp Group Issue',
+  'Other',
+];
+
+function fbCategoryRank(cat) {
+  const i = FB_CATEGORY_ORDER.indexOf(cat);
+  return i === -1 ? FB_CATEGORY_ORDER.length : i;
+}
+
+function fbPageOf(f) {
+  return f.page_label || f.page || f.related_page || 'Whole site';
+}
+
+function renderFeedback(rows) {
+  const list = $('fbList');
+  if ($('fbHdrCount')) $('fbHdrCount').textContent = `(${rows.length})`;
+  if (!list) return;
+  if (!rows.length) { list.innerHTML = '<p class="muted">No feedback in this view.</p>'; return; }
+  list.innerHTML = '';
+
+  // Group by category (dropdown order), then by page within each category.
+  const byCat = new Map();
+  rows.forEach((f) => {
+    const cat = f.category || 'General Feedback';
+    if (!byCat.has(cat)) byCat.set(cat, []);
+    byCat.get(cat).push(f);
+  });
+
+  const cats = [...byCat.keys()].sort(
+    (a, b) => fbCategoryRank(a) - fbCategoryRank(b) || a.localeCompare(b)
+  );
+
+  cats.forEach((cat) => {
+    const catRows = byCat.get(cat);
+    const catHdr = document.createElement('h3');
+    catHdr.className = 'fb-cat-hdr';
+    catHdr.innerHTML = `${escapeHtml(cat)} <span class="muted">(${catRows.length})</span>`;
+    list.appendChild(catHdr);
+
+    // Sub-group by page (dropdown’s second selector).
+    const byPage = new Map();
+    catRows.forEach((f) => {
+      const page = fbPageOf(f);
+      if (!byPage.has(page)) byPage.set(page, []);
+      byPage.get(page).push(f);
+    });
+    const pages = [...byPage.keys()].sort((a, b) => a.localeCompare(b));
+
+    pages.forEach((page) => {
+      const pageRows = byPage.get(page);
+      const pageHdr = document.createElement('h4');
+      pageHdr.className = 'fb-page-hdr';
+      pageHdr.innerHTML = `📄 ${escapeHtml(page)} <span class="muted">(${pageRows.length})</span>`;
+      list.appendChild(pageHdr);
+      pageRows.forEach((f) => list.appendChild(feedbackCard(f)));
+    });
+  });
+}
+
+function feedbackCard(f) {
+  const el = document.createElement('div');
+  el.className = 'draft';
+  const when = (f.created_at || '').slice(0, 10);
+  const status = f.status || 'new';
+  const who = [f.name, f.email].filter(Boolean).join(' · ');
+  const link = f.related_link || '';
+  const linkHtml = /^https?:\/\//i.test(link)
+    ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener">${escapeHtml(link)}</a>`
+    : escapeHtml(link);
+  el.innerHTML = `
+    <div class="head">
+      <div>
+        <span class="pill">${escapeHtml(status)}</span>
+        <span class="muted"> · ${escapeHtml(when)}</span>
+      </div>
+      <div class="acts">
+        ${status === 'resolved'
+          ? '<button data-act="reopen">Re-open</button>'
+          : '<button class="good" data-act="resolve">✓ Resolved</button>'}
+        <button class="bad" data-act="del">Delete</button>
+      </div>
+    </div>
+    ${f.subject ? `<div style="margin:6px 0;font-weight:600">${escapeHtml(f.subject)}</div>` : ''}
+    ${f.message ? `<div style="margin:6px 0;color:var(--text,#cbd5e1);white-space:pre-wrap">${escapeHtml(f.message)}</div>` : ''}
+    ${link ? `<div class="muted" style="margin:4px 0"><b>Link:</b> ${linkHtml}</div>` : ''}
+    ${who ? `<div class="muted" style="font-size:.8rem">From: ${escapeHtml(who)}</div>` : ''}`;
+
+  const setStatus = async (next) => {
+    try {
+      const r = await api(`/rest/v1/feedback?id=eq.${f.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: next }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      toast(`Feedback marked ${next}`); loadFeedback();
+    } catch (e) { toast('Update failed: ' + e.message); }
+  };
+  el.querySelector('[data-act="resolve"]')?.addEventListener('click', () => setStatus('resolved'));
+  el.querySelector('[data-act="reopen"]')?.addEventListener('click', () => setStatus('new'));
+  el.querySelector('[data-act="del"]')?.addEventListener('click', async () => {
+    const what = f.subject ? `"${f.subject}"` : 'this feedback';
+    if (!confirm(`Delete ${what}? This cannot be undone.`)) return;
+    try {
+      // return=representation so we can confirm a row was actually removed — a
+      // missing RLS DELETE policy returns 204 with an empty body (silent no-op).
+      const r = await api(`/rest/v1/feedback?id=eq.${f.id}`, { method: 'DELETE', headers: { Prefer: 'return=representation' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const deleted = await r.json().catch(() => []);
+      if (!Array.isArray(deleted) || !deleted.length) throw new Error('nothing deleted (permission?)');
+      el.remove(); toast('Feedback deleted'); refreshFeedbackCount();
+    } catch (e) { toast('Delete failed: ' + e.message); }
+  });
+  return el;
+}
+
+/* ============================================================================
+   Projects CMS — manages public.upcoming_projects (V² Upcoming Projects page).
+   ========================================================================== */
+let PROJ_ROWS = [];
+
+async function loadProjectsAdmin() {
+  const list = $('projList');
+  if (list) list.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const r = await api('/rest/v1/upcoming_projects?select=*&order=sort_order.asc,created_at.asc&limit=500');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    PROJ_ROWS = await r.json();
+    renderProjectsAdmin(PROJ_ROWS);
+  } catch (e) {
+    if (list) list.innerHTML = `<p class="muted">Load error: ${escapeHtml(e.message)}. If this is the first run, apply <code>supabase/migrations/0013_upcoming_projects.sql</code> in the SQL editor.</p>`;
+  }
+  refreshProjectCount();
+}
+
+async function refreshProjectCount() {
+  const n = await countOf('upcoming_projects');
+  if ($('projCount')) $('projCount').textContent = n ? ` (${n})` : '';
+}
+
+function renderProjectsAdmin(rows) {
+  const list = $('projList');
+  if ($('projHdrCount')) $('projHdrCount').textContent = `(${rows.length})`;
+  if (!list) return;
+  if (!rows.length) { list.innerHTML = '<p class="muted">No projects yet. Click <b>+ Add project</b> to create one.</p>'; return; }
+  list.innerHTML = '';
+  rows.forEach((p, i) => list.appendChild(projectCard(p, i, rows.length)));
+}
+
+function projectCard(p, i, n) {
+  const el = document.createElement('div');
+  el.className = 'draft';
+  const tags = Array.isArray(p.tags) ? p.tags : [];
+  el.innerHTML = `
+    <div class="head">
+      <div>
+        <b>${escapeHtml(p.title || p.slug)}</b>
+        <span class="pill">${escapeHtml(p.status || 'concept')}</span>
+        ${p.is_published
+          ? '<span class="pill" style="color:var(--good);border-color:var(--good)">live</span>'
+          : '<span class="pill" style="color:var(--muted)">hidden</span>'}
+        <span class="muted"> · #${p.sort_order ?? 0} · ${escapeHtml(p.slug)}</span>
+      </div>
+      <div class="acts">
+        <button data-act="up" ${i === 0 ? 'disabled' : ''} title="Move up">▲</button>
+        <button data-act="down" ${i === n - 1 ? 'disabled' : ''} title="Move down">▼</button>
+        <button data-act="edit">Edit</button>
+        <button data-act="pub">${p.is_published ? 'Unpublish' : 'Publish'}</button>
+        <button class="bad" data-act="del">Delete</button>
+      </div>
+    </div>
+    ${p.blurb ? `<div class="muted" style="margin:6px 0;white-space:pre-wrap">${escapeHtml(p.blurb)}</div>` : ''}
+    ${tags.length ? `<div style="margin:4px 0">${tags.map((t) => `<span class="pill">${escapeHtml(t)}</span>`).join(' ')}</div>` : ''}
+    ${p.image_url ? `<div class="muted" style="font-size:.8rem">🖼 ${escapeHtml(p.image_url)}</div>` : ''}`;
+
+  el.querySelector('[data-act="edit"]').onclick = () => openProjectForm(p);
+  el.querySelector('[data-act="del"]').onclick = () => deleteProject(p);
+  el.querySelector('[data-act="pub"]').onclick = async () => {
+    try { await patchProject(p.id, { is_published: !p.is_published }); toast(p.is_published ? 'Unpublished' : 'Published'); loadProjectsAdmin(); }
+    catch (e) { toast('Failed: ' + e.message); }
+  };
+  el.querySelector('[data-act="up"]').onclick = () => moveProject(i, -1);
+  el.querySelector('[data-act="down"]').onclick = () => moveProject(i, 1);
+  return el;
+}
+
+async function patchProject(id, patch) {
+  const r = await api(`/rest/v1/upcoming_projects?id=eq.${id}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify(patch),
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+}
+
+// Reorder by renumbering all rows to clean 0,10,20… positions after the move.
+async function moveProject(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= PROJ_ROWS.length) return;
+  const arr = PROJ_ROWS.slice();
+  const [it] = arr.splice(i, 1);
+  arr.splice(j, 0, it);
+  try {
+    for (let k = 0; k < arr.length; k++) {
+      if ((arr[k].sort_order ?? -1) !== k * 10) await patchProject(arr[k].id, { sort_order: k * 10 });
+    }
+    toast('Reordered'); loadProjectsAdmin();
+  } catch (e) { toast('Reorder failed: ' + e.message); }
+}
+
+async function deleteProject(p) {
+  if (!confirm(`Delete "${p.title || p.slug}"? This cannot be undone. (Votes recorded under project:${p.slug} are stored separately and are kept.)`)) return;
+  try {
+    // return=representation so a missing DELETE policy (silent 204) is caught
+    const r = await api(`/rest/v1/upcoming_projects?id=eq.${p.id}`, { method: 'DELETE', headers: { Prefer: 'return=representation' } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const del = await r.json().catch(() => []);
+    if (!Array.isArray(del) || !del.length) throw new Error('nothing deleted (permission?)');
+    toast('Project deleted'); loadProjectsAdmin();
+  } catch (e) { toast('Delete failed: ' + e.message); }
+}
+
+function openProjectForm(p) {
+  const f = $('projForm');
+  f.classList.remove('hidden');
+  $('projFormTitle').textContent = p ? 'Edit project' : 'Add project';
+  $('pf_id').value     = p ? p.id : '';
+  $('pf_title').value  = p ? (p.title || '') : '';
+  $('pf_slug').value   = p ? (p.slug || '') : '';
+  $('pf_blurb').value  = p ? (p.blurb || '') : '';
+  $('pf_status').value = p ? (p.status || 'concept') : 'concept';
+  $('pf_icon').value   = p ? (p.icon || 'spark') : 'spark';
+  $('pf_tags').value   = p ? ((Array.isArray(p.tags) ? p.tags : []).join(', ')) : '';
+  $('pf_order').value  = p ? (p.sort_order ?? 0) : (PROJ_ROWS.length * 10);
+  $('pf_image').value  = p ? (p.image_url || '') : '';
+  $('pf_pub').checked  = p ? !!p.is_published : true;
+  $('pf_msg').textContent = '';
+  f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  $('pf_title').focus();
+}
+
+async function saveProject() {
+  const id    = $('pf_id').value.trim();
+  const slug  = $('pf_slug').value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+  const title = $('pf_title').value.trim();
+  const msg   = $('pf_msg');
+  msg.className = 'muted';
+  if (!title) { msg.textContent = 'Title is required.'; return; }
+  if (!slug)  { msg.textContent = 'Slug is required.'; return; }
+  const tags = $('pf_tags').value.split(',').map((s) => s.trim()).filter(Boolean);
+  const body = {
+    slug, title,
+    blurb: $('pf_blurb').value.trim(),
+    status: $('pf_status').value,
+    icon: $('pf_icon').value,
+    tags,
+    image_url: $('pf_image').value.trim() || null,
+    sort_order: parseInt($('pf_order').value, 10) || 0,
+    is_published: $('pf_pub').checked,
+  };
+  $('pf_save').disabled = true; msg.textContent = 'Saving…';
+  try {
+    const r = id
+      ? await api(`/rest/v1/upcoming_projects?id=eq.${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(body) })
+      : await api('/rest/v1/upcoming_projects', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(body) });
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      throw new Error('HTTP ' + r.status + (/duplicate key/i.test(t) ? ' — slug already exists' : (t ? ' — ' + t.slice(0, 120) : '')));
+    }
+    toast(id ? 'Project updated' : 'Project added');
+    $('projForm').classList.add('hidden');
+    loadProjectsAdmin();
+  } catch (e) { msg.textContent = 'Save failed: ' + e.message; }
+  finally { $('pf_save').disabled = false; }
+}
+
 async function loadFlags() {
   const status = $('flagStatus') ? $('flagStatus').value : 'open';
   let url = '/rest/v1/vacancy_flags?select=*&order=endorsements.desc,created_at.desc&limit=500';
@@ -2061,13 +2658,9 @@ async function loadFlags() {
 }
 
 async function refreshFlagCount() {
-  try {
-    const r = await api('/rest/v1/vacancy_flags?status=eq.open&select=id');
-    if (!r.ok) return;
-    const rows = await r.json();
-    const badge = $('flagCount');
-    if (badge) badge.textContent = rows.length ? `(${rows.length})` : '';
-  } catch { /* */ }
+  const n = await countOf('vacancy_flags?status=eq.open');
+  const badge = $('flagCount');
+  if (badge) badge.textContent = n ? `(${n})` : '';
 }
 
 function renderFlags(rows) {
@@ -2203,12 +2796,8 @@ function _updSortable(u) {
 }
 
 async function refreshUpdatesCount() {
-  try {
-    const r = await api('/rest/v1/vacancy_updates?status=eq.pending&select=id');
-    if (!r.ok) return;
-    const n = (await r.json()).length;
-    const badge = $('updatesCount'); if (badge) badge.textContent = n ? `(${n})` : '';
-  } catch { /* */ }
+  const n = await countOf('vacancy_updates?status=eq.pending');
+  const badge = $('updatesCount'); if (badge) badge.textContent = n ? `(${n})` : '';
 }
 
 function renderUpdates() {
@@ -2358,7 +2947,3 @@ function updateCard(u) {
   return el;
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}

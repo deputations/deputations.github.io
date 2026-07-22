@@ -9,7 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=ms26">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="style.css?v=ms33">
   <link rel="stylesheet" href="navbar.css?v=2">
   <link rel="stylesheet" href="report-vacancy.css?v=3">
   <script src="config.js?v=sb2"></script>
@@ -32,11 +33,12 @@
     <div class="nav-links">
       <a href="/index.html">Home</a>
       <a href="/rules.html">Rules</a>
-      <a href="/Rules/faq.html">FAQs</a>
+      <a href="/faq.html">FAQs</a>
       <a href="/defex.html">DeFeX</a>
       <a href="/report-vacancy.html" class="active">Report Vacancy</a>
       <a href="/contact.html">Contact</a>
       <a href="/my-deputation.html">My Deputation</a>
+      <a href="/upcoming-projects.html">Upcoming Projects</a>
     </div>
   </nav>
 
@@ -267,6 +269,12 @@
   <div class="rv-toast" id="rvToast" role="status" aria-live="polite" hidden></div>
 
   <script src="report-vacancy.js?v=sb3"></script>
-  <script defer src="site-widgets.js?v=13"></script>
+  <script defer src="site-widgets.js?v=21"></script>
+  <!-- BEGIN hero-wave -->
+  <script type="importmap">
+  { "imports": { "three": "/vendor/three.module.js?v=170" } }
+  </script>
+  <script type="module" src="/hero-wave.js?v=2"></script>
+  <!-- END hero-wave -->
 </body>
 </html>

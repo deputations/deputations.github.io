@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 import re
 import unicodedata
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -42,7 +42,7 @@ _XLSX_CANDIDATES = [
 ]
 SRC_XLSX = next((Path(p) for p in _XLSX_CANDIDATES if p and Path(p).exists()), None)
 
-METHODOLOGY_VERSION = "0.1.0-beta"
+METHODOLOGY_VERSION = "0.2.0-beta"
 SURVEY_URL = "https://script.google.com/macros/s/AKfycbzr1Jr7kFctZ4zHObJlPa8M_pR6zngWqx2dxClDFXkZ-QZSKa2fLVwtXTEca2lGICLB/exec"
 
 EXPECTED_COLUMNS = [
@@ -153,12 +153,21 @@ def load_master():
         mname = m["name"]
         ministry_keys[normkey(mname)] = mname
         for o in m["organisations"]:
+            oname = o["name"]
+            otype = o.get("type") or ""
+            # Normalise org types the master mislabels (mostly "Attached Office"):
+            #   "Ministry of X (Secretariat)" -> Ministry   (the ministry HQ)
+            #   "Department of X"              -> Department
+            if oname.strip().lower().endswith("(secretariat)"):
+                otype = "Ministry"
+            elif oname.strip().lower().startswith("department of"):
+                otype = "Department"
             orgs.append({
-                "id": f"{slugify(mname)}__{slugify(o['name'])}",
-                "name": o["name"],
+                "id": f"{slugify(mname)}__{slugify(oname)}",
+                "name": oname,
                 "ministry": mname,
-                "type": o.get("type") or "",
-                "_nk_name": normkey(o["name"]),
+                "type": otype,
+                "_nk_name": normkey(oname),
                 "_nk_ministry": normkey(mname),
             })
     return orgs, ministry_keys
@@ -222,101 +231,98 @@ PENALTY_SENIOR_ONLY = 15
 PENALTY_FCFS = 8
 
 
-def compute_dex(row):
-    """Return (dex_score, band, signals, internal_flags). dex_score may be None if Unrated."""
-    allowed = (row.get("Deputation_Allowed") or "").strip()
-    if allowed not in BASE_SCORE:
-        return None, "Unrated", [], {}
+def band_for(dex):
+    if dex >= 80: return "Deputation-friendly"
+    if dex >= 65: return "Generally supportive"
+    if dex >= 50: return "Mixed"
+    if dex >= 35: return "Restrictive"
+    return "Very restrictive"
 
-    B = BASE_SCORE[allowed]
-    penalties = 0
-    signals = []
 
-    # Vacancy-based: column has YES, or free-text condition that's clearly vacancy
-    vac_raw = (row.get("Allow_Vacancy_Based") or "").strip()
-    if yn({"x": vac_raw}.get("x")) or "vacancy" in vac_raw.lower():
-        if vac_raw and not yn(vac_raw):
-            pass  # still treat as vacancy condition
+def _has_vacancy(row):
+    raw = (row.get("Allow_Vacancy_Based") or "").strip()
+    return yn(raw) or "vacancy" in raw.lower()
+
+
+def aggregate_org(rows):
+    """Combine ALL of an org's response rows into one cumulative score + confidence.
+
+    Cumulative model — an org's ranking reflects every response collected for it,
+    not a single row (the survey accumulates responses over the month):
+      - Base B:    consensus Deputation_Allowed (most common value; ties -> most
+                   conservative, i.e. lowest base score).
+      - Penalties: a friction condition (vacancy / senior-only / FCFS) counts only
+                   when a MAJORITY of responses report it — one outlier can neither
+                   tank nor clear an org.
+      - Evidence:  +8 if any official OM; +2 per community response, capped at +8.
+      - Confidence rises with response volume and agreement, using the published
+                   weights: reports .25 · official .40 · recency .15 · consistency
+                   .10 · stage .10.
+    Returns a score dict, or None if no response carries a usable Deputation_Allowed.
+    Backward-compatible: a single row reproduces the old per-row score exactly.
+    """
+    n = len(rows)
+
+    # Base — consensus Deputation_Allowed across the responses.
+    valid = [(r.get("Deputation_Allowed") or "").strip() for r in rows]
+    valid = [a for a in valid if a in BASE_SCORE]
+    if not valid:
+        return None
+    counts = Counter(valid)
+    top = max(counts.values())
+    consensus = min((a for a in counts if counts[a] == top), key=lambda a: BASE_SCORE[a])
+    B = BASE_SCORE[consensus]
+    agreement = counts[consensus] / len(valid)            # 1.0 = unanimous
+
+    # Penalties — applied only on majority report.
+    def share(pred):
+        return sum(1 for r in rows if pred(r)) / n
+    penalties, signals = 0, []
+    if share(_has_vacancy) >= 0.5:
         penalties += PENALTY_VACANCY
         signals.append({"key": "vacancy_based", "label": "Vacancy-based release", "weight": -PENALTY_VACANCY})
-
-    # Senior only
-    if yn(row.get("Allow_Senior_Only")):
+    if share(lambda r: yn(r.get("Allow_Senior_Only"))) >= 0.5:
         penalties += PENALTY_SENIOR_ONLY
         signals.append({"key": "senior_only", "label": "Senior-rank-only release", "weight": -PENALTY_SENIOR_ONLY})
-
-    # FCFS — only count clean YES; the one long free-text value is a misfiled vacancy condition
-    fcfs_raw = (row.get("Allow_FCFS") or "").strip()
-    if yn(fcfs_raw):
+    if share(lambda r: yn(r.get("Allow_FCFS"))) >= 0.5:
         penalties += PENALTY_FCFS
         signals.append({"key": "fcfs", "label": "FCFS / quota cap", "weight": -PENALTY_FCFS})
-
-    # Highly beneficial: do NOT penalise; show as condition only
-    if yn(row.get("Allow_Highly_Beneficial")):
+    if share(lambda r: yn(r.get("Allow_Highly_Beneficial"))) >= 0.5:
         signals.append({"key": "highly_beneficial", "label": "Release only if highly beneficial to parent", "weight": 0})
 
-    # Evidence bonus
-    E = 0
-    if (row.get("Source_OM") or "").strip():
-        E += 8
-    if (row.get("Source_Personal") or "").strip():
-        E += 2
-    E = min(E, 8)
+    # Evidence — official OM dominates; community reports accumulate (capped).
+    n_om = sum(1 for r in rows if (r.get("Source_OM") or "").strip())
+    n_personal = sum(1 for r in rows if (r.get("Source_Personal") or "").strip())
+    has_om, has_personal = n_om > 0, n_personal > 0
+    E = min((8 if has_om else 0) + 2 * n_personal, 8)
 
     dex = clamp(B - penalties + E, 0, 100)
+    band = band_for(dex)
+    if penalties > 0 and dex > 75:            # friction caps out of the "friendly" band
+        dex, band = 75, "Generally supportive"
 
-    if dex >= 80:
-        band = "Deputation-friendly"
-    elif dex >= 65:
-        band = "Generally supportive"
-    elif dex >= 50:
-        band = "Mixed"
-    elif dex >= 35:
-        band = "Restrictive"
-    else:
-        band = "Very restrictive"
+    # Confidence — methodology weights, now scaled by response volume + agreement.
+    reports_cov = 1.0 if has_om else min(1.0, 0.5 + 0.5 * max(0, n_personal - 1) / 3)  # 1 report .5 … 4 .1.0
+    c = (0.25 * reports_cov
+         + 0.40 * (1.0 if has_om else 0.0)
+         + 0.15 * 1.0
+         + 0.10 * agreement
+         + 0.10 * (0.4 if has_personal else 0.2))
 
-    # Cap rules: if any penalty applies, DEX cannot enter the "friendly" band on slim evidence
-    if penalties > 0 and dex > 75:
-        dex = 75
-        band = "Generally supportive"
+    needs_review = any(yn(r.get("Allow_Suspect_Bribe")) for r in rows)
+    if needs_review:
+        c = min(c, 0.45)                      # cap at Medium until human-reviewed
 
-    flags = {}
-    if yn(row.get("Allow_Suspect_Bribe")):
-        flags["integrity_review"] = True  # internal only; never written to public files
+    if c >= 0.70: conf_band = "High"
+    elif c >= 0.45: conf_band = "Medium"
+    elif c >= 0.20: conf_band = "Low"
+    else: conf_band = "Insufficient"
 
-    return dex, band, signals, flags
-
-
-def compute_confidence(row, internal_flags):
-    has_om = bool((row.get("Source_OM") or "").strip())
-    has_personal = bool((row.get("Source_Personal") or "").strip())
-
-    # weights (sum to 1.0):
-    #   reports coverage = 0.25 (here always 1 row → 0.125 when only personal, 0.25 when OM)
-    #   official source  = 0.40
-    #   recency          = 0.15 (assume current; tightens once timestamps exist)
-    #   consistency      = 0.10 (single source → 1.0; multiple contradictory will drop later)
-    #   stage coverage   = 0.10 (current rows cover policy stage only)
-    c = 0.0
-    c += 0.25 * (1.0 if has_om else (0.5 if has_personal else 0.0))
-    c += 0.40 * (1.0 if has_om else 0.0)
-    c += 0.15 * 1.0
-    c += 0.10 * 1.0
-    c += 0.10 * (0.4 if has_personal else 0.2)  # policy-stage only for now
-
-    if internal_flags.get("integrity_review"):
-        c = min(c, 0.45)  # cap at Medium until human-reviewed
-
-    if c >= 0.70:
-        band = "High"
-    elif c >= 0.45:
-        band = "Medium"
-    elif c >= 0.20:
-        band = "Low"
-    else:
-        band = "Insufficient"
-    return round(c, 3), band
+    return {
+        "dex": dex, "band": band, "signals": signals,
+        "confidence": round(c, 3), "confidence_band": conf_band,
+        "has_om": has_om, "has_personal": has_personal, "needs_review": needs_review,
+    }
 
 
 # ---------- main -------------------------------------------------------------
@@ -332,6 +338,8 @@ def main():
     score_map = {}
     unresolved = []
     synth_secretariats = {}
+    org_rows = {}          # org_id -> [source rows], for cumulative scoring
+    org_report_ids = {}    # org_id -> [report_id]
 
     for row in rows_in:
         ministry = (str(row.get("Ministry") or "")).strip()
@@ -353,7 +361,7 @@ def main():
                     sec_id = f"{slugify(ministry)}__{slugify(sec_name_guess)}"
                     sec = {
                         "id": sec_id, "name": sec_name_guess, "ministry": ministry,
-                        "type": "Ministry Secretariat",
+                        "type": "Ministry",
                         "_nk_name": normkey(sec_name_guess), "_nk_ministry": normkey(ministry),
                     }
                     orgs.append(sec)
@@ -368,15 +376,13 @@ def main():
             unresolved.append({"ministry": ministry, "department": dept, "reason": how})
             continue
 
-        dex, band, signals, flags = compute_dex(row)
-        conf, conf_band = compute_confidence(row, flags)
-
-        # Build public report (no Suspect_Bribe leak)
+        # Build the public report (Suspect_Bribe never leaks here) and stash the row;
+        # scoring runs after the loop so each org's score reflects ALL its responses.
         report_id = f"r_{len(reports)+1:04d}"
         reports.append({
             "id": report_id,
             "org_id": target["id"],
-            "type": "policy",  # MVP rows describe org policy; survey will add 'experience' type
+            "type": "policy",  # survey will add 'experience'-type rows over time
             "deputation_allowed": (row.get("Deputation_Allowed") or "").strip() or None,
             "conditions": {
                 "vacancy_based": (row.get("Allow_Vacancy_Based") or "").strip() or None,
@@ -391,24 +397,15 @@ def main():
             },
             "match_quality": how,
         })
+        org_rows.setdefault(target["id"], []).append(row)
+        org_report_ids.setdefault(target["id"], []).append(report_id)
 
-        # Aggregate into score_map (last-write-wins for MVP since data is one row per org)
-        existing = score_map.get(target["id"])
-        if existing is None or (existing["confidence"] < conf):
-            score_map[target["id"]] = {
-                "org_id": target["id"],
-                "dex": dex,
-                "band": band,
-                "confidence": conf,
-                "confidence_band": conf_band,
-                "signals": signals,
-                "report_ids": [report_id],
-                "has_om": bool((row.get("Source_OM") or "").strip()),
-                "has_personal": bool((row.get("Source_Personal") or "").strip()),
-                "needs_review": flags.get("integrity_review", False),  # internal
-            }
-        else:
-            existing["report_ids"].append(report_id)
+    # ---------- cumulative scoring: one score per org, from ALL its responses ---
+    for org_id, rows in org_rows.items():
+        agg = aggregate_org(rows)
+        if agg is None:
+            continue
+        score_map[org_id] = {**agg, "org_id": org_id, "report_ids": org_report_ids[org_id]}
 
     # ---------- organisations.json (public) ---------------------------------
     pub_orgs = []
@@ -479,6 +476,8 @@ def main():
             "integrity_flag_policy": "Submissions alleging integrity issues are NEVER displayed publicly. They route to manual review and may lower confidence."
         },
         "changelog": [
+            {"version": "0.2.0-beta", "date": "2026-06-15",
+             "note": "Cumulative scoring. An organisation's DeFeX now reflects ALL responses collected for it, not a single row: the base uses the consensus Deputation_Allowed, friction penalties apply only on a majority report, community reports add +2 each (capped +8), and confidence rises with response volume and agreement. Rankings are rebuilt monthly."},
             {"version": "0.1.0-beta", "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
              "note": "Initial public beta. Community survey was floated in February 2025 and received 114 responses; this version derives the DeFeX formula from those one-row-per-org policy snapshots. Per-applicant timeline reports (forwarding, NOC, vigilance, relieving) will begin populating as the survey continues to receive submissions."}
         ]

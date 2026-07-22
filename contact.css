@@ -311,6 +311,54 @@
   color: var(--ct-primary); font-size: 1.2rem; line-height: 1;
 }
 
+/* ---------- Employment News subscription ---------- */
+.ct-subscribe {
+  position: relative;
+  overflow: hidden;
+  padding: 4rem 1.3rem 1.1rem;   /* extra top room for the masthead band */
+  background: var(--ct-card-2);
+  border: 1px solid var(--ct-border);
+  border-radius: 18px;
+}
+/* Employment News masthead as a soft header band across the top; the card
+   content sits below it (via padding-top) so nothing overlaps the text. */
+.ct-subscribe::before {
+  content: "";
+  position: absolute;
+  top: 1rem; left: 1.3rem; right: 1.3rem;
+  height: 2.6rem;
+  background: url("/assets/brand/employment-news-masthead.jpg") center / contain no-repeat;
+  opacity: .6;
+  pointer-events: none;
+}
+.ct-subscribe > * { position: relative; z-index: 1; }
+.ct-sub-head { display: flex; align-items: center; gap: .85rem; margin-bottom: .7rem; }
+.ct-sub-icon {
+  width: 46px; height: 46px; flex-shrink: 0;
+  border-radius: 14px; display: inline-grid; place-items: center;
+  background: rgba(124,140,255,.12); color: var(--ct-accent);
+  border: 1px solid rgba(124,140,255,.28);
+}
+.ct-sub-icon svg { width: 22px; height: 22px; }
+.ct-sub-head h3 { margin: .3rem 0 0; font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; }
+.ct-sub-text { margin: 0 0 .85rem; color: var(--ct-soft); font-size: .9rem; line-height: 1.55; }
+.ct-sub-list {
+  list-style: none; padding: 0; margin: 0 0 1.05rem;
+  display: flex; flex-direction: column; gap: .5rem;
+}
+.ct-sub-list li {
+  font-size: .9rem; color: var(--ct-soft);
+  padding-left: 1.7rem; position: relative; line-height: 1.4;
+}
+.ct-sub-list li::before {
+  content: "✓"; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 18px; height: 18px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgba(119,230,166,.16); color: var(--ct-success);
+  font-size: .68rem; font-weight: 700;
+}
+.ct-subscribe .ct-btn { width: 100%; justify-content: center; }
+
 /* ---------- Feedback form ---------- */
 .ct-form-icon {
   width: 46px; height: 46px; flex-shrink: 0;
@@ -341,6 +389,9 @@
 }
 
 .ct-form { display: grid; gap: 1rem; }
+/* Progressive-disclosure wrapper: revealed once a category is chosen. Grid so
+   its fields keep the same 1rem rhythm as the rest of the form. */
+#ctRest  { display: grid; gap: 1rem; }
 .ct-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
 .ct-field { display: grid; gap: .35rem; min-width: 0; }
 .ct-field label { font-size: .84rem; font-weight: 600; color: var(--ct-soft); }

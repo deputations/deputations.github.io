@@ -72,11 +72,11 @@
   ".sw-counter *,.sw-fb *{box-sizing:border-box}" +
 
   /* palette (dark default) */
-  ".sw-counter,.sw-fb,.sw-footer,.sw-modal{--sw-surface:rgba(15,23,42,.82);--sw-surface2:rgba(30,41,59,.9);" +
+  ".sw-counter,.sw-fb,.sw-footer,.sw-modal,.sw-menu-btn,.sw-sheet{--sw-surface:rgba(15,23,42,.82);--sw-surface2:rgba(30,41,59,.9);" +
     "--sw-border:rgba(148,163,184,.18);--sw-text:#f8fafc;--sw-muted:#94a3b8;" +
     "--sw-primary:#22d3ee;--sw-accent:#a78bfa;--sw-good:#34d399;--sw-bad:#f87171;" +
     "--sw-gold:#fbbf24;--sw-shadow:0 14px 40px -12px rgba(0,0,0,.6)}" +
-  "html[data-theme='light'] .sw-counter,html[data-theme='light'] .sw-fb,html[data-theme='light'] .sw-footer,html[data-theme='light'] .sw-modal{" +
+  "html[data-theme='light'] .sw-counter,html[data-theme='light'] .sw-fb,html[data-theme='light'] .sw-footer,html[data-theme='light'] .sw-modal,html[data-theme='light'] .sw-menu-btn,html[data-theme='light'] .sw-sheet{" +
     "--sw-surface:rgba(255,255,255,.92);--sw-surface2:rgba(248,250,252,.96);" +
     "--sw-border:rgba(15,23,42,.10);--sw-text:#0f172a;--sw-muted:#64748b;" +
     "--sw-primary:#0284c7;--sw-accent:#7c3aed;--sw-good:#16a34a;--sw-bad:#e11d48;" +
@@ -110,56 +110,63 @@
   ".sw-counter.sw-collapsed:hover .sw-c{display:inline-flex;transform:none;opacity:1}" +
   ".sw-counter.sw-collapsed:hover .sw-min{display:none}" +
 
-  /* ===== FEEDBACK (top-right) ===== */
-  ".sw-fb{top:76px;right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:10px}" +
-  ".sw-fb .launch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;border:1px solid var(--sw-border);" +
+  /* ===== FEEDBACK (top-right): like (heart + count) + dislike (→ feedback) ===== */
+  ".sw-fb{top:76px;right:16px;display:flex;flex-direction:row;align-items:center;gap:8px}" +
+  ".sw-fb button{display:inline-flex;align-items:center;gap:7px;cursor:pointer;border:1px solid var(--sw-border);" +
     "background:var(--sw-surface);-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);" +
-    "color:var(--sw-text);border-radius:999px;padding:8px 14px;box-shadow:var(--sw-shadow);font:inherit;font-weight:700;font-size:.86rem;" +
+    "color:var(--sw-text);border-radius:999px;padding:8px 13px;box-shadow:var(--sw-shadow);font:inherit;font-weight:700;font-size:.86rem;" +
     "transition:transform .18s ease,border-color .18s ease}" +
-  ".sw-fb .launch:hover{transform:translateY(-1px);border-color:var(--sw-primary)}" +
-  ".sw-fb .launch svg{width:18px;height:18px;color:var(--sw-bad)}" +
-  ".sw-fb .launch .cnt{font-variant-numeric:tabular-nums;color:var(--sw-text)}" +
-  ".sw-fb .launch .cap{color:var(--sw-muted);font-weight:600;font-size:.8rem}" +
-
-  ".sw-fb .panel{width:min(300px,86vw);background:var(--sw-surface);-webkit-backdrop-filter:blur(16px) saturate(160%);backdrop-filter:blur(16px) saturate(160%);" +
-    "border:1px solid var(--sw-border);border-radius:16px;box-shadow:var(--sw-shadow);color:var(--sw-text);padding:16px;" +
-    "transform-origin:top right;transform:scale(.92);opacity:0;pointer-events:none;transition:transform .22s cubic-bezier(.16,1,.3,1),opacity .2s ease}" +
-  ".sw-fb.open .panel{transform:none;opacity:1;pointer-events:auto}" +
-  ".sw-fb .panel h4{font-family:'Sora','Plus Jakarta Sans',sans-serif;margin:0 0 12px;font-size:1.02rem;font-weight:700}" +
-  ".sw-fb .row{display:flex;gap:8px}" +
-  ".sw-fb .vote{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;font:inherit;font-weight:700;" +
-    "padding:9px 10px;border-radius:11px;border:1px solid var(--sw-border);background:var(--sw-surface2);color:var(--sw-text);transition:all .16s ease}" +
-  ".sw-fb .vote svg{width:17px;height:17px}" +
-  ".sw-fb .vote.up:hover{border-color:var(--sw-good);color:var(--sw-good);transform:translateY(-1px)}" +
-  ".sw-fb .vote.down:hover{border-color:var(--sw-bad);color:var(--sw-bad);transform:translateY(-1px)}" +
-  ".sw-fb .vote.up.on{background:var(--sw-good);border-color:var(--sw-good);color:#04210f}" +
-  ".sw-fb .vote.up.on svg{animation:swPop .4s cubic-bezier(.34,1.56,.64,1)}" +
+  ".sw-fb .dislike{padding:8px 11px}" +
+  ".sw-fb .like:hover{transform:translateY(-1px);border-color:var(--sw-bad)}" +
+  ".sw-fb .dislike:hover{transform:translateY(-1px);border-color:var(--sw-primary)}" +
+  ".sw-fb button svg{width:20px;height:20px;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}" +
+  ".sw-fb .like .hp{fill:none;stroke:var(--sw-bad);stroke-width:1.9;stroke-linejoin:round;transition:fill .2s ease}" +
+  ".sw-fb .like:hover .hp{fill:rgba(244,63,94,.14)}" +
+  ".sw-fb .like:hover svg,.sw-fb .dislike:hover svg{transform:scale(1.1)}" +
+  ".sw-fb .dislike svg{color:var(--sw-muted)}" +
+  ".sw-fb .dislike:hover svg{color:var(--sw-primary)}" +
+  ".sw-fb .like .cnt{font-variant-numeric:tabular-nums;color:var(--sw-text);min-width:.7em;text-align:center}" +
+  ".sw-fb .like.on{border-color:var(--sw-bad)}" +
+  ".sw-fb .like.on .hp{fill:url(#swHeartGrad);stroke:none}" +
+  ".sw-fb .like.on svg{filter:drop-shadow(0 2px 6px rgba(225,29,72,.4));animation:swPop .45s cubic-bezier(.34,1.56,.64,1)}" +
+  ".sw-fb.liked .dislike{display:none}" +
   "@keyframes swPop{0%{transform:scale(.6)}60%{transform:scale(1.3)}100%{transform:scale(1)}}" +
-  ".sw-fb .thanks{display:none;align-items:center;gap:8px;margin-top:10px;color:var(--sw-good);font-weight:600;font-size:.9rem}" +
-  ".sw-fb.thanked .thanks{display:flex}" +
-  ".sw-fb .improve{display:none;margin-top:12px}" +
-  ".sw-fb.improving .improve{display:block}" +
-  ".sw-fb.improving .row,.sw-fb.improving h4{display:none}" +
-  ".sw-fb .improve p{margin:0 0 9px;font-weight:700;font-size:.92rem}" +
-  ".sw-fb .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}" +
-  ".sw-fb .chip{cursor:pointer;font:inherit;font-size:.76rem;font-weight:600;padding:6px 11px;border-radius:999px;" +
-    "border:1px solid var(--sw-border);background:transparent;color:var(--sw-muted);transition:all .15s ease}" +
-  ".sw-fb .chip:hover{border-color:var(--sw-bad);color:var(--sw-bad)}" +
-  ".sw-fb .chip.on{background:var(--sw-bad);border-color:var(--sw-bad);color:#fff}" +
-  ".sw-fb .cta{display:inline-flex;align-items:center;gap:7px;width:100%;justify-content:center;cursor:pointer;font:inherit;font-weight:700;" +
-    "padding:10px;border-radius:11px;border:none;background:linear-gradient(135deg,var(--sw-primary),var(--sw-accent));color:#fff;text-decoration:none}" +
-  ".sw-fb .cta:hover{filter:brightness(1.06)}" +
-  ".sw-fb .x{position:absolute;top:9px;right:11px;cursor:pointer;border:none;background:none;color:var(--sw-muted);font-size:1.1rem;line-height:1;padding:2px 6px;border-radius:8px}" +
-  ".sw-fb .x:hover{color:var(--sw-text)}" +
-  ".sw-fb .panel{position:relative}" +
 
   /* ===== DISCLAIMER — footer link + modal ===== */
-  ".sw-footer{display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;text-align:center;" +
+  ".sw-footer{position:relative;display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;text-align:center;" +
     "margin:34px auto 22px;padding:0 16px;font-family:'Plus Jakarta Sans','Inter',system-ui,sans-serif;font-size:.8rem;color:var(--sw-muted)}" +
   ".sw-footer .sep{opacity:.45}" +
+  ".sw-footer .src{opacity:.72}" +
+  ".sw-footer .flink{color:var(--sw-primary);font-weight:700;text-decoration:none}" +
+  ".sw-footer .flink:hover{color:var(--sw-accent)}" +
+  ".sw-footer .sw-updated{position:absolute;right:16px;top:50%;transform:translateY(-50%);opacity:.7;white-space:nowrap}" +
+  "@media (max-width:640px){.sw-footer .sw-updated{position:static;transform:none;opacity:.7;flex-basis:100%;margin-top:4px}}" +
   ".sw-footer .disc{cursor:pointer;font:inherit;font-weight:700;color:var(--sw-primary);background:none;border:none;" +
     "padding:4px 4px;border-radius:8px;text-decoration:underline;text-underline-offset:3px}" +
   ".sw-footer .disc:hover{color:var(--sw-accent)}" +
+
+  /* ===== MOBILE NAV (hamburger + bottom sheet, <=768px) ===== */
+  ".sw-menu-btn{display:none;align-items:center;justify-content:center;width:40px;height:40px;flex:0 0 auto;margin-left:6px;" +
+    "border-radius:12px;border:1px solid var(--sw-border);background:var(--sw-surface);color:var(--sw-text);cursor:pointer}" +
+  ".sw-menu-btn svg{width:20px;height:20px}" +
+  "@media (max-width:768px){.sw-menu-btn{display:inline-flex}}" +
+  ".sw-sheet{position:fixed;inset:0;z-index:3200;display:none;background:rgba(2,6,23,.6);" +
+    "-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}" +
+  ".sw-sheet.open{display:block}" +
+  ".sw-sheet .panel{position:absolute;left:0;right:0;bottom:0;max-height:76vh;overflow:auto;" +
+    "border-radius:20px 20px 0 0;background:var(--sw-surface2);border-top:1px solid var(--sw-border);" +
+    "box-shadow:var(--sw-shadow);padding:12px 14px calc(20px + env(safe-area-inset-bottom,0px))}" +
+  "@media (prefers-reduced-motion:no-preference){.sw-sheet.open .panel{animation:sw-sheet-up .28s cubic-bezier(.16,1,.3,1)}}" +
+  "@keyframes sw-sheet-up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}" +
+  ".sw-sheet .hdr{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 10px}" +
+  ".sw-sheet .ttl{font-weight:800;color:var(--sw-muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.12em}" +
+  ".sw-sheet .x{width:36px;height:36px;border-radius:10px;border:1px solid var(--sw-border);background:var(--sw-surface);" +
+    "color:var(--sw-text);font-size:1.05rem;cursor:pointer}" +
+  ".sw-sheet nav{display:grid;gap:4px}" +
+  ".sw-sheet nav a{display:flex;align-items:center;min-height:46px;padding:.55rem .9rem;border-radius:12px;" +
+    "color:var(--sw-text);font-weight:700;text-decoration:none;font-size:.98rem}" +
+  ".sw-sheet nav a:active{background:rgba(148,163,184,.14)}" +
+  ".sw-sheet nav a.active{background:color-mix(in srgb,var(--sw-primary) 14%,transparent);color:var(--sw-primary)}" +
   ".sw-modal{position:fixed;inset:0;z-index:10001;display:none;align-items:center;justify-content:center;padding:20px;" +
     "background:radial-gradient(circle at 20% 18%,rgba(34,211,238,.10),transparent 30%),radial-gradient(circle at 82% 82%,rgba(167,139,250,.12),transparent 28%),rgba(2,4,11,.82);" +
     "-webkit-backdrop-filter:blur(16px) saturate(120%);backdrop-filter:blur(16px) saturate(120%)}" +
@@ -181,6 +188,14 @@
   ".sw-modal .bd strong{color:var(--sw-text);font-weight:800}" +
   ".sw-modal .bd .lead{color:var(--sw-primary)}" +
   ".sw-modal .bd .sign{margin-top:4px;color:var(--sw-accent);font-weight:700}" +
+  ".sw-modal .sw-sign{display:flex;align-items:center;gap:14px;margin-top:22px;padding-top:18px;border-top:1px solid var(--sw-border)}" +
+  ".sw-sign-pic{width:66px;height:66px;flex:0 0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;" +
+    "color:#fff;background:linear-gradient(135deg,var(--sw-primary),var(--sw-accent));box-shadow:0 8px 20px -8px rgba(0,0,0,.45)}" +
+  ".sw-sign-pic svg{width:40px;height:40px;opacity:.92}" +
+  ".sw-sign-pic img{width:100%;height:100%;object-fit:cover}" +
+  ".sw-sign-info{display:flex;flex-direction:column;gap:1px;line-height:1.45}" +
+  ".sw-sign-info strong{font-family:'Sora','Plus Jakarta Sans',sans-serif;color:var(--sw-accent);font-size:1.02rem;font-weight:800}" +
+  ".sw-sign-info span{font-size:.84rem;color:var(--sw-muted)}" +
   ".sw-modal .cls{position:absolute;top:15px;right:17px;width:38px;height:38px;border-radius:50%;border:1px solid var(--sw-border);" +
     "background:var(--sw-surface2);color:var(--sw-text);cursor:pointer;font-size:1.25rem;line-height:1;display:flex;align-items:center;justify-content:center}" +
   ".sw-modal .cls:hover{border-color:var(--sw-primary);color:var(--sw-primary)}" +
@@ -215,9 +230,14 @@
   }
 
   /* SVG icons */
-  var SVG_HEART = "<svg viewBox='0 0 24 24' fill='currentColor'><path d='M12 21s-7.4-4.6-10-9.2C.7 9 1.6 5.3 4.7 4.2 6.8 3.5 9 4.3 10.2 6c.4.5.6.8.8 1.1.2-.3.4-.6.8-1.1C13.8 4.3 16 3.5 18.1 4.2c3.1 1.1 4 4.8 2.7 7.6C20.4 16.4 12 21 12 21z'/></svg>";
+  var SVG_HEART = "<svg viewBox='0 0 24 24'>" +
+    "<defs><linearGradient id='swHeartGrad' x1='3' y1='2.5' x2='20' y2='21' gradientUnits='userSpaceOnUse'>" +
+      "<stop stop-color='#ff9eb6'/><stop offset='.5' stop-color='#fb5d77'/><stop offset='1' stop-color='#e11d48'/>" +
+    "</linearGradient></defs>" +
+    "<path class='hp' d='M12 21.3l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.49L12 21.3z'/>" +
+  "</svg>";
   var SVG_UP   = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M7 10v11'/><path d='M15 5.9 14 10h5.6a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.2 22H7V10l4-9a2.5 2.5 0 0 1 4 1.9z'/></svg>";
-  var SVG_DOWN = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M17 14V3'/><path d='M9 18.1 10 14H4.4a2 2 0 0 1-2-2.3l1.4-8A2 2 0 0 1 5.8 2H17v12l-4 9a2.5 2.5 0 0 1-4-1.9z'/></svg>";
+  var SVG_DOWN = "<svg viewBox='0 0 24 24' fill='currentColor'><path d='M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L11.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z'/></svg>";
   var SVG_CHECK= "<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>";
   var SVG_ARROW= "<svg width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14'/><path d='m13 6 6 6-6 6'/></svg>";
   var SVG_SHIELD = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/><path d='m9 12 2 2 4-4'/></svg>";
@@ -313,44 +333,25 @@
 
   /* ===================== FEEDBACK ===================== */
   function buildFeedback() {
-    var page = pageKey();
-    var votedKey = "sw_voted_" + page;
+    var page = pageKey();        // originating page — used only for the feedback deep-link
+    var FB_KEY = "site";         // sentiment is one site-wide tally ("liked the website")
+    var votedKey = "sw_voted_site";
     var alreadyVoted = ls(true, votedKey);
 
     var wrap = document.createElement("div");
     wrap.className = "sw-fb";
     wrap.innerHTML =
-      "<button class='launch' aria-haspopup='dialog' aria-expanded='false' title='Rate this page'>" +
-        SVG_HEART + "<span class='cnt'>—</span><span class='cap'>found this helpful</span>" +
+      "<button class='like' title='Like the website' aria-label='Like the website'>" +
+        SVG_HEART + "<span class='cnt'>—</span>" +
       "</button>" +
-      "<div class='panel' role='dialog' aria-label='Was this page helpful?'>" +
-        "<button class='x' aria-label='Close'>×</button>" +
-        "<h4>Was this page helpful?</h4>" +
-        "<div class='row'>" +
-          "<button class='vote up'>" + SVG_UP + "Yes</button>" +
-          "<button class='vote down'>" + SVG_DOWN + "Could be better</button>" +
-        "</div>" +
-        "<div class='thanks'>" + SVG_CHECK + "<span>Thank you — glad it helped!</span></div>" +
-        "<div class='improve'>" +
-          "<p>Let us know how we can improve</p>" +
-          "<div class='chips'>" +
-            "<button class='chip' data-tag='Hard to find info'>Hard to find info</button>" +
-            "<button class='chip' data-tag='Out of date'>Out of date</button>" +
-            "<button class='chip' data-tag='Confusing'>Confusing</button>" +
-            "<button class='chip' data-tag='Missing detail'>Missing detail</button>" +
-          "</div>" +
-          "<a class='cta' href='#'>Tell us more " + SVG_ARROW + "</a>" +
-        "</div>" +
-      "</div>";
+      "<button class='dislike' title='Disliked it — Help us improve' aria-label='Disliked it — Help us improve'>" +
+        SVG_DOWN +
+      "</button>";
     document.body.appendChild(wrap);
 
-    var launch = wrap.querySelector(".launch");
-    var panel  = wrap.querySelector(".panel");
-    var cntEl  = wrap.querySelector(".cnt");
-    var upBtn  = wrap.querySelector(".vote.up");
-    var dnBtn  = wrap.querySelector(".vote.down");
-    var chips  = wrap.querySelector(".chips");
-    var cta    = wrap.querySelector(".cta");
+    var likeBtn = wrap.querySelector(".like");
+    var dislikeBtn = wrap.querySelector(".dislike");
+    var cntEl = wrap.querySelector(".cnt");
 
     // Pin to the very top-right corner. On desktop the nav links are centred, so
     // the right of the sticky navbar is empty — sit there (above the page's own
@@ -366,46 +367,34 @@
       }
     })();
 
-    function setCount(ups) { cntEl.textContent = (ups == null) ? "—" : fmt(ups); }
+    // The like count doubles as the heart's tooltip ("<N> liked the site").
+    function setCount(ups) {
+      cntEl.textContent = (ups == null) ? "—" : fmt(ups);
+      likeBtn.title = (ups == null) ? "Like the website" : (fmt(ups) + " liked the site");
+    }
 
-    // load current likes
-    if (SB_OK) rpc("get_sentiment", { p_page: page }).then(function (r) { setCount(r ? r.ups : null); });
+    // load current like tally (site-wide)
+    if (SB_OK) rpc("get_sentiment", { p_page: FB_KEY }).then(function (r) { setCount(r ? r.ups : null); });
     else setCount(null);
 
-    function openPanel() { wrap.classList.add("open"); launch.setAttribute("aria-expanded", "true"); }
-    function closePanel() { wrap.classList.remove("open"); launch.setAttribute("aria-expanded", "false"); }
-    launch.addEventListener("click", function () { wrap.classList.contains("open") ? closePanel() : openPanel(); });
-    wrap.querySelector(".x").addEventListener("click", closePanel);
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closePanel(); });
-    document.addEventListener("click", function (e) { if (!wrap.contains(e.target)) closePanel(); });
+    // Once the page is LIKED, the dislike is no longer offered — just the heart +
+    // count remains. (A dislike leaves both as-is, since it only routes to feedback.)
+    if (alreadyVoted === "up") { likeBtn.classList.add("on"); wrap.classList.add("liked"); }
 
-    if (alreadyVoted) { upBtn.disabled = dnBtn.disabled = (alreadyVoted === "up"); }
-
-    upBtn.addEventListener("click", function () {
-      upBtn.classList.add("on"); wrap.classList.add("thanked");
-      if (!ls(true, votedKey)) {
-        ls(false, votedKey, "up");
-        rpc("record_sentiment", { p_page: page, p_vote: "up" }).then(function (r) { if (r) setCount(r.ups); });
-        // optimistic bump
-        var cur = parseInt((cntEl.textContent || "0").replace(/[^0-9]/g, ""), 10) || 0; setCount(cur + 1);
-      }
-      setTimeout(closePanel, 1400);
+    // LIKE — records a site-wide thumbs-up, one per device; fills the heart.
+    likeBtn.addEventListener("click", function () {
+      likeBtn.classList.add("on");
+      wrap.classList.add("liked");                     // hides the dislike button
+      if (ls(true, votedKey)) return;                 // already voted — no double count
+      ls(false, votedKey, "up");
+      rpc("record_sentiment", { p_page: FB_KEY, p_vote: "up" }).then(function (r) { if (r) setCount(r.ups); });
+      var cur = parseInt((cntEl.textContent || "0").replace(/[^0-9]/g, ""), 10) || 0; setCount(cur + 1);
     });
 
-    dnBtn.addEventListener("click", function () { wrap.classList.add("improving"); });
-    chips.addEventListener("click", function (e) {
-      var c = e.target.closest(".chip"); if (c) c.classList.toggle("on");
-    });
-    cta.addEventListener("click", function (e) {
-      e.preventDefault();
-      if (!ls(true, votedKey)) {
-        ls(false, votedKey, "down");
-        rpc("record_sentiment", { p_page: page, p_vote: "down" });
-      }
-      var tags = [].slice.call(chips.querySelectorAll(".chip.on")).map(function (c) { return c.dataset.tag; });
-      var url = rootPrefix() + "contact.html?ref=" + encodeURIComponent(page) +
-                (tags.length ? "&tags=" + encodeURIComponent(tags.join(", ")) : "") + "#ctFormCard";
-      location.href = url;
+    // DISLIKE — never touches the count; routes straight to the feedback form,
+    // deep-linked with the page the visitor came from.
+    dislikeBtn.addEventListener("click", function () {
+      location.href = rootPrefix() + "contact.html?ref=" + encodeURIComponent(page) + "#ctFormCard";
     });
   }
 
@@ -415,13 +404,19 @@
     var foot = document.createElement("div");
     foot.className = "sw-footer";
     foot.innerHTML =
-      "<span>© Deputations — independent, AI-assisted, human-reviewed</span>" +
+      "<span>© Deputations.github.io</span>" +
       "<span class='sep'>·</span>" +
-      "<button type='button' class='disc'>Disclaimer</button>";
+      "<span class='src'>Source: Employment News &amp; official circulars</span>" +
+      "<span class='sep'>·</span>" +
+      "<span class='src'>Unofficial site — verify with the original notification</span>" +
+      "<span class='sep'>·</span>" +
+      "<button type='button' class='disc'>Disclaimer</button>" +
+      "<span class='sep'>·</span>" +
+      "<a class='flink' href='" + rootPrefix() + "contact.html'>Contact</a>";
     document.body.appendChild(foot);
 
     var paras = [
-      "<strong>Deputations Portal</strong> has been conceptualised and developed by <strong>Vivek Vishal, Section Officer</strong>, in his personal capacity, as an independent initiative to assist Government officers and officials seeking Central Government deputation opportunities.",
+      "<strong>Deputations Portal</strong> is my independent initiative to assist Government officers and officials seeking Central Government deputation opportunities.",
       "The objective of this portal is to provide a <strong>holistic, organised, and user-focused</strong> platform for deputation-related vacancies, rules, references, guidance, and supporting tools, so that users can access relevant information with greater ease and clarity.",
       "<strong class='lead'>This is not an official website.</strong> Deputations is an independent, non-official information portal. It is not the website of the Government of India or of any Ministry, Department, Organisation, Cadre Controlling Authority or public authority, and it is not affiliated with, endorsed, sponsored or authorised by any of them. This website helps you locate and access official notification PDFs and source links; please refer to those original official documents for authoritative circulars, instructions, clarifications, approvals, and administrative directions.",
       "<strong class='lead'>What the portal aims to be.</strong> Every part of this portal — the searchable vacancy dashboard, the pay-level and eligibility filters, the “days-left” and source tags, the DeFeX index, the report and feedback tools, and the personal <em>My Deputation</em> tracker — has been planned and refined for one thing: clarity and practical usefulness for someone actually trying to go on deputation. It has gone through <strong>281+ revisions over about two months</strong>, and continues to be improved.",
@@ -429,9 +424,22 @@
       "<strong class='lead'>About DeFeX (Deputation Friendliness Index).</strong> DeFeX is an original concept and naming developed for this portal — an attempt to indicate how convenient, supportive, rational and predictable it is to proceed on deputation from a given Ministry, Department, Organisation or Cadre Controlling Authority. It is currently in <strong>beta</strong>, built on a deputation survey conducted in <strong>October–December 2025</strong>, and it will keep evolving. It will be revised and refined as more feedback, documentary inputs, correction requests, official clarifications, and user experiences are received. The purpose of DeFeX is constructive. It is intended not only to help Government officials make more informed deputation-related decisions, but also to provide Ministries, Departments, Organisations, and Cadre Controlling Authorities with a feedback-oriented perspective that may assist in improving officer experience, procedural rationality, transparency, and uniformity across organisations. It is meant to be <strong>constructive</strong> — to help you choose better, and to give organisations a feedback-oriented view that may improve officer experience and procedural fairness. It makes <strong>no allegations</strong>, names no individual officers, and is <strong>not</strong> an official rating, audit, vigilance finding or legal determination. Where data is thin, an organisation is simply shown as unrated.",
       "<strong class='lead'>This works best as a community effort.</strong> Keeping deputation information accurate needs many eyes. If you spot a new vacancy, a broken or wrong link, an outdated circular, a missing detail, a factual correction or a rule update — please report it through the report and feedback tools. Such inputs genuinely make this better for the whole deputation community.",
       "<strong class='lead'>On names and references.</strong> Government, ministry, department, designation, vacancy, link and rule references are used only for identification, classification and public-interest information; their use implies no official association, approval or endorsement.",
-      "By using this site you acknowledge that <strong>Deputations is an independent, AI-assisted, human-reviewed, community-supported information aid</strong>, and that final reliance must always rest on the original official sources and the competent authority.",
-      "<span class='sign'>— Vivek Vishal, Section Officer</span>"
+      "By using this site you acknowledge that <strong>Deputations is an independent, AI-assisted, human-reviewed, community-supported information aid</strong>, and that final reliance must always rest on the original official sources and the competent authority."
     ];
+    // Sign-off: headshot placeholder (swap the <svg> for an <img src='…'> when a
+    // photo is available) + name & credentials.
+    var signHtml =
+      "<div class='sw-sign'>" +
+        "<div class='sw-sign-pic' aria-hidden='true'>" +
+          "<svg viewBox='0 0 24 24' fill='currentColor'><path d='M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z'/></svg>" +
+        "</div>" +
+        "<div class='sw-sign-info'>" +
+          "<strong>Vivek Vishal</strong>" +
+          "<span>Section Officer (DR 2012 Batch)</span>" +
+          "<span>B. Tech Computer Science, NIT Durgapur</span>" +
+          "<span>MBA (FM), AJNIFM</span>" +
+        "</div>" +
+      "</div>";
     var modal = document.createElement("div");
     modal.className = "sw-modal";
     modal.setAttribute("role", "dialog");
@@ -443,7 +451,7 @@
         "<div class='hd'><span class='ic'>" + SVG_SHIELD + "</span>" +
           "<div><h3>Declaration &amp; Disclaimer</h3>" +
           "<p class='sub'>Deputations — an independent, non-official portal</p></div></div>" +
-        "<div class='bd'>" + paras.map(function (p) { return "<p>" + p + "</p>"; }).join("") + "</div>" +
+        "<div class='bd'>" + paras.map(function (p) { return "<p>" + p + "</p>"; }).join("") + signHtml + "</div>" +
       "</div>";
     document.body.appendChild(modal);
 
@@ -452,6 +460,58 @@
     foot.querySelector(".disc").addEventListener("click", open);
     modal.querySelector(".cls").addEventListener("click", close);
     modal.addEventListener("click", function (e) { if (e.target === modal) close(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+  }
+
+  /* ===================== MOBILE NAV (hamburger + bottom sheet) ============ */
+  /* The nav row silently cuts off on small screens (review M2): several links
+     were undiscoverable. A hamburger (<=768px via CSS) opens a bottom sheet
+     cloned from .nav-links, so all pages get it from this one injection point. */
+  function buildMobileNav() {
+    var topNav = document.querySelector(".top-nav");
+    var links = topNav && topNav.querySelector(".nav-links");
+    if (!topNav || !links || document.querySelector(".sw-menu-btn")) return;
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "sw-menu-btn";
+    btn.setAttribute("aria-label", "Open menu");
+    btn.setAttribute("aria-expanded", "false");
+    btn.setAttribute("aria-controls", "swNavSheet");
+    btn.innerHTML = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' aria-hidden='true'><path d='M4 7h16M4 12h16M4 17h16'/></svg>";
+    topNav.appendChild(btn);
+
+    var sheet = document.createElement("div");
+    sheet.className = "sw-sheet";
+    sheet.id = "swNavSheet";
+    sheet.setAttribute("role", "dialog");
+    sheet.setAttribute("aria-modal", "true");
+    sheet.setAttribute("aria-label", "Site menu");
+    sheet.innerHTML =
+      "<div class='panel'>" +
+        "<div class='hdr'><span class='ttl'>Menu</span>" +
+        "<button type='button' class='x' aria-label='Close menu'>×</button></div>" +
+        "<nav>" + links.innerHTML + "</nav>" +
+      "</div>";
+    document.body.appendChild(sheet);
+
+    function open() {
+      sheet.classList.add("open");
+      btn.setAttribute("aria-expanded", "true");
+      var first = sheet.querySelector("nav a.active") || sheet.querySelector("nav a");
+      if (first) first.focus();
+    }
+    function close() {
+      if (!sheet.classList.contains("open")) return;
+      sheet.classList.remove("open");
+      btn.setAttribute("aria-expanded", "false");
+      btn.focus();
+    }
+    btn.addEventListener("click", function () {
+      if (sheet.classList.contains("open")) close(); else open();
+    });
+    sheet.querySelector(".x").addEventListener("click", close);
+    sheet.addEventListener("click", function (e) { if (e.target === sheet) close(); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
   }
 
@@ -498,14 +558,23 @@
     }
   }
 
-  // Feedback widget kept in abeyance for a later upgrade — counter only for now.
-  var ENABLE_FEEDBACK = false;
+  // Feedback widget: site-wide "Liked the website?" — like records sentiment,
+  // dislike routes straight to the feedback form.
+  var ENABLE_FEEDBACK = true;
   function init() {
     injectCSS();
     try { enhanceNav(); } catch (e) {}
     try { buildTypewriter(); } catch (e) {}
     try { buildCounter(); } catch (e) {}
     try { buildDisclaimer(); } catch (e) {}
+    try { buildMobileNav(); } catch (e) {}
+    // PWA offline shell (review P1-2). Production origin only, so local dev
+    // servers never serve stale cached assets while iterating.
+    try {
+      if ("serviceWorker" in navigator && location.hostname === "deputations.github.io") {
+        navigator.serviceWorker.register("/sw.js");
+      }
+    } catch (e) {}
     if (ENABLE_FEEDBACK) { try { buildFeedback(); } catch (e) {} }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
