@@ -1,4 +1,5 @@
-/* Shared frontend config for deputations.github.io
+/* Shared frontend config for alldeputations.com (canonical) /
+ * deputations.github.io (GitHub Pages repo URL, still works but not shared).
  * The Apps Script web app handles multiple actions:
  *   - GET  /                           -> list of community discrepancy reports
  *   - POST { action:"report",  ... }   -> submit a FAQ discrepancy

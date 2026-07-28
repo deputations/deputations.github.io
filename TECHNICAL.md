@@ -26,7 +26,9 @@ table_of_contents:
 | field | value |
 |---|---|
 | repo | `deputations.github.io` |
-| url | https://deputations.github.io/ |
+| url_canonical | https://alldeputations.com/ |
+| url_repo | https://deputations.github.io/ |
+| public_share | only `alldeputations.com` |
 | owner | Vivek Vishal, Section Officer |
 | audience | Central Government officers seeking deputation |
 | disclaimer | "Unofficial site — verify with the original notification" |

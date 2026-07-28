@@ -132,7 +132,7 @@
     getReg().then(function (reg) {
       if (!reg) {   // SW not registered (localhost / not-yet-visited on prod)
         setStatus(""); enableBtn.hidden = true; offBtn.hidden = true;
-        hintEl.textContent = "Alerts run on the live site. Open deputations.github.io (and on iPhone, add it to your Home Screen first).";
+        hintEl.textContent = "Alerts run on the live site. Open alldeputations.com (and on iPhone, add it to your Home Screen first).";
         return;
       }
       return reg.pushManager.getSubscription().then(function (sub) {
