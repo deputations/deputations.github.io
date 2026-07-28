@@ -181,3 +181,80 @@ focus:   trim 4 docs to AI-only consumption (no human voice)
   same paths in every clone
 
 ## session shq-2026-07-09-003 end
+
+---
+
+<!-- APPEND_NEW_BLOCKS_BELOW -->
+
+## session shq-2026-07-09-004
+```
+started: 2026-07-28
+ended:   2026-07-28
+model:   claude-opus-4-8[1m]
+driver:  relay
+branch:  main
+starting_head: a156143
+ending_head:   d16977d
+focus:   switch canonical domain to alldeputations.com
+```
+
+### inbound context read
+- session -003 above
+- TECHNICAL.md §1 (identity) — listed only deputations.github.io
+- HANDOVER schema block at top
+
+### work done
+1. created `CNAME` file at repo root containing `alldeputations.com`
+   (GitHub Pages uses this to know the custom domain)
+2. rewrote every user-facing URL across the repo:
+   - HTML canonical + og:url + og:image + twitter:image in
+     index.html, defex.html, upcoming-projects.html, Rules/faq.html
+   - feed.xml: 16 URLs (channel link, atom:link self, every
+     <link>/<guid> per item)
+   - sitemap.xml: all 8 <loc>
+   - my-deputation-manual.html: 8 fake browser-chrome URL captions
+   - push-client.js: hint text (line 135)
+   - Rules/faq.html: redirect stub paragraph
+3. updated config.js header comment to name both URLs
+4. updated TECHNICAL.md §1: added `url_canonical` +
+   `url_repo` + `public_share` rows
+5. merged origin/main (6 chore:build data refreshes) → `d16977d`
+6. pushed everything
+
+### decisions
+- **app.js share/JSON-LD URL builders left alone** — already use
+  `window.location.origin`; any visitor's current URL becomes the
+  share origin automatically (lines 730, 761, 791)
+- **site-widgets.js:574 left alone** — service-worker origin gate
+  must match the actual host serving the SW
+  (`deputations.github.io`), not the visitor's current URL
+- **SETUP.md / WHATSAPP.md / apps-script/README.md / WEBSITE-REVIEW.md
+  refs to deputations.github.io left alone** — these are
+  operator/admin docs that correctly reference the GitHub Pages repo
+  URL, not user-facing URLs
+- **single commit `912380c` + merge `d16977d`** — keeps the DNS
+  switch as one atomic change at the top of the visible history
+
+### handoff state
+- working_tree: clean
+- open: P2 (Astro), P3 (Realtime, AI explainer)
+- DNS state: alldeputations.com still resolves via Wix nameservers
+  → visitors to alldeputations.com get Wix default page until
+  DNS is moved off Wix (next owner action)
+- next_pickup: P2-1 when owner greenlights
+
+### gotchas for next session
+- **DNS still needs to be moved off Wix to Cloudflare** with the
+  four GitHub Pages A records + CNAME www. Until then,
+  alldeputations.com shows Wix's default page. The repo is ready.
+- if Wix strips the GitHub Pages A records (some Wix accounts
+  override), the canonical URL will fail silently — verify with
+  `dig alldeputations.com A` after DNS move; should show
+  185.199.{108,109,110,111}.153
+- Cloudflare proxy (orange cloud) on the apex MUST stay OFF
+  (DNS-only) — proxied apex breaks GitHub Pages' Let's Encrypt cert
+- if owner wants only alldeputations.com to work (not the
+  deputations.github.io URL): not possible on GitHub Pages —
+  the host serves both. Owner simply stops sharing the GitHub URL.
+
+## session shq-2026-07-09-004 end
