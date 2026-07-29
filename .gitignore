@@ -39,3 +39,12 @@ astro/dist/
 astro/public/
 astro/node_modules/
 astro/.astro/
+
+# Per-vacancy OG images (P2-4). ~14 MB total, regenerated on every cron
+# run by scripts/build_og_images.py. Astro workflow mirrors them into
+# the build, so committing them to git would just bloat history with
+# binary diffs every day. Same for any other build-time generated
+# assets.
+og/
+og-*.png
+og-*
