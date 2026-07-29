@@ -8,6 +8,7 @@ from urllib.parse import quote
 from xml.sax.saxutils import escape
 
 import pandas as pd
+import urllib.request
 from dateutil import parser as date_parser
 from google.auth import default
 from googleapiclient.discovery import build
@@ -19,7 +20,7 @@ OUTPUT_FILTERS = DATA_DIR / "filters.json"
 OUTPUT_STATS = DATA_DIR / "stats.json"
 OUTPUT_META = DATA_DIR / "meta.json"
 OUTPUT_FEED = Path("feed.xml")          # site root, next to sitemap.xml
-SITE_URL = "https://deputations.github.io"
+SITE_URL = "https://alldeputations.com"
 
 REQUIRED_COLUMNS = [
     "Vacancy_ID",
@@ -291,6 +292,85 @@ def fetch_sheet_rows(sheet_id: str) -> list[dict[str, str]]:
     return rows
 
 
+# Supabase vacancies table uses snake_case columns (per migration 0001). The
+# downstream transform_rows() + build_filters/stats/feed all expect the
+# Title_Case keys the Google Sheet provides. This mapping translates the two
+# so both source paths produce identical downstream shapes.
+SUPABASE_TO_TITLE_MAP: dict[str, str] = {
+    "vacancy_id":                "Vacancy_ID",
+    "ministry":                  "Ministry",
+    "min_code":                  "Min_Code",
+    "department":                "Department",
+    "organisation":              "Organisation",
+    "organisation_type":         "Organisation_Type",
+    "post_name":                 "Post_Name",
+    "level":                     "Level",
+    "level_text":                "Level_Text",
+    "location_city":             "Location_City",
+    "location_state":            "Location_State",
+    "region":                    "Region",
+    "req_level1":                "Req_Level1",
+    "min_years_experience":      "Min_Years_Experience",
+    "req_level2":                "Req_Level2",
+    "min_years_experience2":     "Min_Years_Experience2",
+    "tags_keywords":             "Keywords",
+    "eligible_service":          "Eligible_Service",
+    "essential_qualification":   "Essential_Qualification",
+    "no_of_posts":               "No_of_Posts",
+    "deputation_period_years":   "Deputation_Period_Years",
+    "deputation_type":           "Deputation_Type",
+    "notification_date":         "Notification_Date",
+    "last_date_to_apply":        "Last_Date_To_Apply",
+    "official_notification_link": "Official_Notification_Link",
+    "application_form_link":     "Application_Form_Link",
+    "source_website":            "Source_Website",
+    "functional_area":           "Functional_Area",
+    "mode_of_application":       "Mode_of_Application",
+    # pipeline / provenance — also needed downstream
+    "status":                    "Status",
+    "source_category":           "Source Category",
+    "source_ref":                "Source_Ref",
+    "confidence":                "Confidence",
+    "ingest_job_id":             "Ingest_Job_ID",
+}
+
+
+def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> list[dict[str, str]]:
+    """Read approved vacancies from Supabase REST. RLS already limits anon to
+    status='approved' rows, so the anon key works. Returns rows in Title_Case
+    shape (mapped from snake_case) plus a synthetic 'DRAFT / APPROVED' column
+    set to 'Approved ✅' so transform_rows() accepts them."""
+    api = supabase_url.rstrip("/") + "/rest/v1/vacancies"
+    qs = "status=eq.approved&select=*&limit=1000"
+    req = urllib.request.Request(
+        api + "?" + qs,
+        headers={
+            "apikey": supabase_anon_key,
+            "Authorization": "Bearer " + supabase_anon_key,
+            "Accept-Profile": "public",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        body = resp.read().decode("utf-8")
+    sb_rows = json.loads(body) if body else []
+    if not isinstance(sb_rows, list):
+        raise RuntimeError(f"Supabase returned non-list payload: {type(sb_rows).__name__}")
+
+    mapped: list[dict[str, str]] = []
+    for sb_row in sb_rows:
+        row: dict[str, str] = {"DRAFT / APPROVED": "Approved ✅"}
+        for snake, title in SUPABASE_TO_TITLE_MAP.items():
+            val = sb_row.get(snake)
+            row[title] = "" if val is None else str(val)
+        # status field maps to its own Title_Case column via the map above; but
+        # Supabase's status is the pipeline state ("approved") not the
+        # display status ("Active"/"Inactive"). Clear it so transform_rows()'s
+        # infer_status() recomputes from days_left instead.
+        row["Status"] = ""
+        mapped.append(row)
+    return mapped
+
+
 def validate_required_columns(rows: list[dict[str, str]]) -> None:
     if not rows:
         raise RuntimeError("No data rows found in the spreadsheet.")
@@ -403,14 +483,14 @@ def build_stats(vacancies: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def build_meta(vacancies: list[dict[str, Any]], filters: dict[str, Any], stats: dict[str, Any]) -> dict[str, Any]:
+def build_meta(vacancies: list[dict[str, Any]], filters: dict[str, Any], stats: dict[str, Any], source: str = "supabase_rest_api_via_anon_key") -> dict[str, Any]:
     return {
         "generated_at_utc": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
         "record_count": len(vacancies),
         "active_count": stats["active_vacancies"],
         "inactive_count": stats["inactive_vacancies"],
         "closing_soon_count": stats["closing_soon_vacancies"],
-        "source": "private_google_sheet_via_sheets_api",
+        "source": source,
         "filter_counts": {
             "levels": len(filters["levels"]),
             "ministries": len(filters["ministries"]),
@@ -490,17 +570,51 @@ def build_feed(vacancies: list) -> str:
 
 
 def main() -> None:
-    sheet_id = os.getenv("GOOGLE_SHEET_ID", "").strip()
-    if not sheet_id:
-        raise RuntimeError("GOOGLE_SHEET_ID environment variable is missing.")
+    # Source priority: Supabase (live, where admin approvals land) → Google
+    # Sheet (legacy, where vacancies used to be hand-entered). Fall back only
+    # when Supabase errors or returns zero rows; if Sheet is also unavailable
+    # we raise so the cron fails loudly rather than shipping an empty dump.
+    supabase_url = os.getenv("SUPABASE_URL", "").strip()
+    supabase_anon_key = os.getenv("SUPABASE_ANON_KEY", "").strip()
 
-    rows = fetch_sheet_rows(sheet_id)
-    validate_required_columns(rows)
+    rows: list[dict[str, str]] = []
+    source_used = "(none)"
+
+    if supabase_url and supabase_anon_key:
+        try:
+            sb_rows = fetch_supabase_rows(supabase_url, supabase_anon_key)
+            if sb_rows:
+                rows = sb_rows
+                source_used = f"Supabase ({len(sb_rows)} approved rows)"
+            else:
+                print("Supabase returned 0 approved rows — falling back to Google Sheet.")
+        except Exception as exc:
+            print(f"Supabase fetch failed: {exc!r} — falling back to Google Sheet.")
+
+    if not rows:
+        sheet_id = os.getenv("GOOGLE_SHEET_ID", "").strip()
+        if not sheet_id:
+            raise RuntimeError(
+                "No data: Supabase empty/unavailable AND GOOGLE_SHEET_ID is missing."
+            )
+        rows = fetch_sheet_rows(sheet_id)
+        source_used = f"Google Sheet (sheet_id={sheet_id[:6]}…)"
+
+    # Sheet rows still need the column-validation gate (no Supabase equivalent
+    # because the schema is enforced at the DB layer). Skip when rows came
+    # from Supabase.
+    if source_used.startswith("Google Sheet"):
+        validate_required_columns(rows)
 
     vacancies = transform_rows(rows)
     filters = build_filters(vacancies)
     stats = build_stats(vacancies)
-    meta = build_meta(vacancies, filters, stats)
+    meta_source = (
+        "supabase_rest_api_via_anon_key"
+        if source_used.startswith("Supabase")
+        else "private_google_sheet_via_sheets_api"
+    )
+    meta = build_meta(vacancies, filters, stats, source=meta_source)
 
     write_json(OUTPUT_VACANCIES, vacancies)
     write_json(OUTPUT_FILTERS, filters)
@@ -508,7 +622,7 @@ def main() -> None:
     write_json(OUTPUT_META, meta)
     OUTPUT_FEED.write_text(build_feed(vacancies), encoding="utf-8")
 
-    print(f"Built {len(vacancies)} approved vacancies.")
+    print(f"Built {len(vacancies)} approved vacancies from {source_used}.")
     print(f"Wrote: {OUTPUT_VACANCIES}")
     print(f"Wrote: {OUTPUT_FILTERS}")
     print(f"Wrote: {OUTPUT_STATS}")

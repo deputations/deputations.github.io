@@ -39,6 +39,13 @@ jobs:
 
       - name: Build data files
         env:
+          # Primary source: Supabase REST (live, where admin approvals land).
+          # Fallback: Google Sheet (legacy, where vacancies used to be hand-
+          # entered) — read by build_data.py only when Supabase returns 0 rows
+          # or errors. Both sources must be present in the GitHub Actions
+          # secret store; build_data.py fails loudly if neither works.
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
         run: python scripts/build_data.py
 
