@@ -904,3 +904,109 @@ focus:   P2-2: port remaining pages to Astro
   the directory shape; the 404 page handles legacy URLs.
 
 ## session shq-2026-07-29-003 end
+
+---
+
+<!-- APPEND_NEW_BLOCKS_BELOW -->
+
+## session shq-2026-07-29-004
+```
+started: 2026-07-30
+ended:   2026-07-30
+model:   claude-opus-4-8[1m]
+driver:  solo
+branch:  main
+starting_head: 68c660f
+ending_head:   eb349e3
+focus:   P2-3: per-vacancy static pages with JobPosting JSON-LD
+```
+
+### inbound context read
+- session -003 above (P2-2 ports)
+- TECHNICAL.md §2.4 (PWA), §11 open work
+- data/vacancies.json shape (384 approved rows)
+
+### work done
+1. astro/src/pages/vacancy/[id].astro: getStaticPaths() reads
+   data/vacancies.json, emits dist/vacancy/<id>/index.html per
+   row. Each page renders JobPosting JSON-LD (datePosted,
+   validThrough, employmentType FULL_TIME, hiringOrganization
+   with parentOrganization for Ministry, jobLocation in IN,
+   qualifications built from Essential_Qualification +
+   eligibility_text + Mode_of_Application + Deputation_Type +
+   Min_Years_Experience)
+2. astro/src/lib/vacancies.js: build-time helper that reads
+   the JSON. Handles missing-file gracefully (returns [],
+   getStaticPaths emits no pages — first build before cron
+   works fine).
+3. public/vacancy-page.css: page-specific styles (glass card,
+   breadcrumbs, status pill that shows "Closed on DATE" or
+   "Open · closes DATE", links to source PDFs).
+4. scripts/build_sitemap.py: regenerates sitemap.xml from the
+   JSON dump. 8 static + 384 vacancy URLs (392 total). Uses
+   clean URLs /foo/ to match the Astro build. Wired into
+   build-data.yml right after build_link_previews.
+5. .github/workflows/build-data.yml: adds "Build sitemap
+   (P2-3)" step.
+6. .github/workflows/astro-build.yml: copies vacancy-page.css
+   into the asset mirror.
+7. verified locally: 380 per-vacancy pages built in 2.24s,
+   JSON-LD valid, all canonical links use clean URLs.
+8. committed eb349e3, pushed.
+
+### decisions
+- **Astro [id].astro with getStaticPaths** instead of generating
+  HTML directly in the cron: keeps the data pipeline simple
+  (cron still writes one JSON) while the layout / styling /
+  JSON-LD reuse the existing Astro components. Future pages
+  just need a similar dynamic route.
+- **statusClosed / statusOpen computed per-page**, not stored:
+  the JSON has stale `Status` strings. Per-page recompute
+  matches what app.js's recomputeStatus() does in the
+  browser, so the per-vacancy page agrees with the dashboard.
+- **P2-5 (auto-sitemap with vacancy pages) collapsed into
+  P2-3**: building the sitemap from the Python cron is
+  sufficient and ships with zero new infrastructure. The Astro-
+  emitted half of P2-5 is deferred but harmless to skip.
+- **The dashboard table still links to ?v=<id> (modal)**,
+  not /vacancy/<id>/. Adding a "View page" link in app.js
+  row rendering is small but requires touching the dashboard
+  code. Deferred — the per-vacancy pages exist for SEO and
+  direct sharing; the dashboard continues to use modal
+  preview for in-app browsing.
+
+### handoff state
+- working_tree: clean
+- Astro build: 380 per-vacancy pages + 8 main pages + 404
+  = 389 pages in dist/, ~3.8MB total
+- sitemap.xml: 392 URLs (8 static + 384 vacancy), regenerated
+  on each cron run
+- existing static site: still live on main, unchanged
+- next_pickup: P3-4 (Playwright tests), P2-4 (OG images), or
+  a small housekeeping fix when owner is ready
+
+### gotchas for next session
+- **Google indexing lag**: the per-vacancy pages are now
+  crawlable (per the new sitemap) but it takes Google 2-7
+  days to discover new pages via Search Console / sitemap
+  ping. To accelerate, submit the sitemap URL once at
+  Google Search Console after cutover:
+  https://alldeputations.com/sitemap.xml
+- **the 4 dropped vacancies** (384 in JSON, 380 in build):
+  rows with missing Vacancy_ID. The `r.Vacancy_ID` filter in
+  vacancies.js handles them. Worth investigating why those
+  4 have no ID (probably admin typos) but not blocking.
+- **Lazy runtime behaviour**: app.js fetchVacancies() uses
+  the window.location.origin in its share URL — that's
+  based on the visitor's current hostname. After cutover
+  to alldeputations.com, share URLs will be at
+  alldeputations.com/?v=<id> (modal) and possibly
+  alldeputations.com/vacancy/<id>/ if app.js is updated to
+  prefer the per-vacancy page URL.
+- **Build output size jumped from ~600KB to ~3.8MB** with
+  per-vacancy pages. GH Pages free tier caps at 1GB; well
+  under. But if vacancy count ever exceeds 100K, consider
+  sitemap-index splitting or pruning expired pages from
+  the cron output.
+
+## session shq-2026-07-29-004 end
