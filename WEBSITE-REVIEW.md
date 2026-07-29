@@ -124,7 +124,7 @@ Useful context for future sessions — verified, don't re-derive:
 
 | ID | Task | Effort | Status | Notes |
 |----|------|--------|--------|-------|
-| P3-1 | Supabase Realtime: toast "N new vacancies since you opened" | M | | Cheap wow. (F4) |
+| P3-1 | Supabase Realtime: toast "N new vacancies since you opened" | M | DONE (2026-07-29) | realtime-toast.js (index.html only): two layers — Supabase Realtime WS (best-effort, fail-silent) + 60s polling fallback on /data/vacancies.json. Polling works on every network including NIC; Realtime is the instant path. Reuses existing window.showHomeToast() helper. Verify: approve a new vacancy in admin-ingest.html with the dashboard open — polling catches it within 60s. (F4) |
 | P3-2 | AI eligibility explainer: "Am I eligible?" button in modal → Gemini Edge Function (profile + eligibility text → plain-language verdict); cache verdicts, rate-limit | L | | Flagship modern feature. (F3) |
 | P3-3 | Semantic search: embed vacancies at build, pgvector similarity via Edge Function, natural-language query box | L | | Optional extension of P3-2. (F3) |
 | P3-4 | Playwright smoke tests in CI (home loads data, filters work, modal opens, forms submit) | M | | Replaces ad-hoc `verify_*.py`. (F6) |

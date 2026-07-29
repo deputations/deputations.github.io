@@ -606,3 +606,90 @@ focus:   fix enrich-merge shape mismatch + recompute Status
   source.
 
 ## session shq-2026-07-09-008 end
+
+---
+
+<!-- APPEND_NEW_BLOCKS_BELOW -->
+
+## session shq-2026-07-29-001
+```
+started: 2026-07-29
+ended:   2026-07-29
+model:   claude-opus-4-8[1m]
+driver:  solo
+branch:  main
+starting_head: dbdd063
+ending_head:   894339d
+focus:   P3-1: 'N new vacancies since you opened' toast (Realtime + polling)
+```
+
+### inbound context read
+- session -008 above
+- TECHNICAL.md §2.4 (PWA + offline shell)
+- app.js showHomeToast() definition around line 446
+
+### work done
+1. designed two-layer toast:
+   - Layer 1: Supabase Realtime WebSocket (Phoenix protocol) — instant
+     on home network, fail-silent elsewhere
+   - Layer 2: 60s polling on /data/vacancies.json — universal fallback,
+     works on every network including NIC (same-origin over GitHub
+     Pages TLS, which is not affected by NIC SSL intercept)
+2. wrote realtime-toast.js (180 lines, self-contained):
+   - bootstraps seenIds from initial /data/vacancies.json fetch
+   - enqueues new Vacancy_IDs from either layer to a Set
+   - 1s debounce + showToast() that calls window.showHomeToast()
+   - 25s websocket heartbeat to keep the Phoenix connection alive
+   - global click handler on [data-rt-reload] forces a page refresh
+   - no CDN, no supabase-js, no framework
+3. added realtime-toast.js to index.html (between home-flourish and
+   site-widgets). Cache-bust v=1.
+4. updated WEBSITE-REVIEW.md P3-1 row to DONE
+5. committed 894339d, pushed
+
+### decisions
+- **polling mandatory, Realtime optional**: when WS fails (NIC, RLS,
+  config gaps, browser quirks) polling is the only layer that fires
+  within the hour. Realtime is the instant speed-up when working.
+- **no reuse of app.js rawData**: realtime-toast.js calls fetch itself
+  to populate seenIds rather than reading window.rawData (which is
+  IIFE-scoped inside app.js). Adds one network request on page load;
+  alternative would be to expose rawData via window.__vacanciesData.
+  Picked self-contained for simplicity.
+- **toast triggers soft refresh via location.href**: simpler and
+  robust than mutating fetchVacancies() internals. Toast link
+  appends a cache-buster qs and navigates to current path.
+- **day-counting in the toast**: computed locally from
+  Last_Date_To_Apply (not Days_Left) so the toast text is honest
+  even if the JSON was dumped hours ago.
+
+### handoff state
+- working_tree: clean
+- open: P2-1 (Astro), P3-2 (AI eligibility), P3-3 (semantic search),
+  P3-4 (Playwright), P3-5 (retire Apps Script fallback)
+- next_pickup: P3-2 next (per user 'one by one' pacing)
+
+### gotchas for next session
+- **Realtime RLS gating**: Supabase won't send INSERT events to
+  anon unless the table has a policy + is in the supabase_realtime
+  publication. If the toast never fires from the WS layer but does
+  fire from polling, the publication needs adjustment. SQL:
+    alter publication supabase_realtime add table public.vacancies;
+  and the existing RLS policy `vac_public_read_approved` allows
+  SELECT for anon on status='approved', which is sufficient for
+  realtime delivery.
+- **VERIFY BEFORE claiming "Realtime works"**: only the polling layer
+  is reliable out of the box. The Realtime WS connecting and
+  receiving events requires a Supabase-side enable. Until verified
+  on prod, the toast fires via polling (60s delay max).
+- **seenIds is in-memory only**: a page reload re-bootstraps from
+  /data/vacancies.json. If the user reloads within seconds of an
+  event and that event hasn't reached /data yet, they'll see the
+  toast twice. Acceptable; "View" triggers a refresh anyway.
+- **iOS Safari WebSocket**: requires HTTPS (we have it) and works in
+  PWA-installed apps. Inline visit may fire restrictive — fallback
+  to polling is fine.
+- **heartbeat every 25s**: Phoenix Realtime idle timeout is 60s
+  by default. 25s gives margin for jitter.
+
+## session shq-2026-07-29-001 end
