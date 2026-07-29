@@ -553,14 +553,54 @@ function fetchVacancies() {
     return Promise.all([jsonPromise, sbPromise]).then(([jsonRows, sbRows]) => {
         const json = Array.isArray(jsonRows) ? jsonRows : [];
         if (sbRows && sbRows.length) {
-            // Merge: Supabase wins per-Vacancy_ID. Keeps a JSON row if not in Supabase.
-            const byId = new Map(json.map(r => [r.Vacancy_ID, r]));
-            sbRows.forEach(r => byId.set(r.Vacancy_ID, r));
-            console.log('📡 Source: Supabase live + JSON merged', sbRows.length, 'live,', json.length, 'json');
-            return enrich([...byId.values()]);
+            // Merge strategy:
+            //   • JSON rows are already enriched (Title_Case + derived fields).
+            //   • Supabase rows are snake_case; their Title_Case fields would
+            //     be empty if passed through enrich.js's enrichAll() unchanged,
+            //     because that function reads from snake_case keys.
+            //   • For Vacancy_IDs present in BOTH, prefer the JSON row — it has
+            //     the most up-to-date derived fields from the last cron dump.
+            //   • For Supabase-only IDs (rare), enrich the snake_case row to
+            //     Title_Case via enrichRecord so the rest of the pipeline works.
+            //   • After all rows are uniform Title_Case, recompute Status from
+            //     last_date_to_apply — JSON's Status field becomes stale as
+            //     days tick by, and the dashboard should always show truth.
+            const jsonIds = new Set(json.map(r => r.Vacancy_ID));
+            const sbOnly = sbRows.filter(r => r.Vacancy_ID && !jsonIds.has(r.Vacancy_ID));
+            const sbOnlyEnriched = sbOnly.map(r =>
+                window.DepEnrich ? window.DepEnrich.enrichRecord(r) : r
+            );
+            const merged = [...json, ...sbOnlyEnriched];
+            console.log('📡 Source: Supabase live + JSON merged',
+                sbRows.length, 'live,', json.length, 'json,',
+                sbOnly.length, 'sb-only enriched');
+            return recomputeStatus(merged);
         }
         console.log('📄 Source: data/vacancies.json (Supabase unavailable / empty)');
-        return enrich(json);
+        return recomputeStatus(json);
+    });
+}
+
+// Status in the JSON is computed by build_data.py at dump time (days_left
+// relative to that moment). By the time the dashboard renders, several days
+// may have passed and rows that were "Active" then are now expired. Recompute
+// Status from last_date_to_apply for every row so the active filter and the
+// KPI cards always reflect reality.
+function recomputeStatus(rows) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return rows.map(r => {
+        const iso = String(r.Last_Date_To_Apply || '').trim();
+        let status = 'Unknown';
+        let daysLeft = '';
+        if (iso) {
+            const d = new Date(iso + 'T00:00:00');
+            if (!isNaN(d.getTime())) {
+                daysLeft = Math.round((d - today) / 86400000);
+                status = daysLeft >= 0 ? 'Active' : 'Inactive';
+            }
+        }
+        return { ...r, Status: status, Days_Left: daysLeft };
     });
 }
 
