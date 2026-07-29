@@ -515,34 +515,53 @@ function loadDataFromJSON() {
         });
 }
 
-// Source of truth = Supabase (approved rows only, enforced by RLS). Until
-// Supabase is configured in config.js, fall back to the committed JSON so the
-// site keeps working. Both paths run through the shared enrich.js so the
-// rendered records have identical derived fields.
+// Source of truth = data/vacancies.json (committed, served same-origin from
+// GitHub Pages). Supabase is an OPTIONAL live enhancement: if reachable and
+// returns rows, they merge in (Supabase wins on conflict). This is the order
+// because (a) the JSON is committed at build time so it's always available,
+// (b) it's same-origin over GitHub Pages TLS which survives NIC-network
+// SSL interceptors, and (c) Supabase REST is cross-origin and frequently
+// fails on NIC networks with ERR_SSL_PROTOCOL_ERROR. Both paths run through
+// the shared enrich.js so the rendered records have identical derived fields.
 function fetchVacancies() {
     const enrich = (rows) =>
         (window.DepEnrich ? window.DepEnrich.enrichAll(rows) : rows);
 
+    // Primary: static JSON, same origin, no firewall surprises.
+    const jsonPromise = fetch('data/vacancies.json')
+        .then(res => (res.ok ? res.json() : []))
+        .catch(() => []);
+
+    // Enhancement: Supabase REST with a 4s timeout. On NIC networks this will
+    // typically reject with ERR_SSL_PROTOCOL_ERROR — the .catch swallows it
+    // and we keep the JSON rows.
+    let sbPromise = Promise.resolve(null);
     if (window.SUPABASE_READY && window.SUPABASE_READY()) {
-        const url = `${window.SUPABASE_URL}/rest/v1/vacancies` +
-            `?status=eq.approved&select=*`;
-        return fetch(url, {
-            headers: {
-                apikey: window.SUPABASE_ANON_KEY,
-                Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`,
-            },
-        })
-        .then(res => { if (!res.ok) throw new Error('Supabase ' + res.status); return res.json(); })
-        .then(rows => {
-            // Supabase is the source of truth. 0 approved rows = genuinely empty
-            // (show the empty state), NOT a reason to resurrect old dummy data.
-            console.log('📡 Source: Supabase', (rows || []).length, 'approved rows');
-            return enrich(rows || []);
-        });
+        const url = `${window.SUPABASE_URL}/rest/v1/vacancies?status=eq.approved&select=*`;
+        sbPromise = Promise.race([
+            fetch(url, {
+                headers: {
+                    apikey: window.SUPABASE_ANON_KEY,
+                    Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`,
+                },
+            }).then(res => (res.ok ? res.json() : null))
+              .catch(() => null),
+            new Promise(resolve => setTimeout(() => resolve(null), 4000)),
+        ]);
     }
 
-    console.log('📄 Source: data/vacancies.json (Supabase not configured)');
-    return fetch('data/vacancies.json').then(res => res.json());
+    return Promise.all([jsonPromise, sbPromise]).then(([jsonRows, sbRows]) => {
+        const json = Array.isArray(jsonRows) ? jsonRows : [];
+        if (sbRows && sbRows.length) {
+            // Merge: Supabase wins per-Vacancy_ID. Keeps a JSON row if not in Supabase.
+            const byId = new Map(json.map(r => [r.Vacancy_ID, r]));
+            sbRows.forEach(r => byId.set(r.Vacancy_ID, r));
+            console.log('📡 Source: Supabase live + JSON merged', sbRows.length, 'live,', json.length, 'json');
+            return enrich([...byId.values()]);
+        }
+        console.log('📄 Source: data/vacancies.json (Supabase unavailable / empty)');
+        return enrich(json);
+    });
 }
 
 // EXPERIMENT: automatic link preview. Pre-rendered thumbnail manifest. Never

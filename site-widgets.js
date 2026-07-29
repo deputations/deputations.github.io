@@ -12,10 +12,17 @@
   "use strict";
   if (window.__sw_loaded) return; window.__sw_loaded = true;
 
-  /* ---- Supabase RPC helper (graceful no-op when unavailable) ------------- */
+  /* ---- Supabase RPC helper (graceful no-op when unavailable) -------------
+   * Circuit breaker: after SB_FAIL_THRESHOLD consecutive RPC failures (typical
+   * on NIC networks where SSL-intercept middleboxes can't complete a TLS
+   * handshake with Supabase), we set SB_OK=false and stop trying for this
+   * session. This prevents the heartbeat from spamming the console with
+   * ERR_SSL_PROTOCOL_ERROR every 35s. */
   var SB_URL = (window.SUPABASE_URL || "").replace(/\/+$/, "");
   var SB_KEY = window.SUPABASE_ANON_KEY || "";
   var SB_OK  = /^https:\/\/[a-z0-9]+\.supabase\.co/.test(SB_URL) && SB_KEY.length > 20;
+  var SB_FAIL_THRESHOLD = 3;
+  var sb_fail_count = 0;
 
   function rpc(fn, body) {
     if (!SB_OK) return Promise.resolve(null);
@@ -28,8 +35,23 @@
       },
       body: JSON.stringify(body || {}),
     })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .catch(function () { return null; });
+      .then(function (r) {
+        if (!r.ok) { onRpcFail(); return null; }
+        sb_fail_count = 0;
+        return r.json();
+      })
+      .catch(function () { onRpcFail(); return null; });
+  }
+  function onRpcFail() {
+    sb_fail_count++;
+    if (sb_fail_count >= SB_FAIL_THRESHOLD) {
+      SB_OK = false;
+      // Hide the visitor counter pill entirely once we know Supabase is
+      // unreachable from this network (e.g. NIC). Avoids further heartbeat
+      // fetches and the resulting console noise.
+      var c = document.querySelector(".sw-counter");
+      if (c) c.style.display = "none";
+    }
   }
 
   /* ---- tiny utils -------------------------------------------------------- */
