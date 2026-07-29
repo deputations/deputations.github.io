@@ -10,17 +10,18 @@ const path = Astro.url.pathname.replace(/\/$/, "");
 function active(href: string): string {
   if (href === "/" && path === "") return "active";
   if (href === "/" && path === "/") return "active";
-  if (href !== "/" && path.startsWith(href)) return "active";
+  // match if path equals href exactly OR href is a prefix segment
+  if (href !== "/" && (path === href.replace(/\/$/, "") || path.startsWith(href))) return "active";
   return "";
 }
 const links = [
-  { href: "/",          label: "Home",            match: "/" },
-  { href: "/rules.html", label: "Rules",          match: "/rules.html" },
-  { href: "/faq.html",   label: "FAQs",           match: "/faq.html" },
-  { href: "/defex.html", label: "DeFeX",          match: "/defex.html" },
-  { href: "/report-vacancy.html", label: "Report Vacancy", match: "/report-vacancy.html" },
-  { href: "/contact.html", label: "Contact",        match: "/contact.html" },
-  { href: "/my-deputation.html", label: "My Deputation", match: "/my-deputation.html" },
+  { href: "/",         label: "Home",            match: "/" },
+  { href: "/rules/",   label: "Rules",           match: "/rules/" },
+  { href: "/faq/",     label: "FAQs",            match: "/faq/" },
+  { href: "/defex/",   label: "DeFeX",           match: "/defex/" },
+  { href: "/report-vacancy/", label: "Report Vacancy", match: "/report-vacancy/" },
+  { href: "/contact/", label: "Contact",         match: "/contact/" },
+  { href: "/my-deputation/", label: "My Deputation", match: "/my-deputation/" },
 ];
 ---
 

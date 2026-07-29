@@ -17,6 +17,10 @@ interface Props {
   ogImage?: string;
   pageClass?: string;
   bodyClass?: string;
+  /** Pages with custom Google Fonts (faq.html uses Inter+Unbounded only). Pass a full URL. */
+  fontsUrl?: string;
+  /** Set false to skip the home-only hero-wave Three.js canvas. */
+  heroWave?: boolean;
 }
 
 const {
@@ -26,13 +30,9 @@ const {
   ogImage = "https://alldeputations.com/assets/brand/og-home.png",
   pageClass = "filters-collapsed",
   bodyClass = "",
+  fontsUrl = "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Unbounded:wght@600;700;800&display=swap",
+  heroWave = true,
 } = Astro.props;
-
-const ogImageUrl = ogImage;
-const cssStamp = (() => {
-  const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  return date;
-})();
 ---
 
 <!DOCTYPE html>
@@ -59,19 +59,19 @@ const cssStamp = (() => {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image" content={ogImage} />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Unbounded:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link href={fontsUrl} rel="stylesheet" />
 
-    <script is:inline>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
+    <script is:inline>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');})();</script>
     <link rel="stylesheet" href={`/style.css?v=ms53`} />
     <link rel="stylesheet" href={`/navbar.css?v=2`} />
 
@@ -86,6 +86,6 @@ const cssStamp = (() => {
     <!-- Shared deps at the bottom. Keep ?v= cache-busting per CHANGELOG. -->
     <slot name="scripts" />
 
-    <script type="module" src="/hero-wave.js?v=2"></script>
+    {heroWave && <script is:inline type="module" src="/hero-wave.js?v=2"></script>}
   </body>
 </html>

@@ -1,0 +1,28 @@
+---
+// faq.astro — port of faq.html (1676 lines).
+//
+// faq.html uses Inter and Unbounded fonts (no Plus Jakarta Sans / Sora).
+// InlinePageBody strips the inline font <link>; we re-add the right URL.
+
+import Layout from "../layouts/Layout.astro";
+import InlinePageBody from "../components/InlinePageBody.astro";
+---
+
+<Layout
+  title="FAQs — Deputation Vacancies"
+  description="Frequently asked questions on deputation and foreign service of Central Government employees — eligibility, tenure, pay, deputation duty allowance, leave, pension and more."
+  pageClass=""
+  fontsUrl="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Unbounded:wght@600;700;800&display=swap"
+>
+  <Fragment slot="head">
+    <!-- faq.html had its styles inline; the static asset faq.css
+         captures them. InlinePageBody strips inline <style> tags. -->
+  </Fragment>
+
+  <InlinePageBody src="../faq.html" />
+
+  <Fragment slot="scripts">
+    <script is:inline src="/config.js?v=sb1"></script>
+    <script is:inline defer src="/site-widgets.js?v=23"></script>
+  </Fragment>
+</Layout>

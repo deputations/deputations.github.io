@@ -1,0 +1,30 @@
+---
+// rules.astro — port of rules.html (3161 lines).
+//
+// rules.html has its own exhaustive <style> block at the top, which
+// InlinePageBody would strip (we strip <link> tags intentionally). To
+// preserve those styles we'd need a different extraction. For now,
+// the page-specific styles ship as a single rules.css that mirrors the
+// static rules.html's inline style. P2-2 follow-up: extract rules.css
+// from rules.html.
+
+import Layout from "../layouts/Layout.astro";
+import InlinePageBody from "../components/InlinePageBody.astro";
+---
+
+<Layout
+  title="Rules & Regulations on Central Government Deputation | Deputations Portal"
+  description="A modern searchable knowledge hub for Central Government deputation rules, DoPT OMs, tenure limits, cooling-off, deputation allowance, lien, absorption, and related circulars."
+  pageClass=""
+>
+  <Fragment slot="head">
+    <!-- rules.html had its styles inline; the static asset rules.css
+         captures them. InlinePageBody strips inline <style> tags. -->
+  </Fragment>
+
+  <InlinePageBody src="../rules.html" />
+
+  <Fragment slot="scripts">
+    <script is:inline defer src="/site-widgets.js?v=23"></script>
+  </Fragment>
+</Layout>

@@ -68,10 +68,24 @@ jobs:
           cp -r ../data public/data 2>/dev/null || true
           cp -r ../shared public/shared 2>/dev/null || true
 
-          # JS files referenced by index.astro (and any future port):
+          # JS files referenced by all Astro pages (index + defex +
+          # contact + report-vacancy + rules + faq + my-deputation).
           cp ../config.js public/config.js
           cp ../enrich.js public/enrich.js
           cp ../app.js public/app.js
+          cp ../defex.js public/defex.js            2>/dev/null || true
+          cp ../defex.css public/defex.css          2>/dev/null || true
+          cp ../contact.js public/contact.js        2>/dev/null || true
+          cp ../contact.css public/contact.css      2>/dev/null || true
+          cp ../report-vacancy.js public/report-vacancy.js   2>/dev/null || true
+          cp ../report-vacancy.css public/report-vacancy.css 2>/dev/null || true
+          cp ../rules.css public/rules.css          2>/dev/null || true
+          cp ../faq.js public/faq.js                2>/dev/null || true
+          cp ../faq.css public/faq.css              2>/dev/null || true
+          cp ../my-deputation.js public/my-deputation.js    2>/dev/null || true
+          cp ../my-deputation.css public/my-deputation.css 2>/dev/null || true
+          cp ../my-deputation-manual.html public/my-deputation-manual.html 2>/dev/null || true
+          cp -r ../shared public/shared 2>/dev/null || true
           cp ../push-client.js public/push-client.js
           cp ../home-flourish.js public/home-flourish.js
           cp ../home-flourish.css public/home-flourish.css

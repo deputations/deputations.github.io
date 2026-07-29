@@ -1,0 +1,30 @@
+---
+// defex.astro — port of defex.html via InlinePageBody.
+//
+// defex.html is the only page that uses inline `on*=` handlers
+// (TECHNICAL §2.3). Those survive intact because InlinePageBody
+// emits the body as raw HTML.
+
+import Layout from "../layouts/Layout.astro";
+import InlinePageBody from "../components/InlinePageBody.astro";
+---
+
+<Layout
+  title="DeFeX — Deputation Friendliness Index"
+  description="A transparency layer for India's deputation system — what a parent Ministry, Department or CCA's rules say, what reports show, and what to do next, with confidence shown next to every score."
+  pageClass=""
+>
+  <Fragment slot="head">
+    <link rel="stylesheet" href="/defex.css?v=ms12" />
+  </Fragment>
+
+  <InlinePageBody src="../defex.html" />
+
+  <Fragment slot="scripts">
+    <script is:inline src="/config.js?v=sb1"></script>
+    <script is:inline src="/enrich.js?v=sb13"></script>
+    <script is:inline src="/shared/fuse.min.js?v=1"></script>
+    <script is:inline src="/defex.js?v=ms12"></script>
+    <script is:inline defer src="/site-widgets.js?v=23"></script>
+  </Fragment>
+</Layout>

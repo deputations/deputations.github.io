@@ -15,7 +15,10 @@ export default defineConfig({
   // before `npm run build` runs (see .github/workflows/astro-build.yml).
   publicDir: 'public',
   outDir: 'dist',
-  trailingSlash: 'ignore',
+  // Emit /contact.html, /defex.html etc. directly so internal links match
+  // the static site's URL shape. Otherwise Astro emits /contact/index.html
+  // which 404s on the existing nav links.
+  trailingSlash: 'never',
   build: {
     sourcemap: false,
     inlineStylesheets: 'auto',

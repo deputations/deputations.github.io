@@ -1,0 +1,93 @@
+---
+// my-deputation.astro — personal cockpit.
+//
+// This page uses Lucide icons instead of the inline SVG sprite (the
+// icon library runs at runtime via a <script src> tag). The icon
+// references use <i data-lucide="..."></i> elements that Lucide
+// converts client-side.
+//
+// pageClass="md" — my-deputation.css uses the .md- prefix.
+
+import Layout from "../layouts/Layout.astro";
+import Navbar from "../components/Navbar.astro";
+---
+
+<Layout
+  title="My Deputation | Control Room"
+  description="Your private deputation cockpit — bookmarks, saved searches, application tracker, document checklist, and deadline reminders. All data stays in your browser."
+  pageClass=""
+  bodyClass="md-page"
+>
+  <Navbar slot="head" />
+
+  <div class="bg-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-logo">
+        <i data-lucide="layout-dashboard"></i>
+        <h1><span class="gradient-text" data-tw>MY DEPUTATION</span></h1>
+      </div>
+      <div class="header-actions">
+        <button id="mdManualBtn" class="icon-btn" title="View Manual" aria-label="View user manual">
+          <i data-lucide="book-open"></i>
+        </button>
+        <button id="themeToggle" class="icon-btn" title="Toggle Theme" aria-label="Toggle Theme">
+          <i data-lucide="moon"></i>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <div id="mdWelcome" class="md-welcome" hidden></div>
+
+      <nav class="md-tabs" role="tablist" aria-label="My Deputation sections">
+        <button class="md-tab" role="tab" data-tab="overview"  aria-selected="true"><i data-lucide="layout-grid"></i><span class="md-tab-label">Overview</span></button>
+        <button class="md-tab" role="tab" data-tab="bookmarks" aria-selected="false"><i data-lucide="bookmark"></i><span class="md-tab-label">Bookmarks</span> <span id="tabBadgeBookmarks" class="md-tab-badge" hidden>0</span></button>
+        <button class="md-tab" role="tab" data-tab="searches"  aria-selected="false"><i data-lucide="search"></i><span class="md-tab-label">Saved searches</span> <span id="tabBadgeSearches" class="md-tab-badge" hidden>0</span></button>
+        <button class="md-tab" role="tab" data-tab="tracker"   aria-selected="false"><i data-lucide="kanban-square"></i><span class="md-tab-label">Tracker</span></button>
+        <button class="md-tab" role="tab" data-tab="documents" aria-selected="false"><i data-lucide="file-check-2"></i><span class="md-tab-label">Documents</span></button>
+        <button class="md-tab" role="tab" data-tab="calendar"  aria-selected="false"><i data-lucide="calendar-days"></i><span class="md-tab-label">Calendar</span></button>
+        <button class="md-tab" role="tab" data-tab="profile"   aria-selected="false"><i data-lucide="user-circle-2"></i><span class="md-tab-label">Profile</span></button>
+      </nav>
+
+      <section id="panel-overview"  class="md-panel active" role="tabpanel"></section>
+      <section id="panel-bookmarks" class="md-panel" role="tabpanel"></section>
+      <section id="panel-searches"  class="md-panel" role="tabpanel"></section>
+      <section id="panel-tracker"   class="md-panel" role="tabpanel"></section>
+      <section id="panel-documents" class="md-panel" role="tabpanel"></section>
+      <section id="panel-calendar"  class="md-panel" role="tabpanel"></section>
+      <section id="panel-profile"   class="md-panel" role="tabpanel"></section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal">
+    <div class="modal-content glass-panel">
+      <button id="closeModal" class="modal-close" aria-label="Close"><i data-lucide="x"></i></button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <div id="mdToast" class="md-toast" role="status" aria-live="polite"></div>
+
+  <Fragment slot="scripts">
+    <!-- Pinned: @latest is unversioned and a bad build that throws in createIcons()
+         silently breaks modal listeners (saved-search Save, etc.). 1.18.0 = known-good. -->
+    <script is:inline src="https://unpkg.com/lucide@1.18.0"></script>
+    <script is:inline src="/config.js?v=sb1"></script>
+    <script is:inline src="/enrich.js?v=sb13"></script>
+    <script is:inline src="/shared/vacancy-utils.js?v=sb3"></script>
+    <script is:inline src="/my-deputation.js?v=sb5"></script>
+    <script is:inline defer src="/site-widgets.js?v=23"></script>
+    <!-- BEGIN hero-wave -->
+    <script is:inline type="importmap">
+    { "imports": { "three": "/vendor/three.module.js?v=170" } }
+    </script>
+    <script is:inline type="module" src="/hero-wave.js?v=2"></script>
+    <!-- END hero-wave -->
+  </Fragment>
+</Layout>

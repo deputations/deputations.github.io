@@ -1,0 +1,58 @@
+---
+// InlinePageBody.astro — read a static HTML file's <body> contents
+// and inject them via set:html. <script> tags are stripped (we re-add
+// them via Layout's scripts slot in the parent .astro page).
+//
+// Why: the existing static HTML files are huge (faq.html = 1676 lines,
+// rules.html = 3161 lines). Copying into .astro files would create
+// maintenance hazard. This component keeps Astro pages thin.
+
+interface Props {
+  /** Path to the static HTML file, relative to repo root. */
+  src: string;
+  /** Optional: skip extracting body (just verify the file loads). */
+  dryRun?: boolean;
+}
+
+import { readFileSync } from 'node:fs';
+
+const { src, dryRun = false } = Astro.props;
+
+let body = '';
+try {
+  const raw = readFileSync(src, 'utf-8');
+  const headEnd = raw.indexOf('</head>');
+  if (headEnd < 0) throw new Error(`No </head> found in ${src}`);
+  let afterHead = raw.slice(headEnd + '</head>'.length);
+  const bodyEnd = afterHead.indexOf('</body>');
+  if (bodyEnd >= 0) {
+    afterHead = afterHead.slice(0, bodyEnd);
+  } else {
+    const htmlEnd = afterHead.indexOf('</html>');
+    if (htmlEnd >= 0) afterHead = afterHead.slice(0, htmlEnd);
+  }
+  // Strip <script>...</script> blocks entirely. The parent .astro file
+  // re-emits the page's actual JS through Layout's `scripts` slot.
+  // Strip <link> (CSS) too — Layout already provides style.css; page-
+  // specific CSS gets added via the parent's <Fragment slot="head">.
+  // Rewrite internal links /contact.html -> /contact/ so they match
+  // the Astro directory-output shape (the static source files still
+  // use /foo.html; the Astro build emits /foo/index.html).
+  body = afterHead
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '')
+    .replace(/<link\b[^>]*\/?>/g, '')
+    .replace(/href="\/([a-z-]+)\.html([#"][^"]*)?\b/g, (_match, path, suffix) => {
+      // skip known external or asset .html links (none expected but defensive)
+      if (path === 'Rules') return _match;
+      const tail = suffix || '';
+      return `href="/${path}/${tail}"`;
+    });
+  if (dryRun) {
+    body = `[dry-run] body length: ${body.length}, first 200 chars: ${body.slice(0, 200)}`;
+  }
+} catch (err) {
+  body = `<p style="color:#f87171;font-family:sans-serif;padding:2rem;">Failed to inline page body: ${err.message}</p>`;
+}
+---
+
+<Fragment set:html={body} />
