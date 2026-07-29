@@ -1,0 +1,225 @@
+---
+// vacancy/[id].astro — one static page per approved vacancy.
+//
+// Reads data/vacancies.json at build time, emits one HTML per
+// approved vacancy at /vacancy/<id>/index.html. Each page has
+// JobPosting JSON-LD so Google can index it as a job result.
+//
+// Fields mapped to JobPosting schema:
+//   title            Post_Name
+//   description      Post_Name + Ministry + Level + Location + Closing
+//   datePosted       Notification_Date
+//   validThrough     Last_Date_To_Apply + 1 day
+//   employmentType   "FULL_TIME" (deputation posts are always full-time)
+//   hiringOrganization.name  Ministry / Organisation
+//   jobLocation      Location_City + Location_State, India
+//   baseSalary       (omitted — pay level listed as text instead)
+//   qualifications   Essential_Qualification + eligibility_rules
+//   responsibilities (omitted — Job_Description is typically empty
+//                     for these posts; the modal handles "see notification")
+//   experienceMonths parsed from Min_Years_Experience when numeric
+
+import Layout from "../../layouts/Layout.astro";
+import readVacancies from "../../lib/vacancies";
+
+export async function getStaticPaths() {
+  const rows = await readVacancies();
+  return rows
+    .filter((r) => r && r.Vacancy_ID)
+    .map((r) => ({
+      params: { id: encodeURIComponent(String(r.Vacancy_ID)) },
+      props: { row: r },
+    }));
+}
+
+interface Props {
+  row: any;
+}
+
+const { row } = Astro.props as Props;
+
+const SITE = "https://alldeputations.com";
+const id = String(row.Vacancy_ID || "");
+const canonical = `${SITE}/vacancy/${encodeURIComponent(id)}/`;
+
+// Best-effort date parsing. The cron writes both ISO and *_Display
+// fields; we prefer ISO for JSON-LD validity.
+function parseISO(s: any): string | null {
+  if (!s) return null;
+  const d = new Date(String(s));
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+function addDays(iso: string | null, days: number): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString();
+}
+function expandLevel(raw: any): string {
+  const v = String(raw || "").trim();
+  if (!v) return "";
+  const cleaned = v.replace(/[^0-9]/g, "");
+  return cleaned ? `Level ${cleaned}` : v;
+}
+
+const notificationIso = parseISO(row.Notification_Date);
+const lastDateIso     = parseISO(row.Last_Date_To_Apply);
+const validThrough    = addDays(lastDateIso, 1); // JSON-LD convention: through end of day
+
+const ministry    = String(row.Ministry || row.Department || "Central Government of India").trim();
+const org        = String(row.Organisation || row.Department || ministry).trim();
+const postName   = String(row.Post_Name || "Vacancy").trim();
+const levelText  = expandLevel(row.Level_Text || row.Level);
+const locationStr = String(row.location_label || row.Location_City || "India").trim();
+
+// eligibility_text is a Title_Case-normalised summary built by build_data.py.
+const eligibilityText = String(row.eligibility_text || "").trim();
+const essential     = String(row.Essential_Qualification || "").trim();
+const mode          = String(row.Mode_of_Application || "").trim();
+const notifyLink    = String(row.Official_Notification_Link || "").trim();
+const applyLink     = String(row.Application_Form_Link || "").trim();
+const noOfPosts     = String(row.No_of_Posts || "").trim();
+const deputationType = String(row.Deputation_Type || "").trim();
+const years         = String(row.Min_Years_Experience || row.Deputation_Period_Years || "").trim();
+
+// Description is required for JobPosting. Build a rich plain-text
+// version so Google can include it in search snippets.
+const descriptionText = [
+  postName,
+  levelText && `(${levelText})`,
+  `at ${org}`,
+  ministry && `under ${ministry}`,
+  locationStr && `based in ${locationStr}`,
+  noOfPosts && `· ${noOfPosts} post(s)`,
+  lastDateIso && `· closes ${row.Last_Date_To_Apply_Display || String(row.Last_Date_To_Apply).slice(0, 10)}`,
+].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+
+// JobPosting JSON-LD schema. Strict schema per Google's docs:
+// https://developers.google.com/search/docs/appearance/structured-data/job-posting
+const jobPostingLd = {
+  "@context": "https://schema.org",
+  "@type": "JobPosting",
+  title: postName,
+  description: descriptionText + (eligibilityText ? `\n\nEligibility: ${eligibilityText}.` : "") +
+                       (essential ? `\n\nEssential qualification: ${essential}.` : ""),
+  datePosted: notificationIso,
+  validThrough: validThrough,
+  employmentType: "FULL_TIME",
+  hiringOrganization: {
+    "@type": "Organization",
+    name: org,
+    ...(ministry && org !== ministry ? { parentOrganization: { "@type": "Organization", name: ministry } } : {}),
+  },
+  jobLocation: {
+    "@type": "Place",
+    address: { "@type": "PostalAddress", addressLocality: locationStr, addressCountry: "IN" },
+  },
+  ...(levelText ? { jobBenefits: `Pay level: ${levelText}` } : {}),
+  ...(notifyLink ? { directApply: false, url: canonical } : {}),
+  ...(mode || essential || eligibilityText
+    ? {
+        qualifications: [
+          essential && `Essential qualification: ${essential}`,
+          eligibilityText && `Eligibility: ${eligibilityText}`,
+          mode           && `Mode of application: ${mode}`,
+          deputationType && `Deputation type: ${deputationType}`,
+          years          && `Minimum years at level: ${years}`,
+        ].filter(Boolean),
+      }
+    : {}),
+};
+
+const datePostedDisplay = row.Notification_Date_Display || (notificationIso ? notificationIso.slice(0, 10) : "");
+const lastDateDisplay   = row.Last_Date_To_Apply_Display || (lastDateIso ? lastDateIso.slice(0, 10) : "");
+const daysLeft = Number(row.Days_Left);
+const isOpen = daysLeft >= 0;
+---
+
+<Layout
+  title={`${postName} — ${org} | Deputations`}
+  description={descriptionText}
+  canonical={canonical}
+  pageClass="vp"
+>
+  <Fragment slot="head">
+    <!-- JSON-LD: JobPosting -->
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(jobPostingLd)}></script>
+
+    <link rel="stylesheet" href="/vacancy-page.css?v=1" />
+  </Fragment>
+
+  <main class="vp-shell" id="main-content">
+    <nav class="vp-crumbs" aria-label="Breadcrumb">
+      <a href="/">Deputations</a>
+      <span aria-hidden="true">›</span>
+      <a href="/">All vacancies</a>
+      <span aria-hidden="true">›</span>
+      <span class="vp-crumbs-current">{postName}</span>
+    </nav>
+
+    <article class="vp-card">
+      <header class="vp-head">
+        <span class="vp-level">{levelText || "Deputation"}</span>
+        <h1 class="vp-title">{postName}</h1>
+        <p class="vp-org">{org}{ministry && org !== ministry ? <> · <span class="vp-mute">{ministry}</span></> : null}</p>
+        <p class="vp-meta">
+          {locationStr && <span class="vp-loc">📍 {locationStr}</span>}
+          {noOfPosts && <span class="vp-posts">· {noOfPosts} post(s)</span>}
+          {deputationType && <span class="vp-type">· {deputationType}</span>}
+        </p>
+        {isOpen
+          ? <p class="vp-status vp-status-open">Open · closes {lastDateDisplay}</p>
+          : <p class="vp-status vp-status-closed">Closed on {lastDateDisplay}</p>}
+      </header>
+
+      {(eligibilityText || essential) && (
+        <section class="vp-section">
+          <h2 class="vp-h2">Eligibility</h2>
+          {eligibilityText && <p class="vp-eligibility">{eligibilityText}</p>}
+          {essential && <p class="vp-qual">{essential}</p>}
+        </section>
+      )}
+
+      {mode && (
+        <section class="vp-section">
+          <h2 class="vp-h2">How to apply</h2>
+          <p class="vp-mode">{mode}</p>
+        </section>
+      )}
+
+      <section class="vp-section">
+        <h2 class="vp-h2">Sources</h2>
+        <ul class="vp-sources">
+          {datePostedDisplay && (
+            <li><strong>Notification date:</strong> {datePostedDisplay}</li>
+          )}
+          <li><strong>Vacancy ID:</strong> <code>{id}</code></li>
+          {notifyLink && (
+            <li>
+              <strong>Official notification PDF:</strong>{" "}
+              <a href={notifyLink} target="_blank" rel="noopener nofollow">
+                {notifyLink.length > 80 ? notifyLink.slice(0, 80) + "…" : notifyLink}
+              </a>
+            </li>
+          )}
+          {applyLink && applyLink !== notifyLink && (
+            <li>
+              <strong>Application form:</strong>{" "}
+              <a href={applyLink} target="_blank" rel="noopener nofollow">
+                {applyLink.length > 80 ? applyLink.slice(0, 80) + "…" : applyLink}
+              </a>
+            </li>
+          )}
+        </ul>
+      </section>
+
+      <footer class="vp-foot">
+        <a href="/" class="vp-back">← Back to all vacancies</a>
+      </footer>
+    </article>
+  </main>
+
+  <Fragment slot="scripts">
+    <script is:inline defer src="/site-widgets.js?v=23"></script>
+  </Fragment>
+</Layout>

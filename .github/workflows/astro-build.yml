@@ -85,6 +85,7 @@ jobs:
           cp ../my-deputation.js public/my-deputation.js    2>/dev/null || true
           cp ../my-deputation.css public/my-deputation.css 2>/dev/null || true
           cp ../my-deputation-manual.html public/my-deputation-manual.html 2>/dev/null || true
+          cp ../vacancy-page.css public/vacancy-page.css 2>/dev/null || true
           cp -r ../shared public/shared 2>/dev/null || true
           cp ../push-client.js public/push-client.js
           cp ../home-flourish.js public/home-flourish.js

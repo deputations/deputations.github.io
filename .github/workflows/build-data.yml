@@ -55,6 +55,13 @@ jobs:
       - name: Render notification link previews
         run: python scripts/build_link_previews.py
 
+      - name: Build sitemap (P2-3)
+        # Regenerate sitemap.xml from the freshly-dumped vacancies.json so
+        # the search engines can discover per-vacancy pages (P2-3) and the
+        # canonical clean-URL shape (P2-2). Runs before the commit step so
+        # the new sitemap is part of the same daily commit.
+        run: python scripts/build_sitemap.py
+
       - name: Commit generated files if changed
         run: |
           git config user.name "github-actions[bot]"
