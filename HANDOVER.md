@@ -336,3 +336,85 @@ focus:   fix data-load failure on NIC networks
   via push-client.js's "live site only" check
 
 ## session shq-2026-07-09-005 end
+
+---
+
+<!-- APPEND_NEW_BLOCKS_BELOW -->
+
+## session shq-2026-07-09-006
+```
+started: 2026-07-29
+ended:   2026-07-29
+model:   claude-opus-4-8[1m]
+driver:  relay
+branch:  main
+starting_head: 38abbd2
+ending_head:   f2928d2
+focus:   fix stale cron data — JSON primary was 53/0, Supabase live was 384/75
+```
+
+### inbound context read
+- session -005 above (NIC fix flipped fetchVacancies to JSON primary)
+- TECHNICAL.md §2.2 (data pipeline — static JSON + Supabase)
+- supabase/migrations/0001_init.sql (vacancies table schema, snake_case)
+
+### work done
+1. diagnosed: Google Sheet was project-original manual entry; admin
+   approvals have been writing to Supabase for months; Sheet is
+   stale. Cron faithfully dumped the Sheet, producing 53-row / 0-active
+   JSON while live Supabase REST served 384 / 75.
+2. added fetch_supabase_rows() + SUPABASE_TO_TITLE_MAP in
+   scripts/build_data.py (32 columns translated snake_case → Title_Case)
+3. rewired main() to try Supabase first, fall back to Sheet, raise if
+   both fail. build_meta() now reflects the actual source used
+4. .github/workflows/build-data.yml: new env vars SUPABASE_URL +
+   SUPABASE_ANON_KEY alongside GOOGLE_SHEET_ID
+5. SITE_URL constant in build_data.py updated to alldeputations.com
+   (was still deputations.github.io — slipped past 912380c)
+6. local dry-run: `Built 384 approved vacancies from Supabase (384
+   approved rows).` Generated data/*.json + feed.xml match live state.
+7. committed as f2928d2; pushed.
+
+### decisions
+- **fetch Supabase with anon key (not service-role)**: RLS already
+  limits anon to status='approved' rows, which is exactly what we
+  want committed to public JSON. No new secrets required in
+  GitHub Actions.
+- **Status field cleared in mapped rows**: Supabase's status is the
+  pipeline state ('approved'); the JSON's Status is the display
+  state ('Active'/'Inactive' computed from days_left). Letting the
+  existing infer_status() recompute avoids confusing the frontend
+  with the wrong semantic.
+- **fall back to Sheet, don't remove it**: keeps the legacy path
+  intact in case Supabase has an outage. The cron fails loudly only
+  when both fail.
+- **did NOT change the cron schedule**: still daily 09:05 IST.
+  Hourly is overkill for a government audience reading vacancies
+  once or twice a day.
+
+### handoff state
+- working_tree: clean
+- open: P2 (Astro), P3 (Realtime, AI explainer)
+- next_pickup: P2-1 when owner greenlights
+
+### gotchas for next session
+- **two parallel data sources** — Google Sheet still exists and
+  build_data.py still reads it as fallback. If you want to retire
+  the Sheet entirely, remove fetch_sheet_rows() + the Sheet path in
+  main() + the GOOGLE_SHEET_ID secret + the Sheet-side deps
+  (google-api-python-client, google-auth).
+- **datetime.utcnow() is deprecated** — Python 3.12 shows two
+  DeprecationWarnings when running build_data.py. Pre-existing, not
+  from this change. Cheap to swap to datetime.now(timezone.utc).
+- **Supabase anon key in GitHub Actions** is fine because RLS
+  restricts it to approved rows. If the RLS policy ever changes,
+  this cron would dump whatever it can see — audit before changing
+  any policy.
+- **link-previews step still runs after build_data.py** — it reads
+  data/vacancies.json. With the cron now writing 384 rows instead of
+  53, link-previews.py will take ~7x longer (384 PDF screenshots vs
+  53). Workflow timeout is fine, but cron total runtime goes from
+  ~5 min to ~35 min. Consider running it more often or scoping to
+  recent rows if this becomes a problem.
+
+## session shq-2026-07-09-006 end
