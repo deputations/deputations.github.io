@@ -258,3 +258,81 @@ focus:   switch canonical domain to alldeputations.com
   the host serves both. Owner simply stops sharing the GitHub URL.
 
 ## session shq-2026-07-09-004 end
+
+---
+
+<!-- APPEND_NEW_BLOCKS_BELOW -->
+
+## session shq-2026-07-09-005
+```
+started: 2026-07-29
+ended:   2026-07-29
+model:   claude-opus-4-8[1m]
+driver:  relay
+branch:  main
+starting_head: 32661d0
+ending_head:   5fd0fae
+focus:   fix data-load failure on NIC networks
+```
+
+### inbound context read
+- session -004 above (DNS switch to alldeputations.com)
+- TECHNICAL.md §2.2, §2.4
+- WEBSITE-REVIEW.md §3 P0/P1 (already DONE on origin)
+
+### work done
+1. diagnosed: NIC SSL-intercepting middlebox can't TLS-handshake with
+   Supabase (TLS 1.3 + post-quantum + ECH); site-widgets heartbeat
+   spammed 12+ ERR_SSL_PROTOCOL_ERROR per minute
+2. confirmed root cause also includes a code bug: fetchVacancies()
+   only fell back to JSON when SUPABASE_READY() was false — on NIC
+   networks SUPABASE_READY() is true so the fallback never ran
+3. rewrote fetchVacancies(): JSON primary, Supabase as enhancement
+   with 4s timeout + try/catch. Merge by Vacancy_ID (Supabase wins)
+4. site-widgets.js: rpc() gains a 3-strike circuit breaker that sets
+   SB_OK=false and hides the visitor counter pill, stopping console
+   spam from heartbeats
+5. bumped cache-bust: app.js v=ms47→ms48, site-widgets.js v=21→v=22
+   in all 8 HTML pages
+6. pulled origin/main (1 chore:build), pushed as `5fd0fae`
+
+### decisions
+- **JSON primary, Supabase enhancement** (not the other way around):
+  chosen because (a) JSON is same-origin over GitHub Pages TLS which
+  NIC middleboxes handle fine, (b) Supabase is cross-origin and
+  frequently TLS-blocked on hostile networks, (c) the daily cron
+  already writes data/vacancies.json so the data is fresh enough
+  for the audience's needs
+- **4-second Supabase timeout** instead of failing fast: on a
+  successful connection the merge happens within ~500ms; on a
+  hostile network the timeout prevents the user seeing a delay
+- **3-strike circuit breaker** for the visitor counter: after 3
+  consecutive RPC failures, stop trying. Hides the counter pill
+  entirely (it's a vanity metric, not core functionality)
+- **did NOT change the daily cron schedule**: freshness is sufficient
+  for a government audience reading vacancies once a day
+
+### handoff state
+- working_tree: clean
+- open: P2 (Astro), P3 (Realtime, AI explainer)
+- next_pickup: P2-1 when owner greenlights
+
+### gotchas for next session
+- **vacancies.days_left** still does not exist — JSON rows have
+  the field set, but compute from last_date_to_apply at query time
+  (defensive against Supabase returning differently-shaped rows
+  in the future)
+- **site-widgets.js heartbeat** now self-disables on hostile
+  networks — but a session-level flag, not localStorage. Fresh
+  page load = fresh circuit breaker. Acceptable; means NIC users
+  see 3 errors per page load instead of 12/minute
+- if owner wants the daily cron to run more often (e.g. hourly),
+  change the cron in `.github/workflows/build-data.yml`
+  `35 3 * * *` → `17 * * * *` (off-hour, off :00 to avoid
+  thundering herd at minute boundaries)
+- **still no manifest/web-app capability for NIC users** — they
+  can install the site as a PWA, but push notifications will
+  silently no-op (Supabase unreachable). UI already handles this
+  via push-client.js's "live site only" check
+
+## session shq-2026-07-09-005 end
