@@ -1010,3 +1010,108 @@ focus:   P2-3: per-vacancy static pages with JobPosting JSON-LD
   the cron output.
 
 ## session shq-2026-07-29-004 end
+
+---
+
+<!-- APPEND_NEW_BLOCKS_BELOW -->
+
+## session shq-2026-07-29-005
+```
+started: 2026-07-30
+ended:   2026-07-30
+model:   claude-opus-4-8[1m]
+driver:  solo
+branch:  main
+starting_head: f473977
+ending_head:   52a82a6
+focus:   P2-4: per-vacancy OG images (Pillow 1200x630 PNG)
+```
+
+### inbound context read
+- session -004 above (per-vacancy pages with JSON-LD)
+- scripts/requirements.txt (Pillow already available)
+
+### work done
+1. scripts/build_og_images.py — Pillow rasterizer that emits one
+   1200x630 PNG per vacancy into ../og/<id>.png. Layout:
+   brand gradient strip + 'DEPUTATIONS' wordmark + LIVE
+   VACANCY pill + post name (60pt bold, 2-line wrap) +
+   ministry + level/location/closing-date pills along the
+   bottom. Uses Pillow's bundled default font for cross-
+   platform behaviour; scripts/fonts/Inter-*.ttf can override.
+2. astro/src/pages/vacancy/[id].astro — compute the safe
+   filename via the same regex used by the Python script and
+   pass ogImage prop to Layout
+3. .github/workflows/build-data.yml — adds 'Build OG images
+   (P2-4)' step right after 'Build sitemap (P2-3)'
+4. .github/workflows/astro-build.yml — copies ../og into
+   public/og/ before the Astro build
+5. .gitignore — exclude og/ (14 MB binary churn daily would
+   bloat git history)
+6. verified locally: 384 PNGs written (4 dedup collisions,
+   380 unique files), ~32-38 KB each, total ~14 MB. Astro
+   build emits 392 pages (8 main + 380 vacancy + 404) with
+   correct og:image refs.
+7. committed 277f1d6 (with merge 52a82a6), pushed
+
+### decisions
+- **Pillow over satori + resvg**: avoids a heavy npm dep stack
+  (satori + resvg + htmlparser), uses tools already in the
+  cron (Pillow was added for build_link_previews.py). Trade-
+  off: text rendering uses Pillow's bundled font, not the
+  site's Plus Jakarta Sans / Sora / Unbounded. Acceptable
+  for v1; a future iteration can drop a TTF in scripts/fonts/
+  to match.
+- **gitignore og/**: 14 MB of PNGs committed every day would
+  blow up git history. The Astro workflow regenerates them on
+  every build, so committing is unnecessary. Same pattern
+  as not committing data/vacancies.json (live-fetched) or
+  assets/previews/*.webp (screenshot rendering).
+- **Filename dedup**: 4 vacancy_ids in Supabase have duplicate
+  Vacancy_ID values (A-2026-L6-013, three HAFW-2026-L14/L13).
+  The script logs a warning and accepts the latest-write-wins.
+  Real fix is a UNIQUE constraint on Supabase admin side;
+  bookkeeping problem for the admin console, not blocking.
+- **no TTF shipping yet**: kept the v1 simple. TTF files for
+  Plus Jakarta Sans + Sora are ~600KB combined; easily added
+  by dropping them into scripts/fonts/. The Python script
+  already has the load_font() helper that prefers local fonts.
+
+### handoff state
+- working_tree: clean
+- og/ not in repo (regenerated on demand); 380 PNGs on disk
+  during GH Actions build
+- Astro build: 392 pages, ~3.8 MB total (was ~600 KB pre-P2-3)
+- sitemap.xml: 392 URLs, refreshed daily
+- per-vacancy pages emit og:image pointing at /og/<id>.png
+- existing static site: still live on main, unchanged
+- next_pickup: P3-4 (Playwright), P3-5 (Apps Script retirement),
+  or small housekeeping
+
+### gotchas for next session
+- **WHATSAPP / iMessage scrape URL on first share**: WhatsApp
+  fetches images once and caches them aggressively. The OG
+  card only appears the first time the URL is shared. After
+  that, even if the image changes, cached versions may
+  persist for days. Mitigation: use a `?v=` cache-bust on
+  the image URL when sharing new vacancies.
+- **LinkedIn and Slack behave differently**: Slack
+  fetches the page and re-derives OG from current HTML; the
+  image is cached server-side with aggressive TTLs. A new
+  approval → new URL → new image → fine.
+- **Twitter Card validator**: Cards with 1200x630 dimensions
+  show large on Facebook and inline on Tweet Composer but
+  small (preview-sized) on iOS Twitter. Acceptable per
+  Twitter's own docs; expected behaviour.
+- **image file size at this scale**: ~14 MB for 380 PNGs is
+  acceptable for the GitHub Pages free tier (1 GB cap). If
+  the dataset ever exceeds ~3000 vacancies, we'd want to
+  switch to a CDN with on-demand generation (Cloudflare
+  Worker serving /og/<id>.png at request time).
+- **JSON-LD image field unused**: Schema.org JobPosting
+  supports an `image` field, but the [id].astro currently
+  sets it manually via the meta tags. Adding the JSON-LD
+  `image` field is nice-to-have for Google's Jobs rich
+  result; defer to a follow-up session.
+
+## session shq-2026-07-29-005 end
