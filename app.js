@@ -1677,6 +1677,10 @@ kpiGrid.addEventListener('click', (e) => {
 
   if (nextFilter === 'all') {
     kpiFilter = 'all';
+    // The "Total Vacancies" card is the "show me everything" affordance.
+    // It also clears the Status dropdown (defaulted to 'Active') so the
+    // table actually shows all rows instead of only the Active ones.
+    filterStatus.value = '';
     sortState.key = 'Notification_Date';
     sortState.direction = 'desc';
     pagination.currentPage = 1;
