@@ -592,8 +592,13 @@
     try { buildMobileNav(); } catch (e) {}
     // PWA offline shell (review P1-2). Production origin only, so local dev
     // servers never serve stale cached assets while iterating.
+    //
+    // Register on EITHER live hostname (deputations.github.io OR
+    // alldeputations.com). Reject only local development hosts.
     try {
-      if ("serviceWorker" in navigator && location.hostname === "deputations.github.io") {
+      var host = location.hostname;
+      var isLocal = host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host === "" || /^192\.168\./.test(host) || /^10\./.test(host);
+      if ("serviceWorker" in navigator && !isLocal) {
         navigator.serviceWorker.register("/sw.js");
       }
     } catch (e) {}
