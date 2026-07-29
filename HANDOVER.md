@@ -693,3 +693,106 @@ focus:   P3-1: 'N new vacancies since you opened' toast (Realtime + polling)
   by default. 25s gives margin for jitter.
 
 ## session shq-2026-07-29-001 end
+
+---
+
+<!-- APPEND_NEW_BLOCKS_BELOW -->
+
+## session shq-2026-07-29-002
+```
+started: 2026-07-29
+ended:   2026-07-29
+model:   claude-opus-4-8[1m]
+driver:  solo
+branch:  main
+starting_head: 211c076
+ending_head:   c2d995c
+focus:   P2-1 checkpoint A: Astro scaffold + home page
+```
+
+### inbound context read
+- TECHNICAL.md §11 open work (P2-1 entry)
+- session -001 above (realtime-toast.js)
+- existing index.html DOM structure that app.js queries
+
+### work done
+1. astro/package.json — astro@latest dependency only
+2. astro/astro.config.mjs — static output, base /
+3. astro/src/layouts/Layout.astro — <head>, theme bootstrap
+   script, skip-link, scroll-progress, <slot name="head"/>
+   and <slot name="scripts"/>
+4. astro/src/components/Navbar.astro — top nav, auto-active via
+   Astro.url.pathname (replaces the 8 hand-rolled copies in static
+   HTML files)
+5. astro/src/components/IconSprite.astro — inline SVG <defs>
+   with all 26 icon symbols, one source of truth (was: 30-line
+   block pasted in every HTML file)
+6. astro/src/components/Footer.astro — disclaimer footer
+7. astro/src/pages/index.astro — port of static index.html,
+   preserving every ID and className that app.js queries; uses
+   is:inline on every <script src> so Astro doesn't try to bundle
+   them (cache-bust ?v= stays intact)
+8. .github/workflows/astro-build.yml — push to astro/ branch
+   triggers build + deploys to gh-pages branch via
+   actions/deploy-pages@v4
+9. .github/workflows/build-data.yml — extended with a "mirror data
+   onto gh-pages" step so cron dumps land on the Astro branch too
+10. .gitignore — exclude astro/{dist,public,node_modules,.astro}
+11. astro/README.md — how to develop / build / deploy locally
+12. verified locally: npm ci && npm run build → 1 page in 1.3s,
+    dist/ has every asset
+13. committed c2d995c, pushed
+
+### decisions
+- **publicDir = astro/public (not ../public)**: simpler; the
+  workflow mirrors repo-root assets into astro/public/ before
+  npm run build. Easier to debug locally.
+- **.nojekyll + CNAME copied into astro/public**: GH Pages uses
+  .nojekyll to skip Jekyll processing of dist/. CNAME preserves
+  the alldeputations.com custom-domain mapping.
+- **is:inline on every <script src>**: Astro by default treats
+  <script src> as imports to bundle. We need bare tags that
+  resolve to public/ assets unchanged (the existing ?v= cache-
+  busting convention). is:inline preserves that.
+- **defer vs no-defer preserved**: scripts that were `defer`
+  remain `defer`; non-defer scripts (config, enrich, app) load
+  synchronously exactly as before.
+- **IndexSprite uses Fragment set:html**: SVG path data is HTML-
+  like; Astro's default escaping would break raw <path d="..."/>
+  values. set:html renders them as-is.
+- **stopped at checkpoint A**: only the home page is ported.
+  Other pages still ship as static HTML on main. Per the user's
+  choice, P2-2 (port remaining pages) is the next session.
+
+### handoff state
+- working_tree: clean
+- existing site: live, unchanged (main branch serves static
+  index.html at alldeputations.com)
+- Astro build: ready, produces dist/ with same DOM shape, deploys
+  to gh-pages branch (dormant — Pages still serves main)
+- open: P2-2 (port remaining pages to Astro), P3-2, P3-3, P3-4
+- next_pickup: P2-2 when owner greenlights
+
+### gotchas for next session
+- **Pages source switch is manual**: Settings → Pages → Branch =
+  gh-pages (currently still main). Until then, the Astro build
+  is built but not visible. The deploy workflow still runs; it
+  just doesn't reach visitors.
+- **gh-pages branch must exist** before the first deploy. The
+  workflow's first run creates it (the gh-pages worktree dance
+  in build-data.yml) but a cleaner first run: manually create
+  gh-pages branch with one empty commit, then push.
+- **P2-2 will need per-page Layouts**: copy index.astro to
+  defex.astro, my-deputation.astro, etc. Each page replicates its
+  body from the static HTML, replacing inline <nav> with
+  <Navbar/>, inline sprite with <IconSprite/>, inline footer with
+  <Footer/>. Drop the inline scripts that are page-specific;
+  keep site-widgets.js + page-specific JS in <Fragment slot="scripts">.
+- **icon viewBox attrs are now centralised**: if a future session
+  adds a new icon, add it once to IconSprite.astro; the symbol
+  is available on every Astro page. Static HTML pages still need
+  manual sprite updates until they're ported to Astro.
+- **astro/dist size**: ~600 KB (mostly app.js + style.css). GH
+  Pages free tier cap is 1 GB, so plenty of headroom.
+
+## session shq-2026-07-29-002 end

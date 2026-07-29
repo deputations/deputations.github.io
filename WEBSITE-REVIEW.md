@@ -113,7 +113,7 @@ Useful context for future sessions — verified, don't re-derive:
 
 | ID | Task | Effort | Status | Notes |
 |----|------|--------|--------|-------|
-| P2-1 | Astro scaffold: shared Layout (head/navbar/footer components), port **home page** keeping current JS as island/script, asset hashing, GH Pages deploy workflow (build on push + daily data refresh) | L | | Foundation for everything below. (F2) |
+| P2-1 | Astro scaffold: shared Layout (head/navbar/footer components), port **home page** keeping current JS as island/script, asset hashing, GH Pages deploy workflow (build on push + daily data refresh) | L | DONE (2026-07-29) | astro/ subdir: Layout.astro + Navbar.astro + IconSprite.astro + Footer.astro + index.astro (port of index.html preserving every ID/className). Build verified locally: 1 page in 1.3s. Static output, base '/'. **Deploys to gh-pages branch via .github/workflows/astro-build.yml** — separate from main; existing static site stays live until owner flips Pages source. P2-2 (port remaining pages) is the next batch. (F2) |
 | P2-2 | Port remaining pages (rules, defex, my-deputation, contact, report-vacancy, faq, admin-ingest) | L | | Mostly mechanical once P2-1 lands. (F2) |
 | P2-3 | Per-vacancy static pages `/vacancy/{id}/` with `JobPosting` JSON-LD, built from data at build time | M | | Depends on P2-1. Google Jobs eligibility + indexable content. (F2) |
 | P2-4 | Build-time OG images per vacancy (satori/resvg): post, level, closing date | M | | Depends on P2-3. WhatsApp share cards. (F2) |
