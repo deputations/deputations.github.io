@@ -418,3 +418,96 @@ focus:   fix stale cron data — JSON primary was 53/0, Supabase live was 384/75
   recent rows if this becomes a problem.
 
 ## session shq-2026-07-09-006 end
+
+---
+
+<!-- APPEND_NEW_BLOCKS_BELOW -->
+
+## session shq-2026-07-09-007
+```
+started: 2026-07-29
+ended:   2026-07-29
+model:   claude-opus-4-8[1m]
+driver:  relay
+branch:  main
+starting_head: 48d8752
+ending_head:   04073ce
+focus:   investigate "still showing stale 53/0" + force-fresh cron run
+```
+
+### inbound context read
+- session -006 above
+- TECHNICAL.md §2.2 (data pipeline)
+- GH Actions secrets list
+
+### work done
+1. user reported dashboard still showed 53/0 on NIC and 54/1 on
+   non-NIC despite cron code fix being committed
+2. ran `curl https://alldeputations.com/data/meta.json` →
+   confirmed GH Pages was serving 53-row stale Sheet-derived data
+3. inspected GH Actions run history — found:
+   - 30445082447 (push event at 10:48:16 UTC, after f2928d2 push)
+     succeeded but **fell back to Sheet** because env vars were
+     empty: `SUPABASE_URL: ` and `SUPABASE_ANON_KEY: ` were blank
+     when the cron ran
+   - 30445223135 (manual trigger at 10:50:27 UTC) failed due to
+     rebase conflict on data/meta.json
+4. root cause: I added the GH secrets at 10:49:56 UTC — AFTER
+   the push-triggered cron had already started at 10:48:16 UTC.
+   GitHub Actions secrets propagate within seconds normally, but
+   the cron picked up the empty values, fell back to Sheet, and
+   pushed 53-row data
+5. retriggered manually at 11:59:47 UTC → run 30449743250 →
+   succeeded with full Supabase fetch → commit `d433b33` →
+   384 rows live on GH Pages
+6. discarded local regenerated 384-row JSON (had 4-row diff vs
+   cron's output) since the cron already deployed the right data
+7. committed merge commit `04073ce`
+
+### decisions
+- **discarded my local regen** rather than overwriting the cron's
+  push: cron is the canonical source for data files; my regen had
+  cosmetic diffs (4 IDs shifted due to timestamp differences) and
+  would have created another merge conflict on the next cron
+- **did NOT modify the workflow file** despite the path-filter
+  misfire: the trigger IS correct (f2928d2 touched scripts/, which
+  is in the filter), the env vars were simply empty. Fixed by
+  adding secrets (which now exist). No code change needed.
+- **did NOT add rebase-conflict auto-resolution** to the workflow
+  even though it failed once: a single occurrence isn't a pattern;
+  if it recurs, fix in a future session.
+
+### handoff state
+- working_tree: clean
+- GH Pages serving: 384 vacancies, 102 active, 48 closing soon
+- cron: working (3rd run after secrets propagated = success)
+- open: P2 (Astro), P3 (Realtime, AI explainer)
+- next_pickup: P2-1 when owner greenlights
+
+### gotchas for next session
+- **GH Actions secrets + cron timing**: if you change the cron
+  source (e.g. add a new secret), the next push-triggered cron
+  may run BEFORE the new secret is visible to it. Best practice:
+  add the secret first, wait 60s, then push the code change. The
+  GH UI shows when a secret was last updated; if you see "Updated
+  just now" and a push trigger fires within the next minute,
+  expect the env vars to be blank for that one run.
+- **cron rebase-conflict**: if a manual cron run overlaps with a
+  push-triggered cron run (or with a same-session local regen
+  push), they collide on data/meta.json (different
+  generated_at_utc timestamps). The cron retries 5x with
+  rebase-and-retry, which fails on conflict. Could be hardened
+  later by making the cron's rebase resolution prefer
+  --theirs for generated data files (or skip meta.json entirely).
+- **local regen is a footgun**: if you run build_data.py locally
+  and commit the output, it WILL diverge from the next cron
+  output by a few rows due to `last_date_to_apply` ticking down.
+  Never commit local regens; let the cron be the sole committer
+  of data/*.json unless explicitly debugging.
+- **site-widgets.js heartbeat** still spams 3 ERR_SSL_PROTOCOL_ERROR
+  on initial page load on NIC networks before the circuit breaker
+  trips. After that, clean. Could be reduced to 1 error by making
+  the circuit breaker trip after 1 fail (less diagnostic info) —
+  not worth changing unless the noise becomes a problem.
+
+## session shq-2026-07-09-007 end
