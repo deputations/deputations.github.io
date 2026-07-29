@@ -511,3 +511,98 @@ focus:   investigate "still showing stale 53/0" + force-fresh cron run
   not worth changing unless the noise becomes a problem.
 
 ## session shq-2026-07-09-007 end
+
+---
+
+<!-- APPEND_NEW_BLOCKS_BELOW -->
+
+## session shq-2026-07-09-008
+```
+started: 2026-07-29
+ended:   2026-07-29
+model:   claude-opus-4-8[1m]
+driver:  relay
+branch:  main
+starting_head: 469fce6
+ending_head:   c9557e4
+focus:   fix enrich-merge shape mismatch + recompute Status
+```
+
+### inbound context read
+- session -007 above (cron secrets timing, force-fresh run)
+- app.js fetchVacancies() at lines 522-565
+- enrich.js enrichRecord() at lines 443-478
+
+### work done
+1. user reported: 384/0/0 on NIC, 381/1/0 on home, all rows
+   blank except 1 active. Status filter showed All/Active(1)/
+   Inactive(0) — meaning 380 rows were 'Unknown'.
+2. diagnosed: fetchVacancies() merges by Vacancy_ID (Supabase wins)
+   then passes the merged set through enrichAll(). enrichRecord()
+   reads from snake_case keys (row.location_city, row.post_name).
+   JSON rows have Title_Case keys (Location_City, Post_Name). So
+   JSON rows that weren't overwritten by a Supabase row of the
+   same ID still get passed through enrichAll() which reads
+   undefined from them, producing empty derived fields and
+   Status = 'Unknown' default.
+3. rewrote fetchVacancies() to treat three cases per ID:
+   - JSON-only: kept as-is (already enriched by build_data.py)
+   - Supabase-only: passed through DepEnrich.enrichRecord() to
+     add Title_Case + derived fields
+   - Shared (both have ID): prefer JSON (more up-to-date fields)
+4. added recomputeStatus() that derives Status from
+   last_date_to_apply using today's date — fixes the stale
+   'Active' label on rows whose closing date passed since the
+   JSON was dumped
+5. bumped app.js?v=ms48 -> ms49 in index.html
+6. committed c9557e4, pushed
+
+### decisions
+- **JSON wins on conflict, not Supabase**: even though Supabase
+  is the live source, the JSON has already been enriched by the
+  Python build script. Re-enriching snake_case Supabase rows to
+  Title_Case correctly is possible but loses some derived fields
+  that build_data.py computes differently. JSON is the simpler
+  source of truth for already-known IDs.
+- **recompute Status client-side, not server-side**: the JSON's
+  Status field becomes stale every day. The build script
+  recomputes it on dump time. To keep the dashboard honest
+  between cron runs, recompute it client-side at load time. This
+  is cheap (384 rows, ~1ms) and removes the dependency on cron
+  frequency.
+- **did NOT modify enrich.js**: shared with admin-ingest.js and
+  build_data.py. Touching it risks regressions elsewhere.
+- **did NOT change the merge's underlying data**: still adds
+  Supabase-only rows. Just changes the order of operations
+  (enrich per-case, then merge, then recompute Status).
+
+### handoff state
+- working_tree: clean
+- GH Pages serving: 384 vacancies (cron output unchanged)
+- open: P2 (Astro), P3 (Realtime, AI explainer)
+- next_pickup: P2-1 when owner greenlights
+
+### gotchas for next session
+- **snake_case vs Title_Case shape**: app.js and enrich.js have
+  always assumed Supabase rows are snake_case. The build script
+  builds Title_Case JSON. The browser code that calls
+  enrichAll() directly assumes one shape. If you add another
+  fetch source (e.g. CSV upload, REST mirror), make sure it goes
+  through enrichRecord() first before joining a Title_Case set.
+- **Status staleness window**: now mitigated client-side. If
+  you want to keep the JSON's Status field accurate without
+  the client-side recompute, bump the cron's schedule to
+  hourly. The current daily cron + client recompute is
+  sufficient for a government audience.
+- **the 1 active vs 102 active gap** the user saw was due to
+  client recompute not running — old code used JSON's stale
+  Status. Now every page load recomputes, so the active
+  count reflects truth at load time.
+- **MERGE semantics are non-obvious**: the old "Supabase wins"
+  approach was wrong because enrich.js assumed a uniform shape.
+  The new "JSON wins" approach is correct because the merged
+  shape is uniform. Document this in TECHNICAL.md §2.1 (data
+  layer architecture) if a future session adds another shape
+  source.
+
+## session shq-2026-07-09-008 end
