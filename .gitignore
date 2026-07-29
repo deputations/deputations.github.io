@@ -33,3 +33,9 @@ _archive_chat.py
 # VAPID push private key — NEVER commit (set as a Supabase secret instead)
 supabase/.vapid.keys
 *.vapid.keys
+
+# Astro build artifacts (regenerated on every workflow run; never committed)
+astro/dist/
+astro/public/
+astro/node_modules/
+astro/.astro/

@@ -1,0 +1,91 @@
+---
+// Layout.astro — single source of truth for the HTML head, theme bootstrap,
+// skip-link, scroll-progress bar, and the shared inline SVG icon sprite.
+//
+// Pages that import this get every <head> tag, every CSS include, every
+// inline script, and the SVG sprite automatically. Per-page specifics
+// (title, description, og:image overrides) come from props.
+//
+// The existing static HTML files in this repo (index.html, defex.html,
+// etc.) DON'T use this Layout — they hand-roll the same <head>. They will
+// be migrated to Layout in P2-2.
+
+interface Props {
+  title: string;
+  description: string;
+  canonical?: string;
+  ogImage?: string;
+  pageClass?: string;
+  bodyClass?: string;
+}
+
+const {
+  title,
+  description,
+  canonical = "https://alldeputations.com/",
+  ogImage = "https://alldeputations.com/assets/brand/og-home.png",
+  pageClass = "filters-collapsed",
+  bodyClass = "",
+} = Astro.props;
+
+const ogImageUrl = ogImage;
+const cssStamp = (() => {
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  return date;
+})();
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <!-- identity -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="alternate" type="application/rss+xml" title="Deputations — new vacancies" href="/feed.xml" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#02040b" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f7f9" />
+
+    <!-- link previews -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Deputations" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Unbounded:wght@600;700;800&display=swap" rel="stylesheet" />
+
+    <script is:inline>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
+    <link rel="stylesheet" href={`/style.css?v=ms53`} />
+    <link rel="stylesheet" href={`/navbar.css?v=2`} />
+
+    <slot name="head" />
+  </head>
+  <body class={`${pageClass} ${bodyClass}`}>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
+    <slot />
+
+    <!-- Shared deps at the bottom. Keep ?v= cache-busting per CHANGELOG. -->
+    <slot name="scripts" />
+
+    <script type="module" src="/hero-wave.js?v=2"></script>
+  </body>
+</html>

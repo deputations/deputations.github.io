@@ -1,0 +1,109 @@
+# ============================================================================
+# Astro build + deploy to gh-pages branch
+#
+# Runs on every push to the `astro` branch. Builds the Astro site
+# into astro/dist and (via actions/deploy-pages@v4) publishes it to
+# GitHub Pages backed by the gh-pages branch.
+#
+# Until the owner flips the repo's Pages source from "main" to
+# "gh-pages" (Settings → Pages → Build and deployment → Branch),
+# the existing static site served from `main` stays live. The two
+# pipelines do not interfere.
+#
+# Cron writes (build-data.yml, build-defex.yml) commit data/*.json
+# to `main`. A small mirror step in the cron workflows copies those
+# files into gh-pages so the Astro build always sees fresh data.
+# ============================================================================
+name: Build Astro site
+
+on:
+  push:
+    branches:
+      - astro
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: astro-gh-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: astro/package-lock.json
+
+      - name: Sync runtime assets into astro/public
+        working-directory: astro
+        run: |
+          mkdir -p public
+          # Mirror repo-root assets that the Astro site references
+          # (CSS/JS files, vendor/three.module.js, manifest, feed,
+          # sitemap, robots, data/, favicon, og image, sw.js, etc.).
+          # .nojekyll and CNAME are critical for GH Pages.
+          cp ../CNAME public/CNAME
+          cp ../.nojekyll public/.nojekyll 2>/dev/null || touch public/.nojekyll
+          cp ../manifest.webmanifest public/manifest.webmanifest
+          cp ../feed.xml public/feed.xml
+          cp ../sitemap.xml public/sitemap.xml
+          cp ../robots.txt public/robots.txt
+          cp ../sw.js public/sw.js
+          cp ../favicon.ico public/favicon.ico
+
+          cp -r ../assets public/assets 2>/dev/null || true
+          cp -r ../vendor public/vendor 2>/dev/null || true
+          cp -r ../data public/data 2>/dev/null || true
+          cp -r ../shared public/shared 2>/dev/null || true
+
+          # JS files referenced by index.astro (and any future port):
+          cp ../config.js public/config.js
+          cp ../enrich.js public/enrich.js
+          cp ../app.js public/app.js
+          cp ../push-client.js public/push-client.js
+          cp ../home-flourish.js public/home-flourish.js
+          cp ../home-flourish.css public/home-flourish.css
+          cp ../hero-wave.js public/hero-wave.js
+          cp ../realtime-toast.js public/realtime-toast.js
+          cp ../site-widgets.js public/site-widgets.js
+          cp ../style.css public/style.css
+          cp ../navbar.css public/navbar.css
+
+          echo "Copied assets:"; ls -la public/
+
+      - name: Install dependencies
+        working-directory: astro
+        run: npm ci || npm install
+
+      - name: Build
+        working-directory: astro
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: astro/dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

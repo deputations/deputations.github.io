@@ -69,10 +69,48 @@ jobs:
             # lose the run to a non-fast-forward rejection.
             for attempt in 1 2 3 4 5; do
               git pull --rebase --autostash origin main \
-                && git push && { echo "pushed on attempt $attempt"; exit 0; }
+                && git push && { echo "pushed on attempt $attempt"; break; }
               echo "push attempt $attempt failed; retrying in 10s"
               sleep 10
             done
-            echo "::error::Could not push after 5 attempts"
+            if [ $? -ne 0 ]; then
+              echo "::error::Could not push after 5 attempts"
+              exit 1
+            fi
+          fi
+
+      # Mirror data + assets onto the gh-pages branch so Astro rebuilds pick
+      # up the freshest data without waiting on the next astro-build run.
+      # Cheap, separate step: only runs if there were data changes this run.
+      - name: Mirror data onto gh-pages
+        if: success()
+        run: |
+          # Reset to a clean checkout of gh-pages, overlay data/ + assets/,
+          # commit if anything actually changed. Force-push safely because
+          # the only writer is this workflow.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --depth=1 origin gh-pages || true
+          git worktree add /tmp/ghpages gh-pages 2>/dev/null \
+            || git worktree add --detach /tmp/ghpages origin/gh-pages 2>/dev/null \
+            || (git worktree prune; git branch -D gh-pages 2>/dev/null; git worktree add --detach -b gh-pages /tmp/ghpages origin/main)
+
+          mkdir -p /tmp/ghpages/data /tmp/ghpages/assets/previews
+          cp -f data/*.json /tmp/ghpages/data/ 2>/dev/null || true
+          cp -rf assets/previews/. /tmp/ghpages/assets/previews/ 2>/dev/null || true
+          cp -f feed.xml /tmp/ghpages/feed.xml 2>/dev/null || true
+
+          cd /tmp/ghpages
+          git add data/ assets/ feed.xml 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(data): mirror fresh dump"
+            for attempt in 1 2 3 4 5; do
+              git push origin gh-pages && { echo "data mirrored on attempt $attempt"; exit 0; }
+              echo "data-mirror attempt $attempt failed; retrying in 10s"
+              sleep 10
+            done
+            echo "::error::data mirror push failed"
             exit 1
+          else
+            echo "gh-pages data already up to date"
           fi

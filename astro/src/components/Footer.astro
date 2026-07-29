@@ -1,0 +1,20 @@
+---
+// Footer.astro — the disclaimer line at the bottom of every page.
+//
+// Currently injected by site-widgets.js as `.sw-footer` div. This component
+// is the Astro-native version. P2-2 may migrate site-widgets.js to render
+// via this component instead, but for checkpoint A the disclaimer is still
+// injected by site-widgets.js (preserving current behaviour).
+
+const year = new Date().getFullYear();
+---
+
+<footer class="footer-astro" aria-label="Site footer">
+  <div class="footer-astro-row">
+    <span>© {year} Deputations — independent, AI-assisted, human-reviewed</span>
+    <span class="sep">·</span>
+    <a href="#disclaimer">Disclaimer</a>
+    <span class="sep">·</span>
+    <a href="/contact.html">Contact</a>
+  </div>
+</footer>

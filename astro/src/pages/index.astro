@@ -1,0 +1,240 @@
+---
+// index.astro — home page, Astro port.
+//
+// Reproduces the body structure of the existing static index.html so
+// app.js (and all the other scripts loaded by Layout) see the same DOM
+// they did before. The Astro components (IconSprite, Navbar, Footer)
+// replace the inline copies that previously lived in every HTML file.
+//
+// The script src=... ?v=... cache-bust values mirror the static site
+// exactly. Bump them together when the underlying file changes.
+
+import Layout from "../layouts/Layout.astro";
+import IconSprite from "../components/IconSprite.astro";
+import Navbar from "../components/Navbar.astro";
+---
+
+<Layout
+  title="Central Deputation Vacancies — Live Dashboard | Deputations"
+  description="Searchable dashboard of Central Government deputation vacancies from Employment News and official circulars — filter by pay level, eligibility, ministry, location and closing date."
+>
+  <IconSprite slot="head" />
+  <Navbar slot="head" />
+
+  <div class="bg-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+    <!-- BEGIN hero-wave -->
+    <canvas id="heroWaveCanvas" class="bg-wave" aria-hidden="true"></canvas>
+    <!-- END hero-wave -->
+  </div>
+
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-logo">
+        <svg class="icon"><use href="#i-building"/></svg>
+        <h1><span class="gradient-text" data-tw>DEPUTATION VACANCIES</span></h1>
+      </div>
+
+      <div class="header-actions">
+        <button id="favBtn" class="icon-btn" title="My Watchlist" aria-label="My Watchlist">
+          <svg class="icon"><use href="#i-bookmark"/></svg>
+          <span id="favCount" class="fav-count">0</span>
+        </button>
+
+        <button id="themeToggle" class="icon-btn" title="Toggle Theme" aria-label="Toggle Theme">
+          <svg class="icon"><use href="#i-moon"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-layout" id="main-content">
+      <aside class="filters-sidebar glass-panel" id="filtersSidebar">
+        <div class="filters-header">
+          <h2><svg class="icon"><use href="#i-filter"/></svg> Filters</h2>
+          <button id="clearFiltersBtn" class="text-btn">Clear All</button>
+        </div>
+
+        <div class="filter-group fg-search">
+          <label for="searchPost">Search</label>
+          <div class="input-icon">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input type="text" id="searchPost" placeholder="Search by post, dept, keywords…">
+          </div>
+        </div>
+
+        <div class="filter-group fg-primary">
+          <label id="filterMyPayLevelLbl">Display deputations for me</label>
+          <div class="ms ss" id="filterMyPayLevelSS">
+            <button type="button" class="ms-trigger" id="filterMyPayLevelBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterMyPayLevelLbl">
+              <span class="ms-trigger-label">Your Pay Level</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="ms-panel ss-panel" id="filterMyPayLevelPanel" hidden>
+              <ul class="ms-list ss-list" id="filterMyPayLevelList" role="listbox" aria-label="Select your pay level"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label id="filterExperienceLbl">My Years of Experience</label>
+          <div class="ms ss" id="filterExperienceSS">
+            <button type="button" class="ms-trigger" id="filterExperienceBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterExperienceLbl">
+              <span class="ms-trigger-label">Select Pay Level first</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="ms-panel ss-panel" id="filterExperiencePanel" hidden>
+              <ul class="ms-list ss-list" id="filterExperienceList" role="listbox" aria-label="Select years of experience"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label id="filterLevelLbl">Pay Level</label>
+          <div class="ms ss" id="filterLevelSS">
+            <button type="button" class="ms-trigger" id="filterLevelBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterLevelLbl">
+              <span class="ms-trigger-label">All Levels</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="ms-panel ss-panel" id="filterLevelPanel" hidden>
+              <ul class="ms-list ss-list" id="filterLevelList" role="listbox" aria-label="Select pay level"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label id="filterMinistryLbl">Ministry</label>
+          <div class="ms ss" id="filterMinistrySS">
+            <button type="button" class="ms-trigger" id="filterMinistryBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterMinistryLbl">
+              <span class="ms-trigger-label">All Ministries</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="ms-panel ss-panel" id="filterMinistryPanel" hidden>
+              <ul class="ms-list ss-list" id="filterMinistryList" role="listbox" aria-label="Select ministry"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label id="filterLocationLbl">Location</label>
+          <div class="ms" id="filterLocationMS">
+            <button type="button" class="ms-trigger" id="filterLocationBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterLocationLbl">
+              <span class="ms-trigger-label">All Locations</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="ms-panel" id="filterLocationPanel" hidden role="dialog" aria-label="Select locations">
+              <header class="ms-panel-head">
+                <div class="ms-search-wrap">
+                  <svg class="ms-search-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                  <input type="search" class="ms-search" placeholder="Search locations…" aria-label="Search locations">
+                </div>
+                <button type="button" class="ms-close" data-ms-done aria-label="Close">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              </header>
+              <p class="ms-hint">Click a location to select it · click again to deselect</p>
+              <ul class="ms-list" id="filterLocationList" role="listbox" aria-multiselectable="true"></ul>
+              <div class="ms-empty" hidden>No matches</div>
+              <footer class="ms-panel-foot">
+                <span class="ms-count" data-ms-count>0 selected</span>
+                <div class="ms-foot-actions">
+                  <button type="button" class="ms-action" data-ms-none>Clear all</button>
+                  <button type="button" class="ms-action ms-action--primary" data-ms-done>Done</button>
+                </div>
+              </footer>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label id="filterStatusLbl">Status</label>
+          <div class="ms ss" id="filterStatusSS">
+            <button type="button" class="ms-trigger ms-trigger--active" id="filterStatusBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterStatusLbl">
+              <span class="ms-trigger-label">Active</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="ms-panel ss-panel" id="filterStatusPanel" hidden>
+              <ul class="ms-list ss-list" id="filterStatusList" role="listbox" aria-label="Select status"></ul>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" id="desktopFilterToggle" class="filters-more-btn" aria-expanded="false" aria-controls="filtersSidebar">
+          <svg class="icon"><use href="#i-sliders"/></svg>
+          <span>Show more filters</span>
+          <svg class="icon filters-more-caret"><use href="#i-chevron-down"/></svg>
+        </button>
+      </aside>
+
+      <section class="dashboard-content">
+        <div class="kpi-grid" id="kpiGrid"></div>
+
+        <div class="top-toolbar">
+          <div class="toolbar-line toolbar-line-filters">
+            <div class="results-count" id="resultsCount" aria-live="polite">Loading vacancies...</div>
+            <div id="activeFilters" class="active-filters"></div>
+            <div class="quick-filters-bar" id="quickFiltersBar"></div>
+
+            <div class="ms ss toolbar-sort" id="cardSortSS" hidden>
+              <button type="button" class="ms-trigger" id="cardSortBtn"
+                      aria-haspopup="listbox" aria-expanded="false" aria-label="Sort cards">
+                <span class="ms-trigger-label">Closing soon</span>
+                <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <div class="ms-panel ss-panel" id="cardSortPanel" hidden role="listbox" aria-label="Sort cards by">
+                <ul class="ms-list ss-list" id="cardSortList" role="listbox"></ul>
+              </div>
+            </div>
+
+            <div class="view-toggles">
+              <button id="btnTableView" class="view-btn active" title="Table View" aria-label="Table View">
+                <svg class="icon"><use href="#i-table"/></svg>
+              </button>
+
+              <button id="btnCardView" class="view-btn" title="Card View" aria-label="Card View">
+                <svg class="icon"><use href="#i-grid"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="dataContainer" class="data-container view-table"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="modal" class="vxd" aria-labelledby="modalTitle">
+    <div class="modal-content glass-panel">
+      <button id="closeModal" class="modal-close" aria-label="Close">
+        <svg class="icon"><use href="#i-x"/></svg>
+      </button>
+      <div id="modalBody"></div>
+    </div>
+  </dialog>
+
+  <Fragment slot="scripts">
+    <!-- Astro treats external <script src=...> as imports by default. The
+         is:inline directive keeps these as bare tags pointing at runtime
+         files in public/, which is exactly the behaviour we need (the
+         existing static site uses ?v= cache-busting that we want to keep). -->
+    <script is:inline src="/config.js?v=sb2"></script>
+    <script is:inline src="/enrich.js?v=sb13"></script>
+    <script is:inline src="/app.js?v=ms50"></script>
+    <!-- vacancy push alerts (review P1-3); no-op unless Push is supported + VAPID configured -->
+    <script is:inline defer src="/push-client.js?v=1"></script>
+    <!-- BEGIN home-flourish -->
+    <script is:inline defer src="/home-flourish.js?v=2"></script>
+    <!-- END home-flourish -->
+    <!-- BEGIN realtime-toast (P3-1) -->
+    <script is:inline defer src="/realtime-toast.js?v=1"></script>
+    <!-- END realtime-toast -->
+    <script is:inline defer src="/site-widgets.js?v=23"></script>
+  </Fragment>
+</Layout>
