@@ -1,14 +1,14 @@
 {
-  "generated_at_utc": "2026-07-29T10:46:47Z",
-  "record_count": 384,
-  "active_count": 102,
-  "inactive_count": 281,
-  "closing_soon_count": 48,
-  "source": "supabase_rest_api_via_anon_key",
+  "generated_at_utc": "2026-07-29T10:48:48Z",
+  "record_count": 53,
+  "active_count": 0,
+  "inactive_count": 53,
+  "closing_soon_count": 0,
+  "source": "private_google_sheet_via_sheets_api",
   "filter_counts": {
-    "levels": 17,
-    "ministries": 44,
-    "locations": 80,
-    "statuses": 3
+    "levels": 14,
+    "ministries": 20,
+    "locations": 24,
+    "statuses": 1
   }
 }
