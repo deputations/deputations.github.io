@@ -70,6 +70,23 @@ jobs:
         # Astro workflow regenerates them every build.
         run: python scripts/build_og_images.py
 
+      - name: Debug Gemini from CI
+        # One-shot diagnostic: prove what the CI runner sees when calling
+        # Gemini with the same key the build script uses. Lets us distinguish
+        # "script bug" from "CI env cannot reach Gemini correctly" from
+        # "secret value is corrupted (whitespace, truncation, etc.)".
+        # Safe to remove once 0016_semantic_search is in steady state.
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "Key prefix: ${GEMINI_API_KEY:0:8}..."
+          echo "Key length: ${#GEMINI_API_KEY}"
+          curl -s -w "\nHTTP %{http_code}\n" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${GEMINI_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{"content":{"parts":[{"text":"hello"}]},"outputDimensionality":768}' \
+            | head -10
+
       - name: Build vacancy embeddings (P3-3)
         # Bulk-embed ACTIVE vacancies with Gemini and UPSERT into
         # public.vacancy_embeddings. Uses the same GEMINI_API_KEY as the
