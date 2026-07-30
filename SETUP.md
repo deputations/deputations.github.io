@@ -45,6 +45,18 @@ a few keys.
 1. Go to <https://aistudio.google.com/app/apikey> (sign in with your Google/Gemini account).
 2. **Create API key** → copy it. This is the free tier — fine for a few PDFs/week.
 
+## 4b. Plug GitHub Actions secrets (for the daily data cron)
+The `.github/workflows/build-data.yml` workflow runs daily and (since P3-3) calls
+`scripts/build_embeddings.py` to bulk-embed ACTIVE vacancies. It needs two secrets
+beyond the Supabase anon key already configured:
+
+- **Repository → Settings → Secrets and variables → Actions → New repository secret**:
+  - `SUPABASE_SERVICE_ROLE_KEY` — the same `service_role` key from step 3. **Secret.**
+  - `GEMINI_API_KEY` — the same key from step 4. **Secret.**
+
+These are only used by the GitHub Action runner — never appear in the site, never
+exposed to the public.
+
 ## 5. Deploy the Edge Function
 Install the Supabase CLI once: <https://supabase.com/docs/guides/cli> (or `npm i -g supabase`).
 Then in this repo folder (PowerShell):

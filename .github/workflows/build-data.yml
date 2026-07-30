@@ -70,6 +70,27 @@ jobs:
         # Astro workflow regenerates them every build.
         run: python scripts/build_og_images.py
 
+      - name: Build vacancy embeddings (P3-3)
+        # Bulk-embed ACTIVE vacancies with Gemini and UPSERT into
+        # public.vacancy_embeddings. Uses the same GEMINI_API_KEY as the
+        # enrich/extract functions; SUPABASE_SERVICE_ROLE_KEY bypasses RLS
+        # for the write. Exits non-zero (3) on 429 — the Edge Function
+        # has already auto-disabled for the rest of the day by then, so
+        # we just continue to the commit step.
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python scripts/build_embeddings.py || {
+            ec=$?
+            if [ $ec -eq 3 ]; then
+              echo "::warning::Embeddings build hit free-tier 429 — disabled until tomorrow UTC"
+            else
+              exit $ec
+            fi
+          }
+
       - name: Commit generated files if changed
         run: |
           git config user.name "github-actions[bot]"
