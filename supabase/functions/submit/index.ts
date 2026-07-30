@@ -104,6 +104,60 @@ Deno.serve(async (req) => {
     return json({ ok: true, success: true, endorsements: data });
   }
 
+  // ---------- community discrepancy on an FAQ answer ----------
+  if (action === "faq_report") {
+    const qnum = String(body.qnum || "").trim().slice(0, 8);
+    const report = String(body.report || "").trim();
+    if (!qnum) return json({ ok: false, message: "Missing question reference." }, 400);
+    if (report.length < 10) return json({ ok: false, message: "Please describe the discrepancy." }, 400);
+    const cap = (v: unknown, n: number) => String(v ?? "").trim().slice(0, n);
+    const { data, error } = await admin.from("faq_reports").insert({
+      qnum,
+      qtext: cap(body.qtext, 400),
+      report: cap(report, 2000),
+      name: cap(body.name, 80),
+      user_agent: cap(body.userAgent, 400),
+    }).select("id").single();
+    if (error) return json({ ok: false, message: error.message }, 500);
+    return json({ ok: true, success: true, reportId: data?.id });
+  }
+
+  // ---------- vote on an FAQ discrepancy ----------
+  if (action === "faq_vote") {
+    const id = String(body.id || "").trim();
+    const voter = String(body.voter || "").trim();
+    const side = String(body.vote || "").trim().toLowerCase();
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ ok: false, message: "Invalid report reference." }, 400);
+    if (side !== "agree" && side !== "disagree") return json({ ok: false, message: "Invalid vote." }, 400);
+    const { data, error } = await admin.rpc("faq_vote", { p_id: id, p_voter: voter, p_side: side });
+    if (error) return json({ ok: false, message: error.message }, 500);
+    if (data === null) return json({ ok: false, message: "That report is no longer open." }, 400);
+    return json({ ok: true, success: true, agree: data.agree, disagree: data.disagree });
+  }
+
+  // ---------- list open FAQ discrepancies (public SELECT, admin-bypass works
+  // automatically because the service role bypasses RLS).
+  if (action === "faq_list") {
+    const { data, error } = await admin
+      .from("faq_reports")
+      .select("id, qnum, qtext, report, name, agree, disagree, created_at")
+      .eq("status", "open")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) return json({ ok: false, message: error.message }, 500);
+    const reports = (data || []).map((r: any) => ({
+      id: r.id,
+      qnum: r.qnum,
+      qtext: r.qtext || "",
+      report: r.report || "",
+      name: r.name || "",
+      agree: Number(r.agree) || 0,
+      disagree: Number(r.disagree) || 0,
+      timestamp: r.created_at,
+    }));
+    return json({ ok: true, success: true, reports });
+  }
+
   // ---------- vacancy tip ----------
   const title = String(body.title || "").trim();
   const org = String(body.organization || "").trim();
