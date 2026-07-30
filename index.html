@@ -159,6 +159,15 @@
             <input type="text" id="searchPost" placeholder="Search by post, dept, keywords…">
             <span class="search-ph" aria-hidden="true"></span>
           </div>
+          <!-- P3-3 semantic-search toggle. Default OFF so the existing
+               keyword path stays untouched; turning it on reroutes the
+               same #searchPost input through the semantic-search Edge
+               Function. -->
+          <button type="button" id="semanticToggle" class="semantic-toggle"
+                  aria-pressed="false" title="Toggle natural-language AI search">
+            <span class="semantic-toggle-glyph" aria-hidden="true">✨</span>
+            <span class="semantic-toggle-label">AI</span>
+          </button>
         </div>
 
         <div class="filter-group fg-primary">
@@ -340,6 +349,18 @@
             </div>
           </div>
         </div>
+
+        <!-- P3-3: AI-ranked semantic matches surface here. Hidden by default;
+             the panel only paints when the user has the AI toggle on AND
+             has typed ≥3 chars. -->
+        <section id="semanticResults" class="semantic-results" hidden
+                 aria-label="AI-ranked matches">
+          <header class="semantic-results-head">
+            <span class="semantic-results-title"><span aria-hidden="true">✨</span> AI-ranked matches</span>
+            <span id="semanticResultsStatus" class="semantic-results-status" aria-live="polite"></span>
+          </header>
+          <ul id="semanticResultsList" class="semantic-results-list"></ul>
+        </section>
 
         <div id="dataContainer" class="data-container view-table"></div>
       </section>

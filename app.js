@@ -3414,4 +3414,165 @@ function syncCardSortUI() {
             .replaceAll('"', '&quot;')
             .replaceAll("'", '&#39;');
     }
+
+    // ========================================================================
+    // P3-3 — semantic search (Gemini embeddings via the semantic-search Edge
+    // Function from PR 2). Off by default; flipping the chip reroutes the
+    // same #searchPost input through a pgvector similarity lookup, while the
+    // existing keyword path keeps running unchanged.
+    //
+    // Free-tier discipline: the Edge Function returns 503 + code="disabled"
+    // when the daily Gemini quota is exhausted; the UI degrades to a single
+    // inline status line, never throws, never blocks the user from typing.
+    // ========================================================================
+
+    let semanticMode = false;
+    let semanticTimer = null;
+    let semanticInflight = null;
+    const semanticToggle = document.getElementById('semanticToggle');
+    const semanticResults = document.getElementById('semanticResults');
+    const semanticResultsList = document.getElementById('semanticResultsList');
+    const semanticResultsStatus = document.getElementById('semanticResultsStatus');
+    const SEMANTIC_ORIGINAL_PLACEHOLDER = searchPost ? searchPost.getAttribute('placeholder') : '';
+
+    function setSemanticMode(on) {
+        semanticMode = !!on;
+        if (semanticToggle) semanticToggle.setAttribute('aria-pressed', semanticMode ? 'true' : 'false');
+        if (searchPost) {
+            searchPost.setAttribute('placeholder',
+                semanticMode
+                    ? 'Try a natural-language query…'
+                    : SEMANTIC_ORIGINAL_PLACEHOLDER);
+        }
+        // Hide panel when turning off; if turning on, immediately try the
+        // current query (don't wait for next keystroke).
+        if (!semanticMode) {
+            hideSemanticResults();
+            return;
+        }
+        scheduleSemanticSearch();
+    }
+
+    function hideSemanticResults() {
+        if (semanticResults) semanticResults.hidden = true;
+        if (semanticResultsList) semanticResultsList.innerHTML = '';
+        if (semanticResultsStatus) semanticResultsStatus.textContent = '';
+    }
+
+    function showSemanticMessage(text) {
+        if (!semanticResults || !semanticResultsList || !semanticResultsStatus) return;
+        semanticResults.hidden = false;
+        semanticResultsList.innerHTML = '';
+        semanticResultsStatus.textContent = text;
+    }
+
+    function renderSemanticResults(results) {
+        if (!semanticResults || !semanticResultsList || !semanticResultsStatus) return;
+        semanticResults.hidden = false;
+        semanticResultsStatus.textContent =
+            results.length === 0
+                ? 'No AI matches — try different wording or use keywords.'
+                : 'Top matches from natural-language similarity.';
+        semanticResultsList.innerHTML = results.map((r) => {
+            const post = escapeHtml(r.post_name || 'Untitled post');
+            const org  = escapeHtml(r.organisation || '');
+            const min  = escapeHtml(r.ministry || '');
+            const lvl  = escapeHtml(r.level ? 'L' + r.level : '');
+            const score = (typeof r.score === 'number') ? r.score.toFixed(2) : '0.00';
+            const subParts = [org, min, lvl].filter(Boolean);
+            const sub = subParts.join(' · ');
+            return `<li data-vid="${escapeHtml(r.vacancy_id)}">
+                <span class="semantic-score">${score}</span>
+                <span class="semantic-result-meta">
+                    <span class="semantic-result-post">${post}</span>
+                    <span class="semantic-result-sub">${escapeHtml(sub)}</span>
+                </span>
+                <span class="semantic-result-open" aria-hidden="true">Open ›</span>
+            </li>`;
+        }).join('');
+    }
+
+    function scheduleSemanticSearch() {
+        if (!semanticMode) return;
+        clearTimeout(semanticTimer);
+        const q = (searchPost ? searchPost.value : '').trim();
+        if (q.length < 3) {
+            showSemanticMessage('Type 3+ characters for an AI-ranked match.');
+            return;
+        }
+        semanticTimer = setTimeout(() => runSemanticSearch(q), 250);
+    }
+
+    async function runSemanticSearch(query) {
+        if (!semanticMode) return;
+        if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+            showSemanticMessage('AI search unavailable — Supabase not configured. Use keywords.');
+            return;
+        }
+        // Cancel any in-flight request before starting a new one.
+        if (semanticInflight && semanticInflight.abort) {
+            try { semanticInflight.abort(); } catch { /* ignore */ }
+        }
+        const ctrl = new AbortController();
+        semanticInflight = ctrl;
+        showSemanticMessage('Finding AI-ranked matches…');
+
+        try {
+            const url = `${window.SUPABASE_URL}/functions/v1/semantic-search`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': window.SUPABASE_ANON_KEY,
+                    'Authorization': 'Bearer ' + window.SUPABASE_ANON_KEY,
+                },
+                body: JSON.stringify({ query, k: 5 }),
+                signal: ctrl.signal,
+            });
+            // The signal may have aborted because a newer keystroke fired.
+            if (ctrl.signal.aborted) return;
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok || body.ok === false) {
+                if (body && body.code === 'disabled') {
+                    showSemanticMessage(
+                        '✨ AI search temporarily unavailable (free-tier limit). ' +
+                        'Available again after midnight UTC. Keyword search still works.');
+                } else {
+                    showSemanticMessage(
+                        'AI search unavailable right now. Try keywords, or retry in a minute.');
+                }
+                return;
+            }
+            const results = Array.isArray(body.results) ? body.results : [];
+            renderSemanticResults(results);
+        } catch (e) {
+            if (e && e.name === 'AbortError') return;   // superseded by newer keystroke
+            console.warn('[semantic] fetch failed:', e);
+            showSemanticMessage('AI search unavailable — try keywords instead.');
+        } finally {
+            if (semanticInflight === ctrl) semanticInflight = null;
+        }
+    }
+
+    if (semanticToggle) {
+        semanticToggle.addEventListener('click', () => setSemanticMode(!semanticMode));
+    }
+    // Click a ranked-match row → open the existing vacancy modal. Uses
+    // event delegation so we don't have to rebind when the panel re-renders.
+    if (semanticResultsList) {
+        semanticResultsList.addEventListener('click', (e) => {
+            const li = e.target.closest('li[data-vid]');
+            if (!li) return;
+            const vid = li.getAttribute('data-vid');
+            if (vid && typeof openVacancyModal === 'function') {
+                openVacancyModal(vid);
+            }
+        });
+    }
+    // Hook into the existing search input — only fires the AI path when on.
+    if (searchPost) {
+        searchPost.addEventListener('input', () => {
+            if (semanticMode) scheduleSemanticSearch();
+        });
+    }
 });

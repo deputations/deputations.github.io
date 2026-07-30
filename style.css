@@ -6220,3 +6220,140 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
   /* corner cell is pinned on BOTH axes — sits above every other sticky cell */
   #dataContainer.view-table .data-table thead th:first-child { z-index: 5; }
 }
+
+/* ============================================================================
+   P3-3 semantic search
+   Toggle chip next to #searchPost, slim AI-ranked results panel above the
+   table. Matches existing filter-chip / glass-panel tokens; light + dark.
+   ============================================================================ */
+
+.semantic-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface-solid);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+}
+.semantic-toggle:hover {
+  border-color: var(--accent, #22d3ee);
+  color: var(--text-primary);
+}
+.semantic-toggle[aria-pressed="true"] {
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.25), rgba(34, 211, 238, 0.18));
+  color: var(--text-primary);
+  border-color: var(--accent, #22d3ee);
+}
+.semantic-toggle-glyph { font-size: 0.85rem; }
+
+.semantic-results {
+  margin: 0 0 14px;
+  padding: 12px 14px 10px;
+  border-radius: 14px;
+  background: var(--bg-elevated, rgba(148, 163, 184, 0.08));
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.28));
+  backdrop-filter: blur(8px);
+}
+.semantic-results[hidden] { display: none; }
+
+.semantic-results-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.semantic-results-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+}
+.semantic-results-status {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.semantic-results-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.semantic-results-list li {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg-surface-solid, rgba(15, 23, 42, 0.4));
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+.semantic-results-list li:hover {
+  border-color: var(--accent, #22d3ee);
+}
+.semantic-results-list li:active { transform: scale(0.998); }
+
+.semantic-score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.25), rgba(34, 211, 238, 0.22));
+  color: var(--text-primary);
+}
+
+.semantic-result-meta {
+  min-width: 0;
+}
+.semantic-result-post {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.semantic-result-sub {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.semantic-result-open {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+}
+
+html[data-theme="light"] .semantic-results {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(15, 23, 42, 0.12);
+}
+html[data-theme="light"] .semantic-results-list li {
+  background: #ffffff;
+}
+html[data-theme="light"] .semantic-result-post,
+html[data-theme="light"] .semantic-results-title { color: #0f172a; }
+html[data-theme="light"] .semantic-result-sub,
+html[data-theme="light"] .semantic-result-open,
+html[data-theme="light"] .semantic-results-status { color: #475569; }

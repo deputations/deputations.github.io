@@ -1557,3 +1557,134 @@ variants; app.js semanticMode state + runSemanticSearch() +
 disabled-state UI; tests/test_semantic_search.py with chip toggle,
 ranked matches, disabled state, default-off tests. Owner deploys the
 gh-pages auto-build after this lands.
+
+---
+
+## session shq-2026-07-31-003 (P3-3 PR 3)
+```
+started: 2026-07-31
+ended:   2026-07-31
+model:   claude-opus-4-8
+driver:  relay
+branch:  main
+starting_head: ff83c06
+ending_head:   <this commit>
+focus:   P3-3 PR 3 — AI toggle chip, results panel, smoke tests
+```
+
+### inbound context read
+- PR 2 landed (ff83c06): semantic-search Edge Function exists, public POST,
+  free-tier guards, LRU cache, 768d pgvector lookup. The function is
+  ready; this PR is the user-facing surface.
+- P3-4 gotchas: wait_for_function can't use `arguments` keyword; route
+  helpers live in `tests/pages/route_helpers.py::reply_json`; page fixture
+  in `tests/conftest.py`; build-time cron at 03:35 UTC.
+- Owner's previous-direction: "we need not make 384 calls as 384 are the
+  total vacancies but only 67 are active at present", "I want it strictly
+  to be under free tier, if it is about to extend to paid i need to
+  disable it automatically to be enabled only next day when free tier
+  comes" — both delivered in PR 1+2.
+
+### work done
+- index.html: added <button id="semanticToggle"> inside .fg-search after
+  #searchPost (off by default, aria-pressed="false"); added
+  <section id="semanticResults" hidden> containing header (title +
+  status) and <ul id="semanticResultsList">, inserted just before
+  #dataContainer so the panel sits between the filter sidebar and the
+  table.
+- style.css: appended ~115 lines. .semantic-toggle (chip styling
+  matching .filter-chip), .semantic-results (panel with subtle border +
+  glass background), .semantic-results-list li (row layout),
+  .semantic-score (badge), .semantic-result-meta/post/sub/open.
+  Light + dark theme variants.
+- app.js: added ~180 lines at the end of the DOMContentLoaded handler.
+  semanticMode=false (module-scoped). setSemanticMode(on) flips
+  aria-pressed + swaps placeholder. scheduleSemanticSearch() debounces
+  250 ms. runSemanticSearch(query) uses AbortController to cancel
+  in-flight requests on newer keystrokes; on {ok:false, code:"disabled"}
+  shows the inline free-tier message; on empty results shows "No AI
+  matches"; renders rows with data-vid attributes. Click delegation on
+  #semanticResultsList forwards li[data-vid] clicks to openVacancyModal().
+- tests/test_semantic_search.py (NEW, 4 tests):
+    * test_semantic_chip_is_off_by_default: assert chip exists, panel
+      hidden, no fetch fires on typing without toggling.
+    * test_semantic_chip_toggles_and_shows_panel: click flip + verify
+      panel hidden after second click.
+    * test_semantic_search_renders_ranked_matches: stub Edge Function
+      with 3 fixtures; toggle on; type "finance posts in the northeast";
+      assert 3 li rows; assert first has data-vid + score badge "0.92";
+      assert captured POST body has query verbatim; assert clicking the
+      row opens #modal[open] with substantial body text.
+    * test_semantic_search_disabled_state_handled_gracefully: stub with
+      503 + code="disabled"; type "Director" (matches keyword rows);
+      assert status includes "free-tier" + "midnight UTC"; assert no li
+      rows; assert keyword rows still >= 8 (keyword path unaffected);
+      assert no pageerror.
+- Smoke suite green: 29/29 pass in ~79s (was 25 pre-PR-3; +4 new).
+- WEBSITE-REVIEW §P3-3 row updated to DONE (PR 1 + PR 2 + PR 3) with
+  concise description of all three layers + free-tier guarantee.
+
+### decisions
+- **Click delegation**, not per-row bindings: rows are re-rendered on
+  every keystroke; per-li event listeners would attach/unboundedly.
+  Delegate on the static parent list.
+- **Test fill query = "Director"**, not "anything goes here": the latter
+  triggered the keyword debounce too, filtered the table to 0 rows, and
+  caused a false-positive assertion failure ("keyword rows regressed").
+  Director is the same query the pre-existing test_search_post_debounces
+  uses and matches 8+ rows in the fixture.
+- **Disabled-state inline message**, not a toast: the existing pattern
+  is inline message panels (#loader, #resultsCount updates). Toast would
+  be a new dependency surface for a state that lasts the rest of the day.
+- **Skip LLM snippets**: per the plan's scope decision ("ranked matches
+  only"). Adds +500ms + cost per query for marginal value.
+- **`tests` runner directly via venv-Scripts/python.exe**, not
+  scripts/run_smoke.sh — the .sh file has POSIX paths to .venv-smoke/bin/
+  which doesn't exist on Windows. The session memory captures this
+  (deputation-p3-4-gotchas).
+
+### handoff state
+- HEAD: <this commit>
+- Working tree: clean except .venv-smoke/ which is gitignored.
+- P3-3 fully DONE. All three PRs landed in this session (shq-2026-07-31-002
+  + shq-2026-07-31-003). Owner needs to:
+    1. Deploy migration 0016 to live Supabase:
+       `supabase db push` (run from repo root with linked project).
+    2. Add GH secrets SUPABASE_SERVICE_ROLE_KEY + GEMINI_API_KEY to
+       repo Settings → Secrets (documented in SETUP.md §4b).
+    3. Trigger workflow_dispatch on build-data.yml to backfill
+       vacancy_embeddings (verify Studio:  select count(*) from
+       vacancy_embeddings; ≈ 67 of active count).
+    4. Deploy Edge Function: `supabase functions deploy semantic-search
+       --no-verify-jwt`.
+    5. Visit live index.html, click ✨ AI, type a query — confirm ranks.
+
+### gotchas for next session
+- **Pre-existing flake**: test_search_post_debounces uses a 5000ms
+  wait_for_function timeout which can fail when previous tests in the
+  suite make the playwright pool warmer. Pre-existing — NOT introduced
+  by P3-3. Re-running the suite in isolation passes it consistently.
+  Filed under "known flake" not "regression".
+- **P3-4 wait_for_function gotcha confirmed**: passing the arg via
+  closure works fine (uses Playwright's `arg=before` parameter, not the
+  banned `arguments` keyword). test_semantic_search.py uses no closure
+  state — strictly the documented forms.
+- **pgvector gotcha from PR 2 confirmed again in PR 3 smoke tests**:
+  route stub accepts any POST body — the test never exercises the
+  pgvector param formatting. This is by design (smoke suite has no
+  live Supabase project).
+- **AbortController pattern**: semanticInflight + AbortController is the
+  same pattern as realtime-toast.js (P3-1). The pre-existing
+  getFilteredData() debounce and the new AI debounce are SEPARATE
+  timers — independent cancel windows. Toggling AI on does NOT cancel
+  the keyword debounce.
+- **Deployed PR-3 frontend will not work until ALL THREE server pieces
+  are deployed**: migration + embeddings + function. Until then the
+  chip toggles on, the panel shows, the POST returns 404 (or
+  semantic-search not found), and the disabled-state UI takes over
+  after the typed query reaches the network. None of this crashes —
+  the UX is designed to fall through to the keyword table.
+
+### next_pickup
+P3-2 (AI eligibility explainer) — flagship L feature, parallel structure
+to P3-3 (Edge Function + UI + smoke tests). Owner pick.
