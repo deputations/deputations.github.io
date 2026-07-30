@@ -1219,3 +1219,67 @@ focus:   P3-5: retire Apps Script fallback + repo housekeeping
   needs to update it.
 
 ## session shq-2026-07-30-001 end
+
+## session shq-2026-07-30-002 (P3-4)
+
+**P3-4 DONE.** Playwright+pytest smoke suite in CI replaces the 9 ad-hoc
+verify_*.py scripts P3-5 deleted. 25 tests across 10 files, ~70s local.
+
+### layout
+- tests/__init__.py, tests/conftest.py, tests/README.md
+- tests/fixtures/{constants,rpc_stub}.py
+- tests/pages/{serve,route_helpers}.py
+- tests/test_{index,defex,report_vacancy,contact,my_deputation,faq,rules,admin_ingest_login,redirects,constants_in_sync}.py
+- scripts/run_smoke.sh (one-liner: venv + install + pytest)
+- scripts/verify_admin.py — refactored in PR 4 to use shared serve/jwt/reply_json/reply_empty_cors
+- .github/workflows/smoke-tests.yml — PR/push/cron, two steps (pytest + verify_admin)
+
+### coverage
+8 user pages × 2-4 tests each + admin-ingest login (no auth) + redirect +
+drift guard. All backend calls stubbed via `page.route` so suite never
+depends on live Supabase. Static serve is a ThreadingHTTPServer daemon
+thread on 127.0.0.1:8780 (chosen to not collide with 8771 / 8123).
+
+### what landed where (commits on main)
+- b8b7aa0 PR 1: scaffold + index.html test + workflow + run_smoke.sh
+- 64ad113 PR 2: defex + report_vacancy + contact + my-deputation
+- 5ece4db PR 3: faq + rules + admin login + redirect
+- 8102f44 + 98f800a PR 4: verify_admin.py onto shared helpers, push after cron
+- (PR 5 follow-up: drift guard + final rebases)
+
+### gotchas for next session
+- **Playwright dispatches routes in registration order (first match
+  wins), NOT LIFO as the plan agent initially wrote.** PR 3 caught it
+  when the `/auth/v1/otp` route was shadowed by a catch-all OPTIONS
+  preflight. Tests register more-specific patterns BEFORE fixtures that
+  install broad globs. Comment in `rpc_stub.py` lines 45-51 documents
+  this. Drop the catch-all preflight entirely; browser-driven CORS
+  preflights work fine without explicit interception as long as each
+  per-test stub sets the right `Access-Control-Allow-Origin` header
+  (reply_json does).
+- **Card view (`btnCardView`) is flaky** because `setView('card')` chains
+  through `document.startViewTransition`, which races with locator
+  queries in headless Chromium. PR 1 dropped the test and documented
+  why in test_index.py's module docstring; do not "fix" by reverting.
+- **`tests/test_index.py` asserts `tr.clickable-row[data-open-details]`**
+  because the default view is TABLE, not cards. Easy to misread the
+  table-vs-card markup on first glance.
+- **`scripts/verify_admin.py` has a pre-existing failure** at line 159:
+  `wait_for_function draftCount.includes('60')` times out. It's the
+  `api()` refresh-on-401 retry path in admin-ingest.js — Pack A test.
+  Was failing BEFORE PR 4. Out of scope; do NOT silently fix in a future
+  cleanup commit. File a fresh handoff note (shq-…) when investigating.
+- **`scripts/requirements.txt` pins `pytest>=8.0` + `pytest-xdist>=3.5`.**
+  Pytest-xdist is installed but `-n auto` is NOT yet on the CLI; turn it
+  on if CI wall-clock climbs past 90s with new pages.
+- **Drift guard (`test_constants_in_sync.py`)** greps `window.SUPABASE_URL`
+  and `window.SUPABASE_ANON_KEY` out of `config.js`. If the regex misses
+  the next time someone restructures config.js, update `_extract` not the
+  test data — that's a regex maintenance obligation, not a bug.
+
+### next_pickup
+P3-2 (AI eligibility explainer) is the next "L" item. Smaller options
+first if you want a quick win: P2-2 (hiring-data mini-report), P1-7
+(download SAR PDF bundles), or fix the verify_admin Pack A retry.
+
+## session shq-2026-07-30-002 end
