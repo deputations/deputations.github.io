@@ -1568,7 +1568,7 @@ model:   claude-opus-4-8
 driver:  relay
 branch:  main
 starting_head: ff83c06
-ending_head:   <this commit>
+ending_head:   a16ee5a
 focus:   P3-3 PR 3 — AI toggle chip, results panel, smoke tests
 ```
 
@@ -1644,7 +1644,7 @@ focus:   P3-3 PR 3 — AI toggle chip, results panel, smoke tests
   (deputation-p3-4-gotchas).
 
 ### handoff state
-- HEAD: <this commit>
+- HEAD: a16ee5a (this commit).
 - Working tree: clean except .venv-smoke/ which is gitignored.
 - P3-3 fully DONE. All three PRs landed in this session (shq-2026-07-31-002
   + shq-2026-07-31-003). Owner needs to:
