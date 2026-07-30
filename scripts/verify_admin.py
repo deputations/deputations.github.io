@@ -11,27 +11,27 @@ so no real backend (and no magic-link login) is needed. Exercises:
     it PATCHes one id=in.() batch and the queue count drops.
 Screenshots land in _verify/.
 """
-import base64
-import functools
-import http.server
 import json
-import threading
+import sys
 import time
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from playwright.sync_api import sync_playwright
 
-ROOT = Path(__file__).resolve().parents[1]
+# Make the tests/ package importable so we can reuse its statics. Adding the
+# project root to sys.path avoids the need for a package install step.
+_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_ROOT))
+
+from tests.pages.route_helpers import jwt, reply_empty_cors, reply_json  # noqa: E402
+from tests.pages.serve import serve  # noqa: E402
+
+ROOT = _ROOT
 PORT = 8771
 SUPA_HOST = "djaxutkmhazufsxeobal.supabase.co"
 OUT = ROOT / "_verify"
 OUT.mkdir(exist_ok=True)
-
-
-def jwt(email):
-    seg = lambda obj: base64.urlsafe_b64encode(json.dumps(obj).encode()).decode().rstrip("=")
-    return f"{seg({'alg': 'none'})}.{seg({'email': email})}.sig"
 
 
 def draft(i):
@@ -65,13 +65,6 @@ DRAFTS = [draft(i) for i in range(1, 61)]
 MANAGE = [live(i) for i in range(1, 61)]
 STATE = {"draft_401_done": False, "patches": []}
 
-CORS = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, apikey, content-type, prefer, x-client-info, range",
-    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
-    "Access-Control-Expose-Headers": "Content-Range",
-}
-
 
 def page_slice(rows, url):
     qs = parse_qs(urlparse(url).query)
@@ -84,51 +77,43 @@ def sb_handler(route):
     req = route.request
     url, method = req.url, req.method
 
-    def reply(body, status=200, headers=None):
-        h = dict(CORS, **{"Content-Type": "application/json"})
-        if headers:
-            h.update(headers)
-        route.fulfill(status=status, headers=h, body=json.dumps(body))
-
     if method == "OPTIONS":
-        route.fulfill(status=200, headers=dict(CORS), body="")
+        reply_empty_cors(route)
         return
     if "/auth/v1/token" in url:
-        reply({"access_token": jwt("admin@test.dev"), "refresh_token": "r2", "expires_in": 3600})
+        reply_json(route, {"access_token": jwt("admin@test.dev"), "refresh_token": "r2", "expires_in": 3600})
         return
     if "/rest/v1/admins" in url:
-        reply([{"email": "admin@test.dev"}])
+        reply_json(route, [{"email": "admin@test.dev"}])
         return
     if "/rest/v1/ingest_jobs" in url:
-        reply([])
+        reply_json(route, [])
         return
     if "/rest/v1/vacancy_updates" in url or "/rest/v1/vacancy_flags" in url:
-        reply([], headers={"Content-Range": "*/0"})
+        reply_json(route, [], extra_headers={"Content-Range": "*/0"})
         return
     if "/rest/v1/vacancies" in url:
         if method == "PATCH":
             STATE["patches"].append((url, req.post_data or ""))
-            reply([])
+            reply_json(route, [])
             return
         if "select=id&limit=1" in url:  # countOf()
-            reply([], headers={"Content-Range": "0-0/3"})
+            reply_json(route, [], extra_headers={"Content-Range": "0-0/3"})
             return
         if "status=eq.draft" in url:
             if not STATE["draft_401_done"]:  # Pack A: expire the token once
                 STATE["draft_401_done"] = True
-                reply({"message": "JWT expired"}, status=401)
+                reply_json(route, {"message": "JWT expired"}, status=401)
                 return
-            reply(page_slice(DRAFTS, url))
+            reply_json(route, page_slice(DRAFTS, url))
             return
-        reply(page_slice(MANAGE, url))  # Manage list (status=eq.approved)
+        reply_json(route, page_slice(MANAGE, url))  # Manage list (status=eq.approved)
         return
-    reply({"error": "not mocked"}, status=404)
+    reply_json(route, {"error": "not mocked"}, status=404)
 
 
 def main():
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(ROOT))
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), handler)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    srv, _thread = serve(ROOT, PORT)
 
     failures, page_errors = [], []
 

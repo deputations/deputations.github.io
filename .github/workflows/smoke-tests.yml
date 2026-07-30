@@ -50,6 +50,15 @@ jobs:
       - name: Run pytest suite
         run: python -m pytest tests/ -v --tb=short --maxfail=1
 
+      # PR 4: drive the authenticated admin-ingest flow. Exercises Pack A
+      # (401 -> refresh -> retry), Pack B (lazy editors, pager) and Pack E
+      # (filtered bulk actions). Shares `tests/pages/{serve,route_helpers}.py`
+      # with the smoke suite, so this also acts as a smoke check that the
+      # shared helpers stay importable.
+      - name: Verify admin-ingest (authenticated flows)
+        run: python scripts/verify_admin.py
+        continue-on-error: false
+
       - name: Upload failure artifacts
         if: failure()
         uses: actions/upload-artifact@v4

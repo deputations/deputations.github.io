@@ -21,7 +21,12 @@ CORS = {
 
 
 def reply_json(route, body, *, status: int = 200, extra_headers: dict | None = None):
-    """Fulfill a Playwright route with a JSON body and CORS headers."""
+    """Fulfill a Playwright route with a JSON body and CORS headers.
+
+    `body` may be a dict (encoded as JSON) or a string (sent as-is — useful
+    for empty preflight bodies). `extra_headers` is merged on top of CORS and
+    Content-Type, e.g. for Content-Range on count responses.
+    """
     headers = dict(CORS, **{"Content-Type": "application/json"})
     if extra_headers:
         headers.update(extra_headers)
@@ -30,6 +35,11 @@ def reply_json(route, body, *, status: int = 200, extra_headers: dict | None = N
         headers=headers,
         body=json.dumps(body) if not isinstance(body, str) else body,
     )
+
+
+def reply_empty_cors(route):
+    """Fulfill an OPTIONS preflight with the bare CORS headers and an empty body."""
+    route.fulfill(status=200, headers=dict(CORS), body="")
 
 
 def jwt(email: str) -> str:
