@@ -1458,3 +1458,102 @@ P3-3 PR 2: write `supabase/functions/semantic-search/index.ts` —
 disabled-state guard + Gemini query embed + search_vacancies RPC +
 distance-to-score normalization + 429 self-disable. Owner deploys
 after migration 0016 is live.
+
+## session shq-2026-07-31-002 (P3-3 PR 2)
+
+started: 2026-07-31
+ended:   2026-07-31
+model:   claude-opus-4-8
+driver:  relay
+branch:  main
+starting_head: ac66655
+ending_head:   ff83c06
+focus:   P3-3 PR 2 — semantic-search Edge Function with free-tier guards
+
+### inbound context read
+- Continued from PR 1 in the same session (shq-2026-07-31-002 spans
+  both PR 1 and PR 2 — owner prefers one block per PR rather than
+  one block per session, for grep-ability).
+- PR 1 (8f85d52) shipped migration 0016 + build_embeddings.py + workflow
+  + SETUP.md §4b. The migration's search_vacancies() RPC exists but no
+  one calls it yet.
+
+### work done
+- Wrote supabase/functions/semantic-search/index.ts (~240 lines):
+    * Public POST endpoint; mirrors the submit/ CORS+json() boilerplate
+    * Pre-check: SELECT disabled_until from semantic_search_state;
+      short-circuit 503 if now() < disabled_until (cheap, no Gemini
+      call). Service-role client bypasses RLS for the state read.
+    * Validation: 1..500 char query, k clamped to [1,50].
+    * LRU cache: Map keyed by sha256(query|filters|k), 200 entries,
+      60s TTL. Cold on cold start — fine for the typical warm-instance
+      pattern of public Edge Functions.
+    * Gemini embed call: gemini-embedding-001:embedContent with
+      outputDimensionality=768; on 429 throws "RATE_LIMITED".
+    * On 429: write disabled_until = tomorrow 00:00 UTC into state
+      table, return 503 with disabled_until. Build script clears it
+      next day after a successful run.
+    * RPC call: search_vacances(query_embedding, match_count,
+      filter_ministry, filter_level). pgvector param formatted as the
+      PostgreSQL literal "[0.1,0.2,...]" — PostgREST rejects raw JS
+      arrays for vector params.
+    * Hydration: .from('vacancies').select(...).in('vacancy_id', ids).
+    * distance → score: clamp(1 - distance, 0, 1) for the UI badge.
+
+### decisions
+- pgvector RPC param format: confirmed via web search that
+  PostgREST requires the vector literal string format, not a JS array.
+  Migration 0016's signature (vector(768)) matches.
+- Disabled state stored in the SAME semantic_search_state table as
+  the build script writes to — no extra migration, single source of
+  truth. The state table doubles as the build observability (last
+  build time, count, status) and the runtime kill-switch.
+- LRU cache key is sha256 of the full request shape (query + filters
+  + k) so different filters don't collide. 60s TTL chosen because
+  typical visitor session is short and the embeddings don't change
+  within a minute.
+- The "no Gemini call when disabled" pre-check is the right place to
+  gate traffic: a 429 costs us a free-tier request slot just to know
+  we should refuse; reading disabled_until is one row in Supabase.
+
+### handoff state
+- HEAD: ff83c06 (PR 2).
+- Working tree clean.
+- PR 3 (frontend chip + smoke tests) NOT STARTED — file as the next
+  block. This PR wires the actual UI; until it's deployed the
+  Edge Function sits unused but ready.
+
+### gotchas for next session
+- **Deploy order for prod**: PR 1 migration MUST land first
+  (search_vacancies() RPC must exist) before PR 2 function deploys.
+  Same as P3-6's gotcha.
+- **pgvector param format**: passing the JS array (not the
+  "[...]" string) results in a 400 from PostgREST. PR 3 smoke tests
+  should NOT exercise this code path directly (it requires real
+  Supabase) — but the route stub in test_semantic_search.py should
+  accept any POST body shape since we're stubbing the whole
+  function, not the RPC.
+- **LRU is per-function-instance.** A cold start = empty cache.
+  Visitors hitting the function across multiple Edge cold-starts may
+  not see the cache hit. This is intentional — caching is a perf
+  optimisation, not a correctness requirement.
+- **free-tier budget**: ~67 ACTIVE embeddings searched per query, one
+  Gemini call per query. 100 req/min free tier limit comfortably
+  covers normal traffic. The disabled_until flag is the safety valve
+  for spikes — but the flag is only set on 429, so we'd already be
+  in the danger zone by the time it triggers. Acceptable for v1.
+- **The PR 3 smoke test stubs `**/functions/v1/semantic-search`
+  wholesale.** It does NOT need to know about pgvector — the smoke
+  suite runs against a stub that returns a hardcoded JSON body. The
+  Edge Function's internal RPC call is not exercised in tests.
+- **The function name uses a hyphen (`semantic-search`) but Supabase
+  Edge Function directory names use the same convention.** No need
+  to translate; the URL is /functions/v1/semantic-search and the
+  folder is supabase/functions/semantic-search/.
+
+### next_pickup
+P3-3 PR 3: index.html AI chip + results panel; style.css theme
+variants; app.js semanticMode state + runSemanticSearch() +
+disabled-state UI; tests/test_semantic_search.py with chip toggle,
+ranked matches, disabled state, default-off tests. Owner deploys the
+gh-pages auto-build after this lands.
