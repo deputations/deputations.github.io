@@ -46,10 +46,9 @@ jobs:
           pip install -r scripts/requirements.txt
           python -m playwright install --with-deps chromium
 
-      # PR 2: index + defex + report-vacancy + contact + my-deputation. PR 3
-      # widens further.
+      # PR 3: full suite — all pages covered.
       - name: Run pytest suite
-        run: python -m pytest tests/test_index.py tests/test_defex.py tests/test_report_vacancy.py tests/test_contact.py tests/test_my_deputation.py -v --tb=short --maxfail=1
+        run: python -m pytest tests/ -v --tb=short --maxfail=1
 
       - name: Upload failure artifacts
         if: failure()

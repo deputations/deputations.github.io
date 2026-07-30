@@ -42,8 +42,10 @@ def install(page: Page, *, anon_key: str = "") -> None:
     rpc("get_sentiment", {"ok": True, "ups": 100, "downs": 0})
     rpc("record_sentiment", {"ok": True, "ups": 101, "downs": 0})
 
-    # OPTIONS preflight — every cross-origin POST needs a 204 with CORS headers
-    page.route(
-        "**/supabase.co/**",
-        lambda r: r.fulfill(status=204, headers=CORS, body=""),
-    )
+    # Note: we deliberately do NOT register a catch-all OPTIONS handler here.
+# Playwright dispatches routes in registration order (first match wins); a
+# catch-all for `**/supabase.co/**` would shadow any per-test route that
+# tests register later (e.g. to stub the Edge Function submit POST or the
+# /auth/v1/otp call). Browser-driven CORS preflights work fine without
+# explicit interception in headless mode — the response just needs the
+# right CORS headers, which the test stubs already provide.
