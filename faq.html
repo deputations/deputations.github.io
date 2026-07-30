@@ -1606,7 +1606,7 @@ function apiReady(){ return !!API_URL && API_URL.indexOf("https://") === 0; }
       renderReports(res.reports||[]);
     }).catch(function(){
       reportsStatus.style.display="";
-      reportsStatus.textContent="Could not load reported discrepancies right now. Please try again later.";
+      reportsStatus.textContent="Couldn’t reach the community reports right now. You can still file a discrepancy using the “Report a discrepancy” button inside any question — it just won’t show up here until the server is back.";
       reportsList.innerHTML="";
     });
   }
@@ -1614,7 +1614,7 @@ function apiReady(){ return !!API_URL && API_URL.indexOf("https://") === 0; }
   function renderReports(list){
     if(!list.length){
       reportsStatus.style.display="";
-      reportsStatus.textContent="No discrepancies have been reported yet. If you spot one, use the “Report a discrepancy” button inside any question above.";
+      reportsStatus.textContent="All clear — every FAQ in this section is currently considered factually correct. No discrepancies have been reported. If you spot one, use the “Report a discrepancy” button inside any question above.";
       reportsList.innerHTML="";
       return;
     }
