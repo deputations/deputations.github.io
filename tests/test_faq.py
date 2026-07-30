@@ -1,10 +1,13 @@
 """Smoke tests for faq.html — the FAQ knowledge hub.
 
-The discrepancy reporter is intentionally disabled (P3-5); we assert the
-"temporarily disabled" message renders. Sections expand/collapse; search
-filters FAQ items.
+Sections expand/collapse; search filters FAQ items. The discrepancy reporter
+was re-enabled in P3-6 by porting it onto the Supabase `submit` Edge Function
+(`action:"faq_report"`, `action:"faq_list"`); the smoke suite stubs both
+endpoints so the success view can be exercised without a live backend.
 """
 from __future__ import annotations
+
+import json
 
 
 def test_faq_loads_and_shows_questions(page, base_url: str):
@@ -29,9 +32,15 @@ def test_faq_section_collapse_toggle(page, base_url: str):
     )
 
 
-def test_faq_discrepancy_reporter_disabled(page, base_url: str):
-    """The Report-a-discrepancy feature is intentionally disabled post-P3-5.
-    The submit handler must show the 'temporarily disabled' copy."""
+def test_faq_discrepancy_reporter_enabled(page, base_url: str):
+    """P3-6 re-enabled the discrepancy reporter via the Supabase `submit`
+    Edge Function. The submit handler must POST {action:"faq_report", ...},
+    receive {ok:true}, and swap #reportFormView for #reportSuccessView.
+
+    The success path triggers a follow-up loadReports() POST
+    {action:"faq_list"} to refresh the public card list, so we stub both
+    endpoints in one handler.
+    """
     page.goto(f"{base_url}/faq.html")
     page.wait_for_selector(".faq-item", state="attached", timeout=10000)
 
@@ -44,16 +53,66 @@ def test_faq_discrepancy_reporter_disabled(page, base_url: str):
     page.locator(".faq-q").first.click()
     page.wait_for_selector(".flag-btn", timeout=5000)
     page.locator(".flag-btn").first.click()
-    # Modal opens
     page.wait_for_selector("#reportModal.open", timeout=5000)
-    # Fill #reportText — the submit handler first requires >=10 chars
-    # before checking apiReady().
-    page.fill("#reportText", "This is a smoke test of the disabled reporter copy.")
+
+    # Stub the submit endpoint. The handler inspects the POSTed body to
+    # return the right shape per action.
+    captured = {"faq_report": False, "faq_list": False}
+
+    def handler(route):
+        try:
+            body = json.loads(route.request.post_data or "{}")
+        except Exception:
+            body = {}
+        action = body.get("action")
+        if action == "faq_report":
+            captured["faq_report"] = True
+            route.fulfill(
+                status=200,
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Content-Type": "application/json",
+                },
+                body=json.dumps({
+                    "ok": True, "success": True,
+                    "reportId": "FAQ-T-1",
+                }),
+            )
+            return
+        if action == "faq_list":
+            captured["faq_list"] = True
+            route.fulfill(
+                status=200,
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Content-Type": "application/json",
+                },
+                body=json.dumps({"ok": True, "reports": []}),
+            )
+            return
+        # Unknown action — let it fall through (other tests in the suite may
+        # need different stubs for the same endpoint).
+        route.continue_()
+
+    page.route("**/functions/v1/submit", handler)
+
+    page.fill("#reportText", "This is a smoke test of the re-enabled reporter.")
     page.locator("#reportSubmit").click()
-    # DISCREPANCY_API is "" so apiReady() is false and the handler shows the
-    # disabled message rather than calling out.
+    # The success view swaps in: #reportFormView hidden, #reportSuccessView
+    # visible. Assert via computed display rather than inline style so the
+    # test doesn't couple to the page's exact `display` value.
     page.wait_for_function(
-        "() => (document.getElementById('reportMsg')?.textContent || '')"
-        ".toLowerCase().includes('disabled')",
+        "() => getComputedStyle(document.getElementById('reportSuccessView'))"
+        ".display !== 'none'",
+        timeout=10000,
+    )
+    page.wait_for_function(
+        "() => getComputedStyle(document.getElementById('reportFormView'))"
+        ".display === 'none'",
         timeout=5000,
+    )
+    assert captured["faq_report"], "page did not POST action:'faq_report'"
+    assert captured["faq_list"], (
+        "page did not follow up with action:'faq_list' after the report"
+        " succeeded — the public list will be stale"
     )

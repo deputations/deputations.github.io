@@ -1187,24 +1187,34 @@ footer{margin-top:54px;border-top:1px solid var(--border-color);background:var(-
 
 <script>
 /* ============================================================
-   DISCREPANCY BACKEND — disabled 2026-07-30 (P3-5): the Apps Script
-   fallback that this feature used is retired. The 'Report a wrong
-   rule/FAQ' button still opens the modal, but submissions return
-   a "feature disabled" message. To re-enable, port the discrepancy
-   reporter to the Supabase `submit` Edge Function with a new
-   `action:"faq_report"` and `action:"faq_vote"` routes.
+   DISCREPANCY BACKEND — Supabase `submit` Edge Function.
+   P3-5 disabled the legacy Apps Script and left a stub here; P3-6
+   re-enables the feature by sending the same POSTs contact.js and
+   report-vacancy.js send: action:"faq_report" / "faq_list" / "faq_vote".
    ============================================================ */
-var DISCREPANCY_API = "";
+var SB_READY = (typeof window !== "undefined" && window.SUPABASE_READY && window.SUPABASE_READY());
+var API_URL  = SB_READY ? (window.SUPABASE_URL + "/functions/v1/submit") : "";
+var SB_ANON  = (typeof window !== "undefined" && window.SUPABASE_ANON_KEY) || "";
+function apiReady(){ return !!API_URL && API_URL.indexOf("https://") === 0; }
 
 (function(){
   "use strict";
   var root=document.documentElement;
 
-  function apiReady(){
-    return DISCREPANCY_API && DISCREPANCY_API.indexOf("https://")===0 && DISCREPANCY_API.indexOf("PASTE_YOUR")===-1;
-  }
   function store(k,v){try{localStorage.setItem(k,v);}catch(e){}}
   function read(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+  // Per-device anon id for the vote-uniqueness check on the server. Created
+  // on first use; never leaves localStorage. Mirrors how depfaq-votes already
+  // tracks user choices locally.
+  function anonId(){
+    var k="depfaq-uid", v=read(k);
+    if(!v){
+      // crypto.randomUUID is available in all modern browsers + GitHub Pages' edge
+      v=(typeof crypto!=="undefined"&&crypto.randomUUID)?crypto.randomUUID():"u-"+Date.now()+"-"+Math.random().toString(36).slice(2);
+      store(k,v);
+    }
+    return v;
+  }
 
   /* theme — unified key across pages, dark default */
   var themeBtn=document.getElementById("themeBtn")||document.getElementById("themeToggle");
@@ -1548,16 +1558,18 @@ var DISCREPANCY_API = "";
     }
     reportSubmit.disabled=true;reportSubmit.textContent="Submitting…";
     reportMsg.textContent="";reportMsg.className="report-msg";
-    fetch(DISCREPANCY_API,{method:"POST",body:JSON.stringify({
-      action:"report",qnum:current.num,qtext:current.text,
-      report:txt,name:reportName.value.trim()
+    var headers={"Content-Type":"application/json"};
+    if(SB_READY){headers.apikey=SB_ANON;headers.Authorization="Bearer "+SB_ANON;}
+    fetch(API_URL,{method:"POST",headers:headers,body:JSON.stringify({
+      action:"faq_report",qnum:current.num,qtext:current.text,
+      report:txt,name:reportName.value.trim(),userAgent:navigator.userAgent
     })}).then(function(r){return r.json();}).then(function(res){
-      if(res&&res.ok){
+      if(res&&(res.ok||res.success)){
         reportFormView.style.display="none";
         reportSuccessView.style.display="";
         loadReports();
-      }else{throw new Error((res&&res.error)||"Server error");}
-    }).catch(function(){
+      }else{throw new Error((res&&res.message)||"Server error");}
+    }).catch(function(e){
       reportSubmit.disabled=false;reportSubmit.textContent="Submit report";
       reportMsg.textContent="Could not submit right now. Please check your connection and try again.";
       reportMsg.className="report-msg err";
@@ -1587,8 +1599,10 @@ var DISCREPANCY_API = "";
     }
     reportsStatus.style.display="";
     reportsStatus.textContent="Loading reported discrepancies…";
-    fetch(DISCREPANCY_API).then(function(r){return r.json();}).then(function(res){
-      if(!res||!res.ok)throw new Error("bad");
+    var headers={"Content-Type":"application/json"};
+    if(SB_READY){headers.apikey=SB_ANON;headers.Authorization="Bearer "+SB_ANON;}
+    fetch(API_URL,{method:"POST",headers:headers,body:JSON.stringify({action:"faq_list"})}).then(function(r){return r.json();}).then(function(res){
+      if(!res||!(res.ok||res.success))throw new Error("bad");
       renderReports(res.reports||[]);
     }).catch(function(){
       reportsStatus.style.display="";
@@ -1649,9 +1663,11 @@ var DISCREPANCY_API = "";
     btns.forEach(function(b){b.disabled=true;});
     vb.classList.add("chosen");
     saveVote(id,vote);
-    fetch(DISCREPANCY_API,{method:"POST",body:JSON.stringify({action:"vote",id:id,vote:vote})})
+    var headers={"Content-Type":"application/json"};
+    if(SB_READY){headers.apikey=SB_ANON;headers.Authorization="Bearer "+SB_ANON;}
+    fetch(API_URL,{method:"POST",headers:headers,body:JSON.stringify({action:"faq_vote",id:id,vote:vote,voter:anonId()})})
       .then(function(r){return r.json();}).then(function(res){
-        if(res&&res.ok){
+        if(res&&(res.ok||res.success)){
           card.querySelector(".vote-btn.agree .vc").textContent=res.agree;
           card.querySelector(".vote-btn.disagree .vc").textContent=res.disagree;
           var tot=(Number(res.agree)||0)+(Number(res.disagree)||0);
