@@ -1,0 +1,70 @@
+name: Smoke tests
+
+on:
+  pull_request:
+    paths:
+      - "**.html"
+      - "**/*.js"
+      - "tests/**"
+      - ".github/workflows/smoke-tests.yml"
+      - "scripts/requirements.txt"
+      - "scripts/verify_admin.py"
+      - "data/vacancies.json"
+      - "data/defex/**"
+  push:
+    branches: [main]
+    paths:
+      - "**.html"
+      - "**/*.js"
+      - "tests/**"
+      - "data/vacancies.json"
+      - "data/defex/**"
+  workflow_dispatch:
+  schedule:
+    # 04:47 UTC ~= 10:17 IST. Off-cycle from build-data (03:35) so data drift
+    # shows up in the morning report, not in a race with the daily rebuild.
+    - cron: "47 4 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
+
+      - name: Install deps
+        run: |
+          pip install -r scripts/requirements.txt
+          python -m playwright install --with-deps chromium
+
+      # PR 1: only test_index.py. Each subsequent PR widens this glob.
+      - name: Run pytest suite
+        run: python -m pytest tests/test_index.py -v --tb=short --maxfail=1
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-failures-${{ github.run_id }}
+          path: |
+            tests/_artifacts/**
+            _verify/**
+          retention-days: 7
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-report-${{ github.run_id }}
+          path: tests/_artifacts/report.html
+          retention-days: 14
+        continue-on-error: true

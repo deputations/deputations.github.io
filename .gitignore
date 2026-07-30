@@ -48,3 +48,8 @@ astro/.astro/
 og/
 og-*.png
 og-*
+
+# Smoke test artifacts (P3-4). Written by conftest.py on failure; uploaded
+# to GitHub Actions separately. Never committed.
+tests/_artifacts/
+tests/.hypothesis/
