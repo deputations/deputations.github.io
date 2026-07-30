@@ -101,7 +101,10 @@ def call_gemini_embed(text, api_key, *, retries=2):
       RuntimeError on other non-2xx responses.
       urllib.error.URLError on network failures (caller may retry).
     """
-    url = "{}:{}?key={}".format(
+    # URL: https://generativelanguage.googleapis.com/v1beta/models/<model>:embedContent?key=<api_key>
+    # The / between "models" and the model name, and the ":embedContent" action suffix
+    # are BOTH required — Gemini returns 404 (empty body) if either is missing.
+    url = "{}/{}:embedContent?key={}".format(
         GAPI_BASE, EMBED_MODEL, urllib.parse.quote(api_key, safe=""))
     body = json.dumps({
         "content": {"parts": [{"text": text}]},
