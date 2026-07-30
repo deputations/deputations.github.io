@@ -1283,3 +1283,87 @@ first if you want a quick win: P2-2 (hiring-data mini-report), P1-7
 (download SAR PDF bundles), or fix the verify_admin Pack A retry.
 
 ## session shq-2026-07-30-002 end
+
+## session shq-2026-07-31-001 (P3-6)
+
+**P3-6 DONE.** FAQ "Report a discrepancy" re-enabled on the Supabase
+`submit` Edge Function (was intentionally disabled in P3-5 when the
+Apps Script backend retired). 2-PR rollout: schema+function (`d867634`),
+then page wire-up (`f2478f3`).
+
+### what landed
+- supabase/migrations/0015_faq_discrepancies.sql
+  - faq_reports (qnum, qtext, report, name, user_agent, agree, disagree,
+    status, admin_note, timestamps)
+  - faq_report_votes (unique per voter; admin-only via RLS)
+  - public.faq_vote(p_id, p_voter, p_side) SECURITY DEFINER RPC
+    (mirrors endorse_flag pattern in 0005; returns {agree, disagree} json)
+  - RLS: anon SELECT only OPEN reports, admin full
+- supabase/functions/submit/index.ts: 3 new action branches
+  - action:"faq_report"  INSERT into faq_reports
+  - action:"faq_vote"    RPC faq_vote()
+  - action:"faq_list"    SELECT open rows ordered desc (POST, not GET —
+    the function is POST-only at line 41)
+- faq.html: replaced DISCREPANCY_API stub with the SUPABASE_URL+submit
+  pattern from contact.js / report-vacancy.js. Three fetches updated:
+  - submit handler → POST {action:"faq_report", qnum, qtext, report,
+    name, userAgent}
+  - loadReports() GET → POST {action:"faq_list"}
+  - vote handler → POST {action:"faq_vote", id, vote, voter}
+    voter is a per-device uuid stored in localStorage "depfaq-uid" (RPC
+    UPSERT (report_id, voter) prevents double-counts from one device).
+- tests/test_faq.py::test_faq_discrepancy_reporter_disabled
+  renamed → _enabled. Stubs **/functions/v1/submit with a per-action
+  handler that returns {ok,success:true,reportId:"FAQ-T-1"} for
+  faq_report and {ok,reports:[]} for faq_list. Asserts BOTH calls
+  fire — the success path triggers a follow-up loadReports(); without
+  it the public card list is stale. Asserts the success view
+  (#reportSuccessView) becomes visible and the form view
+  (#reportFormView) becomes hidden, via getComputedStyle.
+
+### test results
+- Full smoke suite: 25/25 pass in ~54s.
+- Browser-verified via preview_start: opening faq.html with
+  SUPABASE_READY()=true, clicking "Report a discrepancy" on an FAQ,
+  filling 50 chars, clicking Submit → #reportFormView becomes hidden
+  and #reportSuccessView becomes visible (successVisible:true, formHidden
+  :true in computed styles). Captured body shape: {action:"faq_report",
+  qnum, qtext, report, name, userAgent}.
+
+### gotchas for next session
+- **Edge Function deploy is independent of the page deploy.** PR 1
+  pushed the migration + function code; PR 2 pushed the page. To go
+  live, the Supabase migration `0015_faq_discrepancies.sql` MUST run
+  against the prod database before the Edge Function is redeployed,
+  otherwise the RPC `faq_vote()` will 404. If deploying to prod via
+  supabase CLI: `supabase db push && supabase functions deploy submit`.
+- **GET flipped to POST for faq_list.** Old code did
+  `fetch(DISCREPANCY_API)` with no method → defaults to GET. The submit
+  function explicitly returns 405 on non-POST (line 41). The page
+  change is the fix; the Edge Function was already POST-only.
+- **Per-device voter dedupe via localStorage "depfaq-uid".** Cleared
+  localStorage = new voter = can vote again. Same UX as the existing
+  depfaq-votes localStorage key (which is the client-side UX dedupe
+  that disables the buttons once a user has voted). The server-side
+  (report_id, voter) PK in faq_report_votes is the authoritative one.
+- **Admin UI for FAQ reports is NOT in this PR.** Mirrors the
+  vacancy_flags review queue pattern (admins see open reports in
+  admin-ingest and approve/dismiss). Future work — file as a fresh
+  P3-x or bundle into the next admin UI polish.
+- **No rate-limiting on faq_report or faq_vote.** Same posture as
+  vacancy_flags and feedback — no per-IP or per-device throttle. If
+  abuse shows up, add it in the Edge Function (cheap: in-memory token
+  bucket keyed by IP from `req.headers.get("x-forwarded-for")`).
+- **faq_report qtext is a snapshot cached at submit time.** Even if
+  the FAQ is later re-numbered or re-worded, the public list still
+  shows what the reporter saw when they flagged it. Mirrors the
+  "be charitable to the snapshot in time" model.
+
+### next_pickup
+P3-2 (AI eligibility explainer) is still the next "L" item. P3-7
+candidate: admin UI to review/approve/dismiss FAQ reports (mirror of
+vacancy_flags review queue). Quick wins: P2-2 (hiring-data mini-report),
+P1-7 (SAR PDF bundles), or investigate the pre-existing
+verify_admin.py Pack A timeout.
+
+## session shq-2026-07-31-001 end
