@@ -1124,7 +1124,7 @@ model:   claude-opus-4-8[1m]
 driver:  solo
 branch:  main
 starting_head: b7e0620
-ending_head:   7e83cf4
+ending_head:   b9fce7c
 focus:   P3-5: retire Apps Script fallback + repo housekeeping
 ```
 
