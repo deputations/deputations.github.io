@@ -37,7 +37,7 @@ create extension if not exists vector;
 -- we ever switch models.
 -- ---------------------------------------------------------------------------
 create table if not exists public.vacancy_embeddings (
-  vacancy_id   uuid primary key references public.vacancies(vacancy_id) on delete cascade,
+  vacancy_id   text primary key,
   embedding    vector(768) not null,
   model        text not null,
   updated_at   timestamptz not null default now()
@@ -83,7 +83,7 @@ create or replace function public.search_vacancies(
   filter_ministry   text   default null,
   filter_level      text   default null
 )
-returns table (vacancy_id uuid, distance float)
+returns table (vacancy_id text, distance float)
 language sql
 security definer
 set search_path = public
