@@ -50,7 +50,13 @@
       ".push-modal .pm-sub{margin:0;font-size:.86rem;opacity:.75;line-height:1.45}" +
       ".push-modal .pm-lbl{display:block;font-size:.78rem;font-weight:700;opacity:.8;margin:0 0 5px}" +
       ".push-modal .pm-sel{width:100%;min-height:44px;padding:.55rem .7rem;border-radius:12px;font:inherit;" +
-        "color:inherit;background:var(--bg-elevated,rgba(148,163,184,.1));border:1px solid var(--border-color,rgba(148,163,184,.28))}" +
+        "color:inherit;background:var(--bg-elevated,rgba(148,163,184,.1));border:1px solid var(--border-color,rgba(148,163,184,.28));color-scheme:dark}" +
+      // The opened <select> dropdown list (UA-painted) needs explicit options —
+      // otherwise the browser renders selected/unselected options in OS-default
+      // colours against our dark modal and the highlight contrast vanishes.
+      ".push-modal .pm-sel option{background:var(--bg-surface-solid,#0f172a);color:var(--text-primary,#f8fafc)}" +
+      "html[data-theme='light'] .push-modal .pm-sel{color-scheme:light}" +
+      "html[data-theme='light'] .push-modal .pm-sel option{background:#fff;color:#0f172a}" +
       ".push-modal .pm-status{margin:.7rem 0 0;font-size:.85rem;min-height:1.1em}" +
       ".push-modal .pm-status.ok{color:var(--success-color,#34d399)}" +
       ".push-modal .pm-status.err{color:var(--danger-color,#f87171)}" +
