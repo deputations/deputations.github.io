@@ -1367,3 +1367,94 @@ P1-7 (SAR PDF bundles), or investigate the pre-existing
 verify_admin.py Pack A timeout.
 
 ## session shq-2026-07-31-001 end
+
+## session shq-2026-07-31-002 (P3-3 PR 1)
+
+started: 2026-07-31
+ended:   2026-07-31
+model:   claude-opus-4-8
+driver:  relay
+branch:  main
+starting_head: 66318e3
+ending_head:   8f85d52
+focus:   P3-3 PR 1 — schema + ACTIVE-only bulk embed script for semantic search
+
+### inbound context read
+- Memory entries loaded: deputation-handover-protocol, deputation-test-suite-p3-4,
+  deputation-faq-discrepancy-p3-6 (all auto-loaded via MEMORY.md).
+- Last closed session: shq-2026-07-31-001 (P3-6 FAQ discrepancy reporter).
+- WEBSITE-REVIEW.md: P3-3 row was blank; user chose P3-3 over the other pending
+  items in the recommendations list (P2-7, P1-7, P2-2, P1-7 + quick wins).
+
+### work done
+- Wrote `supabase/migrations/0016_semantic_search.sql`:
+    vacancy_embeddings (vacancy_id PK, vector(768), model, updated_at) +
+    HNSW cosine index + semantic_search_state key/value + search_vacancies()
+    SECURITY DEFINER RPC (joins on status in ('Active','approved')) + RLS
+    (service-role-only writes).
+- Wrote `scripts/build_embeddings.py` (~190 lines): reads data/vacancies.json,
+  filters to Status='Active' (verified: 73 ACTIVE of 384 total), sequential
+  single-request Gemini calls (no batch — paid-tier only), PostgREST
+  UPSERT with Prefer: resolution=merge-duplicates, on HTTP 429 writes
+  disabled_until=tomorrow 00:00 UTC + exits 3, --dry-run writes
+  data/vacancy_embeddings.json for inspection. Idempotent.
+- Updated `.github/workflows/build-data.yml`: new "Build vacancy embeddings
+  (P3-3)" step after build_og_images.py; uses SUPABASE_SERVICE_ROLE_KEY +
+  GEMINI_API_KEY secrets; tolerates exit code 3 (free-tier 429) by
+  demoting to ::warning:: so the cron continues.
+- Updated `SETUP.md` §4b documenting the two new repo secrets required
+  by the workflow.
+
+### decisions
+- ACTIVE-only corpus: enforced in BOTH the build script (Status='Active'
+  filter) AND the RPC (`where v.status in ('Active','approved')`) so
+  stale embeddings for closed rows are never returned even if they exist.
+- Free-tier guarantee: sequential single-request loop (~67 ACTIVE × 1
+  attempt = ~67 Gemini calls/day); 429 writes disabled_until and exits
+  with a documented exit code (3); Edge Function (PR 2) reads the flag
+  before each Gemini call and short-circuits if set.
+- Storage: separate vacancy_embeddings table (not a column on vacancies)
+  — keeps schema small, allows re-embedding without touching main rows.
+- Embedding model: gemini-embedding-001, outputDimensionality: 768
+  (free tier, native 3072d truncated).
+- No batchEmbedContents endpoint usage (paid-tier only — would push us
+  out of free immediately).
+
+### handoff state
+- HEAD: 8f85d52 (P3-3 PR 1, 4 files changed, 455 insertions).
+- Working tree clean.
+- PR 2 (semantic-search Edge Function) NOT STARTED — file as the next
+  block in this session or the next relay session.
+- PR 3 (frontend chip + smoke tests) NOT STARTED.
+
+### gotchas for next session
+- **Migration 0016 has a `touch_updated_at` trigger on semantic_search_state.**
+  Uses the existing public.touch_updated_at() function from migration 0007.
+  If the function is renamed/moved, this trigger silently breaks (the
+  PATCH in the Edge Function will fail). Verify with
+  `select tgname from pg_trigger where tgrelid = 'public.semantic_search_state'::regclass;`
+  after `supabase db push`.
+- **deploy order for prod**: `supabase db push` (runs 0016) MUST land
+  before PR 2's Edge Function is deployed, otherwise search_vacancies()
+  RPC will 404. Same pattern as the P3-6 deploy order gotcha.
+- **Embeddings are 768d but stored as `vector(768)`.** gemini-embedding-001
+  native dim is 3072 — the API call sets outputDimensionality=768. If
+  we ever switch models, the column dim has to change too (or the model
+  has to support the same 768 truncation).
+- **The bulk embed costs ~67 Gemini calls per day** even when there are
+  zero changes to vacancies.json (build_data.py runs daily; so does
+  build_embeddings.py). With 1500 req/day free tier this is comfortable,
+  but if the cron is ever increased to multiple daily runs, multiply
+  the budget accordingly.
+- **--dry-run is local-only.** It writes data/vacancy_embeddings.json
+  which is NOT loaded at runtime (the live source is Supabase). The
+  artifact is intentionally for inspection — not committed.
+- **The build script reads the SAME data/vacancies.json that build_data.py
+  produces.** No schema work needed — Status='Active' filtering mirrors
+  app.js's keyword search convention.
+
+### next_pickup
+P3-3 PR 2: write `supabase/functions/semantic-search/index.ts` —
+disabled-state guard + Gemini query embed + search_vacancies RPC +
+distance-to-score normalization + 429 self-disable. Owner deploys
+after migration 0016 is live.
