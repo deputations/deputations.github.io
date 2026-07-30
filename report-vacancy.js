@@ -24,12 +24,13 @@
     });
   });
 
-  // Submit to the Supabase public `submit` function when configured; else fall
-  // back to the legacy Apps Script endpoint.
+  // P3-5 (2026-07-30): removed the Apps Script fallback. The Supabase
+  // `submit` Edge Function is the only submission backend. If
+  // SUPABASE_READY is false, the form shows "endpoint not configured".
   var SB_READY = (typeof window !== "undefined" && window.SUPABASE_READY && window.SUPABASE_READY());
   var API_URL = SB_READY
     ? (window.SUPABASE_URL + "/functions/v1/submit")
-    : ((typeof window !== "undefined" && window.DEPUTATIONS_API) || "");
+    : "";
   var SB_ANON = (typeof window !== "undefined" && window.SUPABASE_ANON_KEY) || "";
 
   var DRAFT_KEY = "rv:draft:v1";
@@ -394,7 +395,7 @@
     // avoid a CORS preflight.
     var headers = SB_READY
       ? { "Content-Type": "application/json", "apikey": SB_ANON, "Authorization": "Bearer " + SB_ANON }
-      : { "Content-Type": "text/plain;charset=utf-8" };
+      : { "Content-Type": "application/json" };
     fetch(API_URL, {
       method: "POST",
       headers: headers,

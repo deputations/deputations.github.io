@@ -1,6 +1,7 @@
 /* Contact / Community Hub — frontend logic.
- * Submits feedback (action:"feedback") to the shared Apps Script endpoint
- * defined in /config.js as window.DEPUTATIONS_API. */
+ * Submits feedback (action:"feedback") to the Supabase `submit` Edge Function
+ * defined in /config.js as window.SUPABASE_URL. (P3-5, 2026-07-30: the
+ * Apps Script fallback that this used is retired.) */
 (function () {
   "use strict";
 
@@ -50,10 +51,14 @@
     } catch (e) {}
   });
 
+  // P3-5 (2026-07-30): removed the Apps Script fallback. The Supabase
+  // `submit` Edge Function is the only form backend. If SUPABASE_READY
+  // is false, the form shows "endpoint not configured" instead of
+  // silently falling back to a stale Google backend.
   var SB_READY = (typeof window !== "undefined" && window.SUPABASE_READY && window.SUPABASE_READY());
   var API_URL = SB_READY
     ? (window.SUPABASE_URL + "/functions/v1/submit")
-    : ((typeof window !== "undefined" && window.DEPUTATIONS_API) || "");
+    : "";
   var SB_ANON = (typeof window !== "undefined" && window.SUPABASE_ANON_KEY) || "";
 
   var $  = function (s, root) { return (root || document).querySelector(s); };
@@ -375,7 +380,7 @@
 
     var headers = SB_READY
       ? { "Content-Type": "application/json", "apikey": SB_ANON, "Authorization": "Bearer " + SB_ANON }
-      : { "Content-Type": "text/plain;charset=utf-8" };
+      : { "Content-Type": "application/json" };
     fetch(API_URL, {
       method: "POST",
       headers: headers,

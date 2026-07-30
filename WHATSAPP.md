@@ -18,7 +18,7 @@ means a local watcher that polls and posts on its own; you don't trigger each on
  live data (Supabase approved rows; fallback data/vacancies.json)
         │  filter: Approved + Active (deadline not past)
         ▼
- scripts/whatsapp_feed.py  →  pending = rows whose Vacancy_ID ∉ ledger,
+ admin/whatsapp/feed.py  →  pending = rows whose Vacancy_ID ∉ ledger,
         │                      each formatted into the WhatsApp message
         ▼
  data/whatsapp_posted.json   (ledger — the record of what's already been sent)
@@ -35,13 +35,13 @@ means a local watcher that polls and posts on its own; you don't trigger each on
 engine decides **how**. Both engines share the same core, so switching between
 them needs no rework.
 
-### `scripts/whatsapp_feed.py` (core)
+### `admin/whatsapp/feed.py` (core)
 
 ```
-python scripts/whatsapp_feed.py --list-pending   # JSON of new rows + messages (default)
-python scripts/whatsapp_feed.py --seed           # mark ALL current IDs posted (run once)
-python scripts/whatsapp_feed.py --mark-posted ID # after a confirmed send
-python scripts/whatsapp_feed.py --list-pending --source json   # force offline source
+python admin/whatsapp/feed.py --list-pending   # JSON of new rows + messages (default)
+python admin/whatsapp/feed.py --seed           # mark ALL current IDs posted (run once)
+python admin/whatsapp/feed.py --mark-posted ID # after a confirmed send
+python admin/whatsapp/feed.py --list-pending --source json   # force offline source
 ```
 
 - **Source:** `auto` (default) reads approved rows from Supabase (URL + anon key
@@ -53,7 +53,7 @@ python scripts/whatsapp_feed.py --list-pending --source json   # force offline s
   setup so the rows that already existed never blast the channel — only rows
   added *after* seeding go out.
 
-## A) Standalone watcher — `scripts/whatsapp_watcher.py` (recommended)
+## A) Standalone watcher — `admin/whatsapp/watcher.py` (recommended)
 
 Truly hands-off: approve a record → a post appears a few minutes later, no Claude
 session needed. Drives a headed Chromium with a **persistent profile** so you log
@@ -68,8 +68,8 @@ python -m playwright install chromium
 # set your channel's display name (as it appears in WhatsApp), e.g.:
 setx WA_CHANNEL_NAME "Deputations"        # Windows; reopen the shell after
 
-python scripts/whatsapp_watcher.py --login    # scan the QR in the window once
-python scripts/whatsapp_watcher.py --dry-run  # opens the channel, finds the
+python admin/whatsapp/watcher.py --login    # scan the QR in the window once
+python admin/whatsapp/watcher.py --dry-run  # opens the channel, finds the
                                               # compose box, prints what it WOULD
                                               # send — sends nothing. Use this to
                                               # confirm the channel name/selectors.
@@ -81,8 +81,8 @@ If `--dry-run` can't open the channel, fix `WA_CHANNEL_NAME` (and/or
 ### Running
 
 ```
-python scripts/whatsapp_watcher.py --once                  # post pending, exit
-python scripts/whatsapp_watcher.py --watch --interval 300  # loop every 5 minutes
+python admin/whatsapp/watcher.py --once                  # post pending, exit
+python admin/whatsapp/watcher.py --watch --interval 300  # loop every 5 minutes
 ```
 
 The ledger is written **only after** each send is confirmed on-screen, so killing
@@ -127,7 +127,7 @@ channel open, say **"post the new deputations to WhatsApp"**. It runs
 `--list-pending`, posts each via the extension, verifies, and `--mark-posted`s
 each. See `.claude/skills/post-whatsapp/SKILL.md`.
 
-## C) Admin "Send WhatsApp Update" button — `scripts/whatsapp_bridge.py`
+## C) Admin "Send WhatsApp Update" button — `admin/whatsapp/bridge.py`
 
 A one-click button in the admin **Manage data** tab. Because a web page can't post
 to a Channel, the button calls a small **local helper** that drives a logged-in
@@ -141,7 +141,7 @@ WhatsApp Web session and does the posting.
 > kept logged in, is the dedicated posting session.
 
 ### Setup & run (CDP — the working path)
-Easiest: double-click **`scripts/start-whatsapp-poster.cmd`** — it launches Edge
+Easiest: double-click **`admin/whatsapp/start-whatsapp-poster.cmd`** — it launches Edge
 with the debug port + a dedicated profile and starts the bridge in CDP mode.
 
 Manual equivalent:
@@ -154,7 +154,7 @@ Manual equivalent:
 #      confirm the channel shows (scan the QR once; the profile persists).
 # 2) Start the bridge attached to it:
 $env:WA_USE_CDP = "1"      # or WA_CDP_URL=http://127.0.0.1:9222
-python scripts/whatsapp_bridge.py
+python admin/whatsapp/bridge.py
 ```
 Then in admin → **Manage data**, click **📣 Send WhatsApp Update**: it checks the
 helper, shows how many vacancies are pending, asks you to confirm, posts them via
@@ -190,7 +190,7 @@ The button is a *manual on-demand* trigger; the `--watch` mode (section A) is th
 fully-automatic alternative. They share the same feed + ledger, so they're safe to
 mix (no double-posts).
 
-## D) Daily "closing tomorrow" digest — `scripts/whatsapp_closing_digest.py`
+## D) Daily "closing tomorrow" digest — `admin/whatsapp/closing_digest.py`
 
 One message a day listing every active+approved vacancy whose **last date to apply
 is tomorrow**. Runs via Windows Task Scheduler (default **11 AM**). It is
@@ -200,8 +200,8 @@ digest, and records it (idempotent per day — never double-posts; skips empty d
 
 Preview / test without sending:
 ```
-python scripts/whatsapp_feed.py --closing            # message for tomorrow
-python scripts/whatsapp_closing_digest.py --date 2026-06-08 --dry-run
+python admin/whatsapp/feed.py --closing            # message for tomorrow
+python admin/whatsapp/closing_digest.py --date 2026-06-08 --dry-run
 ```
 
 Register the 11 AM job (re-run to change the time):
@@ -222,15 +222,15 @@ still logged in. The digest tracks itself under `digests` in the ledger.
 ## Reseeding / resetting
 
 - Added the poster on a new machine, or want to suppress everything currently
-  live and only post future rows: `python scripts/whatsapp_feed.py --seed`.
+  live and only post future rows: `python admin/whatsapp/feed.py --seed`.
 - To re-post a specific row, remove its ID from `data/whatsapp_posted.json` and
   run the watcher (or the skill) again.
 
 ## Troubleshooting
 
-- **"Not logged in"** → `python scripts/whatsapp_watcher.py --login` and scan the QR.
+- **"Not logged in"** → `python admin/whatsapp/watcher.py --login` and scan the QR.
 - **Channel not found / no compose box** → wrong `WA_CHANNEL_NAME`, or your
   account can't post (you must be the channel admin). Verify with `--dry-run`.
 - **Posted dozens at once** → the ledger wasn't seeded; run `--seed`, then post.
 - **Message looks off** → the template is in `format_message()` in
-  `scripts/whatsapp_feed.py`; it mirrors the site's `enrich.js` fields.
+  `admin/whatsapp/feed.py`; it mirrors the site's `enrich.js` fields.

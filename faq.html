@@ -1187,12 +1187,14 @@ footer{margin-top:54px;border-top:1px solid var(--border-color);background:var(-
 
 <script>
 /* ============================================================
-   DISCREPANCY BACKEND — paste your Google Apps Script Web App URL
-   between the quotes below (see the setup guide). Until then, the
-   flag button still opens, but reports cannot be saved.
+   DISCREPANCY BACKEND — disabled 2026-07-30 (P3-5): the Apps Script
+   fallback that this feature used is retired. The 'Report a wrong
+   rule/FAQ' button still opens the modal, but submissions return
+   a "feature disabled" message. To re-enable, port the discrepancy
+   reporter to the Supabase `submit` Edge Function with a new
+   `action:"faq_report"` and `action:"faq_vote"` routes.
    ============================================================ */
-var DISCREPANCY_API = (window.DEPUTATIONS_API) ||
-  "https://script.google.com/macros/s/AKfycbyltPrnuwL3oS0HUiw1IH9X_WEaBH3kHA5F8cBDcHWsmyc7o_ySNDQ0C-Cza9-1ilfx/exec";
+var DISCREPANCY_API = "";
 
 (function(){
   "use strict";
@@ -1541,7 +1543,7 @@ var DISCREPANCY_API = (window.DEPUTATIONS_API) ||
       reportMsg.className="report-msg err";return;
     }
     if(!apiReady()){
-      reportMsg.textContent="Reporting is not connected yet. Please ask the site administrator to finish the one-time setup.";
+      reportMsg.textContent="Community discrepancy reporting is temporarily disabled. Mail the maintainer if you spot a wrong rule.";
       reportMsg.className="report-msg err";return;
     }
     reportSubmit.disabled=true;reportSubmit.textContent="Submitting…";
@@ -1579,7 +1581,7 @@ var DISCREPANCY_API = (window.DEPUTATIONS_API) ||
   function loadReports(){
     if(!apiReady()){
       reportsStatus.style.display="";
-      reportsStatus.textContent="Community reporting will be enabled once the site administrator completes the one-time backend setup.";
+      reportsStatus.textContent="Community discrepancy reporting is temporarily disabled.";
       reportsList.innerHTML="";
       return;
     }

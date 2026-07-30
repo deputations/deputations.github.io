@@ -1115,3 +1115,107 @@ focus:   P2-4: per-vacancy OG images (Pillow 1200x630 PNG)
   result; defer to a follow-up session.
 
 ## session shq-2026-07-29-005 end
+
+## session shq-2026-07-30-001
+```
+started: 2026-07-30
+ended:   2026-07-30
+model:   claude-opus-4-8[1m]
+driver:  solo
+branch:  main
+starting_head: b7e0620
+ending_head:   <pending>
+focus:   P3-5: retire Apps Script fallback + repo housekeeping
+```
+
+### inbound context read
+- session -005 above (P2-4 OG images) — ended with
+  next_pickup hint of P3-4, P3-5, or housekeeping
+- WEBSITE-REVIEW.md §3 table — P3-5 row was pending
+- scripts/ folder audit (saw 9 stale verify_*.py + 4 WhatsApp
+  operators sitting loose at scripts/ root)
+
+### work done
+1. **P3-5 core** — removed the Apps Script "second line":
+   - `config.js`: deleted `window.DEPUTATIONS_API` and the
+     multi-action endpoint comment block; kept only the
+     Supabase config.
+   - `contact.js`: when `SUPABASE_READY()` is false, `API_URL`
+     is now `""` instead of falling back to the Google URL;
+     removed the legacy CORS-bypass text/plain header branch.
+   - `report-vacancy.js`: same two changes.
+   - `faq.html`: `DISCREPANCY_API = ""`; updated the "not
+     connected yet" copy in the submit handler + reports
+     loader to read "temporarily disabled" (accurate, not a
+     misdirection toward non-existent setup).
+   - Deleted the entire `apps-script/` directory
+     (DriveStore.gs, Feedback.gs, Vacancies.gs, README.md).
+2. **Housekeeping** — moved 4 WhatsApp operator scripts
+   `scripts/whatsapp_*.py` → `admin/whatsapp/` (matches the
+   `supabase/`, `apps-script/` layout pattern); updated
+   `WHATSAPP.md` with the new paths (feed, watcher, bridge,
+   closing_digest, start-whatsapp-poster.cmd). Deleted 9
+   stale `scripts/verify_*.py` ad-hoc tests; kept
+   `verify_admin.py` (useful Playwright scaffolding for
+   P3-4).
+3. **Docs**: P3-5 marked DONE in WEBSITE-REVIEW.md; updated
+   the "Legacy fallback backend" line and the `contact +
+   report-vacancy` Pages line so they no longer claim Apps
+   Script is wired in.
+4. NOT yet committed (working tree has the full diff staged
+   + WEBSITE-REVIEW.md unstaged; commit at session end).
+
+### decisions
+- **FAQ discrepancy reporter intentionally disabled, not
+  ported**: porting needs new Supabase `submit` Edge Function
+  routes (`faq_report`, `faq_vote`) plus a new SQL table —
+  ~half-day of work for a feature that's seen ~zero traffic
+  in a year. For P3-5 scope (≤30 min cleanup), honest graceful
+  degradation beats a half-built port. Re-enable later if
+  anyone actually uses the disabled message to file a report.
+- **`scripts/verify_admin.py` kept in scripts/**: it's the
+  one Playwright file with real value. Moving it now would
+  orphan it; it belongs in the P3-4 Playwright suite which
+  deserves its own session.
+- **WhatsApp scripts go to `admin/whatsapp/`, not
+  `scripts/whatsapp/`**: scripts/ has been data-build only
+  since the Astro move; the operator-facing scripts (run by a
+  human, not by cron/CI) match `admin/` semantics better and
+  mirror the dead `apps-script/` shape. Also matches the
+  mental model in WHATSAPP.md ("admin helper that drives a
+  logged-in Chrome").
+
+### handoff state
+- working_tree: dirty (staged + unstaged mix — will commit
+  before session end)
+- `apps-script/` gone; no live code path depends on it
+- Supabase `submit` is the sole form backend; breakage will
+  surface immediately (good — was silently masked before)
+- 4 WhatsApp operator scripts at `admin/whatsapp/`; all
+  `WHATSAPP.md` references updated
+- `scripts/` is now data-build only (build_*, verify_admin)
+- next_pickup: P3-4 (Playwright in CI) is the natural next
+  step; the codebase is now ready for a clean smoke-test
+  author pass
+
+### gotchas for next session
+- **Commits that mix renames + deletes + content edits need
+  one pass of `git add -A`** before commit — `git add` on
+  individual paths showed the renames as `D` (unstaged
+  delete) instead of `R` (rename) until the dest was also
+  staged.
+- **`window.DEPUTATIONS_API` is GONE globally**. If any
+  script/HTML/JSON file still references it, that file will
+  break. Verified clean via grep before commit, but worth
+  re-running on the next session's first diff.
+- **`faq.html` "Report a discrepancy" button is now
+  decorative** — opens modal, submits fail with "temporarily
+  disabled". If anyone reports this as a regression, the
+  answer is "intentional, port to Supabase if you want it
+  back".
+- **Windows path in WHATSAPP.md (start-whatsapp-poster.cmd)**:
+  moved to `admin/whatsapp/start-whatsapp-poster.cmd`.
+  Anyone with a desktop shortcut pointing at the old path
+  needs to update it.
+
+## session shq-2026-07-30-001 end
