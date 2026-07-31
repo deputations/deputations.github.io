@@ -139,18 +139,22 @@ def call_gemini_embed(text, api_key, *, retries=2):
 def postgrest_upsert(supabase_url, service_key, vacancy_id, embedding, model):
     """UPSERT one (vacancy_id, embedding, model) row via PostgREST.
 
-    Uses Prefer: resolution=merge-duplicates so a re-run updates in place
-    rather than throwing on PK conflict.
+    Uses POST + Prefer: resolution=merge-duplicates so that:
+      - new rows are INSERTed
+      - existing rows (PK conflict) are UPDATEd in place
+    PATCH with a filter would only UPDATE matching rows (no insert), so the
+    table would stay empty after the first run. POST without the Prefer
+    header would 409 on PK conflict. POST + merge-duplicates is the
+    canonical PostgREST upsert.
     """
-    url = "{}/rest/v1/vacancy_embeddings?vacancy_id=eq.{}".format(
-        supabase_url.rstrip("/"), urllib.parse.quote(vacancy_id, safe=""))
-    body = json.dumps([{
+    url = "{}/rest/v1/vacancy_embeddings".format(supabase_url.rstrip("/"))
+    body = json.dumps({
         "vacancy_id": vacancy_id,
         "embedding":  embedding,
         "model":      model,
-    }]).encode("utf-8")
+    }).encode("utf-8")
     req = urllib.request.Request(
-        url, data=body, method="PATCH",
+        url, data=body, method="POST",
         headers={
             "Content-Type":  "application/json",
             "apikey":        service_key,
@@ -158,7 +162,7 @@ def postgrest_upsert(supabase_url, service_key, vacancy_id, embedding, model):
             "Prefer":        "resolution=merge-duplicates",
         })
     with urllib.request.urlopen(req, timeout=30) as resp:
-        if resp.status not in (200, 204):
+        if resp.status not in (200, 201, 204):
             raise RuntimeError("postgrest upsert returned {}".format(resp.status))
 
 
