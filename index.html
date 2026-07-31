@@ -159,15 +159,6 @@
             <input type="text" id="searchPost" placeholder="Search by post, dept, keywords…">
             <span class="search-ph" aria-hidden="true"></span>
           </div>
-          <!-- P3-3 semantic-search toggle. Default OFF so the existing
-               keyword path stays untouched; turning it on reroutes the
-               same #searchPost input through the semantic-search Edge
-               Function. -->
-          <button type="button" id="semanticToggle" class="semantic-toggle"
-                  aria-pressed="false" title="Toggle natural-language AI search">
-            <span class="semantic-toggle-glyph" aria-hidden="true">✨</span>
-            <span class="semantic-toggle-label">AI</span>
-          </button>
         </div>
 
         <div class="filter-group fg-primary">
@@ -321,6 +312,34 @@
       <section class="dashboard-content">
         <div class="kpi-grid" id="kpiGrid"></div>
 
+        <!-- P3-3 PR 4: flagship AI semantic-search bar — sits directly below
+             the KPI grid, above filters. Always visible (no toggle); the
+             results panel only paints when the user types ≥3 chars. The
+             keyword search in the sidebar remains untouched — both paths
+             work side by side. -->
+        <section class="ai-search-section" aria-label="AI semantic search">
+          <div class="ai-search-bar">
+            <span class="ai-search-glyph" aria-hidden="true">✨</span>
+            <div class="input-icon ai-search-field">
+              <svg class="icon"><use href="#i-search"/></svg>
+              <input type="text" id="aiSearchInput"
+                     placeholder="Ask in natural language — try ‘Director Finance in Delhi’…"
+                     autocomplete="off" spellcheck="false"
+                     aria-controls="semanticResults" aria-describedby="aiSearchHint">
+            </div>
+            <span id="aiSearchHint" class="ai-search-hint">AI-powered</span>
+          </div>
+
+          <section id="semanticResults" class="semantic-results" hidden
+                   aria-label="AI-ranked matches">
+            <header class="semantic-results-head">
+              <span class="semantic-results-title"><span aria-hidden="true">✨</span> AI-ranked matches</span>
+              <span id="semanticResultsStatus" class="semantic-results-status" aria-live="polite"></span>
+            </header>
+            <ul id="semanticResultsList" class="semantic-results-list"></ul>
+          </section>
+        </section>
+
         <div class="top-toolbar">
           <div class="toolbar-line toolbar-line-filters">
             <div class="results-count" id="resultsCount" aria-live="polite">Loading vacancies...</div>
@@ -349,18 +368,6 @@
             </div>
           </div>
         </div>
-
-        <!-- P3-3: AI-ranked semantic matches surface here. Hidden by default;
-             the panel only paints when the user has the AI toggle on AND
-             has typed ≥3 chars. -->
-        <section id="semanticResults" class="semantic-results" hidden
-                 aria-label="AI-ranked matches">
-          <header class="semantic-results-head">
-            <span class="semantic-results-title"><span aria-hidden="true">✨</span> AI-ranked matches</span>
-            <span id="semanticResultsStatus" class="semantic-results-status" aria-live="polite"></span>
-          </header>
-          <ul id="semanticResultsList" class="semantic-results-list"></ul>
-        </section>
 
         <div id="dataContainer" class="data-container view-table"></div>
       </section>

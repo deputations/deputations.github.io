@@ -1,12 +1,19 @@
 """Smoke tests for the P3-3 semantic-search feature on index.html.
 
-Covers:
-  • chip toggle behaviour (default off, click flips state + shows panel)
-  • ranked-matches path (stub the Edge Function, assert the panel renders
-    rows + clicking a row opens the existing vacancy modal)
-  • disabled-state handling (Edge Function 503 → graceful inline message,
-    no JS exception)
-  • default-off invariant (no fetch fires when the AI mode is off)
+P3-3 PR 4 update: the previous `✨ AI` toggle chip (next to the sidebar
+search) has been replaced by a dedicated full-width `#aiSearchInput` bar
+that lives just below the KPI grid. AI search is always-on — there is no
+toggle, no `aria-pressed` state. The sidebar `#searchPost` input remains
+the keyword path only and must NOT trigger /functions/v1/semantic-search.
+
+These tests cover:
+  • the AI bar is visible on every page load (no toggle to flip)
+  • typing in the dedicated AI bar triggers the Edge Function and renders
+    ranked matches into `#semanticResultsList`
+  • the Edge Function's 503 free-tier-disabled response surfaces as a
+    friendly inline status, with the keyword table still working
+  • typing in the sidebar `#searchPost` does NOT call the AI endpoint
+    (the two paths are independent)
 
 The Edge Function is stubbed at `**/functions/v1/semantic-search` with
 `tests.pages.route_helpers.reply_json`. We do NOT exercise the Edge
@@ -18,15 +25,32 @@ from __future__ import annotations
 from tests.pages.route_helpers import reply_json
 
 
-def test_semantic_chip_is_off_by_default(page, base_url: str):
+def test_ai_search_bar_is_visible_on_load(page, base_url: str):
+    """The dedicated AI search bar must be visible on every page load.
+
+    The previous `#semanticToggle` chip is gone — there is no longer an
+    off-by-default state to verify. We assert:
+      • `#aiSearchInput` is present, visible, and empty
+      • `#semanticResults` exists in the DOM but is hidden until typing
+      • the old `#semanticToggle` chip is completely removed
+      • the Edge Function is NOT called just by loading the page
+    """
     page.goto(f"{base_url}/index.html")
     page.wait_for_selector("#searchPost")
-    # Chip exists and starts unpressed; panel is hidden; nothing fetched.
-    page.wait_for_selector("#semanticToggle", timeout=5000)
-    assert page.locator("#semanticToggle").get_attribute("aria-pressed") == "false"
-    # Panel exists but is hidden.
+    page.wait_for_selector("#aiSearchInput", timeout=5000)
+    assert page.locator("#aiSearchInput").is_visible()
+    assert (page.locator("#aiSearchInput").input_value() or "") == ""
+
+    # Old chip must be gone — replaced by the dedicated bar.
+    assert page.locator("#semanticToggle").count() == 0, (
+        "Legacy #semanticToggle chip must be removed in P3-3 PR 4"
+    )
+
+    # Results panel exists but starts hidden.
+    assert page.locator("#semanticResults").count() == 1
     assert page.locator("#semanticResults").is_hidden()
-    # Typing without toggling must NOT fire a request to /functions/v1/semantic-search.
+
+    # No fetch fires on initial page load.
     fired: list[str] = []
     page.on(
         "request",
@@ -34,54 +58,55 @@ def test_semantic_chip_is_off_by_default(page, base_url: str):
         if "/functions/v1/semantic-search" in r.url
         else None,
     )
-    page.fill("#searchPost", "Director")
-    # Give the keyword debounce a beat.
     page.wait_for_timeout(400)
     assert not fired, (
-        "semantic-search Edge Function was called while AI mode was off: "
+        "semantic-search Edge Function was called on initial load: "
         + ", ".join(fired)
     )
 
 
-def test_semantic_chip_toggles_and_shows_panel(page, base_url: str):
+def test_sidebar_keyword_search_does_not_trigger_ai(page, base_url: str):
+    """The sidebar `#searchPost` input is the keyword path only.
+
+    Typing in the sidebar must filter the keyword table AND must NOT call
+    the /functions/v1/semantic-search endpoint. The two paths are
+    independent — only `#aiSearchInput` drives the AI endpoint.
+    """
     page.goto(f"{base_url}/index.html")
     page.wait_for_selector("#searchPost")
-    page.wait_for_selector("#semanticToggle", timeout=5000)
 
-    # Stub the Edge Function with an empty (but well-formed) success body so
-    # the in-flight request doesn't 404 if a stray keystroke fires.
+    fired: list[str] = []
+    page.on(
+        "request",
+        lambda r: fired.append(r.url)
+        if "/functions/v1/semantic-search" in r.url
+        else None,
+    )
+
+    # Stub the Edge Function anyway — if a stray request fires, the stub
+    # ensures the test still completes without a network error.
     page.route(
         "**/functions/v1/semantic-search",
         lambda r: reply_json(r, {"ok": True, "results": []}),
     )
 
-    toggle = page.locator("#semanticToggle")
-    toggle.click()
-    # aria-pressed flips + panel becomes visible.
-    page.wait_for_function(
-        "() => document.getElementById('semanticToggle').getAttribute('aria-pressed') === 'true'",
-        timeout=3000,
+    page.fill("#searchPost", "Director")
+    # Past the keyword debounce window.
+    page.wait_for_timeout(500)
+    assert fired == [], (
+        "Sidebar #searchPost must not invoke the AI endpoint: "
+        f"unexpected calls: {fired}"
     )
-    page.wait_for_function(
-        "() => !document.getElementById('semanticResults').hidden",
-        timeout=3000,
-    )
-    # And clicking again turns it off + re-hides the panel.
-    toggle.click()
-    page.wait_for_function(
-        "() => document.getElementById('semanticToggle').getAttribute('aria-pressed') === 'false'",
-        timeout=3000,
-    )
-    page.wait_for_function(
-        "() => document.getElementById('semanticResults').hidden",
-        timeout=3000,
-    )
+
+    # The dedicated AI bar must remain empty and the panel hidden.
+    assert (page.locator("#aiSearchInput").input_value() or "") == ""
+    assert page.locator("#semanticResults").is_hidden()
 
 
 def test_semantic_search_renders_ranked_matches(page, base_url: str):
     page.goto(f"{base_url}/index.html")
     page.wait_for_selector("#searchPost")
-    page.wait_for_selector("#semanticToggle", timeout=5000)
+    page.wait_for_selector("#aiSearchInput", timeout=5000)
 
     # Three fixture matches — IDs match the data/vacancies.json shape so the
     # modal-open path can resolve them via getItemById().
@@ -128,13 +153,8 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
 
     page.route("**/functions/v1/semantic-search", handler)
 
-    # Turn AI mode on, type a query.
-    page.locator("#semanticToggle").click()
-    page.wait_for_function(
-        "() => document.getElementById('semanticToggle').getAttribute('aria-pressed') === 'true'",
-        timeout=3000,
-    )
-    page.fill("#searchPost", "finance posts in the northeast")
+    # Type a query into the dedicated AI bar (no toggle to flip first).
+    page.fill("#aiSearchInput", "finance posts in the northeast")
 
     # Wait for the panel to render three <li> rows.
     page.wait_for_function(
@@ -171,7 +191,7 @@ def test_semantic_search_disabled_state_handled_gracefully(page, base_url: str):
     """
     page.goto(f"{base_url}/index.html")
     page.wait_for_selector("#searchPost")
-    page.wait_for_selector("#semanticToggle", timeout=5000)
+    page.wait_for_selector("#aiSearchInput", timeout=5000)
 
     # Console errors raised during the test fail the test — we'll surface
     # them through Playwright's pageerror listener.
@@ -192,10 +212,8 @@ def test_semantic_search_disabled_state_handled_gracefully(page, base_url: str):
         ),
     )
 
-    page.locator("#semanticToggle").click()
-    # "Director" matches lots of keyword rows in the fixture data, so we can
-    # assert the keyword path is unaffected by the disabled-AI state.
-    page.fill("#searchPost", "Director")
+    # Type into the dedicated AI bar.
+    page.fill("#aiSearchInput", "Director")
 
     # Wait for the status line to paint.
     page.wait_for_function(
@@ -211,8 +229,9 @@ def test_semantic_search_disabled_state_handled_gracefully(page, base_url: str):
     # No <li> rows when the function is disabled.
     assert page.locator("#semanticResultsList li").count() == 0
 
-    # The keyword-search path (table below) keeps working — the disabled
-    # AI panel does NOT block the user from typing or filtering.
+    # The keyword-search path (sidebar #searchPost) keeps working — the
+    # disabled AI panel does NOT block the user from typing or filtering.
+    # "Director" matches lots of keyword rows in the fixture data.
     keyword_rows = page.locator("tr.clickable-row[data-open-details]").count()
     assert keyword_rows >= 8, (
         f"keyword rows regressed during disabled AI: got {keyword_rows}"

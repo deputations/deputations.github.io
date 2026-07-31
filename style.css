@@ -6222,37 +6222,93 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
 }
 
 /* ============================================================================
-   P3-3 semantic search
-   Toggle chip next to #searchPost, slim AI-ranked results panel above the
-   table. Matches existing filter-chip / glass-panel tokens; light + dark.
+   P3-3 PR 4 — AI semantic search (flagship bar)
+   Dedicated full-width search bar below the KPI grid. Always visible; the
+   results panel (`.semantic-results` below) only paints when the user types
+   ≥3 chars. The previous sidebar `.semantic-toggle` chip has been removed —
+   the AI path is now always-on via this single dedicated input.
    ============================================================================ */
 
-.semantic-toggle {
-  display: inline-flex;
+.ai-search-section {
+  margin: 0 0 1rem 0;
+}
+.ai-search-bar {
+  display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 6px;
-  padding: 0.25rem 0.65rem;
-  border-radius: 999px;
+  gap: 0.8rem;
+  background: linear-gradient(145deg, var(--bg-surface), rgba(15, 23, 42, 0.4));
+  padding: 0.85rem 1.15rem;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-glass);
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+}
+.ai-search-bar:focus-within {
+  border-color: var(--accent-color);
+  box-shadow: var(--shadow-glass),
+              0 0 0 3px rgba(167, 139, 250, 0.18);
+}
+.ai-search-glyph {
+  font-size: 1.35rem;
+  line-height: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.45));
+  animation: ai-glyph-pulse 3.4s ease-in-out infinite;
+}
+@keyframes ai-glyph-pulse {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-search-glyph { animation: none; }
+}
+.ai-search-field {
+  flex: 1 1 auto;
+  min-width: 0;
   background: var(--bg-surface-solid);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+.ai-search-field input {
+  border: none;
+  background: transparent;
+  padding: 0.55rem 0.5rem 0.55rem 2.8rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+.ai-search-field input:focus {
+  outline: none;
+  border: none;
+  box-shadow: none;
+}
+.ai-search-hint {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-  user-select: none;
+  background: var(--bg-surface-solid);
+  border: 1px solid var(--border-color);
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-.semantic-toggle:hover {
-  border-color: var(--accent, #22d3ee);
-  color: var(--text-primary);
+@media (max-width: 640px) {
+  .ai-search-hint { display: none; }
+  .ai-search-bar  { padding: 0.7rem 0.9rem; gap: 0.6rem; }
 }
-.semantic-toggle[aria-pressed="true"] {
-  background: linear-gradient(135deg, rgba(167, 139, 250, 0.25), rgba(34, 211, 238, 0.18));
-  color: var(--text-primary);
-  border-color: var(--accent, #22d3ee);
+[data-theme="light"] .ai-search-bar {
+  background: linear-gradient(145deg, var(--bg-surface), rgba(255, 255, 255, 0.5));
 }
-.semantic-toggle-glyph { font-size: 0.85rem; }
+[data-theme="light"] .ai-search-field {
+  background: rgba(15, 23, 42, 0.04);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+[data-theme="light"] .ai-search-field input::placeholder {
+  color: rgba(15, 23, 42, 0.45);
+  font-style: italic;
+}
 
 .semantic-results {
   margin: 0 0 14px;

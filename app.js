@@ -3416,42 +3416,23 @@ function syncCardSortUI() {
     }
 
     // ========================================================================
-    // P3-3 — semantic search (Gemini embeddings via the semantic-search Edge
-    // Function from PR 2). Off by default; flipping the chip reroutes the
-    // same #searchPost input through a pgvector similarity lookup, while the
-    // existing keyword path keeps running unchanged.
+    // P3-3 PR 4 — semantic search (Gemini embeddings via the semantic-search
+    // Edge Function from PR 2). The previous sidebar chip has been replaced
+    // by a dedicated `#aiSearchInput` bar below the KPI grid; the AI path
+    // is now always-on (no toggle) and the sidebar #searchPost input remains
+    // the keyword path only. The two inputs operate independently.
     //
     // Free-tier discipline: the Edge Function returns 503 + code="disabled"
     // when the daily Gemini quota is exhausted; the UI degrades to a single
     // inline status line, never throws, never blocks the user from typing.
     // ========================================================================
 
-    let semanticMode = false;
     let semanticTimer = null;
     let semanticInflight = null;
-    const semanticToggle = document.getElementById('semanticToggle');
+    const aiSearchInput = document.getElementById('aiSearchInput');
     const semanticResults = document.getElementById('semanticResults');
     const semanticResultsList = document.getElementById('semanticResultsList');
     const semanticResultsStatus = document.getElementById('semanticResultsStatus');
-    const SEMANTIC_ORIGINAL_PLACEHOLDER = searchPost ? searchPost.getAttribute('placeholder') : '';
-
-    function setSemanticMode(on) {
-        semanticMode = !!on;
-        if (semanticToggle) semanticToggle.setAttribute('aria-pressed', semanticMode ? 'true' : 'false');
-        if (searchPost) {
-            searchPost.setAttribute('placeholder',
-                semanticMode
-                    ? 'Try a natural-language query…'
-                    : SEMANTIC_ORIGINAL_PLACEHOLDER);
-        }
-        // Hide panel when turning off; if turning on, immediately try the
-        // current query (don't wait for next keystroke).
-        if (!semanticMode) {
-            hideSemanticResults();
-            return;
-        }
-        scheduleSemanticSearch();
-    }
 
     function hideSemanticResults() {
         if (semanticResults) semanticResults.hidden = true;
@@ -3493,18 +3474,17 @@ function syncCardSortUI() {
     }
 
     function scheduleSemanticSearch() {
-        if (!semanticMode) return;
+        if (!aiSearchInput) return;
         clearTimeout(semanticTimer);
-        const q = (searchPost ? searchPost.value : '').trim();
+        const q = aiSearchInput.value.trim();
         if (q.length < 3) {
-            showSemanticMessage('Type 3+ characters for an AI-ranked match.');
+            hideSemanticResults();
             return;
         }
         semanticTimer = setTimeout(() => runSemanticSearch(q), 250);
     }
 
     async function runSemanticSearch(query) {
-        if (!semanticMode) return;
         if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
             showSemanticMessage('AI search unavailable — Supabase not configured. Use keywords.');
             return;
@@ -3554,8 +3534,11 @@ function syncCardSortUI() {
         }
     }
 
-    if (semanticToggle) {
-        semanticToggle.addEventListener('click', () => setSemanticMode(!semanticMode));
+    // The dedicated AI bar (below the KPI grid) is the single driver of the
+    // semantic-search Edge Function. The sidebar #searchPost input is the
+    // keyword path only — typing there does NOT trigger /semantic-search.
+    if (aiSearchInput) {
+        aiSearchInput.addEventListener('input', scheduleSemanticSearch);
     }
     // Click a ranked-match row → open the existing vacancy modal. Uses
     // event delegation so we don't have to rebind when the panel re-renders.
@@ -3567,12 +3550,6 @@ function syncCardSortUI() {
             if (vid && typeof openVacancyModal === 'function') {
                 openVacancyModal(vid);
             }
-        });
-    }
-    // Hook into the existing search input — only fires the AI path when on.
-    if (searchPost) {
-        searchPost.addEventListener('input', () => {
-            if (semanticMode) scheduleSemanticSearch();
         });
     }
 });
