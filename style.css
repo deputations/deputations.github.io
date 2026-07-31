@@ -6231,6 +6231,35 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
 
 .ai-search-section {
   margin: 0 0 1rem 0;
+  /* The dashboard-content is a flex column where .data-container has
+     flex: 1 1 auto (so the table fills available vertical space).
+     Without flex-shrink:0 the new section would get pushed to the bottom
+     of the column. Keep us at our natural position right under the KPI
+     grid. */
+  flex-shrink: 0;
+}
+
+/* Collapsed-filters layout (desktop default since P2): dashboard-content
+   becomes display:contents and its children become grid items. Without an
+   explicit grid-area, the new AI section lands at the bottom of the
+   implicit grid (after the data table). Pin it to a new row that sits
+   between the KPI row and the toolbar row. The AI section is always
+   present in the DOM, so we can always extend the grid without :has(). */
+body.filters-collapsed .ai-search-section {
+  grid-area: ai;
+  margin: 0;
+}
+body.filters-collapsed {
+  /* Overrides the 3-row grid defined below .main-layout in the
+     collapsed-filters block (it lives further down in style.css). */
+}
+body.filters-collapsed .main-layout {
+  grid-template-rows: auto auto auto 1fr;
+  grid-template-areas:
+    "filters kpis"
+    "ai      ai"
+    "toolbar toolbar"
+    "data    data";
 }
 .ai-search-bar {
   display: flex;

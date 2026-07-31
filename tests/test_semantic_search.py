@@ -34,6 +34,9 @@ def test_ai_search_bar_is_visible_on_load(page, base_url: str):
       • `#semanticResults` exists in the DOM but is hidden until typing
       • the old `#semanticToggle` chip is completely removed
       • the Edge Function is NOT called just by loading the page
+      • the bar sits DIRECTLY BELOW the KPI grid (not at the bottom of
+        the page after the table) — locks down the flagship positioning
+        invariant so a flex-layout change can't silently sink the bar
     """
     page.goto(f"{base_url}/index.html")
     page.wait_for_selector("#searchPost")
@@ -49,6 +52,26 @@ def test_ai_search_bar_is_visible_on_load(page, base_url: str):
     # Results panel exists but starts hidden.
     assert page.locator("#semanticResults").count() == 1
     assert page.locator("#semanticResults").is_hidden()
+
+    # Flagship positioning: the bar must sit ABOVE the data table.
+    # `.dashboard-content` is `display:flex; flex-direction:column` and
+    # `.data-container` has `flex:1 1 auto`; without `flex-shrink:0` on
+    # the AI section, the bar gets pushed to the bottom of the column.
+    # Wait for the data table to actually have rows so its rect is real.
+    page.wait_for_selector("#dataContainer tr.clickable-row", timeout=5000)
+    page.wait_for_function(
+        """() => {
+            const ai   = document.querySelector('.ai-search-section');
+            const kpi  = document.querySelector('.kpi-grid');
+            const data = document.getElementById('dataContainer');
+            if (!ai || !kpi || !data) return false;
+            // Wait for the data container to have real height (table loaded).
+            if (data.getBoundingClientRect().height < 100) return false;
+            return ai.getBoundingClientRect().top   >= kpi.getBoundingClientRect().bottom
+                && ai.getBoundingClientRect().bottom <= data.getBoundingClientRect().top;
+        }""",
+        timeout=5000,
+    )
 
     # No fetch fires on initial page load.
     fired: list[str] = []
