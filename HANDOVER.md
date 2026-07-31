@@ -2122,10 +2122,7 @@ model:         claude-opus-4-8
 driver:        solo
 branch:        main
 starting_head: 061b503
-ending_head:   <this commit — adjust with `git rev-parse --short HEAD`
-               after the final amend; the SHA changes every time you
-               amend, so the block deliberately stays at "this commit"
-               until the first non-amend commit in the next session>
+ending_head:   6bbf0e2
 focus:         finish P3-7 (NIC compatibility) with the bookmark
                UX polish: header pulse animation, "Stored on this
                device" hint, count-aware aria-label on the watchlist
@@ -2265,10 +2262,7 @@ model:         claude-opus-4-8
 driver:        solo
 branch:        main
 starting_head: 6bbf0e2
-ending_head:   <this commit — adjust with `git rev-parse --short HEAD`
-               after the final amend; the SHA changes every time you
-               amend, so the block deliberately stays at "this commit"
-               until the first non-amend commit in the next session>
+ending_head:   7f45934
 focus:         fix the NIC regression introduced by P3-7 PR 1: the
                feedback widget's heart + thumbs-down were hidden
                because `init()` gated `buildCounter()` / `buildFeedback()`
