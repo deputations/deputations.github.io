@@ -2258,3 +2258,119 @@ focus:         finish P3-7 (NIC compatibility) with the bookmark
 P3-7 PR 2 (Cloudflare Worker reverse proxy). Plan from HANDOVER
 shq-2026-07-31-005 `next_pickup` is unchanged.
 
+## session shq-2026-07-31-007 (P3-7 PR 1 fix — restore heart on NIC)
+```
+started:       2026-07-31
+model:         claude-opus-4-8
+driver:        solo
+branch:        main
+starting_head: 6bbf0e2
+ending_head:   <this commit — adjust with `git rev-parse --short HEAD`
+               after the final amend; the SHA changes every time you
+               amend, so the block deliberately stays at "this commit"
+               until the first non-amend commit in the next session>
+focus:         fix the NIC regression introduced by P3-7 PR 1: the
+               feedback widget's heart + thumbs-down were hidden
+               because `init()` gated `buildCounter()` / `buildFeedback()`
+               on a successful `ensureSupabaseAvailable()` probe. NIC
+               users saw the offline banner but no heart, which broke
+               the user expectation that the heart is always there.
+```
+### inbound context read
+- HANDOVER shq-2026-07-31-005 (P3-7 PR 1 — the gating that hid the
+  heart)
+- HANDOVER shq-2026-07-31-006 (bookmark UX polish, just shipped)
+- memory `deputation-p3-4-gotchas` (Playwright dispatch-order rule,
+  LIFO is a myth — first match wins)
+- codebase: site-widgets.js init() around lines 597-611 (the gate),
+  rpc()/onRpcFail() (the 3-strike breaker that already handles
+  silent failures)
+
+### work done
+1. **`site-widgets.js` init() — removed the probe gate.** The
+   `buildCounter()` and `buildFeedback()` calls now run
+   unconditionally. The widget-level SB_OK checks inside each
+   function handle the unavailable case (counter hides itself via
+   `style.display = "none"`; feedback widget shows the heart with
+   count "—").
+2. **`site-widgets.js` `onRpcFail()` — first failure now sets the
+   offline state.** Previously the body class `is-supabase-down`
+   was only set by `ensureSupabaseAvailable().catch()`. With the
+   probe gone, the first failed RPC is the new trigger:
+   ```
+   if (sb_fail_count === 1) {
+     document.body.classList.add("is-supabase-down");
+     var b = document.getElementById("offlineBanner");
+     if (b) b.hidden = false;
+   }
+   ```
+   After 3 strikes, SB_OK flips false and the counter widget hides
+   (existing behavior, unchanged).
+3. **`tests/test_nic_overview.py` — rewrote the route-abort logic.**
+   The previous test registered `page.route("**/supabase.co/**", block_supabase)`
+   as a single catch-all, but the default `page` fixture had already
+   registered four specific RPC routes that match the same URLs.
+   Per dispatch-order rules, the first matching handler wins — so the
+   fixture's mock JSON handler was returned, the RPC never failed,
+   and `is-supabase-down` was never set. The fix re-registers an
+   abort route for each of the four RPC URL patterns (`bump_visit`,
+   `heartbeat`, `get_sentiment`, `record_sentiment`) so the LAST
+   registration wins for each URL. Also aborts `/rest/v1/` (the probe
+   URL) for completeness.
+4. **`tests/test_nic_overview.py` — added heart-visibility assertions.**
+   `.sw-fb` visible, `.sw-fb .like` visible, `.sw-fb .dislike`
+   visible, `.sw-fb .cnt` text is "—". Combined with the existing
+   favBtn + row-heart assertions, the test now covers the entire
+   user-visible NIC surface.
+
+### decisions
+- **No eager probe → no ERR_SSL_PROTOCOL_ERROR noise on NIC.**
+  Before, `init()` always called `ensureSupabaseAvailable()` which
+  fires a HEAD probe to `/rest/v1/`. On NIC the TLS handshake fails
+  and surfaces the error in the console. Removing the probe and
+  relying on the 3-strike breaker eliminates the noise — the first
+  failed RPC triggers the offline state, and after 3 strikes the
+  breaker stops further attempts entirely.
+- **Widget renders unconditionally; rpc() handles failures silently.**
+  This is the existing guarantee of the 3-strike breaker. We didn't
+  add any new error handling — we just stopped hiding the widget
+  when Supabase is unreachable. The heart is still meaningful UX
+  (user can see "this is the like button") even if the click fails
+  silently.
+- **The bug was the probe-gate, not the probe.** The probe is still
+  useful for `fetchVacancies()` (which decides whether to race
+  against the JSON file) and `realtime-toast.js`. Only
+  `site-widgets.js` no longer needs it.
+
+### handoff state
+- Working tree: site-widgets.js (modified), tests/test_nic_overview.py
+  (rewritten).
+- Smoke: 35/35 pass in ~90 s (was 35/35 before — `test_search_post_debounces`
+  is a pre-existing flake that fails under full-suite load but passes
+  in isolation, not introduced by this PR).
+- `node --check` clean on site-widgets.js.
+- Browser preview verified: live fetch returns count "18"
+  (heart + thumbs-down visible).
+
+### gotchas for next session
+- **Playwright route dispatch is registration-order (NOT LIFO).**
+  Re-registering the same URL pattern AFTER an existing handler
+  wins — but re-registering a MORE GENERAL pattern (e.g.
+  `**/supabase.co/**` after `**/supabase.co/rest/v1/rpc/bump_visit`)
+  loses. The NIC test uses per-RPC re-registration to win.
+  Documented in memory `deputation-p3-4-gotchas`.
+- **`pageerror` does NOT capture fetch-rejected promises.** The
+  ERR_SSL_PROTOCOL_ERROR only fires inside `fetch().catch()`, which
+  rpc() handles. To assert console silence on NIC, listen for
+  `console.error` instead of `pageerror` — but with the probe gone,
+  there are no console errors to leak (the fetch rejection is silent).
+- **`ensureSupabaseAvailable()` is still called by
+  `fetchVacancies()` and `realtime-toast.js`.** Don't remove it from
+  `config.js`; only the `site-widgets.js` init() call is gone. The
+  probe still gates vacancies fetch on the dashboard's primary data
+  path.
+
+### next_pickup
+P3-7 PR 2 (Cloudflare Worker reverse proxy at `api.alldeputations.com`).
+Fixes the NIC issue at the network layer instead of the JS layer.
+

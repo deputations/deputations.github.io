@@ -44,6 +44,17 @@
   }
   function onRpcFail() {
     sb_fail_count++;
+    // First failure: surface the offline state. The banner is the user-visible
+    // signal that the visitor counter and feedback widget are running in
+    // local-only mode. We don't synchronously fail-on-first-error — one
+    // transient network blip shouldn't yank the live count. The body class
+    // also matches what `ensureSupabaseAvailable().catch()` sets, so the
+    // existing CSS rules that hide / restyle for offline continue to apply.
+    if (sb_fail_count === 1) {
+      document.body && document.body.classList.add("is-supabase-down");
+      var b = document.getElementById("offlineBanner");
+      if (b) b.hidden = false;
+    }
     if (sb_fail_count >= SB_FAIL_THRESHOLD) {
       SB_OK = false;
       // Hide the visitor counter pill entirely once we know Supabase is
@@ -590,25 +601,21 @@
     try { buildMobileNav(); } catch (e) {}
     try { buildDisclaimer(); } catch (e) {}
 
-    // P3-7 PR 1: pre-flight probe. On networks where Supabase TLS fails
-    // (NIC SSL-inspecting middlebox), skip the visitor counter and feedback
-    // widget entirely instead of letting them surface ERR_SSL_PROTOCOL_ERROR.
-    // The existing 3-strike circuit breaker stays as a safety net.
-    var sbReady = !!(window.SUPABASE_READY && window.SUPABASE_READY());
-    var probe = sbReady && typeof window.ensureSupabaseAvailable === "function"
-      ? window.ensureSupabaseAvailable()
-      : Promise.resolve(false);
-
-    probe.then(function (available) {
-      if (!available) {
-        document.body && document.body.classList.add("is-supabase-down");
-        // Don't render counter or feedback widgets at all when Supabase is
-        // unreachable — pollutes console + UI for no signal.
-        return;
-      }
-      try { buildCounter(); } catch (e) {}
-      if (ENABLE_FEEDBACK) { try { buildFeedback(); } catch (e) {} }
-    });
+    // P3-7 PR 1 (fix): render the visitor counter and feedback widget
+    // UNCONDITIONALLY. The previous shape gated both on an eager
+    // `ensureSupabaseAvailable()` HEAD probe, which surfaced
+    // ERR_SSL_PROTOCOL_ERROR on NIC users and hid the heart entirely.
+    //
+    // New shape: widgets render on load. The first RPC that fails trips
+    // `onRpcFail()` which sets `is-supabase-down` on <body> and unhides the
+    // offline banner — the user-visible signal. After 3 consecutive failures
+    // the 3-strike breaker flips SB_OK=false and the counter is hidden; the
+    // feedback widget stays visible (heart + count shows "—") so the
+    // interaction is still discoverable, even if clicks fail silently.
+    //
+    // No eager probe → no ERR_SSL_PROTOCOL_ERROR noise on NIC.
+    try { buildCounter(); } catch (e) {}
+    if (ENABLE_FEEDBACK) { try { buildFeedback(); } catch (e) {} }
 
     // PWA offline shell (review P1-2). Production origin only, so local dev
     // servers never serve stale cached assets while iterating.
