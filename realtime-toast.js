@@ -188,8 +188,17 @@
   /* ---- boot ---- */
   function init() {
     bootstrap().then(function () {
+      // P3-7 PR 1: polling works on every network (same-origin). Only the
+      // WebSocket needs the probe — if Supabase TLS fails on this network,
+      // skip the WS so we don't get ERR_SSL_PROTOCOL_ERROR spam in the
+      // console; polling continues to deliver new-vacancy toasts.
       startPolling();
-      startRealtime();
+      var probe = (typeof window.ensureSupabaseAvailable === "function")
+        ? window.ensureSupabaseAvailable()
+        : Promise.resolve(true);
+      probe.then(function (available) {
+        if (available) startRealtime();
+      });
     });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

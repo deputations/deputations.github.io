@@ -587,9 +587,29 @@
     injectCSS();
     try { enhanceNav(); } catch (e) {}
     try { buildTypewriter(); } catch (e) {}
-    try { buildCounter(); } catch (e) {}
-    try { buildDisclaimer(); } catch (e) {}
     try { buildMobileNav(); } catch (e) {}
+    try { buildDisclaimer(); } catch (e) {}
+
+    // P3-7 PR 1: pre-flight probe. On networks where Supabase TLS fails
+    // (NIC SSL-inspecting middlebox), skip the visitor counter and feedback
+    // widget entirely instead of letting them surface ERR_SSL_PROTOCOL_ERROR.
+    // The existing 3-strike circuit breaker stays as a safety net.
+    var sbReady = !!(window.SUPABASE_READY && window.SUPABASE_READY());
+    var probe = sbReady && typeof window.ensureSupabaseAvailable === "function"
+      ? window.ensureSupabaseAvailable()
+      : Promise.resolve(false);
+
+    probe.then(function (available) {
+      if (!available) {
+        document.body && document.body.classList.add("is-supabase-down");
+        // Don't render counter or feedback widgets at all when Supabase is
+        // unreachable — pollutes console + UI for no signal.
+        return;
+      }
+      try { buildCounter(); } catch (e) {}
+      if (ENABLE_FEEDBACK) { try { buildFeedback(); } catch (e) {} }
+    });
+
     // PWA offline shell (review P1-2). Production origin only, so local dev
     // servers never serve stale cached assets while iterating.
     //
@@ -602,7 +622,6 @@
         navigator.serviceWorker.register("/sw.js");
       }
     } catch (e) {}
-    if (ENABLE_FEEDBACK) { try { buildFeedback(); } catch (e) {} }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();

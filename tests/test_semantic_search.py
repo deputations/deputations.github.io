@@ -261,3 +261,89 @@ def test_semantic_search_disabled_state_handled_gracefully(page, base_url: str):
     )
 
     assert not errors, f"unexpected page errors: {errors}"
+
+
+def test_ai_search_offline_when_supabase_unreachable(page, base_url: str):
+    """P3-7 PR 1: when the one-time TLS probe to Supabase fails, the AI
+    bar must show a friendly offline message and MUST NOT attempt to fetch
+    `/functions/v1/semantic-search`. The keyword table keeps working.
+
+    This simulates the NIC environment (SSL-inspecting middlebox kills the
+    TLS handshake) by stubbing the probe URL to return ERR_SSL_PROTOCOL_ERROR
+    via `route.abort('ssl_protocol_error')` before any page script runs.
+    """
+    # Abort every Supabase REST + Edge Function call BEFORE the page loads.
+    # The 2-second probe timeout is generous; we abort immediately so the
+    # probe fails fast and the offline path kicks in well within the test.
+    # We use `failed` instead of `sslprotocolerror` because Playwright
+    # doesn't recognize the latter — but the page only cares that the
+    # fetch rejected, not the specific error code.
+    def block_supabase(route):
+        route.abort("failed")
+
+    page.route(
+        "**/rest/v1/**",
+        block_supabase,
+    )
+    page.route(
+        "**/functions/v1/**",
+        block_supabase,
+    )
+
+    # No console errors expected — the whole point of the probe is to
+    # silence the noisy ERR_SSL_PROTOCOL_ERROR stack.
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+
+    page.goto(f"{base_url}/index.html")
+    page.wait_for_selector("#searchPost")
+    page.wait_for_selector("#aiSearchInput", timeout=5000)
+
+    # The offline banner must be visible.
+    page.wait_for_selector("#offlineBanner:not([hidden])", timeout=5000)
+    assert page.locator("#offlineBanner").is_visible()
+    body_class = page.evaluate("() => document.body.className")
+    assert "is-supabase-down" in body_class, (
+        f"body.is-supabase-down not set when Supabase is unreachable; "
+        f"className={body_class!r}"
+    )
+
+    # Track every fetch to the AI endpoint — should NEVER fire when offline.
+    fired: list[str] = []
+    page.on(
+        "request",
+        lambda r: fired.append(r.url)
+        if "/functions/v1/semantic-search" in r.url
+        else None,
+    )
+
+    # Type into the dedicated AI bar. The probe says Supabase is down, so
+    # the AI panel should show the offline message — NOT "Finding AI-ranked
+    # matches…" (which only appears when a fetch is about to fire).
+    page.fill("#aiSearchInput", "Director")
+    page.wait_for_function(
+        "() => (document.getElementById('semanticResultsStatus')?.textContent || '')"
+        ".includes('unavailable')",
+        timeout=5000,
+    )
+    status = page.locator("#semanticResultsStatus").text_content() or ""
+    assert "unavailable" in status, (
+        f"offline status missing 'unavailable': {status!r}"
+    )
+
+    # Give the page a beat to fire any stray fetch — none should.
+    page.wait_for_timeout(400)
+    assert fired == [], (
+        "AI endpoint must NOT be called when Supabase is unreachable: "
+        f"unexpected calls: {fired}"
+    )
+
+    # The keyword path still works.
+    page.fill("#searchPost", "Director")
+    page.wait_for_timeout(400)
+    keyword_rows = page.locator("tr.clickable-row[data-open-details]").count()
+    assert keyword_rows >= 8, (
+        f"keyword rows regressed during offline mode: got {keyword_rows}"
+    )
+
+    assert not errors, f"unexpected page errors: {errors}"

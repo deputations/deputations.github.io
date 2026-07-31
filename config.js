@@ -18,6 +18,57 @@ window.SUPABASE_READY = function () {
     !/YOUR_/.test(window.SUPABASE_ANON_KEY || "");
 };
 
+/* NIC detection (P3-7 PR 1) — a one-time probe so every Supabase consumer
+ * can short-circuit on networks where TLS to Supabase fails (e.g. NIC's
+ * SSL-inspecting middlebox returns ERR_SSL_PROTOCOL_ERROR before HTTP).
+ *
+ * State machine:
+ *   null  → not probed yet (probe is in flight or hasn't been kicked off)
+ *   true  → TLS to Supabase succeeded at least once this session
+ *   false → TLS to Supabase failed; stop trying until the page reloads
+ *
+ * Probe is a HEAD request to /rest/v1/ with the apikey header. Any HTTP
+ * response (even 401) means the TLS handshake completed. A fetch rejection
+ * (SSL error, DNS failure, abort) means Supabase is unreachable from this
+ * network. 2-second timeout so a slow-but-OK Supabase doesn't block the
+ * page indefinitely.
+ */
+window.SUPABASE_AVAILABLE = null;
+window.ensureSupabaseAvailable = function () {
+  if (window.SUPABASE_AVAILABLE !== null) return Promise.resolve(window.SUPABASE_AVAILABLE);
+  if (!window.SUPABASE_READY || !window.SUPABASE_READY()) {
+    window.SUPABASE_AVAILABLE = false;
+    return Promise.resolve(false);
+  }
+  if (window.__supabaseProbeInFlight) return window.__supabaseProbeInFlight;
+  var ctrl = (typeof AbortController === "function") ? new AbortController() : null;
+  var timer = setTimeout(function () { try { ctrl && ctrl.abort(); } catch (e) {} }, 2000);
+  window.__supabaseProbeInFlight = fetch(window.SUPABASE_URL + "/rest/v1/", {
+    method: "HEAD",
+    headers: { apikey: window.SUPABASE_ANON_KEY },
+    signal: ctrl ? ctrl.signal : undefined,
+    mode: "cors",
+  })
+    .then(function () {
+      window.SUPABASE_AVAILABLE = true;
+      return true;
+    })
+    .catch(function () {
+      window.SUPABASE_AVAILABLE = false;
+      document.body && document.body.classList.add("is-supabase-down");
+      // Unhide the offline banner if it's present (defined on index.html).
+      var b = document.getElementById("offlineBanner");
+      if (b) b.hidden = false;
+      return false;
+    })
+    .then(function (v) {
+      clearTimeout(timer);
+      window.__supabaseProbeInFlight = null;
+      return v;
+    });
+  return window.__supabaseProbeInFlight;
+};
+
 /* Web Push (vacancy alerts). The VAPID PUBLIC key is safe to expose — it only
  * identifies this server to the browser's push service; the matching PRIVATE
  * key lives only in the Supabase `push-notify` function's secrets. Push stays

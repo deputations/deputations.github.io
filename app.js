@@ -535,19 +535,27 @@ function fetchVacancies() {
     // Enhancement: Supabase REST with a 4s timeout. On NIC networks this will
     // typically reject with ERR_SSL_PROTOCOL_ERROR — the .catch swallows it
     // and we keep the JSON rows.
+    //
+    // P3-7 PR 1: gate on ensureSupabaseAvailable() so we don't even attempt
+    // the cross-origin REST call when a one-time TLS probe has already
+    // confirmed Supabase is unreachable from this network. Saves the 4s
+    // wait + console noise on every page load inside NIC.
     let sbPromise = Promise.resolve(null);
     if (window.SUPABASE_READY && window.SUPABASE_READY()) {
-        const url = `${window.SUPABASE_URL}/rest/v1/vacancies?status=eq.approved&select=*`;
-        sbPromise = Promise.race([
-            fetch(url, {
-                headers: {
-                    apikey: window.SUPABASE_ANON_KEY,
-                    Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`,
-                },
-            }).then(res => (res.ok ? res.json() : null))
-              .catch(() => null),
-            new Promise(resolve => setTimeout(() => resolve(null), 4000)),
-        ]);
+        sbPromise = window.ensureSupabaseAvailable().then(available => {
+            if (!available) return null;
+            const url = `${window.SUPABASE_URL}/rest/v1/vacancies?status=eq.approved&select=*`;
+            return Promise.race([
+                fetch(url, {
+                    headers: {
+                        apikey: window.SUPABASE_ANON_KEY,
+                        Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`,
+                    },
+                }).then(res => (res.ok ? res.json() : null))
+                  .catch(() => null),
+                new Promise(resolve => setTimeout(() => resolve(null), 4000)),
+            ]);
+        });
     }
 
     return Promise.all([jsonPromise, sbPromise]).then(([jsonRows, sbRows]) => {
@@ -3487,6 +3495,19 @@ function syncCardSortUI() {
     async function runSemanticSearch(query) {
         if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
             showSemanticMessage('AI search unavailable — Supabase not configured. Use keywords.');
+            return;
+        }
+        // P3-7 PR 1: pre-flight check via the one-time TLS probe. If Supabase
+        // is known unreachable from this network (NIC middlebox fails the TLS
+        // handshake), don't attempt the fetch at all — render a friendly
+        // inline message and skip the cross-origin Edge Function call.
+        // Awaits the probe so we don't race a real fetch against an in-flight
+        // HEAD; the probe itself is bounded by a 2 s timeout.
+        const available = await window.ensureSupabaseAvailable();
+        if (!available) {
+            showSemanticMessage(
+                'AI search unavailable on this network. Use the keyword search above.'
+            );
             return;
         }
         // Cancel any in-flight request before starting a new one.

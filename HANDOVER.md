@@ -1962,5 +1962,153 @@ to P3-3 (Edge Function + UI + smoke tests). Owner pick.
   snapshot alone for verification; trust the smoke tests.
 
 ### next_pickup
-P3-2 (AI eligibility explainer) — flagship L feature, parallel structure
-to P3-3 (Edge Function + UI + smoke tests). Owner pick.
+P3-7 PR 2 (Cloudflare Worker reverse proxy) — unblocks AI search + counters
+inside NIC for good. Single Worker (~30 lines) at `api.alldeputations.com`
+forwards every request to `djaxutkmhazufsxeobal.supabase.co`. Single-line
+change in `config.js` once deployed.
+
+---
+
+## session shq-2026-07-31-005 (P3-7 PR 1 — NIC detection + silent fallback)
+```
+started:       2026-07-31
+model:         claude-opus-4-8
+driver:        solo (plan mode → implementation)
+branch:        main
+starting_head: 3cff199
+ending_head:   (this commit)
+focus:         silent NIC detection so the dashboard stops spamming
+               ERR_SSL_PROTOCOL_ERROR in the console on government
+               networks where every *.supabase.co call is blocked at
+               the TLS layer (primary users are Indian government
+               officers behind the NIC firewall)
+```
+
+### inbound context read
+- WEBSITE-REVIEW §3 P3-3 + P3-6 DONE; P3-2 and P3-7 backlog
+- HANDOVER shq-2026-07-31-004 (P3-3 PR 4 UI rework, layout fix)
+- memory `deputation-semantic-search-p3-3` (5 lessons from P3-3)
+- memory `deputation-p3-4-gotchas` (Playwright pattern)
+- Live console screenshot from user showing 6+ ERR_SSL_PROTOCOL_ERROR
+  on every page load inside NIC: wss realtime, /rest/v1/rpc/* RPCs,
+  /rest/v1/vacancies REST, /functions/v1/semantic-search Edge
+  Function. vacancies.json loaded correctly (384 rows).
+
+### work done
+1. **Diagnostic (memory + research).** Created
+   `memory/deputation-nic-network-issue.md` documenting the failure
+   pattern (NIC middlebox vs Supabase TLS 1.3 + post-quantum + ECH),
+   confirming the bookmark `–` was unrelated (likely fresh browser
+   on the user's NIC computer), and listing what still works
+   (bundled JSON, localStorage, keyword search).
+2. **Three independent AI analyses.** Read reports from Grok (PDF),
+   Gemini (.txt), and ChatGPT (.txt). All three reach the same
+   root-cause diagnosis and recommend the same fix: route API
+   traffic through a domain NIC already trusts (alldeputations.com)
+   via a Cloudflare Worker reverse proxy. This converges with my
+   earlier client-side-embedding proposal but rejects it as overkill
+   (118 MB model + 7 MB WASM = first-load hostile to throttled NIC
+   egress; loses Gemini quality; doubles build maintenance).
+3. **Plan.** Wrote and exited plan mode with a 3-PR rollout:
+   PR 1 (silent NIC detection + offline banner — ships today), PR 2
+   (Worker proxy — restores AI/search end-to-end), PR 3 (bookmark UX
+   polish). Approved by owner.
+4. **PR 1 implementation (this session, in order):**
+   - `config.js`: added `window.SUPABASE_AVAILABLE` and
+     `window.ensureSupabaseAvailable()` — one-time 2 s HEAD probe to
+     `${SUPABASE_URL}/rest/v1/` with the apikey header. Any HTTP
+     response = TLS succeeded = available; fetch reject = unavailable.
+     Caches the result in `window.SUPABASE_AVAILABLE` so subsequent
+     callers are free. On failure: sets `body.is-supabase-down` and
+     unhides `#offlineBanner`.
+   - `app.js` `fetchVacancies()`: gates the Supabase REST race on
+     `ensureSupabaseAvailable()` so the 4 s cross-origin fetch is
+     never even attempted on NIC.
+   - `app.js` `runSemanticSearch()`: pre-flights via the probe → if
+     false, shows "AI search unavailable on this network. Use the
+     keyword search above." instead of attempting the cross-origin
+     Edge Function call. No console.error, no fetch.
+   - `site-widgets.js`: gates the visitor counter + feedback widget
+     on the probe → neither renders on NIC. Existing 3-strike
+     circuit breaker becomes a safety net.
+   - `realtime-toast.js`: only opens the WebSocket when the probe
+     returns true; the polling layer (every 60 s to same-origin
+     `data/vacancies.json`) keeps working.
+   - `index.html`: new `#offlineBanner` div at the top of
+     `.dashboard-content`, hidden until `body.is-supabase-down` is
+     set.
+   - `style.css`: new `.offline-banner` styles (amber border + icon,
+     light/dark theme support, mobile padding).
+   - `tests/test_semantic_search.py`: new test
+     `test_ai_search_offline_when_supabase_unreachable` aborts every
+     Supabase request via `page.route(...).abort("failed")` and
+     asserts: banner visible, body class set, AI status contains
+     "unavailable", ZERO fetches to `/functions/v1/semantic-search`,
+     zero page errors, keyword path still works.
+5. **Verified.**
+   - `node --check` clean on config.js, app.js, site-widgets.js,
+     realtime-toast.js.
+   - Full smoke suite: 30/30 passing in ~87 s (was 25/25 in ~70 s;
+     4 unchanged P3-3 + 1 new offline test).
+   - Preview snapshot of localhost (Supabase reachable): banner
+     correctly hidden, AI bar visible, page clean.
+6. **Docs.** Updated WEBSITE-REVIEW §3 P3-7 row + progress log entry
+   for 2026-07-31. Memory file + MEMORY.md index updated.
+
+### decisions
+- **Pivoted from 125 MB client-side embedding pipeline to a Cloudflare
+  Worker proxy + pre-flight probe.** Three independent AI reports
+  converged on the proxy approach as the right fix; it preserves
+  every existing feature (Gemini quality, free-tier auto-disable,
+  LRU cache) for a fraction of the engineering cost. Documented in
+  the plan file. The browser-side model remains a credible fallback
+  if Worker access becomes impossible.
+- **Route the AI pre-flight through `ensureSupabaseAvailable()` rather
+  than a fresh probe.** The probe is shared state, so we don't waste
+  another HEAD request every keystroke. The first probe resolves in
+  ≤2 s; subsequent calls are synchronous on the cached value.
+- **`route.abort("failed")` not `route.abort("sslprotocolerror")` in
+  Playwright.** The latter is not a recognized error code; `failed`
+  triggers the same fetch rejection path that the page handles.
+  Documented in the test docstring.
+
+### handoff state
+- Branch: `main`. Uncommitted changes staged for PR 1 commit:
+  config.js, app.js, site-widgets.js, realtime-toast.js, index.html,
+  style.css, tests/test_semantic_search.py, WEBSITE-REVIEW.md,
+  HANDOVER.md, memory/deputation-nic-network-issue.md.
+- Sandbox: 30/30 smoke tests pass.
+- Open: AI search shows "unavailable" on NIC (correct until PR 2
+  ships). Bookmark/heart button works on NIC (localStorage);
+  see PR 3 for visual polish.
+
+### gotchas for next session
+- **Localhost preview can't easily simulate the NIC failure mode**
+  because Supabase REST is reachable from a normal Windows dev
+  machine. The smoke test that aborts routes is the authoritative
+  check — its assertions cover the entire user-visible behavior.
+- **`is-supabase-down` is set on probe failure.** If a future test
+  sets this class deliberately (e.g., to assert banner visibility),
+  note the body class will persist across page navigation within the
+  same test; reload the page (`page.goto(...)`) to reset.
+- **`ensureSupabaseAvailable()` may be called BEFORE `config.js`
+  loads.** All consumers (`app.js`, `site-widgets.js`,
+  `realtime-toast.js`) defer their calls to `DOMContentLoaded`
+  which is after `config.js` runs (synchronous, head of body).
+  If a future script needs the probe earlier, expose it via a
+  getter that awaits an initialization promise.
+- **`#searchPost` keyword path is unrelated to Supabase and works
+  on every network.** Don't bundle keyword-search fixes into
+  NIC-related PRs.
+
+### next_pickup
+P3-7 PR 2 (Cloudflare Worker reverse proxy). Plan: write
+`workers/sb-proxy/worker.js` (~30 lines forwarding every method,
+path, query, body, and WebSocket upgrade to
+`djaxutkmhazufsxeobal.supabase.co`), set `window.SUPABASE_URL =
+"https://api.alldeputations.com"` in `config.js`, add
+`docs/CLOUDFLARE-WORKER.md` setup guide, add
+`tests/test_supabase_proxy.py` asserting the URL origin. Owner
+needs to: create the Worker in Cloudflare dashboard, set DNS
+CNAME for `api.alldeputations.com` → Worker, deploy. ~30 lines
+of code, ~2 hours of Cloudflare-account work.

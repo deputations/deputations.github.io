@@ -310,6 +310,23 @@
       </aside>
 
       <section class="dashboard-content">
+        <!-- P3-7 PR 1: offline-mode banner. Hidden by default; shown only when
+             body.is-supabase-down is set by config.js's probe (NIC SSL-
+             intercepting middlebox fails the TLS handshake to *.supabase.co).
+             Tells the user the AI bar + counters are unavailable but the
+             vacancy list is still served from the bundled snapshot. -->
+        <div id="offlineBanner" class="offline-banner" hidden role="status" aria-live="polite">
+          <svg class="offline-banner-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.86a10 10 0 0 1 14 0"/>
+            <path d="M8.5 16.43a5 5 0 0 1 7 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
+          </svg>
+          <div class="offline-banner-text">
+            <strong>Offline mode (government network detected).</strong>
+            Vacancy list may be up to 24 h old. AI search and visitor counter
+            are unavailable on this network — use keyword search above.
+          </div>
+        </div>
+
         <div class="kpi-grid" id="kpiGrid"></div>
 
         <!-- P3-3 PR 4: flagship AI semantic-search bar — sits directly below
