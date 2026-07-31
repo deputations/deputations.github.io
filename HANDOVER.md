@@ -2112,3 +2112,149 @@ path, query, body, and WebSocket upgrade to
 needs to: create the Worker in Cloudflare dashboard, set DNS
 CNAME for `api.alldeputations.com` → Worker, deploy. ~30 lines
 of code, ~2 hours of Cloudflare-account work.
+
+---
+
+## session shq-2026-07-31-006 (P3-7 PR 3 — bookmark UX polish)
+```
+started:       2026-07-31
+model:         claude-opus-4-8
+driver:        solo
+branch:        main
+starting_head: 061b503
+ending_head:   <this commit — adjust with `git rev-parse --short HEAD`
+               after the final amend; the SHA changes every time you
+               amend, so the block deliberately stays at "this commit"
+               until the first non-amend commit in the next session>
+focus:         finish P3-7 (NIC compatibility) with the bookmark
+               UX polish: header pulse animation, "Stored on this
+               device" hint, count-aware aria-label on the watchlist
+               button, and Playwright coverage in tests/test_watchlist.py
+```
+### inbound context read
+- WEBSITE-REVIEW §3 P3-7 row (PR 1 DONE 2026-07-31, PR 2/3 PENDING)
+- HANDOVER shq-2026-07-31-005 (P3-7 PR 1 — NIC detection)
+- memory `deputation-p3-4-gotchas` (Playwright dispatch-order rules,
+  RPC stub SUPA_HOST assertion)
+- codebase: app.js `watchlist`/`toggleWatchlist`/`animateBookmarkButton`
+  already loaded into the task (line ~3013); favBtn id and pulse
+  class hook were already in the renderer.
+
+### work done
+1. **`style.css` (immediate after `.bookmark-pop`/`heartGlowPulse`
+   block, just above `/* LOADING */`):**
+   - `@keyframes favBtnPop` (scale 1 → 1.18 → 1 + radial glow halo)
+   - `#favBtn.fav-btn-pop` runs `favBtnPop 520ms cubic-bezier(...)`
+     and `.fav-btn-pop svg` re-uses the existing
+     `heartGlowPulse` animation
+   - `@media (prefers-reduced-motion: reduce)` zeroes both.
+2. **`app.js`:**
+   - Rewrote `updateWatchlistUI()` to set
+     `aria-label="My Watchlist. N bookmarked. Stored on this
+     device."` (using literal "no bookmarks yet" for the empty
+     state) and a separate `aria-description` carrying the longer
+     "Bookmarks are stored locally on this device; they do not sync
+     across browsers or devices." line. `title` attribute carries
+     the count + storage hint in the same vocab, with proper
+     singular/plural.
+   - Added `pulseHeaderWatchlist()` — toggles `.fav-btn-pop` on the
+     header favBtn with a forced reflow + 600 ms cleanup.
+   - Added `maybeShowBookmarkIntroToast()` — a one-time
+     `showHomeToast('Bookmarked. Stored on this device only —
+     bookmarks don\'t sync across browsers.')` gated on
+     `localStorage.deputation_bookmark_intro_seen`.
+   - Extended `toggleWatchlist()`: when transitioning 0 → 1 items,
+     fires both `pulseHeaderWatchlist()` and
+     `maybeShowBookmarkIntroToast()`. Repeated adds skip both.
+3. **`tests/test_watchlist.py` (NEW, 5 tests, ~26 s locally):**
+   - `test_favbtn_aria_label_starts_empty_count` — empty-state
+     aria-label carries "no bookmarks yet" + "Stored on this
+     device"; aria-description mentions local storage.
+   - `test_first_bookmark_pulses_header_and_aria_updates` — 0 → 1
+     transition: localStorage round-trip + `.fav-btn-pop` transient
+     class + aria-label "1 bookmarked" + intro toast text.
+   - `test_repeat_bookmark_does_not_reintroduce_toast` — 1 → 2
+     transition: count bumps to 2, intro toast does NOT re-fire
+     (element may not even exist), header favBtn does NOT re-pulse.
+   - `test_unbookmarking_updates_aria_and_persists` — click → remove
+     → aria-label drops to 1, localStorage omits the removed id,
+     reload preserves the surviving id (round-trip).
+   - `test_favbtn_title_tracks_watchlist_state` — title attribute
+     tracks the watchlist count and always carries the storage hint.
+   - Helper `_force_supabase_offline(page)` patches
+     `window.ensureSupabaseAvailable` to resolve `false` (via
+     `add_init_script` microtask + regex route on
+     `/rest/v1/vacancies`) so the live production Supabase doesn't
+     pollute `rawData` and break reconciliation of the seeded JSON
+     IDs. Pre-seeded hard-coded first-page IDs
+     (`R-2026-LX-034`, `HA-2026-LX-025`, ...) — see "gotchas".
+
+### decisions
+- **Header pulse only fires on the 0 → 1 transition.** Repeated
+  adds already feel "registered" via the per-row
+  `bookmark-pop` + `heartGlowPulse` that already exists on the
+  clicked row. A pulse on every click would feel noisy and wouldn't
+  distinguish "fresh save" from "I already had some".
+- **One-time toast, localStorage-gated.** A persistent banner would
+  be nagging; the toast fires once on the 0 → 1 transition and the
+  flag persists so it never re-appears. Users can still see the
+  hint on every reload via the favBtn `aria-label` and `title`.
+- **Did NOT touch the existing per-row `bookmark-pop` /
+  `heartGlowPulse` animation.** It already gives visual feedback on
+  the clicked row. The header pulse is a *complement* — a global
+  signal — not a replacement.
+- **Test uses hard-coded first-page IDs** (see gotchas) instead of
+  reading the test's `data/vacancies.json` — because the page's
+  rendering pipeline applies `recomputeStatus()` which can flip
+  some JSON-Active rows to Inactive (today), AND default sort may
+  not put the JSON's first rows in the first 10 of the table.
+
+### handoff state
+- Working tree: tests/test_watchlist.py (new), app.js (modified),
+  style.css (modified).
+- Smoke: 33/33 main + 2/2 admin → **35/35 pass** in ~99 s
+  (was 30/30 before).
+- `node --check` clean on app.js.
+- Stale memories check: no existing memory covers the bookmark UX
+  feature surface; nothing to update.
+
+### gotchas for next session
+- **`config.js` runs as a synchronous `<script>` tag**, so an
+  `add_init_script` microtask that tries to overwrite
+  `window.SUPABASE_URL` is silently clobbered by `config.js`. The
+  `_force_supabase_offline` helper instead patches
+  `window.ensureSupabaseAvailable` (which `fetchVacancies()` calls
+  AFTER `config.js` has finished). Belt-and-braces, it also stubs
+  `/rest/v1/vacancies**` (regex) to return `[]`.
+- **`recomputeStatus()` re-classifies rows by `Last_Date_To_Apply`
+  at runtime.** A row that was "Active" in `data/vacancies.json`
+  may render Inactive today. The hard-coded first-page IDs in
+  `_seed_active_ids()` are valid as of writing this PR (2026-07-31)
+  but will need refreshing when data churns. Symptom of staleness:
+  test failure with "expected 'N bookmarked', got 'no bookmarks
+  yet'" or "Timeout waiting for `.table-heart-btn.saved`". Fix:
+  re-record the first-page IDs by hand from the running page
+  (snippet: open the homepage, run
+  `Array.from(document.querySelectorAll('.table-heart-btn')).slice(0,10).map(b=>b.getAttribute('data-id'))`
+  in DevTools).
+- **Default sort places the seed candidate IDs at row ≥ 5.** Even
+  when they survive reconciliation, pagination may hide them. The
+  hard-coded list is intentionally in the rendered table's order,
+  not JSON file order.
+- **`#homeToast` is created lazily by `showHomeToast()`.** Tests
+  asserting that the toast did NOT fire must guard with
+  `!!document.getElementById('homeToast')` before calling
+  `.text_content()` — otherwise Playwright times out waiting for a
+  non-existent element.
+- **`scripts/verify_admin.py` line ~159 timeout** is a pre-existing
+  bug from P3-4 — DO NOT silently fix it in this PR. Documented in
+  memory `deputation-admin-pre-existing-bug`.
+- **The pre-existing `.bookmark-pop` CSS** (line 1951-) used by
+  per-row toggles must be preserved. The new `@keyframes favBtnPop`
+  was placed immediately AFTER it for logical grouping — do not
+  merge the rules.
+
+### next_pickup
+P3-7 PR 2 (Cloudflare Worker reverse proxy). Plan from HANDOVER
+shq-2026-07-31-005 `next_pickup` is unchanged.
+

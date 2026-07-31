@@ -2189,13 +2189,56 @@ function isNewVacancy(item) {
 
     favBtn.setAttribute('aria-pressed', String(showWatchlistOnly));
 
+    // P3-7 PR 3: aria-label carries the count and the "stored on this device"
+    // hint so screen-reader users immediately know both (1) how many vacancies
+    // they've bookmarked and (2) that the data is local-only.
+    const countPhrase = savedCount === 0
+        ? 'no bookmarks yet'
+        : `${savedCount} bookmarked`;
+    const watchlistLabel = `My Watchlist. ${countPhrase}. Stored on this device.`;
+    favBtn.setAttribute('aria-label', watchlistLabel);
+    favBtn.setAttribute('aria-description', 'Bookmarks are stored locally on this device; they do not sync across browsers or devices.');
+
     if (showWatchlistOnly) {
-        favBtn.title = 'Showing bookmarked vacancies';
+        favBtn.title = `Showing ${savedCount} bookmarked ${savedCount === 1 ? 'vacancy' : 'vacancies'} (stored on this device)`;
     } else if (hasSaved) {
-        favBtn.title = 'Show bookmarked vacancies';
+        favBtn.title = `Show ${savedCount} bookmarked ${savedCount === 1 ? 'vacancy' : 'vacancies'} (stored on this device)`;
     } else {
-        favBtn.title = 'No bookmarked vacancies yet';
+        favBtn.title = 'Bookmark vacancies — stored on this device';
     }
+}
+
+/**
+ * P3-7 PR 3: pulse the header favBtn to give a global signal that the
+ * bookmark action was registered (not just on the row the user clicked).
+ * Triggered on the 0 → 1 transition only — repeated clicks on already-saved
+ * items don't pulse the header (the row-level bookmarkPop animation covers
+ * that case for visual feedback).
+ */
+function pulseHeaderWatchlist() {
+    if (!favBtn) return;
+    favBtn.classList.remove('fav-btn-pop');
+    // Force reflow so the animation restarts even if it just ran.
+    void favBtn.offsetWidth;
+    favBtn.classList.add('fav-btn-pop');
+    // Clean up the class after the animation so re-triggering works cleanly.
+    setTimeout(() => favBtn.classList.remove('fav-btn-pop'), 600);
+}
+
+/**
+ * P3-7 PR 3: show a one-time toast explaining that bookmarks live on the
+ * device. Gated by localStorage so the user sees it once and never again.
+ * Safe to call on every transition 0 → 1 — the gate is what enforces "once".
+ */
+function maybeShowBookmarkIntroToast() {
+    try {
+        if (localStorage.getItem('deputation_bookmark_intro_seen') === '1') return;
+        localStorage.setItem('deputation_bookmark_intro_seen', '1');
+    } catch (err) {
+        // localStorage may be disabled (private mode, etc.) — still show
+        // the toast once for this page load.
+    }
+    showHomeToast('Bookmarked. Stored on this device only — bookmarks don\'t sync across browsers.');
 }
    function renderActiveFilterChips() {
   const chips = [];
@@ -3014,6 +3057,8 @@ function syncCardSortUI() {
         const id = safe(vacancyId);
         if (!id) return;
 
+        const hadAny = watchlist.size > 0;
+
         if (watchlist.has(id)) {
             watchlist.delete(id);
         } else {
@@ -3022,6 +3067,16 @@ function syncCardSortUI() {
 
         persistWatchlist();
         updateWatchlistUI();
+
+        // P3-7 PR 3: on the 0 → 1 transition, pulse the header favBtn so
+        // the action feels registered globally (not just on the row), and
+        // surface the one-time "stored on this device" toast. Repeated
+        // adds (size > 1) skip both — the user already knows.
+        const hasAny = watchlist.size > 0;
+        if (!hadAny && hasAny) {
+            pulseHeaderWatchlist();
+            maybeShowBookmarkIntroToast();
+        }
     }
 
     function animateBookmarkButton(vacancyId) {
