@@ -1688,3 +1688,139 @@ focus:   P3-3 PR 3 — AI toggle chip, results panel, smoke tests
 ### next_pickup
 P3-2 (AI eligibility explainer) — flagship L feature, parallel structure
 to P3-3 (Edge Function + UI + smoke tests). Owner pick.
+
+## session shq-2026-07-31-004 (P3-3 PR 4)
+```
+started: 2026-07-31
+ended:   2026-07-31
+model:   claude-opus-4-8
+driver:  relay
+branch:  main
+starting_head: 607b8d3
+ending_head:   41e022e
+focus:   P3-3 PR 4 — UI rework: relocate AI search from sidebar chip to
+         flagship bar below KPIs
+```
+
+### inbound context read
+- PR 3 (a16ee5a) shipped the sidebar `✨ AI` toggle chip + 4 smoke tests.
+- Live UI testing (this session's earlier step 5) flagged the chip as
+  "clumsy": it crowded the keyword search and made AI search feel like
+  an afterthought, not a flagship feature.
+- Owner's clarification: "let us showcase AI semantic search as a
+  flagship thing and create a separate long width search bar below the
+  KPI (it may be expandable on clicking or remain there completely)"
+- Confirmed via AskUserQuestion: layout = Option C (always-visible bar,
+  results panel paints below on typing); keep sidebar keyword search;
+  match existing card aesthetic.
+- All three P3-3 server pieces (migration 0016 + Edge Function +
+  embedded 61/67 active vacancies) are already deployed. No backend
+  work in this PR — purely UI rework.
+
+### work done
+- index.html:
+    * Removed `<button id="semanticToggle">` chip from `.fg-search`
+      (the 9-line block previously after `#searchPost`).
+    * Added `<section class="ai-search-section">` between `#kpiGrid`
+      and `.top-toolbar`. Inside: `.ai-search-bar` (glyph + magnifier +
+      `#aiSearchInput` + `AI-powered` hint pill) + the existing
+      `#semanticResults` panel nested below.
+    * Removed the standalone `<section id="semanticResults">` block that
+      previously sat between `.top-toolbar` and `#dataContainer` (its
+      contents now live inside the new section).
+- app.js:
+    * Replaced the entire P3-3 block (was ~150 lines spanning
+      `semanticMode` state + `setSemanticMode` + toggle handler +
+      `SEMANTIC_ORIGINAL_PLACEHOLDER` + listener on `#searchPost`).
+    * New block: ~135 lines. No `semanticMode` state. Reads
+      `#aiSearchInput` directly. `scheduleSemanticSearch()` reads
+      `aiSearchInput.value.trim()`; < 3 chars → hide panel; ≥ 3 chars →
+      250 ms debounce into `runSemanticSearch()`. Click delegation on
+      `#semanticResultsList` preserved (forwards `li[data-vid]` clicks
+      to `openVacancyModal`). Header comment updated to reflect the
+      new always-on model.
+- style.css:
+    * Removed `.semantic-toggle` chip rules (`.semantic-toggle`,
+      `.semantic-toggle-glyph`, `.semantic-toggle[aria-pressed="true"]`).
+    * Added `.ai-search-section` / `.ai-search-bar` (gradient + border
+      + radius matching `.kpi-card`) / `.ai-search-glyph` (subtle
+      purple-pulse animation, respects `prefers-reduced-motion`) /
+      `.ai-search-field` / `.ai-search-hint` (uppercase pill, hidden
+      ≤640 px). Light + dark theme overrides.
+    * `.semantic-results` and descendant styles kept as-is — the panel
+      moved but its appearance doesn't change.
+- tests/test_semantic_search.py:
+    * Renamed `test_semantic_chip_is_off_by_default` →
+      `test_ai_search_bar_is_visible_on_load`. Asserts `#aiSearchInput`
+      visible, `#semanticToggle` removed, no fetch on load.
+    * Deleted `test_semantic_chip_toggles_and_shows_panel` (no toggle).
+    * Added `test_sidebar_keyword_search_does_not_trigger_ai`:
+      installs `page.on("request")` spy, fills `#searchPost`, asserts
+      no calls to `/functions/v1/semantic-search` and asserts the
+      dedicated AI bar stays empty.
+    * Updated `test_semantic_search_renders_ranked_matches` + the
+      disabled-state test to fill `#aiSearchInput` instead of
+      `#searchPost`. Dropped the toggle-on click step.
+- 15/15 smoke tests pass in ~70s locally.
+
+### decisions
+- **Always-on, not toggleable**: the user said "showcase as a flagship
+  thing". A toggle makes it feel like an optional add-on. The
+  microphone/gem are always-on; the dedicated bar is always-on.
+- **Both inputs coexist, NOT routing**: the old implementation routed
+  the keyword `#searchPost` input through the AI path when the chip
+  was on. The new implementation keeps them as TWO independent inputs:
+  sidebar = keyword only, dedicated bar = AI only. This avoids the
+  cross-talk bug where typing in the sidebar would surprise the user
+  by triggering a 250 ms debounced AI fetch. The "don't trigger AI
+  from sidebar" test locks this down permanently.
+- **Reuse existing `.input-icon` magnifier wrapper**: the new
+  `.ai-search-field` is just `<div class="input-icon ai-search-field">`
+  so the existing magnifier-icon CSS carries over for free. No new
+  icon markup needed.
+- **Glass-panel + kpi-card gradient**: the new bar uses
+  `linear-gradient(145deg, var(--bg-surface), rgba(15,23,42,0.4))` —
+  the same gradient as `.kpi-card`. Visually anchors it to the KPIs
+  just above.
+- **Animation respects `prefers-reduced-motion`**: pulse animates
+  3.4s scale 1.0 → 1.08. Subtle enough to be a "look here" hint, not
+  noise. Disabled when the user prefers reduced motion.
+- **`<640px` hides the `AI-powered` hint**: keeps the bar from
+  wrapping on phones. The glyph + label + input remain.
+
+### handoff state
+- HEAD: 41e022e (this commit).
+- Working tree: clean except .venv-smoke/ (gitignored).
+- P3-3 fully DONE. All four PRs landed:
+    - PR 1 (shq-2026-07-31-002): schema + bulk embed script.
+    - PR 2 (shq-2026-07-31-002, second commit): semantic-search Edge
+      Function.
+    - PR 3 (shq-2026-07-31-003): sidebar chip + 4 smoke tests.
+    - PR 4 (this session shq-2026-07-31-004): UI rework.
+  All 5 owner deploy steps from PR 3 should already be complete
+  (migration run, GH secrets set, build re-run, function deployed,
+  live curl verified). PR 4 is a pure frontend change — no deploy
+  steps required. Just push and the live site will pick up the new
+  bar on the next user refresh.
+
+### gotchas for next session
+- **Pre-existing `verify_admin.py` line 159 timeout** still applies
+  (admin-ingest 401 → refresh → retry). Documented in
+  `deputation-admin-pre-existing-bug` memory. NOT a regression from
+  PR 4 — do not bundle a fix into the next feature commit.
+- **Same smoke test fixture caveat**: tests use the LIVE
+  `data/vacancies.json` (committed at build time). The "Director"
+  query matches 8+ rows today; if the fixture shrinks below 8 active
+  matches, `test_semantic_search_disabled_state_handled_gracefully`
+  will fail at the keyword-rows assertion. Reminder, not a PR 4
+  change.
+- **Browser preview snapshots may not refresh** to the new HTML even
+  after `location.reload()` — the MCP preview tool seems to cache the
+  page model across `eval` calls. Live `curl` + the smoke tests
+  (which spin a fresh browser context per test) verified the new
+  HTML is on disk and serving correctly. Don't rely on the preview
+  snapshot alone for verification; trust the smoke tests.
+
+### next_pickup
+P3-2 (AI eligibility explainer) — flagship L feature, parallel structure
+to P3-3 (Edge Function + UI + smoke tests). Owner pick.
