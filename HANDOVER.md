@@ -2533,17 +2533,28 @@ focus:         ship P3-7 PR 2 — Cloudflare Worker at api.alldeputations.com
 DEPLOY COMPLETE — see next section. The Worker is live at
 `https://sb-proxy.ncrsarkarishaadi.workers.dev` and verified to
 proxy Supabase end-to-end. `config.js` rewrites `SUPABASE_URL` to
-that host when the page is loaded from `alldeputations.com`. The
-"custom `api.alldeputations.com`" wire-up is the next concrete step
-but requires migrating the apex `alldeputations.com` zone off
-GitHub's DNS onto this Cloudflare account (it's not there yet —
-wrangler's `zones` subcommand isn't in 4.118 and the API returned
-an empty zone list). Until then the workers.dev URL is the
-canonical proxy host. The user's NIC testing is unblocked: open
-`https://alldeputations.com/` from a NIC browser, the IIFE rewrites
-`SUPABASE_URL`, the probe runs through the workers.dev host (allowed
-by NIC because it's Cloudflare-fronted), and every Supabase call
-succeeds end-to-end.
+that host when the page is loaded from `alldeputations.com`.
+
+The original P3-7 PR 2 plan was `api.alldeputations.com` as a
+Cloudflare Worker Custom Domain. **That plan is BLOCKED, not just
+pending.** Workers Custom Domains require the apex zone to be on
+Cloudflare; `alldeputations.com` is currently on Wix DNS
+(`ns10/11.wixdns.net` per `nslookup`). Verified via the Cloudflare
+REST API: `/zones?name=alldeputations.com` → `total_count: 0`.
+A new API token with `Zone:DNS:Edit` + `Workers Routes:Edit` would
+be necessary but **not sufficient** — the apex NS has to migrate to
+Cloudflare first. Cloudflare's partial CNAME-setup-on-free only
+delegates an apex that's already on CF; subdomains on a non-CF apex
+aren't reachable from CF's edge without the apex NS there.
+
+Recommendation: stay on `https://sb-proxy.ncrsarkarishaadi.workers.dev`
+as the canonical proxy host (current state). Revisit
+`api.alldeputations.com` only when the apex zone migrates to
+Cloudflare for an unrelated reason (CDN, WAF, DDoS). The user's
+NIC testing is unblocked: open `https://alldeputations.com/` from a
+NIC browser, the IIFE rewrites `SUPABASE_URL`, the probe runs
+through the workers.dev host (allowed by NIC because it's
+Cloudflare-fronted), and every Supabase call succeeds end-to-end.
 
 ### deploy addendum (2026-08-02)
 - `npx wrangler deploy` from `workers/sb-proxy/` succeeded —

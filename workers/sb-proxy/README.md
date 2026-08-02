@@ -45,18 +45,34 @@ curl -sS -H "apikey: <anon>" \
 is loaded from `alldeputations.com`. Anywhere else (github.io, localhost,
 dev) keeps the direct Supabase URL.
 
-## Custom domain (pending — requires DNS migration)
+## Custom domain (NOT planned — blocked at the zone level)
 
 The original plan was `api.alldeputations.com` as a Cloudflare custom
-domain. **Status: not done yet.** The apex `alldeputations.com` is
-currently registered on GitHub's DNS (CNAME → deputations.github.io),
-not on this Cloudflare account. Adding `api.alldeputations.com` as a
-Worker custom domain requires the apex zone to be on Cloudflare.
+domain. **Status: blocked, not just pending.** Worker's Custom Domains
+functionality requires the host to be on a Cloudflare-managed zone. The
+apex `alldeputations.com` is currently registered on **Wix DNS**
+(`ns10.wixdns.net`, `ns11.wixdns.net`) — not on this Cloudflare account.
+Verified via Cloudflare REST API
+(`/zones?name=alldeputations.com` → `total_count: 0`).
 
-To finish that step:
+This means **no token scope alone can fix it.** A new API token with
+`Zone:DNS:Edit` + `Workers Routes:Edit` is necessary but not sufficient
+— the zone itself has to be on Cloudflare first. Cloudflare's
+"partial CNAME setup" on the free plan only delegates the apex to CF;
+subdomains on a non-CF apex still aren't reachable from CF's edge
+without the apex NS there.
 
-1. Add `alldeputations.com` as a Cloudflare zone (full zone transfer
-   off GitHub DNS, or partial CNAME setup on the free plan).
+The only paths forward are:
+
+1. **Full zone migration** (move NS from Wix → Cloudflare). High-risk —
+   touches the apex of a production site. Out of scope for P3-7.
+2. **Skip the custom domain** — current state. The workers.dev URL is
+   the canonical proxy host and works end-to-end on the production
+   hostname via the `config.js` rewrite.
+
+If path (1) is taken later:
+
+1. Migrate `alldeputations.com` to this Cloudflare account.
 2. Uncomment the `routes` block in `wrangler.toml` and `wrangler deploy`.
 3. Update `config.js` to point at `https://api.alldeputations.com`.
 
