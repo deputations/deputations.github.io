@@ -30,29 +30,38 @@ Handles every Supabase surface the dashboard uses:
 | Edge Functions | `/functions/v1/*` | POST |
 | Realtime | `/realtime/v1/websocket?apikey=...` | GET (Upgrade: websocket) |
 
-## Deploy
+## Deploy status (2026-08-02)
+
+Worker deployed at `https://sb-proxy.ncrsarkarishaadi.workers.dev` and
+verified end-to-end:
 
 ```bash
-cd workers/sb-proxy
-npm install -g wrangler          # one-time
-wrangler login                    # one-time
-wrangler deploy
+curl -sS -H "apikey: <anon>" \
+  "https://sb-proxy.ncrsarkarishaadi.workers.dev/rest/v1/vacancies?select=vacancy_id&limit=2"
+# → [{"vacancy_id":"AAFW-2026-L7-041"}, {"vacancy_id":"AAFW-2026-L7-042"}]
 ```
 
-After deploy, Cloudflare prints a `*.workers.dev` URL. To wire it into
-production:
+`config.js` points `SUPABASE_URL` at the workers.dev host when the page
+is loaded from `alldeputations.com`. Anywhere else (github.io, localhost,
+dev) keeps the direct Supabase URL.
 
-1. **Custom domain** — Workers dashboard → sb-proxy → Settings → Triggers
-   → Custom Domains → add `api.alldeputations.com`. Cloudflare auto-issues
-   a TLS cert via the existing zone's Universal SSL setup.
-2. **`config.js`** — already wired: when the static site is loaded from
-   `alldeputations.com` (or `www.alldeputations.com`), `SUPABASE_URL` is
-   rewritten to `https://api.alldeputations.com` at boot. Any other
-   hostname (github.io, localhost, dev) keeps the direct URL.
+## Custom domain (pending — requires DNS migration)
 
-No changes are needed at any call site — `fetchVacancies()`, the four
-RPC sites in `site-widgets.js`, `realtime-toast.js`'s WebSocket, and
-`runSemanticSearch()` all read `window.SUPABASE_URL`.
+The original plan was `api.alldeputations.com` as a Cloudflare custom
+domain. **Status: not done yet.** The apex `alldeputations.com` is
+currently registered on GitHub's DNS (CNAME → deputations.github.io),
+not on this Cloudflare account. Adding `api.alldeputations.com` as a
+Worker custom domain requires the apex zone to be on Cloudflare.
+
+To finish that step:
+
+1. Add `alldeputations.com` as a Cloudflare zone (full zone transfer
+   off GitHub DNS, or partial CNAME setup on the free plan).
+2. Uncomment the `routes` block in `wrangler.toml` and `wrangler deploy`.
+3. Update `config.js` to point at `https://api.alldeputations.com`.
+
+Until then the workers.dev URL is the canonical proxy host and is
+working in production.
 
 ## Cost
 

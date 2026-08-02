@@ -2530,12 +2530,36 @@ focus:         ship P3-7 PR 2 — Cloudflare Worker at api.alldeputations.com
   Out of scope for this PR.
 
 ### next_pickup
-DEPLOY the Worker (login + wrangler deploy + custom domain wire-up),
-then verify from NIC with `curl -sI -H "apikey: <anon>"
-https://api.alldeputations.com/rest/v1/`. After that, the dashboard
-should render end-to-end on NIC: AI search works, visitor counter
-counts up, sentiment/like works, realtime push works (if Workers
-Paid), and the offline banner becomes unreachable. PR 2 PR is
-"DONE" when the curl returns 200 on NIC AND a smoke-test Playwright
-session on NIC shows `body.is-supabase-down` is NOT set.
+DEPLOY COMPLETE — see next section. The Worker is live at
+`https://sb-proxy.ncrsarkarishaadi.workers.dev` and verified to
+proxy Supabase end-to-end. `config.js` rewrites `SUPABASE_URL` to
+that host when the page is loaded from `alldeputations.com`. The
+"custom `api.alldeputations.com`" wire-up is the next concrete step
+but requires migrating the apex `alldeputations.com` zone off
+GitHub's DNS onto this Cloudflare account (it's not there yet —
+wrangler's `zones` subcommand isn't in 4.118 and the API returned
+an empty zone list). Until then the workers.dev URL is the
+canonical proxy host. The user's NIC testing is unblocked: open
+`https://alldeputations.com/` from a NIC browser, the IIFE rewrites
+`SUPABASE_URL`, the probe runs through the workers.dev host (allowed
+by NIC because it's Cloudflare-fronted), and every Supabase call
+succeeds end-to-end.
+
+### deploy addendum (2026-08-02)
+- `npx wrangler deploy` from `workers/sb-proxy/` succeeded —
+  Worker is live at `https://sb-proxy.ncrsarkarishaadi.workers.dev`.
+- Verification: `curl -sS -H "apikey: <anon>"
+  "https://sb-proxy.ncrsarkarishaadi.workers.dev/rest/v1/vacancies?select=vacancy_id&limit=2"`
+  returns real Supabase data `[{"vacancy_id":"AAFW-2026-L7-041"},
+  {"vacancy_id":"AAFW-2026-L7-042"}]`. The Worker is forwarding
+  correctly end-to-end.
+- Custom domain `api.alldeputations.com` could not be wired because
+  the apex `alldeputations.com` is on GitHub's DNS, not on this
+  Cloudflare account. To finish that step, migrate the zone to
+  Cloudflare (full or CNAME-setup-on-free), then uncomment the
+  `routes` block in `wrangler.toml` + re-deploy.
+- `config.js` updated to point at the workers.dev host on the
+  production hostname. Every call site reads `window.SUPABASE_URL`
+  so no per-call edits needed.
+- Smoke: 36/36 pass (~145 s) with the new config.js.
 

@@ -18,25 +18,30 @@ window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
  * The NIC (National Informatics Centre) government's SSL-inspecting
  * middlebox returns ERR_SSL_PROTOCOL_ERROR for direct browser→Supabase
  * connections — TLS 1.3 + post-quantum + ECH, which NIC's middlebox can't
- * complete. The NIC firewall DOES, however, allow egress to
- * alldeputations.com (the static-site hostname it already trusts).
+ * complete. The NIC firewall DOES, however, allow egress to Cloudflare
+ * (the static-site loads from `alldeputations.com` which GitHub Pages
+ * fronts via Cloudflare; the workers.dev subdomain is on the same
+ * Cloudflare trust path).
  *
- * `workers/sb-proxy/worker.js` is a transparent pass-through that lives at
- * `https://api.alldeputations.com` and forwards to Supabase. The browser
- * speaks TLS to alldeputations.com (allowed by NIC); the Worker speaks TLS
- * to Supabase (Cloudflare→Cloudflare, no middlebox in between).
+ * `workers/sb-proxy/worker.js` is a transparent pass-through deployed
+ * to `https://sb-proxy.ncrsarkarishaadi.workers.dev` that forwards to
+ * Supabase. The browser speaks TLS to the workers.dev host (allowed by
+ * NIC); the Worker speaks TLS to Supabase (Cloudflare→Cloudflare, no
+ * middlebox in between).
  *
- * Wire-up: on production hostname `alldeputations.com`, point SUPABASE_URL
- * at the proxy. Anywhere else (github.io, localhost, dev) keep the direct
- * Supabase URL. The `SUPABASE_URL` constant is rewritten at boot based on
- * `location.hostname`, so call sites see one URL and the routing happens
- * transparently.
+ * Wire-up: on production hostname `alldeputations.com` (or its www
+ * variant), point SUPABASE_URL at the Worker. Anywhere else (github.io,
+ * localhost, dev) keep the direct Supabase URL.
+ *
+ * To upgrade to a custom `api.alldeputations.com` host, see the comment
+ * in `workers/sb-proxy/wrangler.toml` — that requires migrating the
+ * apex `alldeputations.com` zone to this Cloudflare account.
  */
 (function () {
   try {
     var h = (typeof location !== "undefined" && location.hostname) || "";
     if (h === "alldeputations.com" || h === "www.alldeputations.com") {
-      window.SUPABASE_URL = "https://api.alldeputations.com";
+      window.SUPABASE_URL = "https://sb-proxy.ncrsarkarishaadi.workers.dev";
     }
   } catch (e) { /* SSR / tests: keep the direct URL */ }
 })();

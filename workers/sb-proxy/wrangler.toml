@@ -18,6 +18,26 @@ name = "sb-proxy"
 main = "worker.js"
 compatibility_date = "2026-07-31"
 
+# Custom domain (P3-7 PR 2 deploy step): api.alldeputations.com.
+#
+# Currently the apex `alldeputations.com` is registered on GitHub's DNS
+# (CNAME → deputations.github.io), not on this Cloudflare account — so
+# wrangler can't add `api.alldeputations.com` as a custom domain here.
+# The Worker is reachable at the `workers.dev` subdomain printed by
+# `wrangler deploy` instead, and `config.js` points `SUPABASE_URL` at
+# that subdomain on the production hostname.
+#
+# To migrate `api.alldeputations.com` to this Worker:
+#   1. Add `alldeputations.com` as a Cloudflare zone (full zone migration
+#      off GitHub DNS, or partial via CNAME setup on a free plan).
+#   2. Re-enable the routes block below and `wrangler deploy`.
+#   3. Update `config.js` to point at https://api.alldeputations.com.
+#
+# Until then the workers.dev URL is the canonical proxy host.
+# routes = [
+#   { pattern = "api.alldeputations.com", custom_domain = true }
+# ]
+
 # Custom domain wired via Cloudflare dashboard (Workers → sb-proxy →
 # Settings → Triggers → Custom Domains → api.alldeputations.com).
 # Until that's set, the Worker is reachable at:
