@@ -2574,3 +2574,123 @@ Cloudflare-fronted), and every Supabase call succeeds end-to-end.
   so no per-call edits needed.
 - Smoke: 36/36 pass (~145 s) with the new config.js.
 
+## session shq-2026-08-02-009 (P3-7 PR 2 — close deploy-state session)
+```
+started:       2026-08-02
+model:         claude-opus-4-8
+driver:        solo
+branch:        main
+starting_head: 04554da
+ending_head:   04554da0bd18fece75a417932a300564ad55db38
+focus:         close out the P3-7 PR 2 deploy-state session
+               (commit cleanup, document the zone-level block on
+               api.alldeputations.com, push to origin/main, set the
+               NIC-browser-verification handoff for tomorrow).
+```
+
+### inbound context read
+- HANDOVER shq-2026-08-02-008 (PR 2 Worker code + first deploy)
+- WEBSITE-REVIEW.md §3 last row (2026-08-02 PR 2 deploy commit)
+- `workers/sb-proxy/README.md` (deploy status: live + verified)
+- `workers/sb-proxy/wrangler.toml` (routes block still commented,
+  deploy-state doc)
+- `config.js` (IIFE rewrites SUPABASE_URL to workers.dev on the
+  production hostname)
+- `git status` post-deploy: 5 modified files uncommitted
+- `git push origin main` first attempt: rejected — remote had 4
+  cron-driven `chore: build deputation data` + `rebuild DeFeX data`
+  commits. Resolved by `git rebase origin/main` (clean, no conflicts)
+  then push (`18b62fa..dab4e24`).
+
+### work done
+1. **commit `bac70e9` (docs(p3-7 pr2 deploy): workers.dev URL +
+   DNS-migration note).** 5 files, 96+/37- lines:
+     - `config.js`: production hostname now points SUPABASE_URL at
+       `https://sb-proxy.ncrsarkarishaadi.workers.dev` (was planned
+       `api.alldeputations.com`).
+     - `workers/sb-proxy/wrangler.toml`: routes block commented out
+       with migration-path note.
+     - `workers/sb-proxy/README.md`: deploy status section +
+       "Custom domain (pending — requires DNS migration)" note.
+     - `HANDOVER.md`: previous-session `next_pickup` rewritten with
+       deploy-complete + zone-migration guidance.
+     - `WEBSITE-REVIEW.md`: progress-log row for the deploy.
+2. **commit `04554da` (docs(p3-7 pr2): make custom-domain block
+   zone-level, not token-level).** Reclassified the
+   `api.alldeputations.com` block as a **zone-level** problem (apex
+   on Wix, not Cloudflare) rather than a token-scope problem. README
+   + wrangler.toml + HANDOVER updated. Push: `dab4e24..04554da`.
+3. **Verified `alldeputations.com` is NOT on this Cloudflare account**
+   via the REST API: `GET /zones?name=alldeputations.com` returned
+   `{"result":[], "total_count":0}`. DNS apex confirmed via `nslookup`:
+   nameservers `ns10.wixdns.net`, `ns11.wixdns.net` (Wix, not
+   GitHub DNS as the prior memory note claimed — that was wrong).
+4. **Confirmed the existing wrangler OAuth token has `zone:read` only**
+   (no `zone:edit`) and expires 2026-08-02 19:13Z. Sufficient for
+   Worker deploys and `tail`, NOT sufficient for adding custom
+   domains or DNS records — but the zone-level block means new token
+   scope alone wouldn't fix it either.
+5. **Set 2026-09-25 reminder cron** for the apex Wix→Cloudflare
+   migration (target window ~2026-10-02 per user). The reminder
+   reads HANDOVER + task #20 and walks the user through the
+   migration when they pick it up.
+
+### decisions
+- **No second token.** Initial plan was to walk the user through
+  creating a new API token with `Zone:DNS:Edit` + `Workers
+  Routes:Edit` to wire the custom domain. I caught mid-walk that
+  the zone itself is not on Cloudflare — so no token scope fixes
+  the block. Corrected the docs instead (commit `04554da`) and
+  recommended the user NOT create that token (security debt).
+- **Workers.dev URL is the canonical proxy host.** No further
+  ergonomic loss vs. `api.alldeputations.com` — the URL is in
+  `config.js` only, hidden from end users. Revisit only when the
+  apex zone migrates to Cloudflare for unrelated reasons.
+- **NIC browser verification is deferred, not skipped.** The user
+  installs Claude Desktop on a NIC office machine tomorrow; the
+  smoke test there is a single `curl` + dashboard walkthrough
+  (see `next_pickup`). The static site already loads on NIC
+  (proven) — the open question is whether NIC's middlebox also
+  allows `*.workers.dev`.
+
+### handoff state
+- Working tree: clean (untracked: `.venv-smoke/`,
+  `workers/sb-proxy/.wrangler/` — local artifacts).
+- HEAD: `04554da0bd18fece75a417932a300564ad55db38` on `main`,
+  pushed to `origin/main` (6 commits ahead of `18b62fa`).
+- Worker status: live at
+  `https://sb-proxy.ncrsarkarishaadi.workers.dev`, end-to-end
+  verified.
+- Smoke: 36/36 pass.
+- Cron: `2ddab249` (2026-09-25 08:57 local) for the apex migration
+  reminder.
+
+### next_pickup
+The user installs Claude Desktop on a NIC office machine tomorrow
+(2026-08-03). When they signal readiness, run this from the NIC
+machine:
+
+```bash
+curl -sI -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYXh1dGttaGF6dWZzeGVvYmFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMjgzNTksImV4cCI6MjA5NTcwNDM1OX0.AHfWNpMS69KhxGX6Px1fS9dVddo9lUiXvc96hM5UTbU" \
+  https://sb-proxy.ncrsarkarishaadi.workers.dev/rest/v1/vacancies?select=vacancy_id&limit=2
+```
+
+Interpretation:
+- `HTTP/2 200` → proxy works on NIC. AI search + counters + sentiment
+  + realtime (polling) all work end-to-end.
+- `ERR_SSL_PROTOCOL_ERROR` → NIC middlebox blocks `workers.dev`.
+  Dashboard falls back to bundled `data/vacancies.json` (no AI
+  ranking, no live counter). PR 1's offline banner makes this
+  graceful.
+
+After the curl: open `https://alldeputations.com/` in NIC Chrome,
+confirm the table populates from Supabase (real data, not the
+bundle), AI search returns ranked results, the counter shows a
+number (not "—"), the heart click registers, and the console is
+free of `ERR_SSL_PROTOCOL_ERROR`. Run `python -m pytest tests/ -x -q`
+on the NIC machine — expect 36/36.
+
+Then append the next shq block (e.g. `shq-2026-08-03-NNN`) with
+the NIC findings, commit, push. The two-month-out
+Wix→Cloudflare apex migration is parked (cron reminder set).
+
