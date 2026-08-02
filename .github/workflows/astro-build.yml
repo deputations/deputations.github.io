@@ -10,9 +10,15 @@
 # the existing static site served from `main` stays live. The two
 # pipelines do not interfere.
 #
-# Cron writes (build-data.yml, build-defex.yml) commit data/*.json
-# to `main`. A small mirror step in the cron workflows copies those
-# files into gh-pages so the Astro build always sees fresh data.
+# Cron writes (build-data.yml, build-defex.yml) commit data/*.json to
+# `main`; the "Sync runtime assets" step below copies them out of this
+# workflow's own checkout into astro/public/data. src/lib/vacancies.js
+# reads that JSON at BUILD time, so fresh data only reaches the built
+# pages on a rebuild — and this workflow has no data-driven trigger.
+# build-data.yml used to carry a "mirror data onto gh-pages" step aimed
+# at this gap; it never worked and was removed in shq-2026-08-03-003.
+# The fix, if this pipeline is ever switched on, is a rebuild trigger
+# (schedule, or workflow_run after build-data) — not a file copy.
 # ============================================================================
 name: Build Astro site
 

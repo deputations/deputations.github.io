@@ -115,38 +115,13 @@ jobs:
             fi
           fi
 
-      # Mirror data + assets onto the gh-pages branch so Astro rebuilds pick
-      # up the freshest data without waiting on the next astro-build run.
-      # Cheap, separate step: only runs if there were data changes this run.
-      - name: Mirror data onto gh-pages
-        if: success()
-        run: |
-          # Reset to a clean checkout of gh-pages, overlay data/ + assets/,
-          # commit if anything actually changed. Force-push safely because
-          # the only writer is this workflow.
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch --depth=1 origin gh-pages || true
-          git worktree add /tmp/ghpages gh-pages 2>/dev/null \
-            || git worktree add --detach /tmp/ghpages origin/gh-pages 2>/dev/null \
-            || (git worktree prune; git branch -D gh-pages 2>/dev/null; git worktree add --detach -b gh-pages /tmp/ghpages origin/main)
-
-          mkdir -p /tmp/ghpages/data /tmp/ghpages/assets/previews
-          cp -f data/*.json /tmp/ghpages/data/ 2>/dev/null || true
-          cp -rf assets/previews/. /tmp/ghpages/assets/previews/ 2>/dev/null || true
-          cp -f feed.xml /tmp/ghpages/feed.xml 2>/dev/null || true
-
-          cd /tmp/ghpages
-          git add data/ assets/ feed.xml 2>/dev/null || true
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(data): mirror fresh dump"
-            for attempt in 1 2 3 4 5; do
-              git push origin gh-pages && { echo "data mirrored on attempt $attempt"; exit 0; }
-              echo "data-mirror attempt $attempt failed; retrying in 10s"
-              sleep 10
-            done
-            echo "::error::data mirror push failed"
-            exit 1
-          else
-            echo "gh-pages data already up to date"
-          fi
+      # NOTE: a "Mirror data onto gh-pages" step used to live here. It copied
+      # data/*.json onto a gh-pages branch so the Astro port would see fresh
+      # data. It never once succeeded (21 straight red runs, 2026-07-29 →
+      # 2026-08-02) and was removed in shq-2026-08-03-003. Nothing consumed it:
+      # astro-build.yml publishes via upload-pages-artifact/deploy-pages@v4,
+      # which serves an uploaded artifact rather than a branch, and the Astro
+      # pages read data/vacancies.json at BUILD time — so copying a newer file
+      # onto a branch could not have refreshed them anyway. If the Astro port
+      # is ever switched on, solve freshness by triggering a rebuild (schedule
+      # or workflow_run on this workflow), not by mirroring files.
