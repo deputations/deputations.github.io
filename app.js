@@ -989,8 +989,11 @@ function initDesktopFilterCollapse() {
     updateHiddenFilterCue(); // cue only shows while collapsed
   };
 
-  // Always load collapsed — expanding is a per-visit choice, not remembered.
-  let expanded = false;
+  // Initial state comes from the markup: index.html ships
+  // body.filters-collapsed, and its wide-default boot script drops that class
+  // on ultra-wide screens (≥1600px) before first paint. Toggling by hand stays
+  // a per-visit choice — nothing is remembered across loads.
+  let expanded = !document.body.classList.contains('filters-collapsed');
   applyLayout(expanded);
   applyLabel(expanded);
 

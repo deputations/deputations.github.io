@@ -54,6 +54,26 @@
   <!-- END hero-wave -->
 </head>
 <body class="filters-collapsed">
+  <!-- BEGIN wide-default-filters
+       Ultra-wide monitors (the Ministry's desktops are commonly 1920px+) have
+       room for the full left sidebar AND the whole table, so start expanded
+       there instead of with the compact "My Pay Level" card. Below 1600px the
+       compact card remains the default. Runs before first paint — putting it
+       here rather than in app.js avoids a collapsed→expanded flash. app.js
+       reads the resulting body class as its initial toggle state; the button
+       still flips it either way, per visit.
+       To revert: delete this script block. -->
+  <script>
+    (function () {
+      try {
+        if (window.matchMedia('(min-width: 1600px)').matches) {
+          document.body.classList.remove('filters-collapsed');
+        }
+      } catch (e) { /* no matchMedia: keep the markup default */ }
+    })();
+  </script>
+  <!-- END wide-default-filters -->
+
   <!-- a11y: first focusable element jumps keyboard users past nav + filters -->
   <a class="skip-link" href="#main-content">Skip to content</a>
   <!-- reading/scroll progress bar — themed (brand gradient swaps with the theme) -->
@@ -402,7 +422,7 @@
 
   <script src="config.js?v=sb2"></script>
   <script src="enrich.js?v=sb13"></script>
-  <script src="app.js?v=ms50"></script>
+  <script src="app.js?v=ms51"></script>
   <!-- vacancy push alerts (review P1-3); no-op unless Push is supported + VAPID configured -->
   <script defer src="push-client.js?v=1"></script>
   <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the stylesheet above to revert) -->

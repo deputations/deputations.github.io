@@ -78,6 +78,17 @@ const {
     <slot name="head" />
   </head>
   <body class={`${pageClass} ${bodyClass}`}>
+    {/* Mirrors the wide-default-filters boot script in the static index.html:
+        ultra-wide monitors (≥1600px) start with the full sidebar expanded. */}
+    <script is:inline>
+      (function () {
+        try {
+          if (window.matchMedia('(min-width: 1600px)').matches) {
+            document.body.classList.remove('filters-collapsed');
+          }
+        } catch (e) { /* no matchMedia: keep the markup default */ }
+      })();
+    </script>
     <a class="skip-link" href="#main-content">Skip to content</a>
     <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
