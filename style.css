@@ -6313,21 +6313,28 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
    implicit grid (after the data table). Pin it to a new row that sits
    between the KPI row and the toolbar row. The AI section is always
    present in the DOM, so we can always extend the grid without :has(). */
-body.filters-collapsed .ai-search-section {
-  grid-area: ai;
-  margin: 0;
-}
-body.filters-collapsed {
-  /* Overrides the 3-row grid defined below .main-layout in the
-     collapsed-filters block (it lives further down in style.css). */
-}
-body.filters-collapsed .main-layout {
-  grid-template-rows: auto auto auto 1fr;
-  grid-template-areas:
-    "filters kpis"
-    "ai      ai"
-    "toolbar toolbar"
-    "data    data";
+/* Both rules below are part of the collapsed-filters DESKTOP experiment and
+   must stay inside the same (min-width: 769px) gate as the rest of it.
+   Unscoped, the two-column `grid-template-areas` also applied at phone
+   widths: `body` carries `filters-collapsed` by default, so .main-layout
+   grew an implicit second column, the sidebar was squeezed to its 34px
+   min-width (padding + border, contents clipped by overflow:hidden) and the
+   whole dashboard was pushed into a narrow right-hand column. */
+@media (min-width: 769px) {
+  body.filters-collapsed .ai-search-section {
+    grid-area: ai;
+    margin: 0;
+  }
+  /* Overrides the 3-row grid defined for .main-layout in the collapsed-filters
+     block above — same specificity, later in source order. */
+  body.filters-collapsed .main-layout {
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas:
+      "filters kpis"
+      "ai      ai"
+      "toolbar toolbar"
+      "data    data";
+  }
 }
 .ai-search-bar {
   display: flex;
