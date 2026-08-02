@@ -2846,3 +2846,113 @@ see below. The rest of that block stands.
   embedding model, or the taskType pair changes.
 
 ## session shq-2026-08-03-002 end
+
+---
+
+## session shq-2026-08-03-003
+```
+started:       2026-08-03
+ended:         2026-08-03
+model:         claude-opus-5
+driver:        solo
+branch:        main
+starting_head: 57cf770
+ending_head:   <this commit>
+focus:         diagnose and remove the red-X "Mirror data onto gh-pages"
+               step in build-data.yml
+```
+
+### corrects shq-2026-08-03-002
+That block's gotcha calls the mirror failure "Not diagnosed" and scopes it
+to "the last three runs". Both are superseded here: it had failed on **all
+21 runs since it was introduced** (2026-07-29 → 2026-08-02) — i.e. it never
+once succeeded — and the cause is below. The rest of that block stands.
+
+### inbound context read
+- shq-2026-07-29-002 (the block that added the step) + its gotchas
+- shq-2026-07-09-005 (the NIC data-load fix), to rule out a NIC dependency
+- astro-build.yml, astro/src/lib/vacancies.js, app.js fetchVacancies()
+
+### work done
+1. **Diagnosed two stacked bugs** in the step's bootstrap fallback:
+
+       git worktree add /tmp/ghpages gh-pages 2>/dev/null \
+         || git worktree add --detach /tmp/ghpages origin/gh-pages 2>/dev/null \
+         || (git worktree prune; git branch -D gh-pages 2>/dev/null; \
+             git worktree add --detach -b gh-pages /tmp/ghpages origin/main)
+
+   (a) The step runs under `bash -e`. The subshell is the command following
+   the **final** `||`, so errexit applies inside it. `git branch -D gh-pages`
+   exits 1 when the branch is absent, aborting the subshell *before* the
+   worktree add is ever reached. Its stderr was suppressed, so the only log
+   line was the already-swallowed fetch error — which is why the previous
+   session couldn't diagnose it from the log alone.
+   (b) Even if reached, `--detach` and `-b` are mutually exclusive:
+   `fatal: options '-b', '-B', and '--detach' cannot be used together`.
+   Both reproduced locally in a scratch repo before touching anything.
+   Net: `gh-pages` could never be self-bootstrapped, so the step could
+   never succeed on a repo where that branch didn't already exist.
+2. **Established that nothing consumes gh-pages**, so removal strands
+   nothing (see decisions). Confirmed `main` is the *only* branch that has
+   ever existed on the remote (`git ls-remote --heads` → one ref).
+3. **Removed the step** (`0465bef`) and corrected the now-dangling comment
+   in astro-build.yml's header that described it. Both workflows re-parsed
+   as valid YAML before pushing.
+4. **Verified green**: run `30770455623`, all 12 steps ✓ in 4m52s — the
+   first successful build-data run since 2026-07-29T11:59Z. Its own data
+   commit `f4a26d2` landed on main, so the pipeline works end to end.
+
+### decisions
+- **Removed rather than repaired.** Three independent reasons, any one of
+  which is sufficient: (1) astro-build.yml publishes via
+  `upload-pages-artifact` + `deploy-pages@v4`, which serves an **uploaded
+  artifact, not a branch** — files landed on gh-pages would never be
+  served; (2) `astro/src/lib/vacancies.js` reads `data/vacancies.json` at
+  **build** time, so copying a fresher file next to already-built HTML
+  could not have refreshed the generated per-vacancy pages anyway; (3)
+  astro-build.yml has **never run** (0 runs) — it triggers on push to an
+  `astro` *branch* that has never existed (the Astro port is the `astro/`
+  *directory* on main; shq-2026-07-29-002 conflated the two).
+- **NIC is unaffected — checked explicitly**, because the user reasonably
+  suspected the mirror existed for NIC. It didn't: the NIC fix is
+  shq-2026-07-09-005 (`5fd0fae`), a code change making app.js fetch the
+  same-origin `data/vacancies.json` first. That file is kept fresh by the
+  *"Commit generated files if changed"* step writing to `main`, which
+  Pages serves and which has always been green. Different mechanism.
+- **Did NOT manually dispatch the workflow.** build-data.yml has a `push`
+  trigger on `paths: .github/workflows/build-data.yml`, so pushing the fix
+  auto-fired the run. A `gh workflow run` on top would have spent a second
+  Gemini free-tier re-embed for nothing.
+- **Did NOT fix the astro-build trigger** — offered, user chose removal
+  only. Left as a documented gotcha rather than bundled in.
+
+### handoff state
+- Working tree: clean. Pushed to origin/main.
+- build-data.yml: green. 11 steps, mirror step gone.
+- gh-pages: still does not exist, and nothing now tries to create it.
+- Live site + NIC users: untouched by this session.
+
+### gotchas for next session
+- **The Astro pipeline is inert and has never run once.** Its trigger is
+  `push: branches: [astro]`, and no `astro` branch exists. If P2 is ever
+  switched on, the per-vacancy pages need a **rebuild trigger** (a
+  `schedule`, or `workflow_run` after build-data) — mirroring data files
+  cannot refresh build-time-generated pages. This is the real fix for the
+  gap the deleted mirror step was aiming at.
+- **Pre-existing, NOT bundled here:** astro-build.yml's header (lines 2–11)
+  and `astro/README.md:42` both say the deploy target is "the gh-pages
+  branch". That's wrong — `deploy-pages@v4` publishes an artifact. Only the
+  sentence describing the deleted mirror step was corrected; the rest was
+  left alone deliberately. Also `WEBSITE-REVIEW.md` P2-1's "Deploys to
+  gh-pages branch" note, annotated in place rather than rewritten.
+- **Node 20 deprecation warning** on every run (actions/checkout@v4,
+  setup-python@v5, google-github-actions/auth@v2 forced onto Node 24).
+  A warning, not a failure — but it will become one when GitHub drops the
+  shim. Separate, pre-existing.
+- **`bash -e` + `( … )` as the last arm of a `||` chain is a trap.**
+  errexit *does* apply inside that subshell, so any intermediate command
+  that legitimately returns non-zero (like `git branch -D` on a missing
+  branch) kills the whole fallback silently. Terminate such commands with
+  `|| true` if the failure is expected.
+
+## session shq-2026-08-03-003 end
