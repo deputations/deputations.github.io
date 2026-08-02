@@ -12,8 +12,36 @@
  * anon role to reading only approved vacancies. */
 window.SUPABASE_URL = "https://djaxutkmhazufsxeobal.supabase.co";
 window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYXh1dGttaGF6dWZzeGVvYmFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMjgzNTksImV4cCI6MjA5NTcwNDM1OX0.AHfWNpMS69KhxGX6Px1fS9dVddo9lUiXvc96hM5UTbU";
+
+/* Cloudflare Worker reverse proxy (P3-7 PR 2).
+ *
+ * The NIC (National Informatics Centre) government's SSL-inspecting
+ * middlebox returns ERR_SSL_PROTOCOL_ERROR for direct browser→Supabase
+ * connections — TLS 1.3 + post-quantum + ECH, which NIC's middlebox can't
+ * complete. The NIC firewall DOES, however, allow egress to
+ * alldeputations.com (the static-site hostname it already trusts).
+ *
+ * `workers/sb-proxy/worker.js` is a transparent pass-through that lives at
+ * `https://api.alldeputations.com` and forwards to Supabase. The browser
+ * speaks TLS to alldeputations.com (allowed by NIC); the Worker speaks TLS
+ * to Supabase (Cloudflare→Cloudflare, no middlebox in between).
+ *
+ * Wire-up: on production hostname `alldeputations.com`, point SUPABASE_URL
+ * at the proxy. Anywhere else (github.io, localhost, dev) keep the direct
+ * Supabase URL. The `SUPABASE_URL` constant is rewritten at boot based on
+ * `location.hostname`, so call sites see one URL and the routing happens
+ * transparently.
+ */
+(function () {
+  try {
+    var h = (typeof location !== "undefined" && location.hostname) || "";
+    if (h === "alldeputations.com" || h === "www.alldeputations.com") {
+      window.SUPABASE_URL = "https://api.alldeputations.com";
+    }
+  } catch (e) { /* SSR / tests: keep the direct URL */ }
+})();
 window.SUPABASE_READY = function () {
-  return /^https:\/\/[a-z0-9]+\.supabase\.co/.test(window.SUPABASE_URL || "") &&
+  return /^https:\/\/[a-z0-9.-]+$/.test(window.SUPABASE_URL || "") &&
     (window.SUPABASE_ANON_KEY || "").length > 20 &&
     !/YOUR_/.test(window.SUPABASE_ANON_KEY || "");
 };

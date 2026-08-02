@@ -1,0 +1,27 @@
+# Cloudflare Worker config for the Supabase reverse-proxy.
+#
+# Deploy:
+#   cd workers/sb-proxy
+#   npx wrangler deploy
+#
+# After deploy, point `api.alldeputations.com` CNAME at the `workers.dev`
+# subdomain shown by wrangler. Cloudflare auto-issues certs.
+#
+# Plan notes:
+#   - Free plan: 100k req/day + no WebSocket egress. May need Workers Paid
+#     ($5/mo) for production traffic. WebSocket persistence counts as
+#     "wall time" only on paid plan.
+#   - `vars` / `secrets` not used — Worker is a transparent pass-through and
+#     carries the apikey in the request, not in the env.
+
+name = "sb-proxy"
+main = "worker.js"
+compatibility_date = "2026-07-31"
+
+# Custom domain wired via Cloudflare dashboard (Workers → sb-proxy →
+# Settings → Triggers → Custom Domains → api.alldeputations.com).
+# Until that's set, the Worker is reachable at:
+#   https://sb-proxy.<your-cloudflare-subdomain>.workers.dev
+
+[observability]
+enabled = true

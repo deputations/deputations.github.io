@@ -215,6 +215,14 @@ def test_semantic_search_disabled_state_handled_gracefully(page, base_url: str):
     page.goto(f"{base_url}/index.html")
     page.wait_for_selector("#searchPost")
     page.wait_for_selector("#aiSearchInput", timeout=5000)
+    # Wait for the table to populate so `keyword_rows` is deterministic.
+    # Without this, the count races against the initial fetchVacancies
+    # pipeline (see deputation-test-suite-p3-4 memory for the historical
+    # race that prompted this guard).
+    page.wait_for_function(
+        "() => document.querySelectorAll('tr.clickable-row[data-open-details]').length >= 5",
+        timeout=10000,
+    )
 
     # Console errors raised during the test fail the test — we'll surface
     # them through Playwright's pageerror listener.

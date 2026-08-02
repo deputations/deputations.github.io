@@ -23,7 +23,10 @@
   var SB_URL  = (window.SUPABASE_URL || "").replace(/\/+$/, "");
   var SB_KEY  = window.SUPABASE_ANON_KEY || "";
   var HOST    = (window.location.hostname || "").toLowerCase();
-  var SUPABASE_HOST_RE = /\.supabase\.co$/i;
+  // P3-7 PR 2: the proxy lives at api.alldeputations.com in production, so
+  // accept either the direct Supabase host OR the proxy host. The proxy
+  // forwards to Supabase, so behaviour is identical from the caller's side.
+  var SUPABASE_HOST_RE = /(\.supabase\.co$|^api\.alldeputations\.com$)/i;
 
   /* ---- state ---- */
   var seenIds      = new Set();          // Vacancy_IDs already in the dataset

@@ -1,0 +1,10 @@
+{
+  "name": "sb-proxy-worker-tests",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test worker.test.js"
+  },
+  "comment": "Test runner for the sb-proxy Worker. No deps — Node 18+ ships Request/Response/Headers. Run with `npm test` (from this dir) or `node --test worker.test.js`."
+}
