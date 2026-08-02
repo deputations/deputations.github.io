@@ -2694,3 +2694,87 @@ Then append the next shq block (e.g. `shq-2026-08-03-NNN`) with
 the NIC findings, commit, push. The two-month-out
 Wix→Cloudflare apex migration is parked (cron reminder set).
 
+
+---
+
+<!-- APPEND_NEW_BLOCKS_BELOW -->
+
+## session shq-2026-08-03-001
+```
+started:       2026-08-03
+ended:         2026-08-03
+model:         claude-opus-5
+driver:        solo
+branch:        main
+starting_head: 81da817
+ending_head:   0f9c634 (+ this docs commit)
+focus:         mobile layout regression, ultra-wide filter default,
+               AI-search relevance readout + asymmetric retrieval
+```
+
+### inbound context read
+- HANDOVER shq-2026-08-02-009 (P3-7 PR 2 deploy-state close)
+- `workers/sb-proxy/README.md`, `wrangler.toml`, `config.js`
+- user screenshots: phone dashboard, two AI-search result sets
+
+### work done
+1. **`065c6d9` — mobile regression.** `body.filters-collapsed .main-layout`'s
+   `grid-template-areas` override (added with the AI search row) sat OUTSIDE
+   the `@media (min-width: 769px)` gate scoping the rest of that experiment.
+   `filters-collapsed` is the default body class, so on phones the grid grew
+   an implicit second column: sidebar squeezed to its 34px min-width
+   (padding + border, contents clipped by `overflow:hidden`), everything else
+   crammed into a 293px column. Scoped both rules to the 769px gate.
+2. **`d8acead` — ultra-wide default.** Inline `wide-default-filters` boot
+   script after `<body>` drops `filters-collapsed` at `(min-width: 1600px)`
+   so Ministry desktops open with the full sidebar. `initDesktopFilterCollapse()`
+   now seeds `expanded` from the body class instead of hardcoding false.
+   Mirrored in `astro/src/layouts/Layout.astro`.
+3. **`0f9c634` — AI-search relevance + retrieval.** See decisions below.
+
+### decisions
+- **Relevance readout is an absolute rescale, not a top-relative one.** First
+  attempt normalised against the best hit (top = 100%); the user caught that
+  it made an unrelated Director General read 90%. Cosine similarity here has
+  a HIGH FLOOR (~0.45) because every vacancy record is dominated by shared
+  boilerplate, and a LOW CEILING (~0.64 for an exact post-name match) because
+  a five-word query only overlaps a fraction of a ~100-word record. Rescaling
+  `[RELEVANCE_FLOOR 0.42, RELEVANCE_CEIL 0.66]` onto 0-100% and clamping is
+  what makes the number mean "how well does this match".
+- **1600px for the wide default**: 300px sidebar + the table's 1100px
+  intrinsic width + container padding clears without the table scrolling.
+- **taskType is gated on `semantic_search_state.embed_task_type`**, written by
+  `build_embeddings.py` only on a fully successful run. Vectors from different
+  taskTypes are not comparable; this makes a half-finished migration degrade
+  to the old behaviour rather than return nonsense.
+- **`write_state` switched to POST + merge-duplicates** so `embed_task_type`
+  lands without another migration.
+
+### handoff state
+- Working tree: clean. Smoke 36/36.
+- Live on GitHub Pages after this push: both layout changes + the display half
+  of the AI-search change.
+- **NOT live: the retrieval half.** Needs, IN ORDER: (1) `build_embeddings.py`
+  run to re-embed the ACTIVE corpus as RETRIEVAL_DOCUMENT, (2)
+  `semantic-search` Edge Function redeploy. Function-first would mismatch the
+  vector spaces until the next cron.
+- P3-7 PR 2 NIC verification still pending (see shq-2026-08-02-009
+  `next_pickup`) — unchanged by this session.
+
+### gotchas for next session
+- **`RELEVANCE_FLOOR` / `RELEVANCE_CEIL` in `app.js` MUST be re-tuned after the
+  re-embed** — taskType moves the whole distribution. Method is in the code
+  comment: run representative queries, read raw cosine off each row's `title`
+  attribute, set the constants just outside the best match and the first
+  clearly-irrelevant one.
+- **The taskType change was never measured.** No `GEMINI_API_KEY` on the dev
+  machine, so there are no before/after numbers — the reasoning is sound but
+  unverified. Measure on the first post-deploy query.
+- **`test_semantic_search_renders_ranked_matches` failed once under full-suite
+  load** at the `#modal[open]` step, passed alone and on re-run. Same family as
+  the documented `test_search_post_debounces` flake; not a real regression.
+- The escaped-twice sub-line bug (`Micro, Small &amp; Medium`) is fixed and
+  covered by a test — the pattern to avoid is escaping parts individually and
+  then escaping the join.
+
+## session shq-2026-08-03-001 end
