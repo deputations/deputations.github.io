@@ -2778,3 +2778,71 @@ focus:         mobile layout regression, ultra-wide filter default,
   then escaping the join.
 
 ## session shq-2026-08-03-001 end
+
+---
+
+<!-- APPEND_NEW_BLOCKS_BELOW -->
+
+## session shq-2026-08-03-002
+```
+started:       2026-08-03
+ended:         2026-08-03
+model:         claude-opus-5
+driver:        solo
+branch:        main
+starting_head: 246941b
+ending_head:   <this commit>
+focus:         deploy the retrieval half of shq-2026-08-03-001 and
+               recalibrate the relevance band against live measurements
+```
+
+### corrects shq-2026-08-03-001
+That block's handoff state says the retrieval half is NOT live and lists
+`RELEVANCE_FLOOR`/`RELEVANCE_CEIL` as needing re-tuning. Both are now done —
+see below. The rest of that block stands.
+
+### work done
+1. **Corpus was already re-embedded, unnoticed.** `build-data.yml` has a
+   `push` trigger on `paths: scripts/**`; commit `0f9c634` touched
+   `scripts/build_embeddings.py`, so pushing it fired run `30768513628`,
+   whose "Build vacancy embeddings (P3-3)" step succeeded — the ACTIVE
+   corpus was re-embedded as RETRIEVAL_DOCUMENT and `embed_task_type` set.
+2. **Deployed the `semantic-search` Edge Function** via the Supabase
+   dashboard (Chrome extension → Monaco `executeEdits` with the source
+   fetched from raw.githubusercontent.com → "Deploy updates" → confirm).
+   Verified on a fresh page load: 267 lines, RETRIEVAL_QUERY + readState +
+   embed_task_type present, "a minute ago".
+3. **Measured the new distribution** against the live function (k=10):
+   exact-title queries peak 0.704 / 0.713 / 0.727; nonsense and off-domain
+   queries peak 0.544 / 0.553 / 0.531.
+4. **Recalibrated** `RELEVANCE_FLOOR` 0.42 → 0.55, `RELEVANCE_CEIL`
+   0.66 → 0.73, with the measurement table recorded in the code comment.
+   Live end-to-end: "senior vice president in finance" → 86/37/28/21/16,
+   "managing director national high" → 91/54/43/42/38, nonsense → all 0%.
+5. Test fixture scores moved into the new space (0.704 / 0.617 / 0.545 →
+   86% / 37% / 0%).
+
+### decisions
+- **FLOOR = the nonsense-query peak, CEIL = the exact-title peak.** A query
+  the corpus can't answer still returns its ten nearest rows; pinning the
+  floor at their score is what makes those read 0% instead of 70%.
+- **Did NOT re-trigger the build workflow.** It had already run; a second
+  run would have spent Gemini free-tier quota for nothing.
+
+### handoff state
+- Working tree: clean. Smoke 36/36. Pushed to origin/main.
+- AI search: fully live — asymmetric retrieval + calibrated readout.
+
+### gotchas for next session
+- **`build-data.yml`'s "Mirror data onto gh-pages" step has failed on the
+  last three runs** (30687363634 schedule, 30735659673 schedule,
+  30768513628 push). Every step before it succeeds, so data, sitemap, OG
+  images and embeddings are all fine and the site is unaffected — GitHub
+  Pages serves `main`, not `gh-pages`. Not diagnosed. The workflow reports
+  as a red X daily until someone fixes or removes that step.
+- **Editing `scripts/**` re-embeds the corpus on push.** Cheap today (~67
+  ACTIVE rows) but it spends Gemini free-tier quota on every such push.
+- Re-run the calibration table in `app.js` whenever `EMBED_FIELDS`, the
+  embedding model, or the taskType pair changes.
+
+## session shq-2026-08-03-002 end

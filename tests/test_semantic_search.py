@@ -141,7 +141,7 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
             "ministry": "AYUSH",
             "level": "6",
             "last_date": "2026-09-30",
-            "score": 0.64,
+            "score": 0.704,
         },
         {
             "vacancy_id": "A-2026-L8-022",
@@ -150,7 +150,7 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
             "ministry": "Finance",
             "level": "8",
             "last_date": "2026-10-12",
-            "score": 0.53,
+            "score": 0.617,
         },
         {
             "vacancy_id": "A-2026-L10-005",
@@ -161,7 +161,7 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
             "ministry": "Finance",
             "level": "10",
             "last_date": "2026-11-01",
-            "score": 0.40,
+            "score": 0.545,
         },
     ]
 
@@ -192,22 +192,22 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
     # First row carries the highest score + the right vacancy_id.
     #
     # Relevance is displayed as raw cosine rescaled from the band this corpus
-    # actually occupies — [RELEVANCE_FLOOR 0.42, RELEVANCE_CEIL 0.66] in
+    # actually occupies — [RELEVANCE_FLOOR 0.55, RELEVANCE_CEIL 0.73] in
     # app.js — onto 0-100%, clamped at both ends. A vacancy is embedded as its
-    # whole record, so an exact post-name match measures ~0.64 (not 1.0) while
-    # anything in the same domain floors around 0.45. Scaling against the top
-    # hit instead would read 100/83/63 here and make an unrelated post look
-    # like a near-perfect match.
-    #   0.64 → (0.64-0.42)/0.24 = 92%
-    #   0.53 → 46%
-    #   0.40 → below floor → 0%
+    # whole record, so an exact post-name match measures ~0.73 (not 1.0) while
+    # a query that means nothing to the corpus still floors around 0.545.
+    # Scaling against the top hit instead would read 100/88/77 here and make an
+    # unrelated post look like a near-perfect match.
+    #   0.704 → (0.704-0.55)/0.18 = 86%
+    #   0.617 → 37%
+    #   0.545 → below floor → 0%
     first = rows.first
     assert first.get_attribute("data-vid") == "A-2026-L6-014"
     score_text = first.locator(".semantic-score").text_content() or ""
-    assert "92%" in score_text, f"top hit should read 92%: {score_text!r}"
+    assert "86%" in score_text, f"top hit should read 86%: {score_text!r}"
 
     second_text = rows.nth(1).locator(".semantic-score").text_content() or ""
-    assert "46%" in second_text, f"second hit should read 46%: {second_text!r}"
+    assert "37%" in second_text, f"second hit should read 37%: {second_text!r}"
 
     # Below the floor clamps to 0% rather than going negative.
     third_text = rows.nth(2).locator(".semantic-score").text_content() or ""
@@ -220,12 +220,12 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
 
     # Raw similarity stays inspectable on the wrapper.
     raw_title = first.locator(".semantic-relevance").get_attribute("title") or ""
-    assert "0.640" in raw_title, f"raw similarity missing from title: {raw_title!r}"
+    assert "0.704" in raw_title, f"raw similarity missing from title: {raw_title!r}"
 
     # The bar is filled to the same percentage.
     bar_width = first.locator(".semantic-bar i").get_attribute("style") or ""
-    assert "width: 92%" in bar_width or "width:92%" in bar_width, (
-        f"top hit bar should be 92%: {bar_width!r}"
+    assert "width: 86%" in bar_width or "width:86%" in bar_width, (
+        f"top hit bar should be 86%: {bar_width!r}"
     )
 
     # Query was sent verbatim to the Edge Function.

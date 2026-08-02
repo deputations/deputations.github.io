@@ -3525,20 +3525,36 @@ function syncCardSortUI() {
     //   * the floor is high: any vacancy in the same broad domain sits ~0.45-0.55,
     //     because they share the boilerplate that dominates the record
     //
-    // So the usable range is roughly [0.42, 0.66], not [0, 1]. Scaling against
+    // So the usable range is a narrow band well inside [0, 1]. Scaling against
     // the top hit instead (an earlier attempt) collapsed that band into 75-100%
     // and made loosely-related posts read as near-perfect matches. Rescaling
     // the real band to 0-100% and clamping is what makes the number mean
     // "how well does this match" rather than "where does this sit in the list".
     //
-    // RECALIBRATE these two constants after any change to what gets embedded —
-    // the RETRIEVAL_DOCUMENT/RETRIEVAL_QUERY switch in build_embeddings.py +
-    // the semantic-search Edge Function moves the whole distribution. Method:
-    // run a handful of representative queries, note the raw similarity (it's in
-    // each row's title attribute) of the best match and of the first clearly
-    // irrelevant one, and set CEIL/FLOOR just outside those.
-    const RELEVANCE_FLOOR = 0.42;   // at or below → 0%  (unrelated)
-    const RELEVANCE_CEIL  = 0.66;   // at or above → 100% (as close as this corpus gets)
+    // Measured 2026-08-03 against the live Edge Function, after the corpus was
+    // re-embedded with RETRIEVAL_DOCUMENT / RETRIEVAL_QUERY:
+    //
+    //   query                                       top     10th
+    //   "chief general manager finance and accounts" 0.727   0.623   (exact title)
+    //   "managing director national high"            0.713   0.608   (exact title)
+    //   "senior vice president in finance"           0.704   0.560   (exact title)
+    //   "director"                                   0.635   0.600   (vague)
+    //   "primary school teacher mathematics"         0.553   0.541   (off-domain)
+    //   "zebra pineapple carburettor"                0.544   0.526   (nonsense)
+    //   "software developer react native javascript" 0.531   0.525   (off-domain)
+    //
+    // A query that means nothing to this corpus peaks at ~0.545, so that's the
+    // floor; the best an exact post-name match ever does is ~0.73, so that's
+    // the ceiling. 100% stays just out of reach — an exact title reads 86-98%.
+    //
+    // RECALIBRATE after any change to what gets embedded or how (EMBED_FIELDS,
+    // the model, or the taskType pair): all of those move the distribution.
+    // Method is the table above — run a few exact-title queries and a few
+    // deliberate nonsense ones, read the raw similarity off each row's title
+    // attribute, and set FLOOR/CEIL just outside the nonsense peak and the
+    // exact-match peak.
+    const RELEVANCE_FLOOR = 0.55;   // at or below → 0%  (nonsense-query level)
+    const RELEVANCE_CEIL  = 0.73;   // at or above → 100% (as close as this corpus gets)
 
     function relevancePercent(raw) {
         const span = RELEVANCE_CEIL - RELEVANCE_FLOOR;
