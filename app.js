@@ -3513,26 +3513,68 @@ function syncCardSortUI() {
         semanticResultsStatus.textContent = text;
     }
 
+    // Raw cosine similarity → a percentage a visitor can act on.
+    //
+    // The Edge Function returns cosine similarity between the query and the
+    // vacancy's embedding. That number does NOT span 0-1 in practice. Each
+    // vacancy is embedded as its whole record — post name + ministry +
+    // location + level + eligibility + job description, ~100 words — so a
+    // short query only ever overlaps a fraction of it. Two consequences:
+    //
+    //   * the ceiling is low: an exact post-name match measures ~0.64, never 1.0
+    //   * the floor is high: any vacancy in the same broad domain sits ~0.45-0.55,
+    //     because they share the boilerplate that dominates the record
+    //
+    // So the usable range is roughly [0.42, 0.66], not [0, 1]. Scaling against
+    // the top hit instead (an earlier attempt) collapsed that band into 75-100%
+    // and made loosely-related posts read as near-perfect matches. Rescaling
+    // the real band to 0-100% and clamping is what makes the number mean
+    // "how well does this match" rather than "where does this sit in the list".
+    //
+    // RECALIBRATE these two constants after any change to what gets embedded —
+    // the RETRIEVAL_DOCUMENT/RETRIEVAL_QUERY switch in build_embeddings.py +
+    // the semantic-search Edge Function moves the whole distribution. Method:
+    // run a handful of representative queries, note the raw similarity (it's in
+    // each row's title attribute) of the best match and of the first clearly
+    // irrelevant one, and set CEIL/FLOOR just outside those.
+    const RELEVANCE_FLOOR = 0.42;   // at or below → 0%  (unrelated)
+    const RELEVANCE_CEIL  = 0.66;   // at or above → 100% (as close as this corpus gets)
+
+    function relevancePercent(raw) {
+        const span = RELEVANCE_CEIL - RELEVANCE_FLOOR;
+        if (!(span > 0)) return 0;
+        const t = (Number(raw) - RELEVANCE_FLOOR) / span;
+        return Math.round(Math.max(0, Math.min(1, t)) * 100);
+    }
+
     function renderSemanticResults(results) {
         if (!semanticResults || !semanticResultsList || !semanticResultsStatus) return;
         semanticResults.hidden = false;
         semanticResultsStatus.textContent =
             results.length === 0
                 ? 'No AI matches — try different wording or use keywords.'
-                : 'Top matches from natural-language similarity.';
+                : 'Ranked by how closely each vacancy matches your wording.';
         semanticResultsList.innerHTML = results.map((r) => {
             const post = escapeHtml(r.post_name || 'Untitled post');
-            const org  = escapeHtml(r.organisation || '');
-            const min  = escapeHtml(r.ministry || '');
-            const lvl  = escapeHtml(r.level ? 'L' + r.level : '');
-            const score = (typeof r.score === 'number') ? r.score.toFixed(2) : '0.00';
-            const subParts = [org, min, lvl].filter(Boolean);
-            const sub = subParts.join(' · ');
+            const subParts = [
+                r.organisation,
+                r.ministry,
+                r.level ? 'L' + r.level : '',
+            ].filter(Boolean);
+            // Escape ONCE, on the joined string. Escaping each part and then
+            // escaping the join double-encodes: "Micro, Small & Medium" came
+            // out as "Micro, Small &amp;amp; Medium" on screen.
+            const sub = escapeHtml(subParts.join(' · '));
+            const raw = (typeof r.score === 'number') ? r.score : 0;
+            const pct = relevancePercent(raw);
             return `<li data-vid="${escapeHtml(r.vacancy_id)}">
-                <span class="semantic-score">${score}</span>
+                <span class="semantic-relevance" title="cosine similarity ${raw.toFixed(3)}">
+                    <span class="semantic-score">${pct}%</span>
+                    <span class="semantic-bar" aria-hidden="true"><i style="width:${pct}%"></i></span>
+                </span>
                 <span class="semantic-result-meta">
                     <span class="semantic-result-post">${post}</span>
-                    <span class="semantic-result-sub">${escapeHtml(sub)}</span>
+                    <span class="semantic-result-sub">${sub}</span>
                 </span>
                 <span class="semantic-result-open" aria-hidden="true">Open ›</span>
             </li>`;

@@ -6452,7 +6452,7 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
 }
 .semantic-results-list li {
   display: grid;
-  grid-template-columns: 56px 1fr auto;
+  grid-template-columns: 68px 1fr auto;
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
@@ -6467,17 +6467,40 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
 }
 .semantic-results-list li:active { transform: scale(0.998); }
 
+/* Relevance readout: percentage of the best match in the set (app.js
+   normalises against the top hit) over a proportional bar. Raw cosine
+   similarity lives in the wrapper's title attribute. */
+.semantic-relevance {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  cursor: help;
+}
 .semantic-score {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
+  text-align: center;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   font-size: 0.82rem;
-  padding: 4px 8px;
+  padding: 2px 4px;
   border-radius: 8px;
   background: linear-gradient(135deg, rgba(167, 139, 250, 0.25), rgba(34, 211, 238, 0.22));
   color: var(--text-primary);
+}
+.semantic-bar {
+  display: block;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.22);
+  overflow: hidden;
+}
+.semantic-bar i {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary-color, #a78bfa), var(--accent-color, #22d3ee));
 }
 
 .semantic-result-meta {
@@ -6517,3 +6540,4 @@ html[data-theme="light"] .semantic-results-title { color: #0f172a; }
 html[data-theme="light"] .semantic-result-sub,
 html[data-theme="light"] .semantic-result-open,
 html[data-theme="light"] .semantic-results-status { color: #475569; }
+html[data-theme="light"] .semantic-bar { background: rgba(15, 23, 42, 0.12); }

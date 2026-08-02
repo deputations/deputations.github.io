@@ -35,6 +35,26 @@ EMBED_MODEL = os.environ.get("GEMINI_EMBED_MODEL", "gemini-embedding-001")
 EMBED_DIM   = 768   # truncation of the native 3072-dim output
 GAPI_BASE   = "https://generativelanguage.googleapis.com/v1beta/models"
 
+# Asymmetric retrieval: documents and queries are embedded with different
+# taskType hints so Gemini places a 100-word vacancy record and a 5-word
+# visitor query in a space built for matching one against the other. Without
+# it both sides use the API default (symmetric similarity), which is tuned for
+# comparing texts of similar length and shape — a short query against a long
+# record then scores low and, worse, the gap between a right and a wrong
+# answer stays narrow.
+#
+# The query side (RETRIEVAL_QUERY) lives in supabase/functions/semantic-search.
+# The two MUST agree: vectors embedded under different taskTypes are not
+# comparable. build writes the task type it used into
+# semantic_search_state.embed_task_type on every successful run, and the Edge
+# Function reads that key to decide which taskType to send — so a half-finished
+# migration degrades to the old behaviour instead of returning nonsense.
+EMBED_TASK_DOC = "RETRIEVAL_DOCUMENT"
+
+# Stored in vacancy_embeddings.model so the vector space is identifiable from
+# the table alone (the column previously held just the model name).
+MODEL_TAG = "{}+{}".format(EMBED_MODEL, EMBED_TASK_DOC)
+
 # Fields the keyword search filters against (mirrors build_data.build_search_text).
 # Embedding the same text means keyword and semantic search agree on corpus.
 EMBED_FIELDS = [
@@ -109,6 +129,7 @@ def call_gemini_embed(text, api_key, *, retries=2):
     body = json.dumps({
         "content": {"parts": [{"text": text}]},
         "outputDimensionality": EMBED_DIM,
+        "taskType": EMBED_TASK_DOC,
     }).encode("utf-8")
     req = urllib.request.Request(
         url, data=body, method="POST",
@@ -167,20 +188,24 @@ def postgrest_upsert(supabase_url, service_key, vacancy_id, embedding, model):
 
 
 def write_state(supabase_url, service_key, key, value):
-    """UPDATE one row in public.semantic_search_state (key=value)."""
-    url = "{}/rest/v1/semantic_search_state?key=eq.{}".format(
-        supabase_url.rstrip("/"), urllib.parse.quote(key, safe=""))
-    body = json.dumps({"value": value}).encode("utf-8")
+    """UPSERT one row in public.semantic_search_state (key=value).
+
+    POST + resolution=merge-duplicates rather than PATCH: migration 0016 seeds
+    four keys, and later keys (embed_task_type) have to be able to appear
+    without another migration. PATCH would silently no-op on a missing key.
+    """
+    url = "{}/rest/v1/semantic_search_state".format(supabase_url.rstrip("/"))
+    body = json.dumps({"key": key, "value": value}).encode("utf-8")
     req = urllib.request.Request(
-        url, data=body, method="PATCH",
+        url, data=body, method="POST",
         headers={
             "Content-Type":  "application/json",
             "apikey":        service_key,
             "Authorization": "Bearer {}".format(service_key),
-            "Prefer":        "return=minimal",
+            "Prefer":        "resolution=merge-duplicates,return=minimal",
         })
     with urllib.request.urlopen(req, timeout=15) as resp:
-        if resp.status not in (200, 204):
+        if resp.status not in (200, 201, 204):
             raise RuntimeError("postgrest state update returned {}".format(resp.status))
 
 
@@ -260,7 +285,7 @@ def main():
             pass
         else:
             try:
-                postgrest_upsert(supabase_url, service_key, vid, embedding, EMBED_MODEL)
+                postgrest_upsert(supabase_url, service_key, vid, embedding, MODEL_TAG)
             except Exception as e:
                 failed.append((vid, "upsert: {}".format(e)))
                 continue
@@ -275,7 +300,7 @@ def main():
         embeds = []
         for vid, row in [(vid, next((r for r in rows if str(r.get("Vacancy_ID", "")).strip() == vid), {}))
                          for vid, _ in items]:
-            embeds.append({"vacancy_id": vid, "model": EMBED_MODEL,
+            embeds.append({"vacancy_id": vid, "model": MODEL_TAG,
                            "embedding_dim": EMBED_DIM,
                            "text_chars": len(build_embed_text(row))})
         out.write_text(json.dumps(embeds, indent=0), encoding="utf-8")
@@ -283,12 +308,17 @@ def main():
               .format(out, len(embeds), EMBED_DIM))
         return
 
-    # Build finished — clear the disable flag and record stats.
+    # Build finished — clear the disable flag and record stats. embed_task_type
+    # is written LAST and only on a complete run: the Edge Function keys its
+    # query-side taskType off it, so it must not claim the new vector space
+    # until the whole corpus is actually in it.
     try:
         write_state(supabase_url, service_key, "disabled_until",    "")
         write_state(supabase_url, service_key, "last_build_at",     now_iso())
         write_state(supabase_url, service_key, "last_build_count",  str(written))
         write_state(supabase_url, service_key, "last_build_status", "ok")
+        if not failed:
+            write_state(supabase_url, service_key, "embed_task_type", EMBED_TASK_DOC)
     except Exception as e:
         print("[embed] (state update failed at end: {})".format(e), file=sys.stderr)
 

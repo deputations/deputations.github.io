@@ -141,7 +141,7 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
             "ministry": "AYUSH",
             "level": "6",
             "last_date": "2026-09-30",
-            "score": 0.92,
+            "score": 0.64,
         },
         {
             "vacancy_id": "A-2026-L8-022",
@@ -150,16 +150,18 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
             "ministry": "Finance",
             "level": "8",
             "last_date": "2026-10-12",
-            "score": 0.87,
+            "score": 0.53,
         },
         {
             "vacancy_id": "A-2026-L10-005",
             "post_name": "Director",
-            "organisation": "Department of Expenditure",
+            # Ampersand on purpose — the sub-line used to be escaped twice and
+            # rendered "Small &amp; Medium" on screen.
+            "organisation": "Micro, Small & Medium Enterprises (NI-MSME)",
             "ministry": "Finance",
             "level": "10",
             "last_date": "2026-11-01",
-            "score": 0.81,
+            "score": 0.40,
         },
     ]
 
@@ -188,10 +190,43 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
     assert rows.count() == 3, f"expected 3 ranked rows, got {rows.count()}"
 
     # First row carries the highest score + the right vacancy_id.
+    #
+    # Relevance is displayed as raw cosine rescaled from the band this corpus
+    # actually occupies — [RELEVANCE_FLOOR 0.42, RELEVANCE_CEIL 0.66] in
+    # app.js — onto 0-100%, clamped at both ends. A vacancy is embedded as its
+    # whole record, so an exact post-name match measures ~0.64 (not 1.0) while
+    # anything in the same domain floors around 0.45. Scaling against the top
+    # hit instead would read 100/83/63 here and make an unrelated post look
+    # like a near-perfect match.
+    #   0.64 → (0.64-0.42)/0.24 = 92%
+    #   0.53 → 46%
+    #   0.40 → below floor → 0%
     first = rows.first
     assert first.get_attribute("data-vid") == "A-2026-L6-014"
     score_text = first.locator(".semantic-score").text_content() or ""
-    assert "0.92" in score_text, f"score badge missing 0.92: {score_text!r}"
+    assert "92%" in score_text, f"top hit should read 92%: {score_text!r}"
+
+    second_text = rows.nth(1).locator(".semantic-score").text_content() or ""
+    assert "46%" in second_text, f"second hit should read 46%: {second_text!r}"
+
+    # Below the floor clamps to 0% rather than going negative.
+    third_text = rows.nth(2).locator(".semantic-score").text_content() or ""
+    assert "0%" in third_text, f"sub-floor hit should clamp to 0%: {third_text!r}"
+
+    # Ampersands in the sub-line survive as themselves, not as "&amp;".
+    sub_text = rows.nth(2).locator(".semantic-result-sub").text_content() or ""
+    assert "Small & Medium" in sub_text, f"sub-line mangled: {sub_text!r}"
+    assert "&amp;" not in sub_text, f"sub-line double-escaped: {sub_text!r}"
+
+    # Raw similarity stays inspectable on the wrapper.
+    raw_title = first.locator(".semantic-relevance").get_attribute("title") or ""
+    assert "0.640" in raw_title, f"raw similarity missing from title: {raw_title!r}"
+
+    # The bar is filled to the same percentage.
+    bar_width = first.locator(".semantic-bar i").get_attribute("style") or ""
+    assert "width: 92%" in bar_width or "width:92%" in bar_width, (
+        f"top hit bar should be 92%: {bar_width!r}"
+    )
 
     # Query was sent verbatim to the Edge Function.
     assert captured.get("query") == "finance posts in the northeast", (

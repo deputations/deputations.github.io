@@ -71,12 +71,20 @@ async function sha256Hex(s: string): Promise<string> {
 }
 
 // ---- Gemini embed query ----
-async function embedQuery(text: string): Promise<number[]> {
+// `taskType` is the asymmetric-retrieval hint: the corpus is embedded as
+// RETRIEVAL_DOCUMENT by scripts/build_embeddings.py, so a query embedded as
+// RETRIEVAL_QUERY lands in the space Gemini built for matching a short query
+// against a long document. Vectors from different taskTypes are NOT
+// comparable, so this is passed only when the stored corpus confirms it was
+// built that way (see readState / embed_task_type below); against a
+// legacy corpus we send no taskType, exactly as before.
+async function embedQuery(text: string, taskType: string | null): Promise<number[]> {
   const url = `${GAPI_BASE}/${EMBED_MODEL}:embedContent?key=${GEMINI_API_KEY}`;
-  const body = {
+  const body: Record<string, unknown> = {
     content: { parts: [{ text }] },
     outputDimensionality: EMBED_DIM,
   };
+  if (taskType) body.taskType = taskType;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -98,16 +106,28 @@ async function embedQuery(text: string): Promise<number[]> {
 // ---- State flag helpers (service-role client bypasses RLS) ----
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-async function getDisabledUntil(): Promise<string | null> {
+// One read for both flags we need per request — `disabled_until` (free-tier
+// valve) and `embed_task_type` (which vector space the stored corpus is in).
+async function readState(): Promise<{ disabledUntil: string | null; embedTaskType: string | null }> {
   const { data } = await admin
     .from("semantic_search_state")
-    .select("value")
-    .eq("key", "disabled_until")
-    .maybeSingle();
-  if (!data?.value) return null;
+    .select("key, value")
+    .in("key", ["disabled_until", "embed_task_type"]);
+  const byKey = new Map((data ?? []).map((r: any) => [r.key, r.value]));
+
+  const rawDisabled = byKey.get("disabled_until");
   // value is text; interpret as ISO timestamp if present
-  const t = Date.parse(data.value);
-  return Number.isNaN(t) ? null : data.value;
+  const t = rawDisabled ? Date.parse(rawDisabled) : NaN;
+  const disabledUntil = Number.isNaN(t) ? null : rawDisabled;
+
+  // Only pair RETRIEVAL_QUERY with a corpus the build script has confirmed is
+  // RETRIEVAL_DOCUMENT. Any other value (unset, mid-migration, a future task
+  // type this deploy doesn't know) falls back to the untyped call, which is
+  // what the legacy corpus was embedded with.
+  const rawTask = byKey.get("embed_task_type");
+  const embedTaskType = rawTask === "RETRIEVAL_DOCUMENT" ? "RETRIEVAL_QUERY" : null;
+
+  return { disabledUntil, embedTaskType };
 }
 
 async function setDisabledUntil(iso: string): Promise<void> {
@@ -142,10 +162,14 @@ Deno.serve(async (req) => {
   const fMinistry = typeof filters.ministry === "string" ? filters.ministry : null;
   const fLevel    = typeof filters.level    === "string" ? filters.level    : null;
 
-  // 1. Free-tier guard (cheap DB read)
+  // 1. Free-tier guard + corpus vector space (one cheap DB read)
   let disabledUntil: string | null = null;
-  try { disabledUntil = await getDisabledUntil(); }
-  catch (e) { console.warn("[semantic] state read failed:", e); }
+  let queryTaskType: string | null = null;
+  try {
+    const state = await readState();
+    disabledUntil = state.disabledUntil;
+    queryTaskType = state.embedTaskType;
+  } catch (e) { console.warn("[semantic] state read failed:", e); }
   if (disabledUntil && Date.parse(disabledUntil) > Date.now()) {
     return json({
       ok: false, code: "disabled",
@@ -154,11 +178,14 @@ Deno.serve(async (req) => {
     }, 503);
   }
 
-  // 2. LRU cache lookup (key = sha256(query+filters+k))
+  // 2. LRU cache lookup (key = sha256(query+filters+k+taskType))
+  // taskType is part of the key: the same query embedded in a different
+  // vector space is a different result set, so a corpus rebuild must not be
+  // served stale answers from a warm instance.
   let cacheKey: string | null = null;
   let cached: unknown = null;
   try {
-    cacheKey = await sha256Hex(`${query}|${fMinistry ?? ""}|${fLevel ?? ""}|${k}`);
+    cacheKey = await sha256Hex(`${query}|${fMinistry ?? ""}|${fLevel ?? ""}|${k}|${queryTaskType ?? ""}`);
     cached = cacheGet(cacheKey);
   } catch { /* caching is best-effort */ }
   if (cached) return json(cached as any);
@@ -166,7 +193,7 @@ Deno.serve(async (req) => {
   // 3. Embed the query
   let queryEmbedding: number[];
   try {
-    queryEmbedding = await embedQuery(query);
+    queryEmbedding = await embedQuery(query, queryTaskType);
   } catch (e) {
     const msg = (e as Error).message;
     if (msg === "RATE_LIMITED") {
