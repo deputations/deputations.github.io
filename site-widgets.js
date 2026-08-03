@@ -20,7 +20,14 @@
    * ERR_SSL_PROTOCOL_ERROR every 35s. */
   var SB_URL = (window.SUPABASE_URL || "").replace(/\/+$/, "");
   var SB_KEY = window.SUPABASE_ANON_KEY || "";
-  var SB_OK  = /^https:\/\/[a-z0-9]+\.supabase\.co/.test(SB_URL) && SB_KEY.length > 20;
+  // P3-7 PR 2: SUPABASE_URL may be the Cloudflare Worker proxy
+  // (sb-proxy.ncrsarkarishaadi.workers.dev) on the production hostname to
+  // survive NIC's SSL-intercepting middlebox. The old hard-coded regex
+  // required `.supabase.co` and silently disabled RPCs on alldeputations.com —
+  // the heart click never reached the vote table. Delegate to config.js's
+  // SUPABASE_READY() (already widened in PR 2) so the gate stays in lock-step
+  // with the URL the rest of the app uses.
+  var SB_OK  = !!(window.SUPABASE_READY && window.SUPABASE_READY());
   var SB_FAIL_THRESHOLD = 3;
   var sb_fail_count = 0;
 
