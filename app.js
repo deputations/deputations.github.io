@@ -560,6 +560,18 @@ function fetchVacancies() {
 
     return Promise.all([jsonPromise, sbPromise]).then(([jsonRows, sbRows]) => {
         const json = Array.isArray(jsonRows) ? jsonRows : [];
+        // build_data.py fills most derived fields at cron time, but two fields
+        // are NOT computed there: Region (left blank by the source spreadsheet,
+        // expected to be derived from Location_State) and eligibility_tiers
+        // (left as the legacy eligibility_rules blob). backfillDerived fills
+        // those two for Title_Case JSON rows so the Region + Pay Level filters
+        // see correct data. Idempotent; safe on already-enriched rows.
+        // MUST run on JSON rows in BOTH branches (merged/SB-only and JSON-only)
+        // because the merge path keeps JSON rows as-is and the filter pipeline
+        // skips them when eligibility_tiers is empty.
+        if (window.DepEnrich && typeof window.DepEnrich.backfillDerived === 'function') {
+            json.forEach(r => window.DepEnrich.backfillDerived(r));
+        }
         if (sbRows && sbRows.length) {
             // Merge strategy:
             //   • JSON rows are already enriched (Title_Case + derived fields).
@@ -585,15 +597,6 @@ function fetchVacancies() {
             return recomputeStatus(merged);
         }
         console.log('📄 Source: data/vacancies.json (Supabase unavailable / empty)');
-        // build_data.py fills most derived fields at cron time, but two fields
-        // are NOT computed there: Region (left blank by the source spreadsheet,
-        // expected to be derived from Location_State) and eligibility_tiers
-        // (left as the legacy eligibility_rules blob). backfillDerived fills
-        // those two for Title_Case JSON rows so the Region + Pay Level filters
-        // see correct data. Idempotent; safe on already-enriched rows.
-        if (window.DepEnrich && typeof window.DepEnrich.backfillDerived === 'function') {
-            json.forEach(r => window.DepEnrich.backfillDerived(r));
-        }
         return recomputeStatus(json);
     });
 }
