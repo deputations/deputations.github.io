@@ -2,10 +2,11 @@
 
 Reproduces the user's report: inside a NIC-like network where every
 `*.supabase.co` call fails at the TLS layer, the console should show
-ZERO errors (the offline-mode banner is the user-visible signal) and
-the bookmark UI (header favBtn + per-row heart) should remain visible —
-and the website feedback widget (heart + thumbs-down) should also remain
-visible at the top-right of the page.
+ZERO errors (the AI search bar's own placeholder swap is the user-visible
+signal — the standalone offline banner was removed) and the bookmark UI
+(header favBtn + per-row heart) should remain visible — and the website
+feedback widget (heart + thumbs-down) should also remain visible at the
+top-right of the page.
 
 Run in isolation:
     .venv-smoke/Scripts/python.exe -m pytest tests/test_nic_overview.py -v
@@ -61,7 +62,7 @@ def test_nic_network_silent_console_and_hearts_visible(page, base_url: str):
     )
     # Wait for the first RPC failure to set the offline state. The 3-strike
     # breaker in `onRpcFail()` flips SB_OK=false after 3 strikes; the FIRST
-    # strike sets the body class + unhides the banner.
+    # strike sets the body class, which the AI search bar's CSS hooks off.
     page.wait_for_function(
         "() => document.body.classList.contains('is-supabase-down')",
         timeout=10000,
@@ -73,10 +74,6 @@ def test_nic_network_silent_console_and_hearts_visible(page, base_url: str):
     assert page_errors == [], (
         f"unexpected page errors on NIC: {page_errors!r}"
     )
-
-    # Banner visible.
-    banner = page.locator("#offlineBanner")
-    assert banner.is_visible(), "offline banner should be visible on NIC"
 
     # favBtn visible + ARIA complete.
     favBtn = page.locator("#favBtn")

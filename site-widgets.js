@@ -44,16 +44,12 @@
   }
   function onRpcFail() {
     sb_fail_count++;
-    // First failure: surface the offline state. The banner is the user-visible
-    // signal that the visitor counter and feedback widget are running in
-    // local-only mode. We don't synchronously fail-on-first-error — one
-    // transient network blip shouldn't yank the live count. The body class
-    // also matches what `ensureSupabaseAvailable().catch()` sets, so the
-    // existing CSS rules that hide / restyle for offline continue to apply.
+    // First failure: surface the offline state via the body class — other
+    // CSS (the AI search bar's `.is-unavailable` dimming, etc.) hooks off
+    // it. We don't synchronously fail-on-first-error — one transient
+    // network blip shouldn't yank the live count.
     if (sb_fail_count === 1) {
       document.body && document.body.classList.add("is-supabase-down");
-      var b = document.getElementById("offlineBanner");
-      if (b) b.hidden = false;
     }
     if (sb_fail_count >= SB_FAIL_THRESHOLD) {
       SB_OK = false;

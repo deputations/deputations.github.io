@@ -342,9 +342,14 @@ def test_ai_search_offline_when_supabase_unreachable(page, base_url: str):
     page.wait_for_selector("#searchPost")
     page.wait_for_selector("#aiSearchInput", timeout=5000)
 
-    # The offline banner must be visible.
-    page.wait_for_selector("#offlineBanner:not([hidden])", timeout=5000)
-    assert page.locator("#offlineBanner").is_visible()
+    # The offline state must register on the body — the banner element was
+    # removed (the user judged a once-daily vacancy refresh not worth a
+    # persistent notice); the AI bar's own placeholder swap + `.is-unavailable`
+    # dimming is now the only user-visible offline signal, covered below.
+    page.wait_for_function(
+        "() => document.body.classList.contains('is-supabase-down')",
+        timeout=5000,
+    )
     body_class = page.evaluate("() => document.body.className")
     assert "is-supabase-down" in body_class, (
         f"body.is-supabase-down not set when Supabase is unreachable; "

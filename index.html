@@ -42,7 +42,7 @@
   >
 
   <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
-  <link rel="stylesheet" href="style.css?v=ms56">
+  <link rel="stylesheet" href="style.css?v=ms57">
   <link rel="stylesheet" href="navbar.css?v=2">
   <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the script below to revert) -->
   <link rel="stylesheet" href="home-flourish.css?v=4">
@@ -330,23 +330,6 @@
       </aside>
 
       <section class="dashboard-content">
-        <!-- P3-7 PR 1: offline-mode banner. Hidden by default; shown only when
-             body.is-supabase-down is set by config.js's probe (NIC SSL-
-             intercepting middlebox fails the TLS handshake to *.supabase.co).
-             Tells the user the AI bar + counters are unavailable but the
-             vacancy list is still served from the bundled snapshot. -->
-        <div id="offlineBanner" class="offline-banner" hidden role="status" aria-live="polite">
-          <svg class="offline-banner-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.86a10 10 0 0 1 14 0"/>
-            <path d="M8.5 16.43a5 5 0 0 1 7 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
-          </svg>
-          <div class="offline-banner-text">
-            <strong>Offline mode (government network detected).</strong>
-            Vacancy list may be up to 24 h old. The AI search bar below says so
-            itself; the visitor counter is hidden.
-          </div>
-        </div>
-
         <div class="kpi-grid" id="kpiGrid"></div>
 
         <!-- P3-3 PR 4: flagship AI semantic-search bar — sits directly below
@@ -420,7 +403,7 @@
     </div>
   </dialog>
 
-  <script src="config.js?v=sb2"></script>
+  <script src="config.js?v=sb3"></script>
   <script src="enrich.js?v=sb13"></script>
   <script src="app.js?v=ms55"></script>
   <!-- vacancy push alerts (review P1-3); no-op unless Push is supported + VAPID configured -->
@@ -431,7 +414,7 @@
   <!-- BEGIN realtime-toast (P3-1: show toast when new vacancies arrive) -->
   <script defer src="realtime-toast.js?v=1"></script>
   <!-- END realtime-toast -->
-  <script defer src="site-widgets.js?v=23"></script>
+  <script defer src="site-widgets.js?v=24"></script>
   <!-- BEGIN hero-wave -->
   <script type="module" src="/hero-wave.js?v=2"></script>
   <!-- END hero-wave -->

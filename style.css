@@ -6263,39 +6263,6 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
    the AI path is now always-on via this single dedicated input.
    ============================================================================ */
 
-/* P3-7 PR 1: offline-mode banner. Shown only when body.is-supabase-down is
-   set (NIC / locked-down networks where Supabase TLS fails). Hidden by
-   default; the [hidden] attribute carries the load-time gate. */
-.offline-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.7rem 1rem;
-  margin: 0 0 1rem 0;
-  background: rgba(251, 191, 36, 0.12);
-  border: 1px solid rgba(251, 191, 36, 0.35);
-  border-radius: var(--radius-lg);
-  color: var(--text-primary);
-  font-size: 0.88rem;
-  line-height: 1.45;
-}
-.offline-banner[hidden] { display: none; }
-.offline-banner-icon {
-  width: 22px; height: 22px;
-  flex: 0 0 auto;
-  margin-top: 1px;
-  color: #fbbf24;
-}
-.offline-banner-text strong { color: #fbbf24; font-weight: 700; }
-[data-theme="light"] .offline-banner {
-  background: rgba(251, 191, 36, 0.18);
-  border-color: rgba(184, 134, 11, 0.4);
-}
-[data-theme="light"] .offline-banner-icon,
-[data-theme="light"] .offline-banner-text strong { color: #b8860b; }
-@media (max-width: 640px) {
-  .offline-banner { padding: 0.6rem 0.8rem; font-size: 0.82rem; }
-}
 
 .ai-search-section {
   margin: 0 0 1rem 0;

@@ -89,9 +89,6 @@ window.ensureSupabaseAvailable = function () {
     .catch(function () {
       window.SUPABASE_AVAILABLE = false;
       document.body && document.body.classList.add("is-supabase-down");
-      // Unhide the offline banner if it's present (defined on index.html).
-      var b = document.getElementById("offlineBanner");
-      if (b) b.hidden = false;
       return false;
     })
     .then(function (v) {

@@ -224,7 +224,7 @@ import Navbar from "../components/Navbar.astro";
          is:inline directive keeps these as bare tags pointing at runtime
          files in public/, which is exactly the behaviour we need (the
          existing static site uses ?v= cache-busting that we want to keep). -->
-    <script is:inline src="/config.js?v=sb2"></script>
+    <script is:inline src="/config.js?v=sb3"></script>
     <script is:inline src="/enrich.js?v=sb13"></script>
     <script is:inline src="/app.js?v=ms55"></script>
     <!-- vacancy push alerts (review P1-3); no-op unless Push is supported + VAPID configured -->
@@ -235,6 +235,6 @@ import Navbar from "../components/Navbar.astro";
     <!-- BEGIN realtime-toast (P3-1) -->
     <script is:inline defer src="/realtime-toast.js?v=1"></script>
     <!-- END realtime-toast -->
-    <script is:inline defer src="/site-widgets.js?v=23"></script>
+    <script is:inline defer src="/site-widgets.js?v=24"></script>
   </Fragment>
 </Layout>

@@ -53,9 +53,9 @@ def _force_supabase_offline(page):
          if a stray fetch slips through, the merged `rawData` is just
          the JSON rows.
 
-    Side effect: the new `#offlineBanner` paints (the probe's `.catch`
-    sets `body.is-supabase-down`). We don't assert against the banner
-    here — it's not part of the watchlist feature surface.
+    Side effect: the probe's `.catch` sets `body.is-supabase-down`, which
+    dims the AI search bar. We don't assert against that here — it's not
+    part of the watchlist feature surface.
     """
     page.add_init_script(
         """// Patch ensureSupabaseAvailable as soon as config.js assigns it.
