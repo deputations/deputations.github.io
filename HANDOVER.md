@@ -2956,3 +2956,155 @@ once succeeded — and the cause is below. The rest of that block stands.
   `|| true` if the failure is expected.
 
 ## session shq-2026-08-03-003 end
+
+## session shq-2026-08-04-001 (filter / heart / AI-search followups + Workers Free downgrade)
+```
+started:       2026-08-04
+model:         claude-opus-4-8
+driver:        solo
+branch:        main
+starting_head: 8f302dc
+ending_head:   a15845c
+focus:         (1) Region filter blank + Pay Level identical counts
+               regression — c9557e4 removed the JSON enrichment step
+               and never put it back. (2) Heart click no-ops on
+               alldeputations.com because site-widgets.js#SB_OK used
+               a hard-coded supabase.co regex that rejected the
+               workers.dev proxy URL. (3) AI ranked-matches panel
+               didn't clear when the input was cleared (race vs
+               in-flight fetch). (4) Downgrading sb-proxy from Workers
+               Paid ($5/mo) to Free — the live toast push was
+               redundant given the 60-s polling fallback.
+```
+
+### inbound context read
+- HANDOVER shq-2026-08-02-009 (P3-7 PR 2 deploy-state close)
+- WEBSITE-REVIEW.md §3 last row (2026-08-02 PR 2 deploy-state close)
+- `workers/sb-proxy/README.md` (cost section) + `wrangler.toml` (plan notes)
+- `site-widgets.js#SB_OK` line 23 (the hard-coded regex)
+- `app.js#fetchVacancies` (JSON vs Supabase branches)
+- `enrich.js#enrichRecord` (read mapBase only reads snake_case)
+- `enrich.js#regionForState` + `parseTiers` (the two derived fields
+  that `build_data.py` does NOT compute)
+- `app.js#scheduleSemanticSearch` + `runSemanticSearch` (the AI
+  results panel)
+
+### work done
+1. **commit `e3b3139` fix(filters): Region blank + Pay Level counts
+   identical — backfillDerived.** Added `enrich.js#backfillDerived`
+   (narrow Title_Case-aware backfill that fills `Region` via
+   `regionForState` and `eligibility_tiers` via `parseTiers` with a
+   snake_case-shaped view of the row). Called in `app.js#fetchVacancies`
+   on JSON rows. New `tests/test_region_filter.py` (3 smoke tests).
+   Cache-bust `enrich.js sb13→sb14`, `app.js ms55→ms56`.
+2. **commit `0aef1b6` fix(filters): run backfillDerived on JSON rows
+   in BOTH branches.** The previous fix put the call inside the
+   JSON-only branch; on localhost (where Supabase is reachable) the
+   merged branch ran and JSON rows went through with `eligibility_tiers`
+   = empty → `isEligible` "no tiers → all match" fallback → every
+   level counted the same total. Hoisted the `backfillDerived` call
+   above the branch so it runs on JSON rows in both paths.
+3. **commit `1f738e9` fix(ai-search): clear results panel when input
+   is cleared.** Two race conditions: (a) hide-on-empty vs in-flight
+   fetch (the debounced `runSemanticSearch` could repaint stale
+   results after the user had cleared the input), (b) settled-but-not-
+   rendered fetch. Fix: `scheduleSemanticSearch` aborts any in-flight
+   request before `hideSemanticResults()`; `runSemanticSearch` checks
+   the current input value against the searched query before
+   rendering. Cache-bust `app.js ms56→ms57`.
+4. **commit `8f302dc` fix(site-widgets): SB_OK rejects proxy URL —
+   heart click no-ops on production.** Replaced the hard-coded
+   `/^https:\/\/[a-z0-9]+\.supabase\.co$/` regex with
+   `window.SUPABASE_READY()` (config.js already widened it in P3-7
+   PR 2 to accept either the direct Supabase URL or the workers.dev
+   proxy). Without this, the heart visually fills on click but no
+   vote is recorded on `alldeputations.com` because the URL got
+   rewritten to the proxy. New `tests/test_feedback_proxy.py` (3
+   tests). Cache-bust `site-widgets.js v=24→v=25` on all 8 HTML pages.
+5. **commit `a15845c` docs(sb-proxy): note Workers Free downgrade.**
+   User decided the live-toast realtime push is not needed. Updated
+   `workers/sb-proxy/README.md` (Cost section) and `wrangler.toml`
+   (Plan notes) to reflect that the Worker is on Free, the WebSocket
+   path is dormant, and the polling fallback covers the 60-s gap.
+   No code change to `worker.js` — the WebSocket branch is dormant
+   on Free plans (returns 404 from Cloudflare's edge before the
+   handler runs).
+
+### decisions
+- **Title_Case backfill, not snake_case re-enrich.** Considered
+  re-running `enrichAll` on JSON rows, but `enrichRecord`
+  reads from snake_case keys via `mapBase`. Calling it on Title_Case
+  rows would clobber every field. The narrow `backfillDerived` only
+  fills the two missing derived fields (Region + eligibility_tiers)
+  and leaves everything else alone. Idempotent.
+- **Heart click never silently drops on regular networks.** The
+  SB_OK gate must agree with the URL the rest of the app uses.
+  Both gates now use `window.SUPABASE_READY()`.
+- **WebSocket path stays in `worker.js` even on Free.** The branch
+  is harmless (Cloudflare returns 404 at the edge before the handler
+  runs), and removing it would force a re-deploy + smoke test cycle
+  if the user ever flips back to Paid. Documented as dormant instead.
+- **Live toast is the only Paid-only feature.** Polling fallback
+  in `realtime-toast.js` already covers new-vacancy refresh within
+  60 s. The Paid plan was paying for nothing else.
+
+### handoff state
+- Working tree: clean (untracked: `.venv-smoke/`,
+  `workers/sb-proxy/.wrangler/` — local artifacts).
+- HEAD: `a15845c` on `main`, pushed to `origin/main`.
+- Open follow-ups:
+  - **NIC browser verification** still pending. The two `curl -sI`
+    recipes (proxy + direct Supabase) remain the single-side test
+    from any NIC machine. Claude-extension tool quota ran out on the
+    NIC desktop before the click-through test completed; the
+    page-render + curl approach is the next step.
+  - **Task #20**: apex Wix→Cloudflare migration. Cron reminder
+    `2ddab249` set for 2026-09-25 08:57 local.
+  - **Workers plan downgrade** needs to be done in the Cloudflare
+    dashboard (Workers & Pages → sb-proxy → Settings → Plans → Free).
+    No code deploy needed; the dashboard change is the only step.
+
+### gotchas for next session
+- **`scripts/build_data.py` does NOT compute `Region` or
+  `eligibility_tiers`** — it only does a 1:1 snake_case → Title_Case
+  rename. If the source spreadsheet leaves `region` blank, the JSON
+  row has `Region: ""` and the dashboard can't derive it server-side.
+  `enrich.js#backfillDerived` is the client-side fix. If the source
+  data ever gets a `region` column populated, the backfill is a no-op
+  (`row.Region || regionForState(...)`).
+- **The polling fallback in `realtime-toast.js` is the canonical
+  signal on NIC** (was always true, even on Workers Paid). The
+  WebSocket path on Paid was strictly additive. With the downgrade,
+  regular-network users see a 0–60 s lag on new vacancies instead of
+  ~1 s. Acceptable trade-off.
+- **`tests/test_feedback_proxy.py` is the regression test for the
+  SB_OK gate.** It runs on whatever host the test fixture provides
+  (github.io / localhost by default) and asserts the heart click
+  fires a POST to `/rest/v1/rpc/record_sentiment`. If you ever
+  change the SB_OK gate, run this test.
+- **The session-before's bug (heart no-op on production) is the
+  pattern to watch for**: any client-side check that uses a
+  hard-coded URL pattern will silently disagree with `config.js`
+  once you introduce a proxy. Rule of thumb: anything that needs
+  to know "is Supabase reachable from this network" should call
+  `window.SUPABASE_READY()` or `window.ensureSupabaseAvailable()`,
+  not a regex.
+
+### next_pickup
+1. **Cancel Workers Paid in the Cloudflare dashboard** (single click).
+   No re-deploy needed.
+2. **Run the NIC verification curl** when ready:
+   ```
+   curl -sI -H "apikey: <anon>" \
+     https://sb-proxy.ncrsarkarishaadi.workers.dev/rest/v1/vacancies?select=vacancy_id&limit=1
+   ```
+   Interpretation:
+   - `HTTP/2 200` → proxy works on NIC; the heart will record the
+     vote, AI search will rank, full P3-7 PR 2 succeeds end-to-end.
+   - `ERR_SSL_PROTOCOL_ERROR` or `Could not resolve host` → NIC's
+     middlebox blocks `workers.dev`. Acceptable: the dashboard
+     falls back to bundled `data/vacancies.json` (no AI ranking, no
+     live counter). The local-only heart still visually fills.
+3. **Append the next shq block** (e.g. `shq-2026-08-04-NNN`) with
+   the workers.dev downgrade + NIC findings. Commit + push.
+
