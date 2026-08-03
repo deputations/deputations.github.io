@@ -81,10 +81,17 @@ working in production.
 
 ## Cost
 
-- **Free plan**: 100,000 requests/day + **no WebSocket egress**. WebSocket
-  support requires Workers Paid ($5/mo, includes 1M requests + persistent
-  connections). Given the dashboard sees ~38k visitors/month (~1.3k/day) on
-  good days, Workers Paid is needed.
+- **Currently on Workers Free** (downgraded 2026-08-03 from Paid). The
+  dashboard's REST + RPC + Edge Function traffic fits comfortably in the
+  100,000 requests/day free-tier quota (~38k visitors/month, ~1.3k/day
+  peak).
+- WebSocket support is NOT included on Free. The realtime-toast live-push
+  feature (Supabase `/realtime/v1/websocket`) is dormant — visitors get
+  new-vacancy data via the 60-s polling fallback in `realtime-toast.js`.
+  This was a deliberate trade-off: the polling fallback already runs and
+  covers the gap; the WebSocket code path in `worker.js` is retained
+  behind an `Upgrade: websocket` header check so flipping back to Paid
+  is a one-click plan change with no re-deploy required.
 - Bandwidth egress is unmetered.
 - Cold starts are <5 ms; warm requests are sub-ms.
 

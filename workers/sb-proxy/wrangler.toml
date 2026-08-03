@@ -8,9 +8,16 @@
 # subdomain shown by wrangler. Cloudflare auto-issues certs.
 #
 # Plan notes:
-#   - Free plan: 100k req/day + no WebSocket egress. May need Workers Paid
-#     ($5/mo) for production traffic. WebSocket persistence counts as
-#     "wall time" only on paid plan.
+#   - CURRENTLY ON WORKERS FREE (downgraded 2026-08-03 from Paid). The
+#     realtime-toast live-push feature (websocket to Supabase /realtime/v1)
+#     is dormant on this plan; users get new-vacancy data via the
+#     60-s polling fallback (data/vacancies.json). The WebSocket handler
+#     in worker.js is intentionally retained behind an Upgrade-header
+#     check — flipping back to Paid is a one-click plan change with no
+#     re-deploy required.
+#   - Free plan: 100k req/day. Plenty of headroom for ~38k dashboard
+#     visitors/month; AI search + heart + visitor counter all use the
+#     REST/RPC/Edge Function path which is free-tier compatible.
 #   - `vars` / `secrets` not used — Worker is a transparent pass-through and
 #     carries the apikey in the request, not in the env.
 
