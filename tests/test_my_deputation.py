@@ -49,3 +49,49 @@ def test_my_deputation_bookmarks_seeded(context: BrowserContext, base_url: str):
         assert n >= 1, f"expected >= 1 bookmark card, got {n}"
     finally:
         p.close()
+
+
+def test_my_deputation_bookmarks_survive_supabase_offline(
+    context: BrowserContext, base_url: str
+):
+    """Bookmarks must still resolve when Supabase is unreachable (NIC).
+
+    Regression: `fetchVacancies()` used to branch on `SUPABASE_READY()`, which
+    only checks that the URL and anon key LOOK valid — they do on NIC, where
+    the resolver sinkholes supabase.co into a walled garden. The page took the
+    Supabase branch, the cross-origin fetch rejected, `loadVacancies()`'s
+    `.catch` left `vacancies` empty, and every saved bookmark reconciled as
+    "N bookmarked vacancy is no longer in the current list (likely closed or
+    removed)" while the header still counted it.
+
+    The fix mirrors index.html: the committed JSON is primary, Supabase is an
+    enhancement gated on the reachability probe.
+    """
+    seed = json.dumps(["A-2026-L6-014", "A-2026-L11-011", "E-2026-L14-127"])
+    context.add_init_script(
+        f"try {{ localStorage.setItem('deputationWatchlist', {json.dumps(seed)}); }} catch(e) {{}}"
+    )
+    p: Page = context.new_page()
+    try:
+        # Kill every cross-origin Supabase call before the page loads — the
+        # `/rest/v1/` probe in config.js and the vacancies query alike.
+        p.route("**/rest/v1/**", lambda r: r.abort("failed"))
+        p.route("**/functions/v1/**", lambda r: r.abort("failed"))
+
+        p.goto(f"{base_url}/my-deputation.html")
+        p.locator('.md-tab[data-tab="bookmarks"]').click()
+        p.wait_for_selector("#panel-bookmarks .md-vacancy-card", timeout=10000)
+
+        n = p.locator("#panel-bookmarks .md-vacancy-card").count()
+        assert n >= 1, (
+            f"bookmarks must resolve from the bundled JSON when Supabase is "
+            f"unreachable; got {n} cards"
+        )
+
+        panel_text = p.locator("#panel-bookmarks").text_content() or ""
+        assert "no longer in the current list" not in panel_text, (
+            "bookmarks were wrongly reported stale on an offline network: "
+            f"{panel_text[:200]!r}"
+        )
+    finally:
+        p.close()

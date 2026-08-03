@@ -147,24 +147,57 @@
       .catch(err => { console.error('vacancies load failed', err); vacancies = []; });
   }
 
-  // Mirror the vacancies page: Supabase (approved rows only) is the source of truth
-  // when configured in config.js; otherwise fall back to the committed JSON. Both
-  // paths run through enrich.js so derived fields (Days_Left, etc.) match index.html.
-  // Without this, bookmarks saved against live Supabase IDs never resolve here.
+  // Mirror index.html's fetchVacancies(): the committed JSON is the PRIMARY
+  // source (same origin, no firewall surprises) and Supabase is an enhancement
+  // layered on top.
+  //
+  // Gating on SUPABASE_READY() alone was the bug that broke this page on NIC.
+  // That predicate only checks the URL and key LOOK valid — which they do on
+  // NIC — so the Supabase branch was taken, the cross-origin fetch rejected
+  // (the resolver sinkholes supabase.co and the workers.dev proxy into a
+  // walled garden), and loadVacancies()'s .catch left `vacancies` empty. With
+  // no vacancy list to resolve against, every saved bookmark reconciled as
+  // "no longer in the current list (likely closed or removed)". Same fix as
+  // index.html got in session shq-2026-07-09-005 — reachability, not config
+  // validity, is what decides.
   function fetchVacancies() {
-    const enrich = rows => (window.DepEnrich ? window.DepEnrich.enrichAll(rows) : rows);
-    if (window.SUPABASE_READY && window.SUPABASE_READY()) {
-      const url = `${window.SUPABASE_URL}/rest/v1/vacancies?status=eq.approved&select=*`;
-      return fetch(url, {
-        headers: {
-          apikey: window.SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`
-        }
-      })
-        .then(res => { if (!res.ok) throw new Error('Supabase ' + res.status); return res.json(); })
-        .then(rows => enrich(rows || []));
+    const jsonPromise = fetch('data/vacancies.json')
+      .then(res => (res.ok ? res.json() : []))
+      .catch(() => []);
+
+    let sbPromise = Promise.resolve(null);
+    if (window.SUPABASE_READY && window.SUPABASE_READY() && window.ensureSupabaseAvailable) {
+      sbPromise = window.ensureSupabaseAvailable()
+        .then(available => {
+          if (!available) return null;
+          const url = `${window.SUPABASE_URL}/rest/v1/vacancies?status=eq.approved&select=*`;
+          return Promise.race([
+            fetch(url, {
+              headers: {
+                apikey: window.SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`
+              }
+            })
+              .then(res => (res.ok ? res.json() : null))
+              .catch(() => null),
+            new Promise(resolve => setTimeout(() => resolve(null), 4000))
+          ]);
+        })
+        .catch(() => null);
     }
-    return fetch('data/vacancies.json').then(res => res.json());
+
+    return Promise.all([jsonPromise, sbPromise]).then(([jsonRows, sbRows]) => {
+      const json = Array.isArray(jsonRows) ? jsonRows : [];
+      if (!Array.isArray(sbRows) || !sbRows.length) return json;
+      // Supabase rows are snake_case; enrichRecord promotes them to the
+      // Title_Case shape the JSON already uses. Prefer the JSON row for IDs
+      // present in both — its derived fields come from the last cron dump.
+      const jsonIds = new Set(json.map(r => String(r.Vacancy_ID)));
+      const sbOnly = sbRows
+        .map(r => (window.DepEnrich ? window.DepEnrich.enrichRecord(r) : r))
+        .filter(r => r && r.Vacancy_ID && !jsonIds.has(String(r.Vacancy_ID)));
+      return json.concat(sbOnly);
+    });
   }
 
   // ---------- Theme ----------
