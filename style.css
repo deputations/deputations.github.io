@@ -6352,11 +6352,14 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
   border: none;
   box-shadow: none;
 }
-/* Supabase unreachable (NIC walled garden): dim the bar and drop the
-   "AI-powered" chip — the placeholder now carries the explanation. */
-.ai-search-bar.is-unavailable { opacity: 0.72; }
-.ai-search-bar.is-unavailable .ai-search-glyph { animation: none; filter: none; opacity: 0.5; }
-.ai-search-bar.is-unavailable .ai-search-hint { display: none; }
+/* Supabase unreachable (NIC walled garden): dim the bar and grey out the
+   "AI-powered" chip but keep it visible so the affordance is still
+   discoverable. The input is disabled (app.js) and the placeholder now
+   carries the explanation. */
+.ai-search-bar.is-unavailable { opacity: 0.78; }
+.ai-search-bar.is-unavailable .ai-search-glyph { animation: none; filter: grayscale(1); opacity: 0.55; }
+.ai-search-bar.is-unavailable .ai-search-hint { display: inline-block; opacity: 0.55; filter: grayscale(1); pointer-events: none; }
+.ai-search-bar.is-unavailable #aiSearchInput { cursor: not-allowed; background: transparent; }
 
 .ai-search-hint {
   font-size: 0.74rem;

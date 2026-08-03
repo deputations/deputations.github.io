@@ -3515,12 +3515,16 @@ function syncCardSortUI() {
     // NIC's resolver sinkholes supabase.co (and the workers.dev proxy) into a
     // walled garden, so the AI endpoint is unreachable there. Say so in the bar
     // itself — that's where the user is about to type — instead of only in the
-    // offline banner further up the page. Placeholder swap only: the input stays
-    // typeable, and typing still surfaces the existing inline explanation.
+    // offline banner further up the page. Disable the input so the user types
+    // nothing into a dead-end box; show the unavailability message in the
+    // placeholder AND keep the AI-POWERED badge visible (greyed out via the
+    // .is-unavailable CSS) so the affordance is still discoverable.
     if (aiSearchInput && typeof window.ensureSupabaseAvailable === 'function') {
         window.ensureSupabaseAvailable().then((ok) => {
             if (ok) return;
-            aiSearchInput.placeholder = 'Unavailable in NIC network — use keyword search';
+            aiSearchInput.placeholder = 'Unavailable in NIC Network as of now - Use Keyword search instead';
+            aiSearchInput.disabled = true;
+            aiSearchInput.setAttribute('aria-disabled', 'true');
             const bar = aiSearchInput.closest('.ai-search-bar');
             if (bar) bar.classList.add('is-unavailable');
         });
