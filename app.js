@@ -585,6 +585,15 @@ function fetchVacancies() {
             return recomputeStatus(merged);
         }
         console.log('📄 Source: data/vacancies.json (Supabase unavailable / empty)');
+        // build_data.py fills most derived fields at cron time, but two fields
+        // are NOT computed there: Region (left blank by the source spreadsheet,
+        // expected to be derived from Location_State) and eligibility_tiers
+        // (left as the legacy eligibility_rules blob). backfillDerived fills
+        // those two for Title_Case JSON rows so the Region + Pay Level filters
+        // see correct data. Idempotent; safe on already-enriched rows.
+        if (window.DepEnrich && typeof window.DepEnrich.backfillDerived === 'function') {
+            json.forEach(r => window.DepEnrich.backfillDerived(r));
+        }
         return recomputeStatus(json);
     });
 }

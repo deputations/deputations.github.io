@@ -486,5 +486,37 @@
     });
   }
 
-  global.DepEnrich = { enrichRecord, enrichAll, parseTiers, isEligible, formatTiers, levelToken, acronymFor, withAcronym };
+  // Title_Case rows from data/vacancies.json are already enriched at build
+  // time by scripts/build_data.py for most derived fields — but Region and
+  // eligibility_tiers are NOT computed by the build script (build_data.py only
+  // renames snake_case → Title_Case; the source spreadsheet leaves `region`
+  // blank). `enrichRecord` would clobber a Title_Case row because mapBase()
+  // reads from snake_case keys. So for the JSON-only path we need a narrow
+  // backfill that ONLY fills the missing derived fields, leaving everything
+  // else alone. Mutates in place; safe to call on already-enriched rows.
+  function backfillDerived(row) {
+    if (!row) return row;
+    if (!norm(row.Region)) {
+      row.Region = regionForState(row.Location_State);
+    }
+    const hasTiers = Array.isArray(row.eligibility_tiers) && row.eligibility_tiers.length > 0;
+    if (!hasTiers) {
+      // parseTiers reads snake_case keys by default; the JSON has Title_Case.
+      // Build a snake_case-shaped view so parseTiers sees Req_Level1 etc.
+      const snake = {
+        req_level1: row.Req_Level1,
+        min_years_experience: row.Min_Years_Experience,
+        req_level2: row.Req_Level2,
+        min_years_experience2: row.Min_Years_Experience2,
+      };
+      const tiers = parseTiers(snake);
+      if (tiers && tiers.length) {
+        row.eligibility_tiers = tiers;
+        row.eligibility_tiers_text = formatTiers(tiers);
+      }
+    }
+    return row;
+  }
+
+  global.DepEnrich = { enrichRecord, enrichAll, parseTiers, isEligible, formatTiers, levelToken, acronymFor, withAcronym, backfillDerived, regionForState };
 })(window);
