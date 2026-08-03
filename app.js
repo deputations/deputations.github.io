@@ -3628,6 +3628,12 @@ function syncCardSortUI() {
         clearTimeout(semanticTimer);
         const q = aiSearchInput.value.trim();
         if (q.length < 3) {
+            // Cancelling the input is also "I'm done with results" — abort any
+            // in-flight request so a late-resolving fetch can't repaint the
+            // panel with stale matches after we've hidden it.
+            if (semanticInflight && semanticInflight.abort) {
+                try { semanticInflight.abort(); } catch { /* ignore */ }
+            }
             hideSemanticResults();
             return;
         }
@@ -3674,6 +3680,11 @@ function syncCardSortUI() {
             });
             // The signal may have aborted because a newer keystroke fired.
             if (ctrl.signal.aborted) return;
+            // The input may have been cleared while the fetch was in flight.
+            // Repainting now would resurrect the stale panel the user just
+            // dismissed; only render if the current input still matches the
+            // query we searched for.
+            if (!aiSearchInput || aiSearchInput.value.trim() !== query) return;
             const body = await res.json().catch(() => ({}));
             if (!res.ok || body.ok === false) {
                 if (body && body.code === 'disabled') {
