@@ -3500,6 +3500,20 @@ function syncCardSortUI() {
     const semanticResultsList = document.getElementById('semanticResultsList');
     const semanticResultsStatus = document.getElementById('semanticResultsStatus');
 
+    // NIC's resolver sinkholes supabase.co (and the workers.dev proxy) into a
+    // walled garden, so the AI endpoint is unreachable there. Say so in the bar
+    // itself — that's where the user is about to type — instead of only in the
+    // offline banner further up the page. Placeholder swap only: the input stays
+    // typeable, and typing still surfaces the existing inline explanation.
+    if (aiSearchInput && typeof window.ensureSupabaseAvailable === 'function') {
+        window.ensureSupabaseAvailable().then((ok) => {
+            if (ok) return;
+            aiSearchInput.placeholder = 'Unavailable in NIC network — use keyword search';
+            const bar = aiSearchInput.closest('.ai-search-bar');
+            if (bar) bar.classList.add('is-unavailable');
+        });
+    }
+
     function hideSemanticResults() {
         if (semanticResults) semanticResults.hidden = true;
         if (semanticResultsList) semanticResultsList.innerHTML = '';
