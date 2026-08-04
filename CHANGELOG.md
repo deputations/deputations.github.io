@@ -31,143 +31,386 @@ _(nothing yet — append here during the cycle, then cut a dated release)_
 ---
 
 ## [7.2.0] — 2026-08-04
+**Theme: the NIC verdict.** The reverse proxy built in 7.0.0 was finally
+tested from inside a NIC office machine. It does not work there. This
+release records that finding and makes the dashboard say so honestly.
+
 - counter: `app.js?v=ms58` `style.css?v=ms58` `site-widgets.js?v=25`
-- AI bar states the NIC block in its own placeholder instead of relying on
-  a page-level notice — `01b78a9`
-- NIC verification from inside the network: `*.workers.dev` is **DNS-
-  sinkholed** into NIC's walled garden (`e.wg.restricted.in` →
-  `e.walledgarden.nic.in` → `10.40.124.9`, SOA
-  `phishing.domain.clean-pipe.in`), same as `*.supabase.co`. The whole
-  `workers.dev` apex is blocked as a category, so the reverse proxy from
-  7.0.0 does not work on NIC — `fc15248`
-- ⚠ correction to earlier notes: the NIC failure is DNS-level, not the
-  TLS-interception described in 6.1.0. Requests never reach a handshake.
-  `alldeputations.com` itself resolves fine, which is why a custom domain
-  on the apex remains the candidate fix.
+
+**Changed**
+- The AI search bar now carries its own unavailability notice in the
+  placeholder — "Unavailable in NIC network — use keyword search" — with the
+  bar dimmed and the "AI-POWERED" badge dropped. Previously the only signal
+  was a page-level banner above the KPI grid, far from where the user was
+  about to type — `01b78a9`
+
+**Verified (P3-7 PR 2 — NEGATIVE result)**
+- `sb-proxy.ncrsarkarishaadi.workers.dev` is unreachable from NIC. Two
+  independent test runs from inside the network agree on the outcome and
+  describe the same block at different layers — `fc15248`
+  - **Where it starts (DNS):** NIC's resolver sinkholes the request into its
+    walled garden — `sb-proxy.…workers.dev` → CNAME `e.wg.restricted.in` →
+    CNAME `e.walledgarden.nic.in` → A `10.40.124.9`, with SOA
+    `phishing.domain.clean-pipe.in`. The **entire `workers.dev` apex** is
+    blocked, not just this subdomain: the bare apex and
+    `ncrsarkarishaadi.workers.dev` resolve to the same sinkhole.
+  - **How the browser reports it (TLS):** Chrome logs four
+    `net::ERR_SSL_PROTOCOL_ERROR` entries against the proxy host — the
+    sinkhole answers on 443 but cannot present a valid certificate for the
+    requested name. Same event, one layer up.
+  - **Scope:** `cloudflare.com` and `cloudflareworkers.com` resolve
+    normally, so Cloudflare is not blocked as an operator —
+    `workers.dev` is blocked as a *category* (free app-hosting). Swapping
+    Supabase for a Worker traded one blocklisted domain for another.
+- Dashboard behaviour on NIC is correct and usable: `ensureSupabaseAvailable()`
+  returns false, the same-origin `data/vacancies.json` snapshot loads all 384
+  vacancies, filters and sorting work, bookmarks persist locally.
+- What is lost on NIC: live data freshness (up to 24 h stale), the visitor
+  counter (hidden by the 3-strike breaker), AI search, and server-side
+  sentiment votes (the heart fills optimistically but the RPC never lands).
+
+**Notes**
+- ⚠ This supersedes the diagnosis carried since 6.1.0 that NIC runs an
+  SSL-inspecting middlebox defeating TLS 1.3 + post-quantum + ECH. The
+  handshake failure is real but it is a *symptom*; the block originates at
+  DNS. `workers/sb-proxy/README.md` still describes the old theory.
+- `alldeputations.com` itself resolves normally on NIC. Because the block is
+  per-domain categorisation, a `api.alldeputations.com` custom domain
+  inherits an already-uncategorised apex — which makes the Wix → Cloudflare
+  apex migration the actual candidate fix rather than a hopeful one. Still
+  unproven: SNI-level filtering has not been ruled out.
+- Side effect worth knowing: any other site on `*.workers.dev` is equally
+  unreachable from NIC machines.
 
 ---
 
 ## [7.1.0] — 2026-08-03
-- counter: `app.js?v=ms55` `style.css?v=ms57` `site-widgets.js?v=24`
-  `config.js?v=sb3` `my-deputation.js?v=sb6`
-- fix: collapsed-filters `grid-template-areas` sat outside its
-  `@media (min-width: 769px)` gate, so phones rendered a 34px sidebar with
-  the whole dashboard crammed into a 293px column — `065c6d9`
-- ultra-wide monitors (≥1600px) open with the filters sidebar expanded;
-  inline boot script before first paint, no flash — `d8acead`
-- AI search relevance readout: raw cosine rescaled from the band the corpus
-  actually occupies onto 0-100%, drawn as a percentage over a proportional
-  bar, raw value on hover — `0f9c634`
-- AI retrieval switched to asymmetric embeddings (`RETRIEVAL_DOCUMENT` for
-  the corpus, `RETRIEVAL_QUERY` for the query), gated on
-  `semantic_search_state.embed_task_type` so mismatched vector spaces can't
-  occur — `0f9c634`
-- relevance band recalibrated against the re-embedded corpus:
-  `RELEVANCE_FLOOR` 0.55 / `RELEVANCE_CEIL` 0.73, measured from live
-  queries — `57cf770`
-- fix: result sub-line was HTML-escaped twice ("Small &amp;amp; Medium")
-  — `0f9c634`
-- offline-mode banner removed entirely; the AI bar carries the notice —
-  `55f004b`, `95d76c4`
-- fix: `my-deputation.html` bookmarks reconciled against an empty list when
-  Supabase was unreachable, reporting every bookmark as "no longer in the
-  current list". Same JSON-primary fix `index.html` got in 5.0.0 — `9f20e09`
-- fix: Region filter blank + identical Pay Level counts — `backfillDerived`
-  now runs on JSON rows in both branches — `e3b3139`, `0aef1b6`
-- fix: AI results panel now clears when the input is emptied — `1f738e9`
-- fix: `SB_OK` rejected the proxy URL, so the feedback heart no-opped on
-  production — `8f302dc`
-- ci: removed the `gh-pages` mirror step from `build-data.yml` — it had
-  failed on every run and the branch is dormant — `0465bef`
-- docs: Cloudflare Workers Free plan downgrade noted — `a15845c`
+**Theme: making the AI search number mean something, plus a run of layout
+and offline-path fixes.** The largest single-day release so far.
+
+- counter: `app.js?v=ms56` `style.css?v=ms57` `site-widgets.js?v=24`
+  `config.js?v=sb3` `my-deputation.js?v=sb6` `enrich.js?v=sb14`
+
+**Layout**
+- fix: **the mobile dashboard was squeezed into a 34px strip.** The
+  collapsed-filters `grid-template-areas` override — added alongside the AI
+  search row — sat *outside* the `@media (min-width: 769px)` gate that scopes
+  the rest of that experiment. `filters-collapsed` is the default body class,
+  so on phones `.main-layout` grew an implicit second column: the sidebar
+  collapsed to its 34px min-width (padding + border, contents clipped by
+  `overflow:hidden`) and the KPI strip, AI bar, toolbar and vacancy list were
+  all crammed into a 293px column beside it. Verified at 375 / 768 / 1440 CSS
+  px with no horizontal overflow — `065c6d9`
+- **Ultra-wide monitors open with the filters sidebar expanded.** Ministry
+  desktops are commonly 1920px+, where the full sidebar and the whole table
+  fit side by side; the compact "My Pay Level" card was leaving that room
+  unused and hiding eight filters behind a click. An inline boot script runs
+  before first paint (no collapsed→expanded flash) and drops the body class
+  at `min-width: 1600px` — the point where 300px of sidebar plus the table's
+  1100px intrinsic width still clears the container padding. Toggling remains
+  a per-visit choice; nothing is persisted — `d8acead`
+
+**AI search**
+- **Relevance is now a calibrated percentage, not raw cosine similarity.**
+  The old display showed the bare number, so an exact post-name match read
+  "0.64" and looked like a failure. It wasn't: each vacancy is embedded as
+  its *whole record* (post name + ministry + location + level + eligibility +
+  job description, ~100 words), so a five-word query only ever overlaps a
+  fraction of it. The scale has both a low ceiling and a high floor. The band
+  the corpus actually occupies is now rescaled onto 0-100% and clamped, drawn
+  as a percentage over a proportional bar, with raw cosine on hover —
+  `0f9c634`
+  - An intermediate attempt normalised against the top hit (best = 100%,
+    rest in proportion). Rejected after testing: it compressed everything
+    into 75-100% and made an unrelated Director General read 90%.
+- **Retrieval switched to asymmetric embeddings** — `RETRIEVAL_DOCUMENT` for
+  the corpus, `RETRIEVAL_QUERY` for the query — instead of leaving both on
+  the API default, which is tuned for comparing texts of similar shape.
+  Vectors from different task types are not comparable, so
+  `build_embeddings.py` records the task type it used in
+  `semantic_search_state.embed_task_type` on *complete runs only*, and the
+  Edge Function reads that key before deciding what to send. A half-finished
+  migration degrades to the previous behaviour rather than returning
+  nonsense — `0f9c634`
+- **Relevance band recalibrated against the re-embedded corpus:**
+  `RELEVANCE_FLOOR` 0.55, `RELEVANCE_CEIL` 0.73. Measured from live queries —
+  exact-title matches peak at 0.704 / 0.713 / 0.727, while nonsense and
+  off-domain queries still peak at 0.531 / 0.544 / 0.553 (a query the corpus
+  can't answer still returns its ten nearest rows, which is why the floor
+  sits there). Sample results after: "senior vice president in finance" →
+  86 / 37 / 28 / 21 / 16; a nonsense query → all 0% — `57cf770`
+  - The corpus re-embed happened unnoticed: `build-data.yml` has a push
+    trigger on `paths: scripts/**`, so committing `build_embeddings.py`
+    re-embedded everything immediately.
+- fix: the result sub-line was HTML-escaped twice — parts were escaped
+  individually and then escaped again on join — rendering "Micro, Small
+  &amp;amp; Medium Enterprises" — `0f9c634`
+- fix: the ranked-matches panel didn't clear when the input was emptied
+  (a race against the in-flight fetch) — `1f738e9`
+
+**Offline / NIC path**
+- **The offline-mode banner was removed entirely.** A once-daily vacancy
+  refresh doesn't warrant a persistent notice; the AI bar now carries the
+  only message that mattered. Markup, CSS and both JS call sites that unhid
+  it are gone; the `is-supabase-down` body class remains, since the AI bar's
+  dimming hooks off it — `55f004b`, `95d76c4`
+- fix: **`my-deputation.html` bookmarks vanished on blocked networks.** The
+  page reported "N bookmarked vacancies are no longer in the current list
+  (likely closed or removed)" while the header still counted them.
+  `fetchVacancies()` branched on `SUPABASE_READY()`, which only checks the
+  URL and anon key *look* valid — they do on NIC, where the block is a DNS
+  sinkhole, not a malformed config. So it took the Supabase branch, the
+  cross-origin fetch rejected, `loadVacancies()`'s `.catch` left `vacancies`
+  empty, and reconciliation against an empty list marked every bookmark
+  stale. Now JSON-primary with Supabase gated on the reachability probe —
+  the same fix `index.html` received in 5.0.0 — `9f20e09`
+- fix: **the feedback heart no-opped on production.** `site-widgets.js`'s
+  `SB_OK` used a hard-coded `supabase.co` regex that rejected the
+  `workers.dev` proxy URL introduced in 7.0.0; it now delegates to
+  `SUPABASE_READY()` — `8f302dc`
+
+**Data / filters**
+- fix: **Region filter blank and every Pay Level count identical.** A
+  regression from `c9557e4` (5.0.0), which removed the JSON enrichment step
+  and never restored it — `build_data.py` does not compute `Region` or
+  `eligibility_tiers`. Added `enrich.js#backfillDerived`, a narrow
+  Title_Case-aware backfill, called on JSON rows in **both** fetch branches
+  (the first fix only patched one) — `e3b3139`, `0aef1b6`
+
+**Infrastructure**
+- ci: **removed the "Mirror data onto gh-pages" step** from
+  `build-data.yml`. It had failed on **all 21 runs since it was introduced**
+  — it never once succeeded. Two stacked bugs: the bootstrap fallback ran
+  under `bash -e`, where `git branch -D gh-pages` exits 1 on a missing branch
+  and kills the subshell before the worktree add is reached; and even if
+  reached, `--detach` and `-b` are mutually exclusive. Removed rather than
+  repaired, because nothing consumes `gh-pages`: `astro-build.yml` publishes
+  an uploaded artifact rather than a branch, the Astro build reads
+  `data/vacancies.json` at *build* time so a mirrored file couldn't refresh
+  generated pages anyway, and that workflow has never run. First green
+  build-data run since 2026-07-29 followed — `0465bef`
+- `sb-proxy` downgraded from Workers Paid ($5/mo) to Free. The paid plan was
+  only needed for WebSocket egress, and the live Realtime toast is redundant
+  given the 60 s polling fallback — `a15845c`
 
 ---
 
 ## [7.0.0] — 2026-08-02
-- P3-7 PR 2: Cloudflare Worker reverse proxy at `workers/sb-proxy/`,
-  transparent pass-through for REST / RPC / Edge Functions / Realtime —
-  `9ed284c`
-- `config.js` rewrites `SUPABASE_URL` to the Worker when the page is served
-  from `alldeputations.com`; every other host keeps the direct URL
-- deployed to `sb-proxy.ncrsarkarishaadi.workers.dev` — `dab4e24`
-- ⚠ `api.alldeputations.com` as a Workers Custom Domain is **blocked at the
-  zone level**: the apex is on Wix DNS, not this Cloudflare account. No
-  token scope fixes it; the zone has to migrate first — `04554da`
+**Theme: a network-layer attempt to reach Supabase from inside NIC.**
+Superseded by 7.2.0, which found the approach doesn't work there.
+
+**Added**
+- **Cloudflare Worker reverse proxy** at `workers/sb-proxy/` — a transparent
+  pass-through that forwards every request to Supabase unchanged: apikey,
+  Authorization header, body and query string all preserved, with CORS
+  layered on top so the browser doesn't see a missing
+  `Access-Control-Allow-Origin` on Edge Function responses. Covers all four
+  surfaces the dashboard uses: REST tables, RPC, Edge Functions, and
+  Realtime WebSocket upgrade — `9ed284c`
+  - `cf-*`, `x-forwarded-for` and `Host` are stripped on the way upstream;
+    `Set-Cookie` and HSTS are stripped on the way back.
+  - Upstream failure returns a 502 with CORS intact rather than a bare
+    network rejection.
+  - 7 unit tests (plain `node --test`, no Playwright) cover GET/POST
+    forwarding, header stripping in both directions, the 502 path, and the
+    WebSocket upgrade.
+- `config.js` rewrites `window.SUPABASE_URL` to the Worker when the page is
+  served from `alldeputations.com` (or its `www` variant); every other host
+  — github.io, localhost, dev — keeps the direct Supabase URL. One URL that
+  flips itself by hostname, so no call site needed editing.
+- Deployed to `sb-proxy.ncrsarkarishaadi.workers.dev` and verified end to
+  end from a home network — `dab4e24`
+
+**Notes**
+- ⚠ The intended host was `api.alldeputations.com`. That is **blocked at the
+  zone level, not merely pending**: Workers Custom Domains require the apex
+  zone to be on Cloudflare, and `alldeputations.com` is on Wix DNS
+  (`ns10/11.wixdns.net`). Confirmed via the Cloudflare API —
+  `/zones?name=alldeputations.com` returns `total_count: 0`. A new API token
+  with `Zone:DNS:Edit` would be necessary but **not sufficient**; the zone
+  itself has to migrate first — `04554da`
+- The reasoning that justified the workers.dev host — that it sits on "the
+  same Cloudflare trust path" as `alldeputations.com` — turned out to be
+  wrong. NIC filters by domain category, not by trust path. See 7.2.0.
 
 ---
 
 ## [6.1.0] — 2026-07-31
+**Theme: AI semantic search ships, plus the first NIC-aware behaviour.**
+
 - counter: `app.js?v=ms46` `style.css?v=ms52`
-- P3-6 FAQ discrepancy reporting: migration `0015_faq_discrepancies.sql`,
-  `submit` Edge Function branches, `faq.html` wiring — `d867634`,
+
+**Added — AI semantic search (P3-3, four PRs)**
+- Migration `0016_semantic_search.sql`: the `pgvector` extension,
+  a `vacancy_embeddings` table (vacancy_id PK, `vector(768)`, model,
+  updated_at), an HNSW cosine index, a `semantic_search_state` key/value
+  table for the soft-disable flag, and a `search_vacancies()` RPC
+  (SECURITY DEFINER, granted to anon) that returns top-K by cosine distance
+  and filters the join to `status in ('Active','approved')` — `8f85d52`
+- `scripts/build_embeddings.py`: bulk-embeds ACTIVE vacancies with Gemini
+  `gemini-embedding-001`, truncated to 768 dims via `outputDimensionality`,
+  and upserts them via PostgREST. Runs in the daily cron. On HTTP 429 it
+  writes `disabled_until = tomorrow 00:00 UTC` and exits cleanly; the next
+  successful run clears the flag.
+- `semantic-search` Edge Function: embeds the visitor's query, calls the
+  RPC, hydrates the results with public vacancy fields, and returns them
+  with a score. Free-tier guards on both ends — a cheap DB pre-check before
+  any Gemini call, auto-disable on 429, and a 200-entry in-memory LRU that
+  dedupes repeat queries — `ff83c06`
+- PR 4 relocated the UI: the sidebar `✨ AI` toggle chip was replaced by a
+  dedicated full-width search bar directly below the KPI grid. AI search is
+  now always-on with no toggle, and the sidebar keyword input remains a
+  separate, independent path — `87d32c8`, `4053a67`
+- Ships with a documented **negative**: the score shown was raw cosine
+  similarity, which reads far lower than users expect. Addressed in 7.1.0.
+
+**Added — FAQ discrepancy reporting (P3-6)**
+- Migration `0015_faq_discrepancies.sql`, new branches in the `submit` Edge
+  Function, and `faq.html` wired to Supabase so readers can flag incorrect
+  answers; friendlier empty/error copy on the public list — `d867634`,
   `f2478f3`, `66318e3`
-- P3-3 semantic search: migration `0016_semantic_search.sql` (pgvector,
-  `vacancy_embeddings`, HNSW cosine index, `search_vacancies()` RPC,
-  `semantic_search_state` soft-disable flag) — `8f85d52`
-- P3-3: `scripts/build_embeddings.py` (ACTIVE-only, Gemini
-  `gemini-embedding-001` truncated to 768 dims, 429 → auto-disable)
-- P3-3: `semantic-search` Edge Function with free-tier guards + in-memory
-  LRU — `ff83c06`
-- P3-3 PR 4: AI search relocated from a sidebar chip to a dedicated
-  full-width bar below the KPI grid; always-on, no toggle — `87d32c8`,
-  `4053a67`
-- P3-3 fixes: `vacancy_id` alignment, Gemini `embedContent` URL, PostgREST
-  upsert via POST + merge-duplicates — `2f3d9e5`, `3d13d58`, `55b479c`
-- P3-7 PR 1: one-time reachability probe (`ensureSupabaseAvailable`) +
-  offline-mode banner; feedback widget renders unconditionally —
-  `061b503`, `58215de`
-- P3-7 PR 3: bookmark UX — header pulse, "stored on this device" hint,
-  count-aware aria-label, watchlist smoke tests — `bb54b91`
+
+**Added — NIC awareness (P3-7 PR 1)**
+- `window.ensureSupabaseAvailable()`: a one-time HEAD probe to `/rest/v1/`
+  with a 2 s timeout. Any HTTP response — even a 401 — means the connection
+  completed; a rejection means Supabase is unreachable from this network.
+  Every Supabase consumer can now short-circuit instead of retrying, which
+  is what silenced the console spam on locked-down networks — `061b503`
+- An offline-mode banner appeared when the probe failed (removed again in
+  7.1.0 once the AI bar carried the message itself).
+- fix: the feedback widget's heart and thumbs-down are rendered
+  unconditionally. Gating them on the probe hid controls users expected to
+  be there — `58215de`
+
+**Changed**
+- P3-7 PR 3 bookmark UX: header pulse on first bookmark, a "stored on this
+  device" hint so nobody expects cross-browser sync, a count-aware
+  aria-label, and watchlist smoke tests — `bb54b91`
+
+**Fixed**
+- `vacancy_embeddings.vacancy_id` aligned with the `vacancies` table —
+  `2f3d9e5`
+- Gemini `embedContent` URL was malformed — the `/` before the model name
+  and the `:embedContent` suffix are both required, and Gemini returns a
+  404 with an empty body if either is missing — `3d13d58`
+- PostgREST upsert used PATCH-with-filter, which only updates matching rows
+  and therefore no-opped against an empty table. Switched to POST +
+  `Prefer: resolution=merge-duplicates` — `55b479c`
 
 ---
 
 ## [6.0.0] — 2026-07-30
-- P2-1: Astro scaffold — `Layout`, `Navbar`, `IconSprite`, `Footer`,
-  `astro-build.yml` deploying to `gh-pages` — `c2d995c`
-- P2-2: all 8 pages ported via `InlinePageBody` (reads the static HTML at
-  build time) + 404 redirector for legacy `/foo.html` URLs — `6c95e01`
-- P2-3: per-vacancy static pages with `JobPosting` JSON-LD;
-  `scripts/build_sitemap.py` emits 392 URLs — `eb349e3`
-- P2-4: build-time OG images, Pillow 1200×630 per vacancy, `og/`
-  gitignored — `277f1d6`
-- P3-5: Apps Script runtime fallback retired — Supabase `submit` is now the
-  single backend for every form — `411206c`
-- P3-4: Playwright smoke suite across 5 PRs — index, defex,
-  report-vacancy, contact, my-deputation, faq, rules, admin login,
-  redirects, plus a constants drift guard — `c5366ba`, `b027e5d`,
-  `8791f0a`, `98f800a`, `6dc4658`
-- push-client: themed the pay-level `<select>` options — `885b4f7`
-- ⚠ GitHub Pages still serves `main`; the Astro build lands on `gh-pages`
-  and is dormant until the source is switched by hand
+**Theme: an Astro port for SEO, and the first automated test coverage.**
+
+**Added — Astro port (P2, four checkpoints)**
+- P2-1 scaffold: `Layout.astro` (one source of truth for `<head>`, theme
+  bootstrap, skip-link, scroll-progress), `Navbar.astro` (auto-active via
+  `Astro.url.pathname`, replacing eight hand-rolled copies),
+  `IconSprite.astro` (all 26 icon symbols in one place, previously pasted
+  into every HTML file), `Footer.astro`, and an `astro-build.yml`
+  workflow — `c2d995c`
+- P2-2: all 8 pages ported. `InlinePageBody.astro` reads each static HTML
+  file at build time and strips scripts/links, so every Astro page stays
+  30-50 lines instead of duplicating 300-3000 lines of markup — edits to
+  the static HTML propagate on rebuild. Internal links are rewritten from
+  `/foo.html` to `/foo/` to match Astro's directory output, and a 404 page
+  redirects legacy bookmarks — `6c95e01`
+- P2-3: **per-vacancy static pages** — one `dist/vacancy/<id>/index.html`
+  per row, each carrying `JobPosting` JSON-LD (datePosted, validThrough,
+  hiringOrganization with parentOrganization for the ministry, jobLocation,
+  and qualifications assembled from the eligibility fields). Status is
+  recomputed per page rather than trusting the JSON's stale `Status`
+  string. `scripts/build_sitemap.py` regenerates a 392-URL sitemap on every
+  cron run — `eb349e3`
+- P2-4: **build-time OG images** — one 1200×630 PNG per vacancy rendered
+  with Pillow (brand gradient strip, wordmark, post name, ministry, and
+  level/location/closing-date pills). Chosen over satori+resvg to avoid a
+  heavy npm stack, since Pillow was already a cron dependency. `og/` is
+  gitignored — 14 MB of PNGs daily would bloat git history — `277f1d6`
+
+**Added — test coverage (P3-4, five PRs)**
+- Playwright smoke suite covering index, defex, report-vacancy, contact,
+  my-deputation, faq, rules, the admin login, and redirects — plus a drift
+  guard asserting `tests/fixtures/constants.py` still mirrors `config.js`,
+  so stubs can never silently point at the wrong Supabase project —
+  `c5366ba`, `b027e5d`, `8791f0a`, `98f800a`, `6dc4658`
+
+**Removed**
+- P3-5: the Apps Script runtime fallback is retired. The Supabase `submit`
+  Edge Function is now the single backend for every form and the visitor
+  counter. Failures surface immediately instead of being silently masked by
+  a second path — `411206c`
+
+**Fixed**
+- push-client: the pay-level `<select>` options were unthemed and unreadable
+  in dark mode — `885b4f7`
+
+**Notes**
+- ⚠ GitHub Pages still serves `main`. The Astro build is complete but
+  **inert** — and, as discovered in 7.1.0, its workflow has never run at
+  all: it triggers on push to an `astro` *branch* that has never existed
+  (the port lives in the `astro/` *directory* on main).
 
 ---
 
 ## [5.0.0] — 2026-07-28
-- ⚠ breaking: canonical domain switched to **alldeputations.com**. `CNAME`
-  added; every canonical / `og:url` / `og:image` / `twitter:image`, all 16
-  `feed.xml` URLs, all 8 `sitemap.xml` locs and the push-client hint
-  rewritten — `912380c`
-- fix: vacancies failed to load on NIC networks. `fetchVacancies()` flipped
-  to JSON-primary with Supabase as an enhancement behind a 4 s timeout;
-  `rpc()` gained a 3-strike circuit breaker that hides the visitor counter
-  — `5379c9e`
-- fix: the daily cron dumped a stale Google Sheet (53 rows / 0 active) while
-  live Supabase served 384 / 75. `build_data.py` now reads Supabase first
-  and falls back to the Sheet — `f2928d2`
-- fix: enrich-merge shape mismatch — JSON rows win for shared IDs,
-  Supabase-only rows go through `enrichRecord`, and `Status` is recomputed
-  client-side from `last_date_to_apply` — `c9557e4`
-- fix: service worker registered on `alldeputations.com` (was gated to
-  `deputations.github.io`) — `dbdd063`
-- fix: clicking the "Total Vacancies" KPI shows all rows — `4953955`
-- P3-1: "N new vacancies since you opened" toast — Supabase Realtime WS
-  with a 60 s polling fallback that works on every network — `894339d`
-- docs: AI session-continuity framework — `HANDOVER.md`, `TECHNICAL.md`,
-  `CHANGELOG.md` — `05aeec3`, `a156143`
+**Theme: a new domain, and a hard week of data-layer reliability work.**
+Users on government networks were seeing an empty dashboard; everyone else
+was seeing month-old data. Both are fixed here.
+
+**Breaking**
+- ⚠ **Canonical domain switched to `alldeputations.com`.** `CNAME` added at
+  the repo root, and every user-facing URL rewritten: canonical, `og:url`,
+  `og:image` and `twitter:image` across all pages, all 16 URLs in
+  `feed.xml`, all 8 `sitemap.xml` locs, the fake browser-chrome captions in
+  the manual, and the push-client hint text. The share/JSON-LD builders in
+  `app.js` were deliberately left alone — they already use
+  `window.location.origin` — `912380c`
+
+**Fixed**
+- **Vacancies failed to load on NIC networks.** Two causes: the SSL-blocked
+  Supabase calls, and a code bug — `fetchVacancies()` only fell back to JSON
+  when `SUPABASE_READY()` was false, which is *true* on NIC (the config is
+  valid, the network isn't), so the fallback never ran. Rewritten so the
+  same-origin JSON is the primary source and Supabase is an enhancement
+  behind a 4 s timeout, merged by `Vacancy_ID`. Separately, `rpc()` gained a
+  3-strike circuit breaker that stops retrying and hides the visitor counter
+  pill, ending 12+ console errors per minute — `5379c9e`
+- **The daily cron was publishing a stale Google Sheet.** It dumped 53 rows
+  / 0 active while live Supabase served 384 / 75 — the Sheet was the
+  project's original manual-entry source, but admin approvals had been
+  writing to Supabase for months. `build_data.py` now fetches from Supabase
+  first (32 columns translated snake_case → Title_Case) and falls back to
+  the Sheet only if that fails, raising loudly if both do. The anon key
+  suffices, since RLS already limits it to approved rows — `f2928d2`
+- **Rows rendered blank with `Status: Unknown`.** The merge passed every row
+  through `enrichAll()`, but `enrichRecord()` reads snake_case keys while
+  JSON rows are Title_Case — so untouched JSON rows came out with empty
+  derived fields. Now handled per case: JSON-only rows are kept as-is
+  (already enriched by the build script), Supabase-only rows go through
+  `enrichRecord()`, and shared IDs prefer the JSON row. `Status` is also
+  recomputed client-side from `last_date_to_apply`, so the count stays
+  honest between cron runs instead of decaying for 24 h — `c9557e4`
+- The service worker registered only on `deputations.github.io`, so the PWA
+  was dead on the new domain — `dbdd063`
+- Clicking the "Total Vacancies" KPI card now shows all rows — `4953955`
+
+**Added**
+- P3-1: **"N new vacancies since you opened" toast.** Two layers — a
+  Supabase Realtime WebSocket for instant delivery, and 60 s polling on
+  `data/vacancies.json` as a universal fallback. The polling layer is the
+  one that matters: it is same-origin and therefore works on every network,
+  including NIC, where the WebSocket cannot connect — `894339d`
+- docs: the AI session-continuity framework — `HANDOVER.md`,
+  `TECHNICAL.md`, `CHANGELOG.md` — `05aeec3`, `a156143`
 
 ---
 
 ## [4.0.0] — 2026-07-09
+**Theme: the site becomes installable and starts reaching out.** PWA
+plumbing, syndication, web push alerts, and the accessibility/mobile
+backlog (P0) cleared in one batch.
+
 - counter: `app.js?v=ms33` `style.css?v=ms53` `site-widgets.js?v=21`
 - new asset: `manifest.webmanifest` (installable PWA)
 - new asset: `sw.js` (service worker, origin-gated registration,
@@ -211,6 +454,11 @@ _(nothing yet — append here during the cycle, then cut a dated release)_
 ---
 
 ## [3.0.0] — 2026-05-30
+**Theme: Supabase replaces the spreadsheet, and AI takes over data entry.**
+The largest architectural change in the project's history — from a
+Sheets-driven static dump to a real backend with an AI extraction pipeline
+and a human review queue in front of it.
+
 - counter: `app.js?v=sb1` `style.css?v=ms12`
 - supabase edge functions: `submit` (public forms, honeypot),
   `extract` (Gemini PDF → draft), `enrich` (Gemini + Google Search
@@ -239,6 +487,10 @@ _(nothing yet — append here during the cycle, then cut a dated release)_
 ---
 
 ## [2.0.0] — 2026-05-26
+**Theme: visual identity and reference content.** The dashboard gains its
+dark-first look and the rules/FAQ material that turns it from a listing into
+something officers can actually act on.
+
 - counter: `app.js?v=sb1` `style.css?v=sb1`
 - dark default theme with light variant (no FOUC, `data-theme` attribute
   + inline bootstrap script) — `8ab790e`
@@ -253,6 +505,13 @@ _(nothing yet — append here during the cycle, then cut a dated release)_
 ---
 
 ## [1.0.0] — 2026-04-15
+**Theme: the original static dashboard.** Everything built in one day — a
+Google Sheet as the database, a Python script to flatten it into JSON, a
+GitHub Action to run that daily, and vanilla HTML/CSS/JS to render it. No
+build step, no framework, no backend. That shape survives today: the JSON
+snapshot this release introduced is still the primary data source, and it's
+the reason the site works on networks that block everything else.
+
 - counter: `?v=1`
 - pages: `index.html`, `dex.html` (later renamed `defex.html`),
   `rules.html`, `report-vacancy.html`, `contact.html`,
