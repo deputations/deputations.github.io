@@ -3108,3 +3108,155 @@ focus:         (1) Region filter blank + Pay Level identical counts
 3. **Append the next shq block** (e.g. `shq-2026-08-04-NNN`) with
    the workers.dev downgrade + NIC findings. Commit + push.
 
+## session shq-2026-08-04-002 (P3-7 PR 2 NIC verification — final outcome)
+```
+started:       2026-08-04
+model:         claude-opus-4-8
+driver:        solo
+branch:        main
+starting_head: 01b78a9
+ending_head:   <this commit>
+focus:         NIC verification of P3-7 PR 2 (the deferred task from
+               shq-2026-08-02-009). User installed Claude Desktop on
+               a NIC office machine and ran the dashboard live +
+               DevTools Network panel + Console.
+```
+
+### inbound context read
+- HANDOVER shq-2026-08-04-001 (filter / heart / AI fixes + Free
+  downgrade + the deferred NIC verification)
+- WEBSITE-REVIEW.md §3 latest row (the four fixes + Free downgrade)
+- `workers/sb-proxy/README.md` (current state: Free plan)
+- `config.js#SUPABASE_URL` rewrite on alldeputations.com
+- `site-widgets.js#SB_OK` (now delegates to SUPABASE_READY())
+- `app.js#ensureSupabaseAvailable()` probe
+
+### NIC verification result (definitive)
+
+User opened `https://alldeputations.com/` from a NIC office machine
+in an incognito window and ran the dashboard live. Network panel +
+Console screenshots captured on NIC desktop.
+
+**Observations:**
+
+1. Console (4 red errors):
+   ```
+   Failed to load resource: sb-proxy.ncrsarkarishaadi.../v1/rpc/heartbeat:1
+     net::ERR_SSL_PROTOCOL_ERROR
+   Failed to load resource: sb-proxy.ncrsarkarishaadi.../v1/rpc/bump_visit:1
+     net::ERR_SSL_PROTOCOL_ERROR
+   Failed to load resource: sb-proxy.ncrsarkarishaadi.../rpc/get_sentiment:1
+     net::ERR_SSL_PROTOCOL_ERROR
+   Failed to load resource: sb-proxy.ncrsarkarishaadi.../rest/v1/:1
+     net::ERR_SSL_PROTOCOL_ERROR
+   ```
+   The TLS handshake to `sb-proxy.ncrsarkarishaadi.workers.dev` is
+   killed at the middlebox — same root cause as the direct Supabase
+   URL. **NIC's allow-list covers `alldeputations.com` (the static
+   site) but not `*.workers.dev`.**
+
+2. App.js log: `Source: data/vacancies.json (Supabase unavailable /
+   empty)` — `ensureSupabaseAvailable()` returned false, the
+   same-origin JSON fallback ran. `Loaded 384 vacancies` from the
+   bundled snapshot. Dashboard is fully populated on NIC.
+
+3. Heart click visual: filled with red gradient, count went from `—`
+   to `1` (local optimistic +1 in the click handler). Vote did NOT
+   reach Supabase — `record_sentiment` RPC also failed at TLS.
+   Count stayed at `1` after 5 minutes because the optimistic local
+   value isn't overwritten by `r.ups` (RPC never returned).
+
+4. Visitor counter pill: hidden. The 3-strike breaker in
+   `site-widgets.js#rpc()` flipped `SB_OK=false` after the third
+   consecutive failure (heartbeat + bump_visit + get_sentiment).
+   This is by design (P3-7 PR 1 fix).
+
+5. AI bar: shows the new "Unavailable in NIC Network as of now - Use
+   Keyword search instead" placeholder, input disabled, AI-POWERED
+   badge greyed. From the previous user screenshot in shq-001.
+
+**Outcome classification:**
+
+- ❌ P3-7 PR 2 does NOT work end-to-end on NIC — the proxy URL
+  `*.workers.dev` is not on NIC's middlebox allow-list.
+- ❌ AI search (which goes through the same proxy) does NOT work on
+  NIC — placeholder text only.
+- ✅ Dashboard table + filters + bundled JSON fallback all work on
+  NIC — 384 vacancies populate, Region + Pay Level + other filters
+  all functional. PR 2's FILTER/HEART/AI improvements are invisible
+  on NIC until the apex zone migration lands.
+- ✅ Heart click is local-only on NIC: visually fills, count
+  increments by 1, no Supabase record. Acceptable; explicit design
+  choice from PR 1 (3-strike breaker + offline banner).
+- ✅ P3-7 PR 2 works on regular networks (verified 2026-08-04 from
+  localhost by the user — heart click → `record_sentiment` →
+  live count update).
+
+### decisions
+
+- **Document the workers.dev block, do NOT pivot.** Considered
+  switching to a Cloudflare Access proxy on `alldeputations.com`
+  itself, but the apex zone is on Wix DNS (not Cloudflare) — that
+  migration is the same blocker as task #20, and is parked
+  ~2026-10-02 per cron reminder `2ddab249`. Path B doesn't close
+  the NIC gap.
+- **Heart stays local-only on NIC.** Acceptable behaviour given the
+  fallback design. The previous session explicitly chose this path.
+- **No code change.** P3-7 PR 2's goal was to give NIC users a path
+  to live Supabase; that path requires the apex on Cloudflare first.
+  Until then, NIC users get the bundled JSON snapshot — which is
+  what they were getting anyway, just now without the
+  ERR_SSL_PROTOCOL_ERROR spam (PR 1 fix + the SB_OK fix in
+  shq-2026-08-04-001).
+
+### gotchas for next session
+
+- **Don't waste tokens trying to reach `*.workers.dev` from NIC.**
+  The middlebox blocks it at TLS. The dashboard is silent on the
+  failure path (PR 1 fix). The user knows.
+- **The 100k-requests/day Free quota is fine forever.** Verified by
+  Cloudflare billing card: $0.00 billable usage. The Workers Paid
+  upgrade I previously thought was active was already auto-reverted
+  to Free at some point — possibly when Cloudflare's billing cycle
+  ended, possibly because the dashboard never actually used any
+  Paid-only feature. Either way: zero spend now.
+- **The 4 dead-end Workers visible in the dashboard** (`v2`,
+  `n`, `ncr-sarkari-shaaadi`, all 0–11 requests) can be deleted
+  from the Cloudflare dashboard if desired. None have a
+  corresponding route / custom domain. Out of scope for this PR.
+- **Task #20 (apex Wix→Cloudflare migration) is the only path that
+  closes the NIC gap end-to-end.** Cron reminder set for
+  2026-09-25 08:57 local. When picked up, follow the migration
+  recipe in HANDOVER shq-2026-08-02-009 `next_pickup` section.
+
+### handoff state
+- Working tree: clean (untracked: `.venv-smoke/`,
+  `workers/sb-proxy/.wrangler/`).
+- HEAD: <this commit> on `main`, pushed to `origin/main`.
+- P3-7 PR 2: **functionally complete on regular networks; NIC
+  remains on the bundled-JSON fallback until task #20 lands.**
+- Free plan confirmed in Cloudflare dashboard ($0.00 billable, the
+  Paid upgrade was already inactive by the time the user checked).
+- Open follow-ups:
+  - **Task #20**: apex Wix→Cloudflare migration. Cron reminder
+    `2ddab249` set for 2026-09-25 08:57 local.
+
+### next_pickup
+1. **No immediate code action.** Everything observable on NIC is
+   working as intended; everything that needs the proxy is documented
+   as pending the apex migration.
+2. **If the user wants to clean up the dead-end Workers**
+   (`v2`, `n`, `ncr-sarkari-shaaadi`), that's a 30-second Cloudflare
+   dashboard task. Not blocking.
+3. **When the apex migration lands** (target ~2026-10-02):
+   - Re-run `wrangler deploy` with the `routes` block uncommented in
+     `workers/sb-proxy/wrangler.toml` (the block is already there,
+     commented out).
+   - Update `config.js` to point `SUPABASE_URL` at
+     `https://api.alldeputations.com` on the production hostname.
+   - Re-run the NIC verification: dashboard table populated from
+     live Supabase, AI search returns ranked results, heart click
+     records the vote.
+4. **Append the next shq block** when the migration lands, closing
+   out the PR 2 chain on NIC for real.
+
