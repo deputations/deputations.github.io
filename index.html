@@ -3,6 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- BEGIN auth-hash-forward
+       Supabase magic-link rescue. admin-ingest.js asks GoTrue to send the
+       admin back to /admin-ingest.html (`redirect_to`), but GoTrue silently
+       ignores a `redirect_to` that isn't on the project's Redirect URLs
+       allow-list and falls back to the Site URL instead — which is this page.
+       The tokens then sit unread in the fragment and the sign-in appears to
+       do nothing.
+
+       admin-ingest.js is the ONLY auth surface on this site (nothing else
+       calls /auth/v1/otp or reads access_token), so any auth fragment landing
+       here can only have been meant for it. Forward it, hash intact.
+
+       Runs first in <head> — before CSS, fonts and app.js — so the redirect
+       fires without painting this page. The fragment never leaves the
+       browser, and the destination is a fixed same-origin path.
+
+       The real fix is the allow-list (see HANDOVER); this keeps sign-in
+       working regardless. If a second auth flow is ever added, this needs a
+       discriminator before it can stay. -->
+  <script>
+    (function () {
+      try {
+        var h = location.hash;
+        if (!h || h.indexOf('access_token=') === -1) return;
+        if (!new URLSearchParams(h.slice(1)).get('access_token')) return;
+        location.replace('/admin-ingest.html' + h);
+      } catch (e) { /* malformed fragment: fall through and render normally */ }
+    })();
+  </script>
+  <!-- END auth-hash-forward -->
+
   <title>Central Deputation Vacancies — Live Dashboard | Deputations</title>
   <meta
     name="description"
