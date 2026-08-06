@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.2.0` (2026-08-04).** The `VERSION` file at the repo root
+**Current version: `7.3.0` (2026-08-06).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -27,6 +27,89 @@ counter_convention:
 ## [Unreleased]
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
+
+---
+
+## [7.3.0] — 2026-08-06
+**Theme: the glass is real now.** The dashboard has looked like a glass UI
+since 1.0. It wasn't one. Five of the six "glass" surfaces were translucent
+fills with no optical layer at all — verified against the live site with
+computed styles before a line was written:
+
+| surface | before |
+|---|---|
+| `.top-nav` | `blur(22px) saturate(1.55)` — the only real glass on the page |
+| `.filters-sidebar` | `backdrop-filter: none` |
+| `.ai-search-bar` | `backdrop-filter: none` |
+| `.kpi-card` ×4 | `backdrop-filter: none` (`.97` alpha — effectively opaque) |
+| `.toolbar-line` | `backdrop-filter: none` |
+| `.data-table thead th` | frosted at `style.css:4738`, then explicitly killed at `:4789` |
+
+Meanwhile a three.js particle wave and three blurred brand blobs sit behind
+everything — real content to refract, unused until now.
+
+- counter: `liquid-glass.css?v=1` `liquid-glass.js?v=1` (new files; no
+  `style.css` / `app.js` change, so `ms58` is unchanged)
+
+**Added**
+- `liquid-glass.css` + `liquid-glass.js` — a fenced, self-contained optical
+  layer on `index.html`, in the same shape as `hero-wave` and `home-flourish`.
+  Deleting the two lines inside the `<!-- BEGIN/END liquid-glass -->` fences is
+  a complete revert. `style.css` is **not touched** — at 6,519 lines with the
+  table header defined three separate times, editing it in place was the
+  larger risk.
+- Five composited layers per surface, not a blur filter: backdrop
+  (blur + saturate + brightness), pointer-angled tint, a rim lens carrying its
+  *own* `backdrop-filter` masked to an 8px border band, chromatic aberration
+  whose cyan/violet fringes slide in opposite directions with the cursor, and
+  a pointer-tracked specular highlight.
+- Capability ladder on `<html>`, so nobody gets a broken page:
+  `lg-on` (frost + rim + depth) → `lg-fx` (pointer/scroll reactivity) →
+  `lg-refract` (SVG `feDisplacementMap` refraction on the AI bar and stat
+  cards; Chromium-only, feature-detected). Below the bar — no
+  `backdrop-filter`, `prefers-reduced-transparency`, ≤768px, `saveData`, or
+  `deviceMemory < 4` — the previous look renders untouched.
+- The nav *thickens* as content passes under it: blur 22→34px, tint and
+  shadow all interpolating on scroll depth.
+- One rAF engine with passive listeners and an `IntersectionObserver`, so
+  off-screen surfaces cost nothing. It reuses the `--hf-mx`/`--hf-my` pointer
+  variables `home-flourish.js` already publishes rather than adding a second
+  tracker over the same cards.
+
+**Changed**
+- Stat cards are translucent again, reversing `home-flourish.css:122` (which
+  had forced `.97` alpha because the wave bled through). Legibility is bought
+  back on the *text* instead of the opacity: a centre scrim behind the number,
+  a lifted metallic ramp, and brighter labels. The glass stays bold at the
+  edges where the wave actually reads.
+- `--lg-tint-scale` in `:root` is a single knob for the whole system — lower it
+  to walk every surface back from bold toward calibrated at once.
+
+**Fixed**
+- `.kpi-title` contrast **2.43:1 → 6.08:1**. It was below the WCAG AA floor
+  *before* this release; the audit done for the glass work surfaced it.
+
+**Verified**
+- Contrast measured from real rendered pixels against a disabled-layer
+  baseline, both themes, 1440 + 1920: every label passes AA. Deltas —
+  `kpi title` 2.43→6.08, `results count` 6.94→7.39, `ai hint` 7.29→11.23,
+  `kpi value` 9.94→9.70.
+- Smoke suite shows no regressions: the failures present are identical with
+  the layer stashed out, and `test_watchlist` / `test_my_deputation` fail at
+  baseline too (data-dependent flakes).
+- Mobile confirmed fully opted out — no `backdrop-filter`, no injected SVG
+  filter, zero page errors.
+
+**Known / open**
+- **The sticky table-header blur has never been measured on real GPU
+  hardware.** It sits behind a runtime A/B frame probe (`measureStickyCost`)
+  that compares median frame time with and without the blur while nudging the
+  scroller 1px, caches the verdict in `localStorage.dep_lg_thead_v1`, and is
+  fail-safe: no measurement means no blur. Headless software rendering always
+  declines it. On a real GPU it should enable itself on first visit.
+- Light-theme table-header text measures 4.42:1, below AA. Pre-existing —
+  it measured *exactly* 4.42 on the baseline — so it was left alone rather
+  than folded into this release.
 
 ---
 

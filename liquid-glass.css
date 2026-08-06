@@ -1,0 +1,689 @@
+/* ============================================================================
+   liquid-glass.css — TRUE optical glass for the home dashboard chrome.
+
+   FENCED + self-contained: delete the <link> + <script> pair inside the
+   <!-- BEGIN liquid-glass --> fences in index.html to fully revert.
+   Touches nothing in style.css / navbar.css / app.js / home-flourish.*.
+   Loads LAST so it wins the cascade without editing the 6,500-line stylesheet.
+
+   WHY THIS FILE EXISTS
+   Before this layer, five of the six "glass" surfaces had NO optical layer at
+   all — they were translucent fills. Verified on the live site:
+     .top-nav ............ blur(22px) saturate(1.55)   <- the only real glass
+     .filters-sidebar .... backdrop-filter: none
+     .ai-search-bar ...... backdrop-filter: none
+     .kpi-card ........... backdrop-filter: none  (.97 alpha = opaque)
+     .toolbar-line ....... backdrop-filter: none
+     .data-table thead th  frosted at style.css:4738, then KILLED at :4789
+   Meanwhile a three.js particle wave (hero-wave.js) + 3 blurred brand blobs
+   sit behind everything — real content to refract, unused until now.
+
+   THE FIVE-LAYER BUILD (what separates this from "a blur filter")
+     1 backdrop   blur + saturate + brightness on the element
+     2 tint       low-alpha gradient, angle biased by pointer
+     3 rim lens   ::before — inset ring with its OWN backdrop-filter, masked
+                  to the border band. Reads as light bending at the edge.
+     4 aberration hairline cyan/magenta rim strokes that shift with the
+                  pointer. Rims ONLY — never behind text.
+     5 specular   ::after — pointer-tracked highlight + angle-tracked sweep
+
+   CAPABILITY LADDER (classes set by liquid-glass.js on <html>)
+     (none)      today's site, untouched
+     .lg-on      real frost + rim + depth, static
+     .lg-fx      + pointer-tracked specular, chromatic rim, scroll parallax
+     .lg-refract + SVG displacement refraction (Chromium only)
+   ============================================================================ */
+
+/* ---------------------------------------------------------------------------
+   1. TYPED CUSTOM PROPERTIES
+   @property makes these interpolate in transitions. Without it the glass
+   steps between values instead of flowing — this is what reads as "liquid".
+   Guarded in @supports so a browser without it still gets untyped fallbacks.
+   --------------------------------------------------------------------------- */
+@supports (background: paint(x)) or (color: color-mix(in srgb, red, blue)) {
+  @property --lg-px     { syntax: "<number>"; inherits: true;  initial-value: 0.5; }
+  @property --lg-py     { syntax: "<number>"; inherits: true;  initial-value: 0.5; }
+  @property --lg-scroll { syntax: "<number>"; inherits: true;  initial-value: 0;   }
+  @property --lg-thick  { syntax: "<number>"; inherits: false; initial-value: 0;   }
+}
+
+/* ---------------------------------------------------------------------------
+   2. TOKENS — dark theme (default)
+
+   --lg-tint-scale is the single knob for the whole system. 1 = BOLD (the wave
+   visibly moves behind the stat cards, as chosen). Lower it toward 1.7 for the
+   calibrated/conservative look; every surface follows automatically because
+   every tint alpha below is multiplied by it.
+   --------------------------------------------------------------------------- */
+:root {
+  --lg-tint-scale: 1;
+
+  /* optical */
+  --lg-blur: 22px;
+  --lg-sat: 180%;
+  --lg-bright: 1.06;
+
+  /* tint — BOLD. Base alphas get multiplied by --lg-tint-scale at use site. */
+  --lg-tint-a: 0.30;
+  --lg-tint-b: 0.16;
+  --lg-tint-hue: 15, 23, 42;
+
+  /* rim + light */
+  --lg-rim: rgba(255, 255, 255, 0.16);
+  --lg-rim-hi: rgba(255, 255, 255, 0.55);
+  --lg-rim-lo: rgba(255, 255, 255, 0.04);
+  --lg-spec: rgba(255, 255, 255, 0.22);
+
+  /* chromatic aberration pair — brand cyan / brand violet, not pure RGB,
+     so the fringe reads as part of the identity rather than a printing error */
+  --lg-fringe-a: rgba(34, 211, 238, 0.55);
+  --lg-fringe-b: rgba(167, 139, 250, 0.55);
+
+  /* depth: contact + ambient, stacked */
+  --lg-depth:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    0 8px 24px -6px rgba(0, 0, 0, 0.45),
+    0 24px 56px -18px rgba(0, 0, 0, 0.55);
+
+  /* legibility scrim laid under text blocks inside bold glass */
+  --lg-scrim: rgba(2, 4, 11, 0.42);
+  --lg-text-shadow: 0 1px 2px rgba(2, 4, 11, 0.55);
+}
+
+/* light theme — white glass needs MORE body or it reads as fog, and much
+   less saturation or it turns pastel */
+[data-theme="light"] {
+  --lg-blur: 20px;
+  --lg-sat: 140%;
+  --lg-bright: 1.02;
+
+  --lg-tint-a: 0.46;
+  --lg-tint-b: 0.30;
+  --lg-tint-hue: 255, 255, 255;
+
+  --lg-rim: rgba(15, 23, 42, 0.10);
+  --lg-rim-hi: rgba(255, 255, 255, 0.95);
+  --lg-rim-lo: rgba(15, 23, 42, 0.03);
+  --lg-spec: rgba(255, 255, 255, 0.65);
+
+  --lg-fringe-a: rgba(8, 145, 178, 0.38);
+  --lg-fringe-b: rgba(124, 58, 237, 0.34);
+
+  --lg-depth:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 8px 24px -8px rgba(15, 23, 42, 0.12),
+    0 24px 56px -20px rgba(15, 23, 42, 0.16);
+
+  --lg-scrim: rgba(255, 255, 255, 0.55);
+  --lg-text-shadow: none;
+}
+
+/* ---------------------------------------------------------------------------
+   3. SHARED PRIMITIVES
+
+   .lg-surface is the mixin every glass surface opts into. It is applied via
+   the real selectors further down (no markup changes needed anywhere).
+   --------------------------------------------------------------------------- */
+.lg-on .lg-surface,
+.lg-on .filters-sidebar.glass-panel,
+.lg-on .ai-search-bar,
+.lg-on .toolbar-line,
+.lg-on .kpi-card {
+  position: relative;
+  isolation: isolate;                 /* keeps blend modes off the page behind */
+  background:
+    linear-gradient(
+      calc(145deg + (var(--lg-px, 0.5) - 0.5) * 40deg),
+      rgba(var(--lg-tint-hue), calc(var(--lg-tint-a) * var(--lg-tint-scale))),
+      rgba(var(--lg-tint-hue), calc(var(--lg-tint-b) * var(--lg-tint-scale)))
+    );
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-bright));
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-bright));
+  border: 1px solid var(--lg-rim);
+  box-shadow:
+    var(--lg-depth),
+    inset 0 1px 0 var(--lg-rim-hi),
+    inset 0 -1px 0 var(--lg-rim-lo);
+  transition:
+    backdrop-filter 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 260ms ease;
+}
+
+/* --- LAYER 3+4: rim lens + chromatic aberration -----------------------------
+   One pseudo carries both. The mask-composite:exclude trick (proven at
+   home-flourish.css:86-92) confines everything to an 8px border band, so the
+   second backdrop-filter only samples the rim — cheap — and the coloured
+   fringe can never land behind body text. */
+.lg-on .lg-rim::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  padding: 8px;
+  -webkit-backdrop-filter: blur(1px) contrast(1.35) saturate(1.2);
+  backdrop-filter: blur(1px) contrast(1.35) saturate(1.2);
+  background:
+    /* aberration: the two fringes slide in OPPOSITE directions with the
+       pointer. That differential shift is the cue the eye reads as thickness. */
+    linear-gradient(
+      calc(120deg + (var(--lg-px, 0.5) - 0.5) * 60deg),
+      var(--lg-fringe-a) 0%,
+      transparent 38%,
+      transparent 62%,
+      var(--lg-fringe-b) 100%
+    );
+  background-position: calc((var(--lg-px, 0.5) - 0.5) * 6px) calc((var(--lg-py, 0.5) - 0.5) * 4px);
+  opacity: 0.5;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  transition: opacity 300ms ease;
+}
+/* NOTE on selector shape: lg-on / lg-fx / lg-refract / lg-thead AND
+   data-theme all live on <html>. Combining them therefore needs a COMPOUND
+   selector (.lg-on[data-theme="light"]), never a descendant one — a space
+   here silently matches nothing. */
+.lg-on[data-theme="light"] .lg-rim::before { opacity: 0.4; }
+
+/* --- LAYER 5: specular ------------------------------------------------------
+   Pointer-positioned highlight + an angle-tracked sweep. screen-blend on dark,
+   soft-light on white (screen is invisible against a pale surface). */
+.lg-on .lg-spec::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      420px circle at calc(var(--lg-lx, 50%)) calc(var(--lg-ly, 50%)),
+      var(--lg-spec),
+      transparent 62%
+    ),
+    linear-gradient(
+      calc(100deg + (var(--lg-px, 0.5) - 0.5) * 50deg),
+      transparent 30%,
+      rgba(255, 255, 255, 0.10) 48%,
+      transparent 64%
+    );
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+.lg-on[data-theme="light"] .lg-spec::after { mix-blend-mode: soft-light; }
+
+/* specular only lights up under a real pointer */
+.lg-fx .lg-spec:hover::after,
+.lg-fx .lg-spec:focus-within::after { opacity: 1; }
+
+/* content must ride above the rim + specular layers */
+.lg-on .lg-surface > *,
+.lg-on .filters-sidebar.glass-panel > *,
+.lg-on .ai-search-bar > *,
+.lg-on .toolbar-line > *,
+.lg-on .kpi-card > * { position: relative; z-index: 1; }
+
+/* --- TIER 3: true refraction (Chromium only) --------------------------------
+   feDisplacementMap on the BACKDROP genuinely bends what's behind the glass.
+   Only on the two hero surfaces — each mapped backdrop is a real GPU pass. */
+.lg-refract .lg-warp {
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-bright)) url(#lg-refraction);
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-bright)) url(#lg-refraction);
+}
+
+/* ---------------------------------------------------------------------------
+   4. LEGIBILITY UNDER BOLD GLASS
+
+   Bold tint (0.30 alpha) over a bright cyan wave crest drops --text-muted
+   (#64748b) below WCAG AA. Fixed on the TEXT, not by opacifying the glass —
+   that's what keeps the bold look intact.
+   --------------------------------------------------------------------------- */
+/* Measured, not guessed: at --text-secondary (#94a3b8) over the toolbar glass
+   the results count came in at 4.28:1 — below the 4.5 AA floor, and a
+   regression against the 6.94:1 it had on the old opaque panel. Lifting the
+   text is what buys it back without touching the tint. */
+.lg-on .filters-sidebar .filter-group label,
+.lg-on .filters-sidebar .filter-hint,
+.lg-on .kpi-title,
+.lg-on .toolbar-line .results-count,
+.lg-on .ai-search-hint {
+  color: #cbd5e1;
+  text-shadow: var(--lg-text-shadow);
+}
+/* The brightening above is a DARK-theme fix. On white glass #cbd5e1 is nearly
+   invisible (measured 1.28:1 on the AI pill), so every selector lifted above
+   needs its light-theme counterpart here — keep these two lists in sync. */
+.lg-on[data-theme="light"] .filters-sidebar .filter-group label,
+.lg-on[data-theme="light"] .filters-sidebar .filter-hint,
+.lg-on[data-theme="light"] .kpi-title,
+.lg-on[data-theme="light"] .toolbar-line .results-count,
+.lg-on[data-theme="light"] .ai-search-hint { color: #334155; }
+
+/* scrim: a soft vertical wash behind text-dense regions of a bold panel so
+   blur variance can never eat the contrast */
+.lg-on .filters-sidebar.glass-panel { --lg-has-scrim: 1; }
+.lg-on .filters-sidebar.glass-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(180deg, transparent, var(--lg-scrim) 55%, var(--lg-scrim));
+  opacity: 0.85;
+}
+
+/* ---------------------------------------------------------------------------
+   5. PER-SURFACE RECIPES
+   --------------------------------------------------------------------------- */
+
+/* --- 5.1 TOP NAV — glass that THICKENS as content passes under it -----------
+   navbar.css already had blur(22px); --lg-scroll (0..1, published by the JS)
+   drives blur, tint and shadow together so the bar visibly gains mass on
+   scroll. Overridden from here so navbar.css stays untouched. */
+.lg-on .top-nav {
+  -webkit-backdrop-filter:
+    blur(calc(22px + var(--lg-scroll, 0) * 12px))
+    saturate(calc(155% + var(--lg-scroll, 0) * 35%))
+    brightness(calc(1 + var(--lg-scroll, 0) * 0.06));
+  backdrop-filter:
+    blur(calc(22px + var(--lg-scroll, 0) * 12px))
+    saturate(calc(155% + var(--lg-scroll, 0) * 35%))
+    brightness(calc(1 + var(--lg-scroll, 0) * 0.06));
+  background:
+    linear-gradient(
+      180deg,
+      rgba(7, 17, 31, calc(0.62 + var(--lg-scroll, 0) * 0.22)),
+      rgba(7, 17, 31, calc(0.34 + var(--lg-scroll, 0) * 0.24))
+    );
+  border-bottom-color: rgba(255, 255, 255, calc(0.10 + var(--lg-scroll, 0) * 0.10));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, calc(0.05 + var(--lg-scroll, 0) * 0.10)) inset,
+    0 calc(var(--lg-scroll, 0) * 18px) calc(var(--lg-scroll, 0) * 40px) -18px rgba(0, 0, 0, 0.7);
+  transition: background 200ms linear, border-color 200ms linear, box-shadow 200ms linear;
+}
+.lg-on[data-theme="light"] .top-nav {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, calc(0.74 + var(--lg-scroll, 0) * 0.18)),
+      rgba(255, 255, 255, calc(0.52 + var(--lg-scroll, 0) * 0.22))
+    );
+  border-bottom-color: rgba(15, 23, 42, calc(0.08 + var(--lg-scroll, 0) * 0.08));
+}
+
+/* --- 5.2 FILTERS SIDEBAR ----------------------------------------------------
+   .glass-panel was already in the markup with ZERO css anywhere in the repo —
+   a free hook. Sticky, so the wave slides behind it as the page scrolls. */
+.lg-on .filters-sidebar.glass-panel {
+  --lg-blur: 24px;
+  border-radius: var(--radius-lg);
+}
+/* rim + specular are attached via the shared primitives */
+.lg-on .filters-sidebar.glass-panel { /* marker for .lg-rim/.lg-spec below */ }
+
+/* --- 5.3 AI SEARCH BAR — the hero surface ----------------------------------- */
+.lg-on .ai-search-bar {
+  --lg-blur: 26px;
+  /* This is a CONTROL, not a display panel — at display-card translucency it
+     dissolved into the page and stopped reading as the flagship affordance.
+     More body + a brand-tinted rim gives it presence without losing the glass. */
+  --lg-tint-a: 0.46;
+  --lg-tint-b: 0.26;
+  border-radius: var(--radius-lg);
+  overflow: hidden;                    /* keeps the sheen inside the radius */
+  border-color: color-mix(in srgb, var(--accent-color) 26%, var(--lg-rim));
+  box-shadow:
+    var(--lg-depth),
+    inset 0 1px 0 var(--lg-rim-hi),
+    inset 0 -1px 0 var(--lg-rim-lo),
+    0 0 34px -12px color-mix(in srgb, var(--accent-color) 45%, transparent);
+}
+.lg-on .ai-search-bar::before { opacity: 0.72; }
+
+/* Self-illumination. The AI bar sits in a dark, sparse band of the page, so
+   there is almost nothing behind it for the glass to pick up — pure backdrop
+   glass reads as an empty outline there. Real thick glass carries its own
+   internal light, so give the bar a faint brand-lit interior that does not
+   depend on the backdrop at all. This is what restores its flagship weight. */
+.lg-on .ai-search-bar {
+  background:
+    radial-gradient(120% 180% at 3% 50%,
+      color-mix(in srgb, var(--accent-color) 26%, transparent), transparent 46%),
+    radial-gradient(100% 160% at 98% 50%,
+      color-mix(in srgb, var(--primary-color) 18%, transparent), transparent 52%),
+    linear-gradient(
+      calc(145deg + (var(--lg-px, 0.5) - 0.5) * 40deg),
+      rgba(var(--lg-tint-hue), calc(var(--lg-tint-a) * var(--lg-tint-scale))),
+      rgba(var(--lg-tint-hue), calc(var(--lg-tint-b) * var(--lg-tint-scale)))
+    );
+}
+.lg-on[data-theme="light"] .ai-search-bar {
+  --lg-tint-a: 0.62;
+  --lg-tint-b: 0.44;
+  border-color: color-mix(in srgb, var(--accent-color) 24%, rgba(15, 23, 42, 0.12));
+}
+/* focus: blur deepens, rim swings to the accent violet, aberration intensifies */
+.lg-on .ai-search-bar:focus-within {
+  --lg-blur: 34px;
+  --lg-fringe-a: rgba(167, 139, 250, 0.75);
+  --lg-fringe-b: rgba(34, 211, 238, 0.65);
+  border-color: color-mix(in srgb, var(--accent-color) 55%, transparent);
+  box-shadow:
+    var(--lg-depth),
+    inset 0 1px 0 var(--lg-rim-hi),
+    0 0 0 3px rgba(167, 139, 250, 0.18);
+}
+.lg-on .ai-search-bar:focus-within::before { opacity: 0.85; }
+
+/* the inner field reads as a recess cut INTO the glass, not a box on top */
+.lg-on .ai-search-field {
+  background: rgba(2, 4, 11, 0.28);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+.lg-on[data-theme="light"] .ai-search-field {
+  background: rgba(15, 23, 42, 0.05);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+/* slow ambient sheen — the "alive" cue on the flagship surface. Motion-gated. */
+@media (prefers-reduced-motion: no-preference) {
+  .lg-fx .ai-search-bar::after { opacity: 0.55; animation: lg-sheen 7s ease-in-out infinite; }
+  @keyframes lg-sheen {
+    0%, 100% { background-position: -40% 0, 0 0; }
+    50%      { background-position: 140% 0, 0 0; }
+  }
+}
+
+/* NIC offline state must survive the glass treatment (config: Supabase
+   unreachable behind the government firewall — see app.js .is-unavailable) */
+.lg-on .ai-search-bar.is-unavailable {
+  --lg-fringe-a: rgba(148, 163, 184, 0.35);
+  --lg-fringe-b: rgba(148, 163, 184, 0.25);
+}
+.lg-on .ai-search-bar.is-unavailable::after { animation: none; opacity: 0; }
+
+/* --- 5.4 KPI / STAT CARDS ---------------------------------------------------
+   Reverses home-flourish.css:122 (which forced .97 opaque). BOLD: the wave
+   now reads through the cards, as chosen.
+
+   Both pseudos here are already occupied, so both are RESTATED as multi-layer
+   stacks that keep the original layer and add the new ones:
+     ::after  = style.css:908 underline  -> underline + specular
+     ::before = home-flourish.css:60 spotlight -> spotlight + rim + aberration
+   ------------------------------------------------------------------------- */
+.lg-on .kpi-card {
+  --lg-blur: 20px;
+  --lg-tint-a: 0.32;
+  --lg-tint-b: 0.15;
+  /* Centre scrim. The card stays bold and glassy at its EDGES — the wave
+     still moves through visibly — while the middle third, where the number
+     and its label sit, gets enough backing to stay legible over a bright
+     crest. This is the "legibility without opacity" trade: darken 30% of the
+     surface instead of all of it. */
+  background:
+    radial-gradient(115% 85% at 50% 58%, var(--lg-scrim), transparent 72%),
+    linear-gradient(
+      calc(145deg + (var(--lg-px, 0.5) - 0.5) * 40deg),
+      rgba(var(--lg-tint-hue), calc(var(--lg-tint-a) * var(--lg-tint-scale))),
+      rgba(var(--lg-tint-hue), calc(var(--lg-tint-b) * var(--lg-tint-scale)))
+    );
+}
+
+/* The stock ramp bottoms out at #94a3b8, which disappears against a lit wave.
+   Lift the floor — still a metallic gradient, just one that survives glass.
+   No text-shadow here: the fill is transparent, so a shadow shows THROUGH the
+   glyph and muddies it. The scrim above does the work instead. */
+.lg-on .kpi-value {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 42%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+          background-clip: text;
+  text-shadow: none;
+}
+.lg-on .kpi-title { color: #b6c4d6; }
+
+/* ::after — original 2px underline (kept, first layer) + specular sweep */
+.lg-on .kpi-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  bottom: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 1;
+  background:
+    /* the original underline, rebuilt as a background layer */
+    linear-gradient(90deg, transparent, currentColor, transparent) no-repeat
+      18% calc(100% - 0px) / 64% 2px,
+    /* specular sweep */
+    linear-gradient(
+      calc(100deg + (var(--lg-px, 0.5) - 0.5) * 50deg),
+      transparent 32%,
+      rgba(255, 255, 255, 0.10) 50%,
+      transparent 66%
+    );
+}
+
+/* ::before — spotlight (kept) + rim lens + aberration.
+   Restated inside the SAME media query as home-flourish.css:58, because that
+   query adds no specificity — a plain rule here would kill the spotlight
+   outside it and lose the pairing. */
+.lg-on .kpi-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  padding: 8px;
+  -webkit-backdrop-filter: blur(1px) contrast(1.3) saturate(1.15);
+  backdrop-filter: blur(1px) contrast(1.3) saturate(1.15);
+  background: linear-gradient(
+    calc(120deg + (var(--lg-px, 0.5) - 0.5) * 60deg),
+    var(--lg-fringe-a) 0%, transparent 40%, transparent 60%, var(--lg-fringe-b) 100%
+  );
+  opacity: 0.45;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  transition: opacity 300ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) and (min-width: 901px) and (prefers-reduced-motion: no-preference) {
+  /* spotlight restored on a dedicated layer so the rim mask stays clean:
+     the card's own background gains the cursor light as an extra layer */
+  .lg-fx .kpi-card {
+    background:
+      radial-gradient(
+        220px circle at var(--hf-mx, 50%) var(--hf-my, 50%),
+        color-mix(in srgb, currentColor 22%, transparent),
+        transparent 60%
+      ),
+      radial-gradient(115% 85% at 50% 58%, var(--lg-scrim), transparent 72%),
+      linear-gradient(
+        calc(145deg + (var(--lg-px, 0.5) - 0.5) * 40deg),
+        rgba(var(--lg-tint-hue), calc(var(--lg-tint-a) * var(--lg-tint-scale))),
+        rgba(var(--lg-tint-hue), calc(var(--lg-tint-b) * var(--lg-tint-scale)))
+      );
+  }
+  .lg-fx .kpi-card:hover::before { opacity: 0.9; }
+}
+
+/* Light theme needs no number override: style.css already paints it with an
+   !important blue->violet ramp, and the scrim there is a white wash, so dark
+   ink on light glass is already the high-contrast pair. */
+.lg-on[data-theme="light"] .kpi-title { color: #334155; }
+
+/* --- 5.5 TOOLBAR ------------------------------------------------------------
+   Mid-tier: frost + rim + depth, no pointer work. It's a dense control strip;
+   moving light behind controls would be noise, not delight. */
+.lg-on .toolbar-line {
+  --lg-blur: 16px;
+  --lg-tint-a: 0.34;
+  --lg-tint-b: 0.20;
+  border-radius: var(--radius-lg);
+}
+
+/* --- 5.6 TABLE HEADER -------------------------------------------------------
+   Rows visibly pass BENEATH the header. Keeps the teal-plank silhouette
+   (brand identity, style.css:4781) but rebuilds it as real glass.
+
+   PERF: backdrop-filter on a position:sticky element inside an overflow:auto
+   container (the P1-9 nested scroller) can force a full backdrop repaint per
+   scroll frame in Chromium. .lg-thead is applied by the JS only after a live
+   frame-timing probe passes — if it costs frames, the header keeps the plank
+   with rim + depth and no blur. See liquid-glass.js measureStickyCost().
+   ------------------------------------------------------------------------- */
+.lg-on.lg-thead .data-table thead th {
+  -webkit-backdrop-filter: blur(14px) saturate(170%) brightness(1.08);
+  backdrop-filter: blur(14px) saturate(170%) brightness(1.08);
+  background: linear-gradient(
+    180deg,
+    rgba(34, 211, 238, 0.24),
+    rgba(14, 116, 144, 0.14)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 4px 0 rgba(125, 232, 255, 0.20),
+    0 10px 18px -8px rgba(0, 0, 0, 0.55);
+}
+.lg-on.lg-thead[data-theme="light"] .data-table thead th {
+  background: linear-gradient(180deg, rgba(14, 165, 233, 0.20), rgba(2, 132, 199, 0.12));
+}
+/* no-blur fallback: same silhouette, richer edge, zero backdrop cost */
+.lg-on:not(.lg-thead) .data-table thead th {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 4px 0 rgba(125, 232, 255, 0.25),
+    0 10px 18px -8px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------------------------------------------------------------------------
+   6. ATTACH THE SHARED PRIMITIVES TO REAL SELECTORS
+   (kept together so the surface list is auditable in one place)
+   --------------------------------------------------------------------------- */
+.lg-on .filters-sidebar.glass-panel,
+.lg-on .ai-search-bar,
+.lg-on .toolbar-line { /* .lg-rim + .lg-spec behaviours, inlined below */ }
+
+.lg-on .filters-sidebar.glass-panel::before,
+.lg-on .ai-search-bar::before,
+.lg-on .toolbar-line::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  padding: 8px;
+  -webkit-backdrop-filter: blur(1px) contrast(1.35) saturate(1.2);
+  backdrop-filter: blur(1px) contrast(1.35) saturate(1.2);
+  background: linear-gradient(
+    calc(120deg + (var(--lg-px, 0.5) - 0.5) * 60deg),
+    var(--lg-fringe-a) 0%, transparent 38%, transparent 62%, var(--lg-fringe-b) 100%
+  );
+  opacity: 0.5;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  transition: opacity 300ms ease;
+}
+
+/* specular on the two surfaces whose ::after is free
+   (sidebar's ::after is the legibility scrim, so it opts out) */
+.lg-on .ai-search-bar::after,
+.lg-on .toolbar-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      420px circle at var(--lg-lx, 50%) var(--lg-ly, 50%),
+      var(--lg-spec), transparent 62%
+    ),
+    linear-gradient(
+      calc(100deg + (var(--lg-px, 0.5) - 0.5) * 50deg),
+      transparent 30%, rgba(255, 255, 255, 0.10) 48%, transparent 64%
+    );
+  background-repeat: no-repeat;
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+.lg-on[data-theme="light"] .ai-search-bar::after,
+.lg-on[data-theme="light"] .toolbar-line::after { mix-blend-mode: soft-light; }
+.lg-fx .ai-search-bar:hover::after,
+.lg-fx .ai-search-bar:focus-within::after,
+.lg-fx .toolbar-line:hover::after { opacity: 1; }
+
+/* sidebar gets its specular through the pointer-driven tint angle + rim only,
+   because ::after is spoken for by the scrim. The rim brightens on hover. */
+.lg-fx .filters-sidebar.glass-panel:hover::before { opacity: 0.85; }
+
+/* refraction targets */
+.lg-refract .ai-search-bar,
+.lg-refract .kpi-card {
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-bright)) url(#lg-refraction);
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-bright)) url(#lg-refraction);
+}
+
+/* ---------------------------------------------------------------------------
+   7. HARD FALLBACKS
+   Mirrors the perf budget already in the codebase (style.css:5819 kills
+   backdrop-filter <=768px; hero-wave.js:24 skips WebGL there too).
+   --------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  html.lg-on .filters-sidebar.glass-panel,
+  html.lg-on .ai-search-bar,
+  html.lg-on .toolbar-line,
+  html.lg-on .kpi-card,
+  html.lg-on .top-nav {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  html.lg-on .filters-sidebar.glass-panel::before,
+  html.lg-on .ai-search-bar::before,
+  html.lg-on .toolbar-line::before,
+  html.lg-on .kpi-card::before,
+  html.lg-on .ai-search-bar::after,
+  html.lg-on .toolbar-line::after { display: none !important; }
+}
+
+/* users who ask the OS for less transparency get none of it */
+@media (prefers-reduced-transparency: reduce) {
+  html.lg-on .filters-sidebar.glass-panel,
+  html.lg-on .ai-search-bar,
+  html.lg-on .toolbar-line,
+  html.lg-on .kpi-card {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: var(--bg-surface-solid) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lg-on .lg-surface,
+  .lg-on .filters-sidebar.glass-panel,
+  .lg-on .ai-search-bar,
+  .lg-on .toolbar-line,
+  .lg-on .kpi-card,
+  .lg-on .top-nav { transition: none !important; }
+  .lg-on .ai-search-bar::after { animation: none !important; }
+}

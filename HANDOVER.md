@@ -3260,3 +3260,103 @@ Console screenshots captured on NIC desktop.
 4. **Append the next shq block** when the migration lands, closing
    out the PR 2 chain on NIC for real.
 
+
+## session shq-2026-08-06-001 (P3-8 Liquid Glass — true optical depth on the dashboard chrome)
+
+started: 2026-08-06
+ended: 2026-08-06
+model: claude-opus-5
+driver: solo
+branch: main
+starting_head: 12af914
+ending_head: <this commit>
+focus: turn the dashboard's painted-on glass into a real optical layer, fenced and revertible
+
+### inbound context read
+- `WEBSITE-REVIEW.md` — critically, **P1-6 = SKIP, owner decision "keep neon,
+  the vibrant look is intentional brand identity"** (line 107). That is what
+  makes this work consistent with the record rather than a reversal of it.
+- `style.css` (6,519 lines), `home-flourish.css/js`, `hero-wave.js`,
+  `navbar.css`, `index.html`, `tests/conftest.py`.
+- Memories: NIC network issue, P3-4 Playwright gotchas, handover protocol.
+
+### work done
+Probed the **live site** with computed styles before writing anything. The
+premise turned out stronger than assumed:
+
+| surface | before |
+|---|---|
+| `.top-nav` | `blur(22px) saturate(1.55)` — the only real glass |
+| `.filters-sidebar` | `backdrop-filter: none` |
+| `.ai-search-bar` | `backdrop-filter: none` |
+| `.kpi-card` x4 | `backdrop-filter: none` (`.97` alpha) |
+| `.toolbar-line` | `backdrop-filter: none` |
+| `.data-table thead th` | frosted at `style.css:4738`, killed at `:4789` |
+
+New `liquid-glass.css` + `liquid-glass.js`, wired into `index.html` inside
+`<!-- BEGIN/END liquid-glass -->` fences. `style.css` untouched.
+
+- Five composited layers per surface (backdrop / pointer-angled tint / rim lens
+  with its own masked `backdrop-filter` / cursor-tracked chromatic aberration /
+  specular), not a single blur.
+- Capability ladder on `<html>`: `lg-on` -> `lg-fx` -> `lg-refract`
+  (feDisplacementMap, Chromium-only). Hard fallbacks for
+  `prefers-reduced-transparency`, <=768px, `saveData`, `deviceMemory < 4`.
+- One rAF engine, passive listeners, `IntersectionObserver`. Reuses
+  home-flourish's existing `--hf-mx/--hf-my` rather than double-tracking.
+- `.glass-panel` was already in the markup with **zero CSS anywhere** — used
+  as the sidebar hook.
+- VERSION 7.2.0 -> 7.3.0; CHANGELOG + WEBSITE-REVIEW (P3-8) updated.
+
+### decisions
+- **Fenced layer, not surgery on `style.css`.** 6,519 lines with the table
+  header defined three times, the last one turning blur off. Editing in place
+  risked eight pages; two fenced lines revert everything.
+- **Owner chose BOLD** after being shown the AA risk explicitly. Paid for on
+  the *text* (centre scrim behind the KPI number, lifted metallic ramp,
+  brighter labels), never by opacifying the glass — that is what preserved the
+  look. `--lg-tint-scale` is one knob to walk the whole system back.
+- **Reversed `home-flourish.css:122`** (which forced `.97` opaque because the
+  wave bled through). Deliberate, and the reason the legibility work exists.
+- **Sticky-header blur gated behind a runtime probe, not a guess.** A/B median
+  frame time with vs without, 1px scroller nudge, cached verdict, fail-safe.
+- **Did not fix the light-theme thead contrast (4.42:1).** It measured exactly
+  4.42 at baseline — pre-existing, and this repo does not bundle pre-existing
+  bugs into feature commits.
+- **Deleted the throwaway screenshot harness** rather than commit it, matching
+  P3-5's purge of ad-hoc `verify_*.py`.
+
+### handoff state
+- Working tree clean apart from the usual untracked `.venv-smoke/` and
+  `workers/sb-proxy/.wrangler/`.
+- Rebased onto `origin/main` (two incoming `chore: build deputation data`
+  commits) before committing.
+- Smoke suite: no regressions. Every failure reproduces with the layer stashed
+  out; `test_watchlist` / `test_my_deputation` fail at baseline too.
+- User tested the result locally and approved the push.
+
+### gotchas for next session
+- **`lg-on` / `lg-fx` / `lg-refract` / `lg-thead` AND `data-theme` all sit on
+  `<html>`.** Combining them needs a COMPOUND selector
+  (`.lg-on[data-theme="light"]`, `.lg-on.lg-thead`) — a descendant space
+  silently matches nothing. Both the table-header glass and every light-theme
+  override first shipped dead this way. Cost two debugging rounds.
+- **The sticky-header blur has never been measured on real GPU hardware.**
+  Headless is software-rendered (median frame times of 130-850ms) so the probe
+  always declines. If a user reports the header looks flat, check
+  `localStorage.dep_lg_thead_v1` and `window.__lgThead` before assuming a bug.
+- **Contrast auditing: measure real pixels.** A synthetic worst-case model
+  (tint over a saturated cyan crest) reported *everything* failing and is
+  wrong — the wave is a sparse field the blur averages away. A
+  percentile-cluster method is also wrong where text covers <10% of the box
+  (both clusters end up background). What works: computed `color` for the
+  text, median pixel for the background.
+- **The Browser pane on this machine renders nothing** (hidden -> no rAF, no
+  screenshots, 0x0 viewport that trips `max-width` gates). Drive Chromium via
+  `.venv-smoke` Playwright for anything visual. See the
+  `deputation-visual-verification` memory.
+- **Network confounds the suite.** Same tests: 44-78 s / 10 failures on NIC vs
+  12-14 s / 6 failures on a normal network. Always A/B against a stashed tree
+  before blaming a change.
+
+## session shq-2026-08-06-001 end

@@ -47,6 +47,11 @@
   <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the script below to revert) -->
   <link rel="stylesheet" href="home-flourish.css?v=4">
   <!-- END home-flourish -->
+  <!-- BEGIN liquid-glass (true optical glass on the chrome; loads LAST so it wins
+       the cascade without editing style.css. Remove this line + the script below
+       to fully revert to the previous look.) -->
+  <link rel="stylesheet" href="liquid-glass.css?v=1">
+  <!-- END liquid-glass -->
   <!-- BEGIN hero-wave -->
   <script type="importmap">
   { "imports": { "three": "/vendor/three.module.js?v=170" } }
@@ -411,6 +416,10 @@
   <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the stylesheet above to revert) -->
   <script defer src="home-flourish.js?v=2"></script>
   <!-- END home-flourish -->
+  <!-- BEGIN liquid-glass (capability detection + the single pointer/scroll engine;
+       remove this line + the stylesheet above to fully revert) -->
+  <script defer src="liquid-glass.js?v=1"></script>
+  <!-- END liquid-glass -->
   <!-- BEGIN realtime-toast (P3-1: show toast when new vacancies arrive) -->
   <script defer src="realtime-toast.js?v=1"></script>
   <!-- END realtime-toast -->
