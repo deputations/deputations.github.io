@@ -3357,7 +3357,7 @@ function syncCardSortUI() {
         if (Number.isNaN(daysLeft)) return 'Not specified';
         if (daysLeft < 0) return 'Expired';
         if (daysLeft === 0) return 'Closes today';
-        return `${daysLeft} days`;
+        return `${daysLeft} day${daysLeft === 1 ? '' : 's'}`;
     }
 
     function getDaysLeftTone(daysLeft) {

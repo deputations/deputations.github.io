@@ -440,7 +440,7 @@
     var foot = document.createElement("div");
     foot.className = "sw-footer";
     foot.innerHTML =
-      "<span>© Deputations.github.io</span>" +
+      "<span>© alldeputations.com</span>" +
       "<span class='sep'>·</span>" +
       "<span class='src'>Source: Employment News &amp; official circulars</span>" +
       "<span class='sep'>·</span>" +
