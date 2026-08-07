@@ -1492,6 +1492,7 @@ function renderTable(data) {
             [
                 item.Post_Name,
                 item.Ministry,
+                item.Organisation,          // see searchableText: the real field
                 item.Department_Organisation,
                 item.Location_City,
                 item.Location_State
@@ -1968,8 +1969,18 @@ function isNewVacancy(item) {
     const itemDaysLeft = parseInt(item.Days_Left, 10);
     const itemId = safe(item.Vacancy_ID);
 
+    // Department_Organisation and Desirable_Qualification are Sheets-era column
+    // names that the Supabase pipeline never fills, so they contributed '' on
+    // every row — the organisation name was only findable when Keywords
+    // happened to repeat it. Organisation is the real field (383/384 rows).
+    // search_text is the pre-built blob from enrich.js/build_data.py; it also
+    // carries the acronym expansions that Acronyms alone only has on the
+    // Supabase-only path, since JSON rows take backfillDerived, which doesn't
+    // set it. Both legacy keys are kept: harmless when absent, live if the
+    // Sheets path ever returns.
     const searchableText = [
       item.Post_Name,
+      item.Organisation,
       item.Department_Organisation,
       item.Ministry,
       item.Location_City,
@@ -1981,7 +1992,8 @@ function isNewVacancy(item) {
       item.Essential_Qualification,
       item.Desirable_Qualification,
       item.Acronyms,
-      item.Department
+      item.Department,
+      item.search_text
     ].map(safe).join(' ').toLowerCase();
 
     if (search && !fuzzyIncludes(search, searchableText)) return false;
