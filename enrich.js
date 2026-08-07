@@ -219,6 +219,47 @@
     });
   }
 
+  // Phase 4 item 16 — three-band classification for the eligibility lens.
+  //
+  // isEligible() above is deliberately binary: it answers "may this officer
+  // apply, yes or no". That collapses two very different situations into one
+  // "no" — an officer at the wrong grade entirely, and an officer at exactly
+  // the right grade who is simply short on service. The second case is the
+  // useful one: they become eligible on a knowable date, so the row is worth
+  // surfacing rather than hiding.
+  //
+  //   eligible    a feeder tier matches their level AND their years clear it
+  //   stretch     a feeder tier matches their level, but years fall short
+  //   ineligible  no feeder tier matches their level at all
+  //
+  // Returns { band, yearsShort } — yearsShort is the smallest gap across the
+  // matching tiers, so the row can say "eligible in 2 years", and is 0 for
+  // every band other than stretch.
+  //
+  // Parity with isEligible is deliberate and load-bearing: no level given, or
+  // a vacancy with no tiers, means the lens must not penalise the row. Keep
+  // the two functions in step if either changes.
+  function eligibilityBand(vacancy, userLevel, userYears) {
+    const lvl = parseLevel(userLevel);
+    if (lvl === null) return { band: 'eligible', yearsShort: 0 };
+    const tiers = (vacancy && vacancy.eligibility_tiers) || [];
+    if (!tiers.length) return { band: 'eligible', yearsShort: 0 };
+
+    const matching = tiers.filter(t => {
+      const tl = (typeof t.level === 'number') ? t.level : parseLevel(t.level);
+      return tl === lvl;
+    });
+    if (!matching.length) return { band: 'ineligible', yearsShort: 0 };
+
+    const yrs = (userYears === '' || userYears === null || userYears === undefined)
+      ? null : (parseInt(userYears, 10) || 0);
+    if (yrs === null) return { band: 'eligible', yearsShort: 0 };
+    if (matching.some(t => yrs >= t.min_years)) return { band: 'eligible', yearsShort: 0 };
+
+    const gap = Math.min(...matching.map(t => (parseInt(t.min_years, 10) || 0) - yrs));
+    return { band: 'stretch', yearsShort: Math.max(1, gap) };
+  }
+
   // rank → token for display when no label is carried (13.5 → "13A")
   function rankLabel(level) {
     if (typeof level !== 'number') return String(level ?? '');
@@ -518,5 +559,5 @@
     return row;
   }
 
-  global.DepEnrich = { enrichRecord, enrichAll, parseTiers, isEligible, formatTiers, levelToken, acronymFor, withAcronym, backfillDerived, regionForState };
+  global.DepEnrich = { enrichRecord, enrichAll, parseTiers, isEligible, eligibilityBand, formatTiers, levelToken, acronymFor, withAcronym, backfillDerived, regionForState };
 })(window);

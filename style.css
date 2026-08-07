@@ -6632,6 +6632,138 @@ html[data-theme="light"] .app-header .header-logo h1 .gradient-text {
 }
 
 /* ============================================================================
+   PHASE 4 — Eligibility lens  (REDESIGN.md items 15-18)
+
+   Everything here is inert until a pay level is chosen: app.js only emits the
+   .elig-* / .row-ghost classes when the lens is on, so a visitor who has not
+   set a level sees the table exactly as before.
+   ============================================================================ */
+
+/* Screen-reader-only text. The repo had no such utility, and the spine is a
+   colour — colour alone cannot carry the band.
+   `position` is !important on purpose: style.css:4836 sets
+   `.data-table tbody td > * { position: relative }` for the 3D plank effect,
+   which beat this rule and left the "hidden" text occupying 108x16px of real
+   layout inside a 204px cell. A visually-hidden utility has to win everywhere
+   or it silently becomes visible text — the same reason Bootstrap and Tailwind
+   mark theirs !important. */
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- item 16: the gutter spine ---------------------------------------------
+   inset box-shadow on the first cell rather than a ::before — that pseudo is
+   already taken by the plank-hover effect (style.css:4856), and the cell is
+   position:sticky with a solid background for the pinned column, which an
+   absolutely-positioned bar would scroll out from under. box-shadow follows
+   the cell's border-radius and costs no extra element. */
+.data-table tbody tr.elig-eligible td:first-child   { box-shadow: inset 4px 0 0 #22c55e; }
+.data-table tbody tr.elig-stretch td:first-child    { box-shadow: inset 4px 0 0 #f59e0b; }
+.data-table tbody tr.elig-ineligible td:first-child { box-shadow: inset 4px 0 0 rgba(148, 163, 184, 0.45); }
+
+/* --- the band chip ---------------------------------------------------------
+   Only the two informative bands get a visible chip; "eligible" would repeat
+   itself on every row you actually care about, so it ships as .sr-only text. */
+.elig-flag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  vertical-align: middle;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.elig-flag-stretch {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.34);
+}
+.elig-flag-ineligible {
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+}
+[data-theme="light"] .elig-flag-stretch    { color: #92400e; background: rgba(245, 158, 11, 0.16); }
+[data-theme="light"] .elig-flag-ineligible { color: #4b5769; background: rgba(148, 163, 184, 0.16); }
+
+/* --- item 17: ghost rows ----------------------------------------------------
+   Ineligible rows are dimmed and stripped to a single line rather than removed,
+   so the officer can still see the shape of the whole dataset. The row keeps
+   every <td>, so column alignment, sorting and the sticky first column all
+   behave — only the secondary content inside the cells is suppressed. */
+/* De-emphasis is done with an explicit muted COLOUR, never `opacity`. Opacity
+   on the cell composites the text and its own background together against the
+   page, which both destroys contrast and makes it unmeasurable — the first cut
+   used opacity:.55 and measured 1.07:1 on dark, i.e. invisible. A ghost still
+   has to be readable: the officer is meant to see what else is out there and
+   decide whether to expand it. Values below are measured against the real row
+   gradients, same method as the Phase 2 deadline scale. */
+.data-table tbody tr.row-ghost td,
+.data-table tbody tr.row-ghost .post-col strong { color: #94a3b8; }
+.data-table tbody tr.row-ghost .table-subtext,
+.data-table tbody tr.row-ghost .days-date-sub,
+.data-table tbody tr.row-ghost .table-source-line,
+.data-table tbody tr.row-ghost .vx-new { display: none; }
+.data-table tbody tr.row-ghost .post-col strong { font-weight: 600; }
+[data-theme="light"] .data-table tbody tr.row-ghost td,
+[data-theme="light"] .data-table tbody tr.row-ghost .post-col strong { color: #556378; }
+
+/* expanded: back to a full row */
+.data-table tbody tr.row-ghost.row-ghost--open td,
+.data-table tbody tr.row-ghost.row-ghost--open .post-col strong { color: inherit; }
+.data-table tbody tr.row-ghost.row-ghost--open .table-subtext,
+.data-table tbody tr.row-ghost.row-ghost--open .days-date-sub,
+.data-table tbody tr.row-ghost.row-ghost--open .table-source-line { display: block; }
+.data-table tbody tr.row-ghost.row-ghost--open .post-col strong { font-weight: 700; }
+
+/* --- item 18: the expander is a real button, focusable and labelled --------- */
+.ghost-toggle {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.ghost-toggle:hover { color: var(--text-primary); border-color: var(--border-highlight); }
+.ghost-toggle:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* --- card view: the same three bands ---------------------------------------
+   Card view is the default below 768px, so the lens has to work here too or it
+   misses the primary audience. The spine becomes a left border on the card;
+   ghosts are muted by COLOUR, never opacity, for the reason noted above. */
+.vx-card.elig-eligible   { border-left: 4px solid #22c55e; }
+.vx-card.elig-stretch    { border-left: 4px solid #f59e0b; }
+.vx-card.elig-ineligible { border-left: 4px solid rgba(148, 163, 184, 0.45); }
+
+.vx-card.card-ghost .vx-title,
+.vx-card.card-ghost .vx-org { color: #94a3b8; }
+.vx-card.card-ghost .vx-title { font-weight: 600; }
+[data-theme="light"] .vx-card.card-ghost .vx-title,
+[data-theme="light"] .vx-card.card-ghost .vx-org { color: #556378; }
+
+/* the breakdown line in the toolbar */
+.rc-total { opacity: 0.6; font-weight: 500; }
+
+/* ============================================================================
    PHASE 2 — Typography and rhythm  (REDESIGN.md items 7, 8, 9)
    ============================================================================ */
 
@@ -6664,6 +6796,27 @@ html[data-theme="light"] .app-header .header-logo h1 .gradient-text {
   overflow: hidden;
   line-height: 1.4;
   height: 2.8em;                      /* exactly two lines, always */
+}
+
+/* Same treatment for Location. Phase 2 measured a spread of 0 and stopped
+   there, but that only proved it for the rows that happened to be on page 1 —
+   the organisation subtext was the jitter source in that sample. Phase 4's
+   eligibility sort reorders which rows land on page 1, and immediately
+   surfaced a row reading "Delhi; Bhopal; Rajamundry; Jaipur; Gwalior; ..." in
+   a 102px column, wrapping to a 362px row. Multi-location posts are common
+   enough that the clamp belongs here permanently, not just when the lens
+   happens to reveal one. app.js carries the full list in a title.
+
+   The clamp goes on an inner div, never on the <td> itself: setting
+   `display:-webkit-box` on a table cell drops it out of table layout, the
+   column collapses to its minimum width and the text wraps one character per
+   line. (.table-subtext works precisely because it is already a div.) */
+.data-table td.location-col .loc-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
 }
 
 /* --- item 9: urgency legible before the number is read ----------------------

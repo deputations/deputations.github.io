@@ -410,6 +410,31 @@ loadDataFromJSON();
 // Runs on every fresh page load. Doesn't clobber a value the user already
 // picked (URL param or in-session selection). The toast is suppressed only
 // after the user explicitly dismisses it once in the session.
+// Phase 4 item 15 — "ask once, persist it".
+//
+// autoselectPayLevelFromProfile() below has always READ dep_profile_v1, but
+// nothing ever wrote it from this page: the key was only ever populated by the
+// My Deputation profile form. So an officer who set their level in the sidebar
+// — the obvious place, and the one the spec calls the organising principle of
+// the page — had it silently discarded on the next visit, and got asked again.
+//
+// Merge rather than overwrite: the same key carries the profile's other fields
+// (name, cadre, dates) and My Deputation owns those. Clearing the dropdown
+// deliberately does NOT erase the stored level; that would turn an idle "Clear
+// All" into permanent data loss.
+function persistPayLevelToProfile() {
+  try {
+    const lvl = filterMyPayLevel ? String(filterMyPayLevel.value || '').trim() : '';
+    if (!lvl) return;
+    const profile = JSON.parse(localStorage.getItem('dep_profile_v1') || '{}') || {};
+    const yrs = filterExperience ? String(filterExperience.value || '').trim() : '';
+    if (profile.payLevel === lvl && String(profile.yearsAtCurrentLevel || '') === yrs) return;
+    profile.payLevel = lvl;
+    if (yrs) profile.yearsAtCurrentLevel = yrs;
+    localStorage.setItem('dep_profile_v1', JSON.stringify(profile));
+  } catch (e) { /* private mode / quota — the lens still works for this visit */ }
+}
+
 function autoselectPayLevelFromProfile() {
   try {
     const raw = localStorage.getItem('dep_profile_v1');
@@ -1272,10 +1297,45 @@ function renderTable(data) {
         ? notificationDateDisplay
         : '—';
 
+    // Phase 4 items 16 + 18. `band` is null whenever the lens is off, so every
+    // expression below collapses to '' and the row renders exactly as before.
+    const band = item._eligBand;
+    const isGhost = band === 'ineligible';
+    const myLvl = filterMyPayLevel ? safe(filterMyPayLevel.value) : '';
+    const yrsShort = item._yearsShort || 0;
+    // The spine is a colour, so it cannot be the only carrier. Eligible rows get
+    // hidden text (a visible "Eligible" on every row is just noise once you have
+    // filtered to your level); the two informative bands get a visible chip.
+    // Screen-reader text rides in the post cell (zero width, no layout cost).
+    // The VISIBLE chip goes in the Eligibility column instead — that column is
+    // where a reader already looks for "who is this open to", and .post-col is
+    // only 11% wide, so a chip there wrapped and blew row heights out to 304px,
+    // undoing Phase 2 item 8. Measured: heights went [93,304,127,110,112,95].
+    const bandSr = band ? `<span class="sr-only">${
+      band === 'eligible' ? `Eligible at Level ${escapeHtml(myLvl)}`
+      : band === 'stretch' ? `Eligible in ${yrsShort} year${yrsShort === 1 ? '' : 's'}`
+      : `Not open to Level ${escapeHtml(myLvl)}`}</span>` : '';
+    // Only `stretch` earns a visible chip. "Eligible" would repeat itself on
+    // every row you care about, and an ineligible row already announces itself
+    // three other ways (muted text, grey spine, a Show button) — a fourth would
+    // just be width in a 10%-wide column. Both still carry .sr-only text.
+    const bandChip = band === 'stretch'
+      ? `<span class="elig-flag elig-flag-stretch" title="You are at the right grade but ${yrsShort} year${yrsShort === 1 ? '' : 's'} short of this post's minimum service">in ${yrsShort}y</span>`
+      : '';
+
     return `
-      <tr class="clickable-row ${saved ? 'row-bookmarked' : ''}" data-open-details="${escapeHtml(vacancyId)}">
+      <tr class="clickable-row${band ? ` elig-${band}` : ''}${isGhost ? ' row-ghost' : ''} ${saved ? 'row-bookmarked' : ''}" data-open-details="${escapeHtml(vacancyId)}">
         <td class="post-col" data-label="Post Name">
           <strong>${escapeHtml(safe(item.Post_Name) || '—')}</strong>${isNewVacancy(item) ? ' <span class="vx-new table-new" title="Added in the last 7 days">NEW</span>' : ''}
+          ${bandSr}
+          ${isGhost ? `<button
+            type="button"
+            class="ghost-toggle"
+            data-table-action="ghost"
+            data-id="${escapeHtml(vacancyId)}"
+            aria-expanded="false"
+            title="Show full row"
+          >Show</button>` : ''}
           ${(() => {
             // Phase 2 item 8: the organisation is clamped to two lines in CSS
             // to stop it driving row height, so carry the full string in a
@@ -1292,7 +1352,7 @@ function renderTable(data) {
         </td>
 
         <td class="eligibility-col" data-label="Eligibility">
-          ${escapeHtml(formatEligibility(item))}
+          ${escapeHtml(formatEligibility(item))}${bandChip}
         </td>
 
         <td class="ministry-col" data-label="Ministry">
@@ -1303,9 +1363,14 @@ function renderTable(data) {
           ${escapeHtml(orgAcronym(item) || '—')}
         </td>
 
-        <td class="location-col" data-label="Location">
-          ${escapeHtml(formatLocation(item) || '—')}
-        </td>
+        ${(() => {
+          // Clamped to two lines in CSS (multi-location posts wrapped to 362px
+          // rows); the full list stays reachable via the title.
+          const loc = formatLocation(item) || '—';
+          return `<td class="location-col" data-label="Location"${loc !== '—' ? ` title="${escapeHtml(loc)}"` : ''}>
+          <div class="loc-clamp">${escapeHtml(loc)}</div>
+        </td>`;
+        })()}
 
         <td class="days-col" data-label="Days Left">
           <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}">
@@ -1805,6 +1870,19 @@ kpiGrid.addEventListener('click', (e) => {
         renderDashboard(false);
         if (!wasSaved) animateBookmarkButton(vacancyId);
       }
+
+      // Phase 4 item 17: expand one ghost row in place. Deliberately does NOT
+      // call renderDashboard — a re-render would rebuild the tbody and throw
+      // away every other row the user had already expanded.
+      if (action === 'ghost') {
+        const row = tableAction.closest('tr');
+        if (row) {
+          const open = row.classList.toggle('row-ghost--open');
+          tableAction.setAttribute('aria-expanded', open ? 'true' : 'false');
+          tableAction.setAttribute('title', open ? 'Collapse row' : 'Show full row');
+          tableAction.textContent = open ? 'Hide' : 'Show';
+        }
+      }
       return;
     }
 
@@ -1818,6 +1896,7 @@ kpiGrid.addEventListener('click', (e) => {
     function onFilterChange() {
         pagination.currentPage = 1;
         pagination.pagesShown = 1;
+        persistPayLevelToProfile();
         renderDashboard();
     }
 
@@ -1853,7 +1932,9 @@ kpiGrid.addEventListener('click', (e) => {
   // KPI cards summarise the whole set regardless of the Status dropdown:
   // "Total Vacancies" = all (Status: All), "Active" = the active subset of them.
   const baseFilteredData = getFilteredData({ applyKpiFilter: false, applyStatusFilter: false });
-  const filteredData = sortData(getFilteredData({ applyKpiFilter: true }));
+  // Phase 4: classify BEFORE sorting — sortData uses _eligBand as its primary
+  // key when the lens is on, so the annotation has to already be on the rows.
+  const filteredData = sortData(annotateEligibility(getFilteredData({ applyKpiFilter: true })));
 
   // Animate only discrete-click re-renders (never search keystrokes).
   const useVT = vtDiscrete
@@ -1900,6 +1981,19 @@ kpiGrid.addEventListener('click', (e) => {
       resultsCount.textContent = filteredData.length
         ? `${start}-${end} of ${filteredData.length} vacancies`
         : '0 vacancies';
+    }
+
+    // Phase 4: with the lens on, the raw total stops being the useful number —
+    // "58 vacancies" says nothing about whether any are for you. Lead with the
+    // breakdown instead, and keep the total so the dataset never looks smaller
+    // than it is.
+    if (eligibilityLensOn() && filteredData.length) {
+      const c = eligibilityCounts(filteredData);
+      const lvl = filterMyPayLevel.value;
+      const bits = [`<strong>${c.eligible}</strong> for Level ${escapeHtml(lvl)}`];
+      if (c.stretch) bits.push(`<strong>${c.stretch}</strong> soon`);
+      bits.push(`${c.ineligible} others`);
+      resultsCount.innerHTML = `${bits.join(' · ')} <span class="rc-total">of ${filteredData.length}</span>`;
     }
 
     updateWatchlistUI();
@@ -2010,15 +2104,13 @@ function isNewVacancy(item) {
     if (locationSet && !locationSet.has(itemLocation)) return false;
     if (applyStatusFilter && status && itemStatus !== status) return false;
 
-    if (myPayLevel) {
-      // Tier-aware eligibility: matches the candidate's level + years-at-level
-      // against the vacancy's eligibility_tiers (see enrich.js#isEligible).
-      // Experience only narrows results when a pay level is also chosen.
-      const eligible = (window.DepEnrich && window.DepEnrich.isEligible)
-        ? window.DepEnrich.isEligible(item, myPayLevel, myYears)
-        : true;
-      if (!eligible) return false;
-    }
+    // Phase 4 item 17: a pay level no longer REMOVES anything. It used to drop
+    // every ineligible row here, which answered "what can I apply for" but
+    // destroyed the answer to "what else is out there" — the officer could not
+    // tell a short list from a broken filter. Rows are now classified into
+    // three bands (see annotateEligibility) and the ineligible ones render as
+    // ghosts, so the full dataset stays on screen and stays countable.
+    // Eligibility is applied as a SORT key, not a filter.
 
     if (showWatchlistOnly && !watchlist.has(itemId)) return false;
     if (applyStatusFilter && !Number.isNaN(itemDaysLeft) && status === 'Active' && itemDaysLeft < 0) return false;
@@ -2049,11 +2141,58 @@ function isNewVacancy(item) {
   });
 }
 
+/* ---------------- Phase 4: eligibility lens ---------------- */
+
+// Is the lens on? Everything below is a no-op until a pay level is chosen.
+function eligibilityLensOn() {
+  return !!(filterMyPayLevel && filterMyPayLevel.value);
+}
+
+// Tag each row with its band + how many years short it is. Mutating the row
+// (rather than returning a parallel map) keeps the annotation attached through
+// sortData's spread and paginateData's slice, which both copy by reference.
+const BAND_RANK = { eligible: 0, stretch: 1, ineligible: 2 };
+
+function annotateEligibility(rows) {
+  if (!eligibilityLensOn() || !window.DepEnrich || !window.DepEnrich.eligibilityBand) {
+    rows.forEach(r => { r._eligBand = null; r._yearsShort = 0; });
+    return rows;
+  }
+  const lvl = filterMyPayLevel.value;
+  const yrs = filterExperience ? filterExperience.value : '';
+  rows.forEach(r => {
+    const { band, yearsShort } = window.DepEnrich.eligibilityBand(r, lvl, yrs);
+    r._eligBand = band;
+    r._yearsShort = yearsShort;
+  });
+  return rows;
+}
+
+function eligibilityCounts(rows) {
+  const c = { eligible: 0, stretch: 0, ineligible: 0 };
+  rows.forEach(r => { if (r._eligBand) c[r._eligBand]++; });
+  return c;
+}
+
     function sortData(data) {
         const direction = sortState.direction === 'asc' ? 1 : -1;
         const key = sortState.key;
 
+        // Phase 4 item 17: with the lens on, band outranks the chosen column so
+        // page 1 always answers "is any of this for me?". The column sort still
+        // applies, but WITHIN each band — it is not discarded.
+        const lensOn = eligibilityLensOn();
+
         return [...data].sort((a, b) => {
+            if (lensOn) {
+                const ra = BAND_RANK[a._eligBand] ?? 0;
+                const rb = BAND_RANK[b._eligBand] ?? 0;
+                if (ra !== rb) return ra - rb;
+            }
+            return sortWithinBand(a, b, key, direction);
+        });
+
+        function sortWithinBand(a, b, key, direction) {
             let aVal;
             let bVal;
 
@@ -2106,7 +2245,7 @@ function isNewVacancy(item) {
             if (aVal < bVal) return -1 * direction;
             if (aVal > bVal) return 1 * direction;
             return 0;
-        });
+        }
     }
 
    function paginateData(data, pageSize = getCurrentPageSize()) {
@@ -2491,11 +2630,27 @@ function renderVacancyCard(item) {
   const vacancyId = safe(item.Vacancy_ID);
   const daysLeft = parseInt(item.Days_Left, 10);
 
+  // Phase 4 items 16-17 in card view. Card view is the DEFAULT below 768px
+  // (applyMobileDefaultView), and REDESIGN.md names phones as the primary
+  // surface — a lens that only worked in the desktop table would miss the
+  // audience it was built for. Same three bands, same classes, so one set of
+  // CSS covers both presentations.
+  const band = item._eligBand;
+  const myLvl = filterMyPayLevel ? safe(filterMyPayLevel.value) : '';
+  const yrsShort = item._yearsShort || 0;
+  const bandFlag = !band ? ''
+    : band === 'eligible'
+      ? `<span class="sr-only">Eligible at Level ${escapeHtml(myLvl)}</span>`
+      : band === 'stretch'
+        ? `<span class="elig-flag elig-flag-stretch">Eligible in ${yrsShort} year${yrsShort === 1 ? '' : 's'}</span>`
+        : `<span class="elig-flag elig-flag-ineligible">Not open to Level ${escapeHtml(myLvl)}</span>`;
+
   return `
-    <article class="vx-card clickable-card" data-open-details="${escapeHtml(vacancyId)}">
+    <article class="vx-card clickable-card${band ? ` elig-${band}` : ''}${band === 'ineligible' ? ' card-ghost' : ''}" data-open-details="${escapeHtml(vacancyId)}">
       ${cardHeadHtml(item, daysLeft)}
       <h3 class="vx-title">${escapeHtml(safe(item.Post_Name) || '—')}</h3>
       <div class="vx-org">${escapeHtml(cardOrgLine(item))}</div>
+      ${bandFlag}
       <div class="vx-meta">${cardMetaChips(item)}</div>
       ${cardFootHtml(item)}
     </article>
