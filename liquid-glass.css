@@ -228,6 +228,21 @@
 .lg-on .toolbar-line > *,
 .lg-on .kpi-card > * { position: relative; z-index: 1; }
 
+/* BUG FIX — filter dropdowns opening DOWNWARD were painted over by the filters
+   below them, while upward-opening ones looked fine.
+   The rule directly above is the cause. `> *` gives every direct child of the
+   sidebar `z-index: 1`, which makes each `.filter-group` its own STACKING
+   CONTEXT. The open panel's `z-index: 95` (style.css) is then only competing
+   INSIDE its own group; against sibling groups the tie is broken by DOM order,
+   so every filter after it paints on top. Upward panels appeared correct only
+   because they overlap the groups ABOVE, which are earlier in DOM and so paint
+   below anyway — the same bug, hidden by direction.
+   Lift just the group holding an open panel. `:has()` is already used ~38
+   times in style.css, so no new baseline is being assumed. */
+.lg-on .filters-sidebar.glass-panel > .filter-group:has(.ms-panel:not([hidden])) {
+  z-index: 50;
+}
+
 /* --- TIER 3: true refraction (Chromium only) --------------------------------
    feDisplacementMap on the BACKDROP genuinely bends what's behind the glass.
    Only on the two hero surfaces — each mapped backdrop is a real GPU pass. */
@@ -266,6 +281,17 @@
 
 /* scrim: a soft vertical wash behind text-dense regions of a bold panel so
    blur variance can never eat the contrast */
+/* BUG FIX — the sidebar sat 16px lower than the KPI cards it shares a grid row
+   with, and had silently stopped being sticky.
+   `.lg-surface` above sets `position: relative` on every glass surface, which
+   for this element overrides `style.css:405`'s `position: sticky` — but that
+   same rule's `top: 1rem` survives. On a sticky box at scroll 0, `top` costs
+   nothing; on a relative box it is a real 16px downward shove. So one property
+   caused both the misalignment and the loss of sticky-on-scroll.
+   sticky is itself a positioned element, so the ::before/::after glass layers
+   still resolve `position: absolute; inset: 0` against it correctly. */
+.lg-on .filters-sidebar.glass-panel { position: sticky; }
+
 .lg-on .filters-sidebar.glass-panel { --lg-has-scrim: 1; }
 .lg-on .filters-sidebar.glass-panel::after {
   content: "";
