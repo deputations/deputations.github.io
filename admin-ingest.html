@@ -190,16 +190,16 @@
         <div id="pasteBlock" class="hidden">
           <label>Prompt for</label>
           <select id="promptType">
-            <option value="en">Employment News (find deputation ads in the weekly issue)</option>
+            <option value="en">Deputation PDF (one ad per page, bookmarked)</option>
             <option value="notif">Single notification / vacancy circular (e.g. NCLT)</option>
           </select>
-          <label style="margin-top:12px">1) Copy this prompt into <b>Gemini Advanced</b> or <b>Claude Pro</b> and attach the PDF</label>
+          <label style="margin-top:12px">1) Copy this prompt into <b>Gemini Advanced</b> or <b>Claude Pro</b> and attach the <b>deputation PDF</b> (plus its OCR text file, if you have it)</label>
           <button type="button" id="copyPromptBtn">📋 Copy extraction prompt</button>
           <label style="margin-top:12px">2) Paste the JSON array it returns here</label>
           <textarea id="pasteJson" rows="9" placeholder='[ { "post_name": "...", "organisation": "...", ... }, ... ]'></textarea>
-          <label style="margin-top:10px">3) (Optional) Attach the Employment News PDF — enables side-by-side page verification in review</label>
+          <label style="margin-top:10px">3) (Optional) Attach the <b>same deputation PDF</b> — enables side-by-side page verification in review</label>
           <input id="enPdf" type="file" accept="application/pdf" />
-          <p class="muted">No API quota used — your chat does the extraction. For a big issue you can paste in <b>batches</b> (e.g. ask the chat page-range by page-range) and Import each; duplicates are skipped automatically.</p>
+          <p class="muted">Attach the <b>deputation PDF</b> here, not the full Employment News issue — <code>source_page</code> is numbered against the deputation PDF, so side-by-side only lands on the right ad if the two match. No API quota used — your chat does the extraction. For a long issue you can paste in <b>batches</b> by page range and Import each; duplicates are skipped automatically.</p>
         </div>
 
         <div id="manualBlock" class="hidden">

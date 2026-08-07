@@ -341,22 +341,45 @@ function fieldHtml(k, lbl, r) {
   return `<div><label>${escapeHtml(lbl)}</label><input data-k="${escapeHtml(k)}" value="${escapeHtml(val)}" /></div>`;
 }
 
-// Prompt the admin pastes into Gemini Advanced / Claude Pro along with the EN PDF.
-const EN_PROMPT = `# Extract & Enrich Government of India DEPUTATION Vacancies — Employment News
+// Prompt the admin pastes into Gemini Advanced / Claude Pro along with the deputation PDF
+// (the pre-filtered, one-ad-per-page extract, NOT the full Employment News issue).
+const EN_PROMPT = `# Extract & Enrich Government of India DEPUTATION Vacancies — Deputation PDF
 
-Extract deputation vacancies from the attached Employment News PDF using the instructions below. If you have code execution, FIRST extract the page text programmatically (e.g. pdfplumber) before classifying — then follow the two-pass workflow.
+The attached PDF is a PRE-FILTERED DEPUTATION EXTRACT, not a full Employment News issue. It was produced from one weekly Employment News issue by a tool that keeps only the deputation advertisements and emits ONE ADVERTISEMENT PER PAGE, in issue order, with a bookmark on every page. An OCR text file of the same PDF may also be attached.
+
+If you have code execution, FIRST extract the page text programmatically (e.g. pdfplumber) and read the PDF outline with pypdf (PdfReader(...).outline) before classifying — then follow the two-pass workflow.
 
 ## Role & Prime Directive
-You are extracting Government of India deputation vacancies from the attached weekly Employment News PDF and enriching each one via web search.
+You are extracting Government of India deputation vacancies from the attached deputation PDF and enriching each one via web search.
 Prime directive: Be exhaustive. Missing a deputation vacancy is the single worst outcome — far worse than including a doubtful one. When in doubt, KEEP it and lower the confidence. Never silently drop a borderline ad.
+
+## The TWO page numbers — read this before anything else
+Every advertisement carries two different page numbers. Do not mix them up.
+- source_page — the page number in THIS attached PDF, 1-based, counted from its first page. The reviewer uses it to jump straight to the ad, so it MUST index this PDF and nothing else.
+- en_page — the page the ad occupied in the ORIGINAL Employment News issue. It comes from the bookmark or from the printed page, NEVER from counting this PDF.
+They are almost never equal. If you cannot determine en_page, leave it "" — do not fall back to source_page.
+
+## Bookmarks
+Each page carries a bookmark shaped:
+    <issue-date>-p<en-page>-<ad-number>-<organisation>
+Example — 10Jul-p3-EN-14-56-Union_Public_Service_Commission — decomposes to:
+- source_bookmark = "10Jul-p3-EN-14-56-Union_Public_Service_Commission" (verbatim, unparsed)
+- en_issue_date   = "10Jul"   (copy the token as printed; do NOT invent a year)
+- en_page         = "3"       (digits only, from the p<n> segment)
+- source_ref      = "EN-14-56"
+- organisation cross-check = "Union Public Service Commission" (underscores are spaces)
+
+If the bookmark outline is not visible to you, recover what you can from the page itself: Employment News prints the advertisement number on the ad, commonly as "EN 14/56" — normalise that to "EN-14-56". Leave any part you cannot determine as "" — do not guess it and do not compute it from the other fields.
+
+## OCR text file
+If an OCR text file of this PDF is attached, prefer it when copying detailed_eligibility and additional_details verbatim — it preserves wording that a scanned page can render ambiguously. The PDF itself stays authoritative for page numbers, bookmarks and layout.
 
 ## Workflow — Two Passes (do NOT interleave)
 
 ### Pass 1 — Inventory (no enrichment yet)
-Go through the ENTIRE issue, first page to last, in chunks of ~2 pages. Do not skim.
-On every page, scan EVERY advertisement, notice and boxed item, including: small/boxed ads, bottom-of-page ads, and "continued on page…" items (follow them to the continuation).
-For each ad record: page number, organisation, post name(s), and a one-line keep/drop decision.
-When the inventory is complete, RE-SCAN once more for boxed/short ads and continuation pages before moving on.
+Walk the PDF page by page, first to last. ONE PAGE = ONE ADVERTISEMENT: do not skip a page, do not merge two pages, and do not split one page into two ads.
+For each page record: source_page, the bookmark, organisation, post name(s), and a one-line keep/drop decision.
+If an advertisement visibly continues onto the next page, treat the FIRST of those pages as its source_page and note the continuation.
 (Pass 1 is an internal working list only — do not include it in the final answer.)
 
 ### Pass 2 — Enrich each KEPT vacancy
@@ -367,16 +390,23 @@ For each kept vacancy:
 4. If no credible official source is found: fill from the ad, leave official_notification_link EMPTY, and lower confidence.
 
 ## KEEP / DROP Rule
+The upstream tool already filtered this issue for deputation, so nearly every page should be KEPT. A DROP here means that filter produced a false positive.
 KEEP if deputation is permitted in ANY form: "deputation"; "deputation/absorption"; "deputation (including short-term contract)" / ISTC; or deputation listed as one of several allowed modes.
-DROP only when CLEARLY not deputation: pure direct recruitment; contract/tenure engagement; walk-in; apprenticeship/trainee; absorption-only.
+DROP only when the page is CLEARLY not a deputation vacancy: pure direct recruitment; contract/tenure engagement; walk-in; apprenticeship/trainee; absorption-only.
 If unsure whether deputation is allowed → KEEP with confidence "low".
+
+## Coverage Check — run this before you answer
+One page = one advertisement, so every page must be accounted for.
+Confirm that each source_page from 1 to the last page of the PDF either appears at least once in your output or was explicitly dropped in Pass 1.
+Row expansion means the number of ROWS may EXCEED the number of pages — that is expected and correct. What is NOT acceptable is a page with no row and no drop decision: that means you skipped it. Go back and find it.
 
 ## Row Expansion
 Output ONE object per (post × location/bench × pay level). Never collapse multiple locations, benches, or levels into a single row.
+Every row produced from the same page repeats that page's source_page, source_bookmark, source_ref, en_page and en_issue_date unchanged.
 
 ## Output Format
 Return ONLY a JSON array — no prose, no markdown fences. Each object uses EXACTLY these keys (use "" when unknown):
-{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","detailed_eligibility","additional_details","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","confidence"}
+{"ministry","department","organisation","organisation_type","post_name","level","req_level1","req_level2","min_years_experience","min_years_experience2","eligibility_tiers","location_city","location_state","no_of_posts","deputation_period_years","deputation_type","notification_date","last_date_to_apply","official_notification_link","application_form_link","source_website","essential_qualification","detailed_eligibility","additional_details","eligible_service","mode_of_application","functional_area","tags_keywords","source_page","source_bookmark","source_ref","en_page","en_issue_date","confidence"}
 
 ## Field Rules
 - ministry: standard GoI ministry name WITHOUT the "Ministry of" / "Department of" prefix (e.g. "Agriculture and Farmers Welfare", "Home Affairs", "Personnel, Public Grievances and Pensions").
@@ -388,12 +418,16 @@ Return ONLY a JSON array — no prose, no markdown fences. Each object uses EXAC
 - detailed_eligibility: COPY VERBATIM the complete eligibility / qualification conditions block exactly as printed in the source for THIS post (feeder grades & pay levels, essential and desirable qualifications, experience, age limit). Do NOT paraphrase, summarise, or reorder. "" if the ad states none.
 - additional_details: any other important info about THIS post not captured by the other fields (special instructions, relaxations/concessions, reservations, post breakup, contact details, remarks/notes/conditions). Copy the relevant text; do NOT duplicate eligibility text. "" if nothing extra.
 - functional_area: short summary of duties / job description.
-- source_page: the PDF page number of the ad in the issue, as a string (for side-by-side verification).
+- source_page: the page number in THIS attached deputation PDF, 1-based, as a string of digits only (e.g. "7"). Drives side-by-side verification — see "The TWO page numbers" above. Never the Employment News page.
+- source_bookmark: the page's bookmark copied verbatim, unparsed (e.g. "10Jul-p3-EN-14-56-Union_Public_Service_Commission"). "" if you cannot see the bookmark outline.
+- source_ref: the Employment News advertisement number, normalised to hyphens (e.g. "EN-14-56"). Read it from the bookmark, or from the ad itself where it is printed as "EN 14/56". "" if absent.
+- en_page: the ORIGINAL Employment News page number, digits only, from the p<n> segment of the bookmark (e.g. "3"). "" if unknown — never copy source_page into it.
+- en_issue_date: the issue-date token exactly as printed in the bookmark (e.g. "10Jul"). Do not expand it, reformat it, or add a year.
 - confidence: "high" ONLY if details came from the official notification AND post, level, location and a date are all clear; otherwise "medium" or "low".
 
 ## Batching
-If the issue is large, you may answer in batches by page range; I will paste each batch separately. Keep the SAME schema every time and never skip pages between batches.
-Return [] only if the issue genuinely contains no deputation vacancies.`;
+The PDF is one ad per page, so batch by page range (e.g. pages 1-20, then 21-40); I will paste each batch separately. Keep the SAME schema every time, keep source_page numbered against the WHOLE PDF (a second batch starting at page 21 uses "21", not "1"), and never skip pages between batches.
+Return [] only if the PDF genuinely contains no deputation vacancies.`;
 
 // Prompt for a SINGLE official notification / vacancy circular (e.g. NCLT).
 const NOTIF_PROMPT = `You are extracting Government of India DEPUTATION vacancies from a SINGLE official notification / vacancy circular PDF. Extract EVERY advertised post — be thorough and read all pages and annexures.
