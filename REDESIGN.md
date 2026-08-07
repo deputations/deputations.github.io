@@ -277,8 +277,15 @@ me?" in one screenful, without losing sight of the rest of the data.
 >   choice was discarded on reload because `app.js` only ever read
 >   `dep_profile_v1` and never wrote it. Worth doing on its own, independent of
 >   any lens.
-> - **Item 16 — reduce to a binary marker.** A quiet spine on rows the officer
->   is eligible for. No third band, no chips, no "in Ny" copy.
+> - **Item 16 — drop.** Owner's observation, and it is decisive: *once item 17
+>   is dropped, ineligible rows are filtered out again — so every remaining row
+>   is eligible, and a spine marking "eligible" appears on all of them.* A
+>   signal that is always on carries no information. The only case that could
+>   have justified it — rows whose eligibility is genuinely unknown — does not
+>   exist either: `data/vacancies.json` ships no `eligibility_tiers`, but
+>   `enrich.js#backfillDerived` reconstructs them from `Req_Level1` /
+>   `Min_Years_Experience` at load, so by the time anything renders every row
+>   has tier data. Item 16 only made sense as a companion to item 17.
 > - **Item 17 — drop.** "Ineligible rows collapse to ghosted summaries rather
 >   than disappearing" reads well as a principle but did not survive a real
 >   54-row table: the muted rows clutter more than the hidden dataset cost, and
@@ -286,6 +293,17 @@ me?" in one screenful, without losing sight of the rest of the data.
 >   cleaner.
 > - **Item 18 — moot.** With no expander there is no pointer-only control to
 >   make keyboard-accessible.
+>
+> **So Phase 4 collapses entirely.** Items 16, 17 and 18 are gone and item 15
+> is a one-function bug fix, not a phase. It should be shipped as such —
+> `persistPayLevelToProfile()` on its own — and Phase 4 struck from the
+> roadmap rather than carried forward as a heading with nothing under it.
+>
+> The chain is worth recording because each step was individually reasonable:
+> ghost rows rejected → stretch band rejected → the spine loses its only
+> contrast and becomes decoration → nothing structural remains. The lesson is
+> that item 16 was never independent; the spec presented three items as
+> separable when items 16-18 all rested on item 17's premise.
 > - **Results line — reword or revert.** `8 for Level 11 · 10 soon · 36 others
 >   of 54` had the right information and the wrong phrasing. With stretch gone
 >   the "soon" segment disappears anyway.
