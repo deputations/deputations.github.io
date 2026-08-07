@@ -4326,15 +4326,20 @@ html:not([data-theme="light"]) .data-table th:has(.sort-btn.active) {
   font-weight: 800;
 }
 
+/* Phase 2 item 9: measured on the real composited card background, #e11d48 was
+   4.12 and #64748b was 4.11/4.39 — all under the 4.5 bar for this 0.95rem text.
+   Both predate Phase 2, but they are three of the same five bands the
+   light-theme twin covers, so correcting them here keeps one scale rather than
+   two. Darkened just enough to clear the bar; hue and weight unchanged. */
 [data-theme="light"] .days-pill-closing {
-  color: #e11d48;
+  color: #be123c;
   background: rgba(244, 63, 94, 0.10);
   border-color: rgba(244, 63, 94, 0.18);
 }
 
 [data-theme="light"] .days-pill-expired,
 [data-theme="light"] .days-pill-muted {
-  color: #64748b;
+  color: #4b5769;
 }
 
 /* ===== card Days Left box same premium feel as Status box ===== */
@@ -4933,12 +4938,24 @@ html:not([data-theme="light"]) .premium-credit {
 .data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-safe {
   color: #ffffff !important;
 }
-.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-closing {
+/* Phase 2 item 9: critical and soon join this group. Without them, a critical
+   row's dark red would sit on a saturated colour plank and vanish — the planks
+   cycle through red (10n+3) and pink (10n+4) where red-on-red is invisible.
+   critical rides with closing (same family, louder); soon goes light amber,
+   which reads on every plank in the cycle. */
+.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-closing,
+.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-critical {
   color: #ff2b2b !important;
   font-weight: 800 !important;
 }
+.data-container.view-table .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-soon {
+  color: #fde68a !important;
+  font-weight: 700 !important;
+}
 .data-container.view-table .data-table tbody tr:nth-child(10n + 3):hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-closing,
-.data-container.view-table .data-table tbody tr:nth-child(10n + 4):hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-closing {
+.data-container.view-table .data-table tbody tr:nth-child(10n + 4):hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-closing,
+.data-container.view-table .data-table tbody tr:nth-child(10n + 3):hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-critical,
+.data-container.view-table .data-table tbody tr:nth-child(10n + 4):hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .days-pill-critical {
   color: #ffffff !important;
 }
 .data-table tbody tr:hover:not(:has(td:nth-child(9):hover, td:nth-child(10):hover)) .source-badge {
@@ -5092,10 +5109,39 @@ html:not([data-theme="light"]) .premium-credit {
     font-weight: 700;
     white-space: nowrap;
   }
-  #dataContainer.view-table .data-table td:nth-child(7) .days-pill-safe    { color: #16a34a; }   /* >15  green */
-  #dataContainer.view-table .data-table td:nth-child(7) .days-pill-closing { color: #ef4444; }   /* <=15 red   */
+  /* Phase 2 item 9 — five urgency bands, not two, and a per-theme palette.
+
+     The old split was ">15 green, <=15 red", so a post closing tomorrow and one
+     closing in a fortnight were typeset identically — the reader had to parse
+     the digits to learn anything. Now hue AND weight both ramp with urgency, so
+     the scale still reads in greyscale and for a red-green colour-blind reader.
+     Bands come from getDaysLeftTone().
+
+     These colours were previously shared by both themes, and measuring the real
+     composited row backgrounds showed nearly the whole scale failing AA — the
+     text is 0.82rem, i.e. NORMAL text, so the bar is 4.5, not 3.0:
+        #ef4444 closing  4.02 dark / 3.25 light
+        #16a34a safe     4.59 dark / 2.85 light
+        #94a3b8 expired  5.90 dark / 2.21 light
+     Light rows are opaque white -> #eef3f8 gradients, so a palette tuned for a
+     dark navy row was never going to survive there. Each theme now gets its own
+     ramp, and every value below is the worst case across all four row-gradient
+     stops. Measured, not modelled. */
+  #dataContainer.view-table .data-table td:nth-child(7) .days-pill-critical { color: #f87171; font-weight: 800; }  /* <=2   5.47 */
+  #dataContainer.view-table .data-table td:nth-child(7) .days-pill-closing  { color: #fb923c; font-weight: 700; }  /* <=7   6.69 */
+  #dataContainer.view-table .data-table td:nth-child(7) .days-pill-soon     { color: #fbbf24; font-weight: 700; }  /* <=15  9.06 */
+  #dataContainer.view-table .data-table td:nth-child(7) .days-pill-safe     { color: #4ade80; font-weight: 600; }  /* >15   8.68 */
   #dataContainer.view-table .data-table td:nth-child(7) .days-pill-expired,
-  #dataContainer.view-table .data-table td:nth-child(7) .days-pill-muted   { color: #94a3b8; }
+  #dataContainer.view-table .data-table td:nth-child(7) .days-pill-muted    { color: #94a3b8; font-weight: 600; }  /* past  5.90 */
+
+  /* light twin — rows here are opaque near-white, so the ramp inverts to dark
+     saturated tones. Same five steps, same weights. */
+  [data-theme="light"] #dataContainer.view-table .data-table td:nth-child(7) .days-pill-critical { color: #b91c1c; }  /* 5.59 */
+  [data-theme="light"] #dataContainer.view-table .data-table td:nth-child(7) .days-pill-closing  { color: #9a3412; }  /* 6.31 */
+  [data-theme="light"] #dataContainer.view-table .data-table td:nth-child(7) .days-pill-soon     { color: #854d0e; }  /* 5.91 */
+  [data-theme="light"] #dataContainer.view-table .data-table td:nth-child(7) .days-pill-safe     { color: #166534; }  /* 6.16 */
+  [data-theme="light"] #dataContainer.view-table .data-table td:nth-child(7) .days-pill-expired,
+  [data-theme="light"] #dataContainer.view-table .data-table td:nth-child(7) .days-pill-muted    { color: #556378; }  /* 5.27 */
   /* header labels may wrap (so "NOTIFICATION" never clips) */
   #dataContainer.view-table .data-table thead th { white-space: normal; }
 
@@ -5292,9 +5338,12 @@ html:not([data-theme="light"]) .premium-credit {
   #dataContainer.view-table .data-table tbody tr:hover td:last-child::after {
     opacity: 0 !important;
   }
-  /* don't recolour the Days-Left text on tap */
+  /* don't recolour the Days-Left text on tap (all five bands, or the ones
+     added in Phase 2 would still flash their hover colour on touch) */
   #dataContainer.view-table .data-table tbody tr:hover .days-pill-safe,
-  #dataContainer.view-table .data-table tbody tr:hover .days-pill-closing {
+  #dataContainer.view-table .data-table tbody tr:hover .days-pill-closing,
+  #dataContainer.view-table .data-table tbody tr:hover .days-pill-critical,
+  #dataContainer.view-table .data-table tbody tr:hover .days-pill-soon {
     color: inherit !important;
     font-weight: inherit !important;
   }
@@ -6580,4 +6629,119 @@ html[data-theme="light"] .app-header .header-logo h1 .gradient-text {
   background-repeat: no-repeat;
   -webkit-background-clip: text;
   background-clip: text;
+}
+
+/* ============================================================================
+   PHASE 2 — Typography and rhythm  (REDESIGN.md items 7, 8, 9)
+   ============================================================================ */
+
+/* --- item 7: tabular figures ------------------------------------------------
+   Proportional digits made pay levels, day-counts and dates ragged down the
+   column — "11" is narrower than "13", so nothing lined up. The idiom already
+   existed in 8 places (.kpi-value, .vx-date, DeFeX tables) and simply was not
+   applied to the vacancy table. Measured before: every one of these columns
+   computed `font-variant-numeric: normal`; only .days-date-sub had it. */
+.data-table td.level-col,
+.data-table td.eligibility-col,
+.data-table td.days-col,
+.data-table td.notification-date-col,
+.data-table .days-pill {
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* --- item 8: kill the row jitter --------------------------------------------
+   Measured before: rows were 89px or 106px — a 17px spread. The post name is
+   always one line, so the whole variance came from .table-subtext (the
+   organisation) wrapping to a third line at 19px per line. Clamping to exactly
+   two lines pins every row. `height` rather than `min-height`/`max-height`
+   because it has to hold in BOTH directions: a one-line organisation would
+   otherwise leave a short row and reintroduce the jitter from the other side.
+   app.js adds a `title` so the full name is still reachable on hover. */
+.post-col .table-subtext {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+  height: 2.8em;                      /* exactly two lines, always */
+}
+
+/* --- item 9: urgency legible before the number is read ----------------------
+   "93 days" and "1 day" were typeset identically — same colour, same weight —
+   so the reader had to parse the digits to learn anything. app.js used three
+   bands (expired / <=15 / rest) while shared/vacancy-utils.js already carried
+   five. Adopting the five-band scale is what makes this legible AND collapses
+   the duplication Phase 0 deliberately left in place.
+
+     critical  <= 2 days   solid fill, 800   — loudest thing in the row
+     closing   <= 7 days   red on tint, 700
+     soon      <= 15 days  amber on tint, 700
+     safe      > 15 days   outline only, 600 — quietest
+   Weight ramps monotonically with urgency, so the scale reads even in
+   greyscale or for a red-green colour-blind reader. */
+/* Card + modal keep real pill chrome (table view strips it — see :5083).
+   Critical is the only band with a solid fill: it should be the loudest thing
+   on the card. var(--danger-color) #f43f5e was the obvious choice but measures
+   only 3.67:1 against white text, and at 0.95rem/800 this is still NORMAL text
+   (the large-text exemption starts at 18.66px bold), so the bar is 4.5.
+   #e11d48 clears it at 4.70 and is the same rose family. */
+.days-pill-critical {
+  color: #fff;
+  background: #e11d48;
+  border-color: #e11d48;
+  font-weight: 800;
+}
+
+.days-pill-soon {
+  color: var(--warning-color);
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.30);
+}
+
+.days-pill-safe {
+  font-weight: 600;                   /* quietest of the scale */
+}
+
+/* modal + card contexts strip the pill chrome, so they need the tone colours
+   restated or critical/soon would fall back to plain body text. */
+.highlight-box .days-pill-critical,
+.job-highlight-row .highlight-box:first-child .days-pill-critical {
+  color: var(--danger-color);
+}
+
+.highlight-box .days-pill-soon,
+.job-highlight-row .highlight-box:first-child .days-pill-soon {
+  color: var(--warning-color);
+}
+
+/* card Days-Left box: critical borrows the closing treatment (it is the same
+   family, louder), soon gets its own amber so it is not mistaken for danger. */
+html:not([data-theme="light"]) .job-highlight-row .highlight-box:first-child:has(.days-pill-critical) {
+  border-color: rgba(244, 63, 94, 0.40);
+  background: rgba(244, 63, 94, 0.12);
+}
+
+html:not([data-theme="light"]) .job-highlight-row .highlight-box:first-child:has(.days-pill-soon) {
+  border-color: rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.07);
+}
+
+/* light theme */
+[data-theme="light"] .days-pill-critical {
+  color: #fff;
+  background: #e11d48;
+  border-color: #e11d48;
+  font-weight: 800;
+}
+
+[data-theme="light"] .days-pill-soon {
+  color: #92400e;                     /* #b45309 measured 4.51 — too thin a margin */
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.32);
+}
+
+/* the light block above sets .days-pill-safe to 800, which would make the
+   calmest band the heaviest and invert the whole ramp. */
+[data-theme="light"] .days-pill-safe {
+  font-weight: 600;
 }

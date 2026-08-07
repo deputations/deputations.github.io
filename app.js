@@ -1276,9 +1276,15 @@ function renderTable(data) {
       <tr class="clickable-row ${saved ? 'row-bookmarked' : ''}" data-open-details="${escapeHtml(vacancyId)}">
         <td class="post-col" data-label="Post Name">
           <strong>${escapeHtml(safe(item.Post_Name) || '—')}</strong>${isNewVacancy(item) ? ' <span class="vx-new table-new" title="Added in the last 7 days">NEW</span>' : ''}
-          <div class="table-subtext">
-            ${escapeHtml(safe(item.Department_Organisation) || orgDisplayName(item) || '')}
-          </div>
+          ${(() => {
+            // Phase 2 item 8: the organisation is clamped to two lines in CSS
+            // to stop it driving row height, so carry the full string in a
+            // title for the names that get cut.
+            const org = safe(item.Department_Organisation) || orgDisplayName(item) || '';
+            return `<div class="table-subtext"${org ? ` title="${escapeHtml(org)}"` : ''}>
+            ${escapeHtml(org)}
+          </div>`;
+          })()}
         </td>
 
         <td class="level-col" data-label="Level">
@@ -3372,10 +3378,19 @@ function syncCardSortUI() {
         return `${daysLeft} day${daysLeft === 1 ? '' : 's'}`;
     }
 
+    // Phase 2 item 9. Was three bands (expired / <=15 / rest), which typeset
+    // "1 day" and "93 days" identically once both landed outside the 15-day
+    // window. These five bands are byte-identical to the twin in
+    // shared/vacancy-utils.js:79 — the duplication Phase 0 declined to collapse
+    // (because merging then would have recoloured every pill as a side effect
+    // of a defect fix) is resolved here, where recolouring IS the change.
+    // Keep the two in step; style.css carries a tone class per band.
     function getDaysLeftTone(daysLeft) {
   if (Number.isNaN(daysLeft)) return 'muted';
   if (daysLeft < 0) return 'expired';
-  if (daysLeft <= 15) return 'closing';
+  if (daysLeft <= 2) return 'critical';
+  if (daysLeft <= 7) return 'closing';
+  if (daysLeft <= 15) return 'soon';
   return 'safe';
 }
 
