@@ -259,39 +259,51 @@ me?" in one screenful, without losing sight of the rest of the data.
 > (commit `4c6bf7d`) — start there rather than from scratch, most of it is
 > sound.
 >
-> **What the owner judged wrong, in their words:** ghost rows look messy, the
-> results-line wording is wrong, and row heights / layout feel broken.
+> **What the owner judged wrong, over two rounds of review:** ghost rows look
+> messy, the results-line wording is wrong, row heights / layout feel broken,
+> and — on a second pass — **the "Show" expander and the "eligible in N years"
+> stretch band are both overdoing it**.
 >
-> **What was explicitly NOT wrong:** the gutter spine and the band chips. Item
-> 16's visual treatment works and should survive into v2.0 unchanged.
+> **What was explicitly NOT wrong:** the gutter spine itself.
 >
-> So the failure is concentrated in **item 17**, not the phase as a whole:
+> Taken together that removes most of the phase, and the honest reading is that
+> **Phase 4 as specified is over-designed for this product**. Each piece is
+> individually defensible; the sum is too much machinery on a table whose value
+> is density and calm.
 >
-> - **Item 17's premise did not survive contact.** "Ineligible rows collapse to
->   ghosted one-line summaries rather than disappearing" reads well as a
->   principle, but on a real 54-row dataset the muted rows clutter the table
->   more than the hidden dataset cost. The pre-Phase-4 behaviour — a pay level
->   simply filters them out — was cleaner. v2.0 should either drop item 17 or
->   find a way to show "the rest is still there" WITHOUT interleaving it with
->   the rows you care about (a count, a collapsed block below the table, a
->   separate tab).
-> - **The results line needs rewording.** `8 for Level 11 · 10 soon · 36 others
->   of 54` — the counts are the right information, the phrasing is not.
-> - **Row heights must be flattened, not merely improved.** The build reduced a
->   93/110/127/304/362px spread to 93/110 and stopped, on the argument that
->   forcing uniformity costs ~20% more scrolling. The owner disagreed. Treat
->   uniform row height as a hard requirement in v2.0, not a trade.
+> **What v2.0 should actually be — much smaller than this branch:**
 >
-> Worth keeping regardless of what happens to item 17, because none of it was
-> the problem:
-> - `enrich.js#eligibilityBand()` — the three-band classifier, including the
->   "right grade, short on service" definition of *stretch* that yields
->   "eligible in N years"
-> - item 15's write-back to `dep_profile_v1` (`persistPayLevelToProfile`) —
->   this fixed a genuine bug where a sidebar pay-level choice was discarded on
->   reload
-> - the `.sr-only` utility and its `!important`, and the Location-column clamp
->   (both fix pre-existing defects unrelated to the lens)
+> - **Item 15 — keep.** Persisting the pay level fixed a real bug: a sidebar
+>   choice was discarded on reload because `app.js` only ever read
+>   `dep_profile_v1` and never wrote it. Worth doing on its own, independent of
+>   any lens.
+> - **Item 16 — reduce to a binary marker.** A quiet spine on rows the officer
+>   is eligible for. No third band, no chips, no "in Ny" copy.
+> - **Item 17 — drop.** "Ineligible rows collapse to ghosted summaries rather
+>   than disappearing" reads well as a principle but did not survive a real
+>   54-row table: the muted rows clutter more than the hidden dataset cost, and
+>   the expander made it worse. Filtering them out, as the site did before, was
+>   cleaner.
+> - **Item 18 — moot.** With no expander there is no pointer-only control to
+>   make keyboard-accessible.
+> - **Results line — reword or revert.** `8 for Level 11 · 10 soon · 36 others
+>   of 54` had the right information and the wrong phrasing. With stretch gone
+>   the "soon" segment disappears anyway.
+> - **Row height — a hard requirement, not a trade.** The build cut a
+>   93/110/127/304/362px spread to 93/110 and stopped, arguing uniformity would
+>   cost ~20% more scrolling. That judgement was wrong on review.
+>
+> **Consequence for the branch:** with stretch dropped, `eligibilityBand()` is
+> no longer worth salvaging — without the three-band split it answers exactly
+> what `enrich.js#isEligible()` already answers. Take item 15's
+> `persistPayLevelToProfile()` and leave the rest.
+>
+> Two fixes on the branch are unrelated to the lens and are worth lifting out
+> regardless, since both correct defects that predate Phase 4:
+> - the `.sr-only` utility and its `!important` — `style.css:4836` forces
+>   `position: relative` on every direct child of a `td` for the 3D plank
+>   effect, which silently turns visually-hidden text into visible text
+> - the Location-column clamp — multi-location posts wrapped to 362px rows
 
 ---
 
