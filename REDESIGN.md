@@ -252,6 +252,47 @@ me?" in one screenful, without losing sight of the rest of the data.
 > If ghost rows consume page slots the user sees ~3 real vacancies per page; if
 > they do not, the page counts get strange. Needs a pagination answer first.
 
+> ### [BUILT AND DEFERRED TO v2.0 — 2026-08-07]
+>
+> Phase 4 was implemented in full and **rejected on review by the owner**. It is
+> not merged. The work is preserved on branch `phase-4-eligibility-lens`
+> (commit `4c6bf7d`) — start there rather than from scratch, most of it is
+> sound.
+>
+> **What the owner judged wrong, in their words:** ghost rows look messy, the
+> results-line wording is wrong, and row heights / layout feel broken.
+>
+> **What was explicitly NOT wrong:** the gutter spine and the band chips. Item
+> 16's visual treatment works and should survive into v2.0 unchanged.
+>
+> So the failure is concentrated in **item 17**, not the phase as a whole:
+>
+> - **Item 17's premise did not survive contact.** "Ineligible rows collapse to
+>   ghosted one-line summaries rather than disappearing" reads well as a
+>   principle, but on a real 54-row dataset the muted rows clutter the table
+>   more than the hidden dataset cost. The pre-Phase-4 behaviour — a pay level
+>   simply filters them out — was cleaner. v2.0 should either drop item 17 or
+>   find a way to show "the rest is still there" WITHOUT interleaving it with
+>   the rows you care about (a count, a collapsed block below the table, a
+>   separate tab).
+> - **The results line needs rewording.** `8 for Level 11 · 10 soon · 36 others
+>   of 54` — the counts are the right information, the phrasing is not.
+> - **Row heights must be flattened, not merely improved.** The build reduced a
+>   93/110/127/304/362px spread to 93/110 and stopped, on the argument that
+>   forcing uniformity costs ~20% more scrolling. The owner disagreed. Treat
+>   uniform row height as a hard requirement in v2.0, not a trade.
+>
+> Worth keeping regardless of what happens to item 17, because none of it was
+> the problem:
+> - `enrich.js#eligibilityBand()` — the three-band classifier, including the
+>   "right grade, short on service" definition of *stretch* that yields
+>   "eligible in N years"
+> - item 15's write-back to `dep_profile_v1` (`persistPayLevelToProfile`) —
+>   this fixed a genuine bug where a sidebar pay-level choice was discarded on
+>   reload
+> - the `.sr-only` utility and its `!important`, and the Location-column clamp
+>   (both fix pre-existing defects unrelated to the lens)
+
 ---
 
 ### Phase 5 — Deadline horizon rail
