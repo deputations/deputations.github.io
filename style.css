@@ -3715,7 +3715,16 @@ html:not([data-theme="light"]) .data-table tbody tr:hover {
       rgba(243,249,255,0.98) 0%,
       rgba(240,244,255,0.96) 100%
     ) !important;
-  color: #64748b !important;
+  /* P3-10: was #64748b, which measured 4.49:1 at the gradient's top stop and
+     4.32:1 at the bottom — the 4.42 recorded during P3-8 is the midpoint of
+     that range. Header type is 12.8px/700, i.e. NORMAL text under WCAG (the
+     large-text exemption starts at 18.66px bold), so the bar is 4.5 and both
+     ends were under it. #556378 measures 5.76 / 5.54 against the same two
+     stops while staying a muted grey-blue, so the header still reads as
+     secondary to the row content. Verified from computed styles in the
+     browser, not modelled — the winning rule is this one, not the teal block
+     at :4976, and the background is a gradient rather than a flat fill. */
+  color: #556378 !important;
   border-bottom-color: rgba(109, 40, 217, 0.08) !important;
 }
 
@@ -6517,3 +6526,58 @@ html[data-theme="light"] .semantic-result-sub,
 html[data-theme="light"] .semantic-result-open,
 html[data-theme="light"] .semantic-results-status { color: #475569; }
 html[data-theme="light"] .semantic-bar { background: rgba(15, 23, 42, 0.12); }
+
+/* ============================================================================
+   P3-10 — light-theme headline contrast
+
+   The brand gradient (#FF6B6B -> #6B66FF) passes comfortably on the dark theme
+   (7.38 / 4.85) but the red stop measures 2.59:1 on the light background,
+   under even the 3.0 large-text bar. REDESIGN.md reported this as a dark-theme
+   failure; measurement showed the opposite. P3-9 settled that the gradient is
+   staying, so this is permanent debt rather than something a restyle removes.
+
+   Darkened stops for LIGHT ONLY: #C81E1E = 5.35, #4F46E5 = 5.87 against the
+   measured body background rgb(246,247,249). Both clear the strict 4.5
+   normal-text bar, so they hold if the headline is ever scaled down. Dark
+   theme is untouched. Same approach rules.html:539 already ships.
+
+   Specificity is deliberate, not defensive. Three rules compete for this
+   element and the winner is NOT the obvious one:
+     style.css:315                                  (0,1,0)
+     .gradient-text.tw-flow  (injected by site-widgets.js at runtime)  (0,2,0)
+     home-flourish.css:17  .app-header .header-logo h1 .gradient-text (0,3,1)
+   home-flourish wins on index.html, and it loads after style.css, so an
+   equal-specificity override here would lose. Verified in the browser: the
+   computed backgroundImage on the headline is home-flourish's two-layer form.
+   ============================================================================ */
+
+/* Base — every page that loads style.css (index, my-deputation,
+   upcoming-projects). Beats the bare .gradient-text and the injected
+   .tw-flow, which is why the html[] prefix is here. */
+html[data-theme="light"] .gradient-text {
+  background-image: linear-gradient(to right, #C81E1E, #4F46E5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* The flowing variant keeps its 3-stop loop so the animation still reads. */
+html[data-theme="light"] .gradient-text.tw-flow {
+  background-image: linear-gradient(90deg, #C81E1E, #4F46E5, #C81E1E);
+}
+
+/* index.html only: mirror home-flourish's TWO-layer structure rather than
+   flattening it, so the one-shot sheen (which animates background-position
+   across both layers) still works. Collapsing to one layer would silently
+   kill that animation. */
+html[data-theme="light"] .app-header .header-logo h1 .gradient-text {
+  background:
+    linear-gradient(110deg, transparent 38%, rgba(255, 255, 255, .72) 50%, transparent 62%),
+    linear-gradient(to right, #C81E1E, #4F46E5);
+  background-size: 240% 100%, 100% 100%;
+  background-position: 250% 0, 0 0;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+}

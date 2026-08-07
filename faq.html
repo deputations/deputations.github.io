@@ -85,6 +85,16 @@ html[data-theme="light"] .shape-3{background:rgba(5,150,105,0.10)}
 .header-logo h1{font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
 .gradient-text{background:linear-gradient(to right,#FF6B6B,#6B66FF);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+/* P3-10: the red stop measures 2.59:1 on the light background — below even the
+   3.0 large-text bar. Dark theme passes at 7.38/4.85 and is left alone. This
+   page loads neither style.css nor home-flourish.css, so it needs its own
+   override; the .tw-flow rule injected by site-widgets.js is beaten by the
+   html[] prefix. #C81E1E = 5.35, #4F46E5 = 5.87. */
+html[data-theme="light"] .gradient-text,
+html[data-theme="light"] .gradient-text.tw-flow{
+  background-image:linear-gradient(to right,#C81E1E,#4F46E5);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent}
 .top-nav{display:flex;flex-wrap:wrap;gap:4px;align-items:center;max-width:1120px;
   margin:0 auto;padding:10px clamp(16px,4vw,40px);border-bottom:1px solid var(--border-color)}
 .top-nav a{padding:8px 14px;border-radius:999px;color:var(--text-secondary);font-size:.9rem;
