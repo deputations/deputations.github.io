@@ -316,12 +316,25 @@ me?" in one screenful, without losing sight of the rest of the data.
 > what `enrich.js#isEligible()` already answers. Take item 15's
 > `persistPayLevelToProfile()` and leave the rest.
 >
-> Two fixes on the branch are unrelated to the lens and are worth lifting out
-> regardless, since both correct defects that predate Phase 4:
-> - the `.sr-only` utility and its `!important` — `style.css:4836` forces
->   `position: relative` on every direct child of a `td` for the 3D plank
->   effect, which silently turns visually-hidden text into visible text
-> - the Location-column clamp — multi-location posts wrapped to 362px rows
+> Of the two "unrelated fixes" this note previously recommended lifting off the
+> branch, **only one was a real bug**:
+>
+> - **The Location-column clamp — genuine, and now fixed on `main`.** Three
+>   ACTIVE rows carry location strings long enough to wrap to a 362px row
+>   beside 110px neighbours; the worst is 167 characters. Reproduced on `main`
+>   with no Phase 4 code present.
+> - **The `.sr-only` utility — NOT a live bug; the earlier claim here was
+>   wrong.** `style.css:4836` (`.data-table tbody td > * { position: relative }`)
+>   does defeat visually-hidden text, but nothing on `main` puts such text
+>   inside a table cell. The only two `.sr-only` uses in the repo are
+>   `faq.html:472` and `rules.html:1664`, both outside the table and both
+>   carrying their own inline definition. It bit Phase 4 solely because Phase 4
+>   introduced hidden text into `td`s. Adding the utility to `style.css` now
+>   would ship a helper with no consumer, so it has been left alone.
+>
+>   Still worth knowing as a **trap**: anyone adding visually-hidden text
+>   inside `.data-table` in future must mark `position` `!important`, or it
+>   will render as visible text.
 
 ---
 

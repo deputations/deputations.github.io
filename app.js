@@ -1303,9 +1303,17 @@ function renderTable(data) {
           ${escapeHtml(orgAcronym(item) || '—')}
         </td>
 
-        <td class="location-col" data-label="Location">
-          ${escapeHtml(formatLocation(item) || '—')}
-        </td>
+        ${(() => {
+          // Posts spanning many offices carry a very long location string —
+          // the worst live example is 167 characters across 8 cities and 7
+          // states — which wrapped to a 362px row beside 110px neighbours.
+          // Clamped to two lines in CSS; the full list stays in the title and
+          // in the row's modal, so nothing is lost.
+          const loc = formatLocation(item) || '—';
+          return `<td class="location-col" data-label="Location"${loc !== '—' ? ` title="${escapeHtml(loc)}"` : ''}>
+          <div class="loc-clamp">${escapeHtml(loc)}</div>
+        </td>`;
+        })()}
 
         <td class="days-col" data-label="Days Left">
           <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}">

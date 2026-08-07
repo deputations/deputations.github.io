@@ -6745,3 +6745,30 @@ html:not([data-theme="light"]) .job-highlight-row .highlight-box:first-child:has
 [data-theme="light"] .days-pill-safe {
   font-weight: 600;
 }
+
+/* ----------------------------------------------------------------------------
+   Location column clamp.
+
+   Phase 2 item 8 measured a row-height spread of 0 and stopped there, but that
+   only proved it for the rows on page 1 at the time — the organisation subtext
+   was the jitter source in that sample. Posts spanning many offices carry a
+   far longer location string: the worst live row is 167 characters ("Delhi;
+   Bhopal; Rajamundry; Jaipur; Gwalior; Indore; Chennai; Bangalore; Jammu,
+   Delhi; Madhya Pradesh; ...") which wraps inside a ~104px column to a 362px
+   row, beside 110px neighbours. Three ACTIVE rows are affected today.
+
+   The clamp goes on an inner div, NEVER on the <td>: setting
+   `display: -webkit-box` on a table cell drops it out of table layout, the
+   column collapses to its minimum width and the text wraps one character per
+   line. That version actually shipped in an earlier draft and passed every
+   numeric check — only a screenshot caught it. (.table-subtext works precisely
+   because it is already a div.)
+
+   app.js keeps the full string in a title, and the modal shows it in full. */
+.data-table td.location-col .loc-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
