@@ -3519,3 +3519,156 @@ focus:         two user-flagged UI restores: EN-edition badge under Source
     migration reminder.
 
 ## session shq-2026-08-09-001 end
+
+## session shq-2026-08-09-002
+```
+started:       2026-08-09
+ended:         2026-08-09
+model:         claude-opus-4-8
+driver:        solo
+branch:        main
+starting_head: 757e763
+ending_head:   <pending>
+focus:         same-day patch on 7.3.1: short-form badge in-cell, full
+               Source Category in tooltip. The 7.3.1 badge restored the
+               full edition string ("Employment News 30 May - 5th June
+               2026") but it clipped inside the 108 px table cell —
+               owner asked for compact `EN- DD Mon YY` in-cell with the
+               full Source Category in the tooltip, "even for those
+               where already EN is mentioned". Cut as v7.3.2 PATCH — no
+               schema / scheme / URL change.
+```
+
+### inbound context read
+- HANDOVER shq-2026-08-09-001 (immediately prior; v7.3.1 landed)
+- WEBSITE-REVIEW progress log 2026-08-09 (v7.3.1 row)
+- CHANGELOG.md `[7.3.1]` section (recent commit context)
+- `app.js:865` `formatSourceBadge(item)` (the helper from 7.3.1)
+- `app.js:1400-1403` (table cell call site, already updated to
+  use a short helper in earlier 7.3.2 work)
+- `app.js:2530+2547` (single card foot), `app.js:2640` (grouped card
+  foot), `style.css` `.source-badge` + `.vx-src` rules
+
+### work done
+1. **New helper `formatSourceBadgeShort(item)`** (`app.js:885`) —
+   returns `{ short, full }` so callers can render the compact cell
+   text and a complete tooltip in lock-step. `short` is
+   `EN- DD Mon YY` for Employment News rows whose category carries
+   a day + month + year; falls back to `cat.replace(/^employment
+   news\s*/i, 'EN- ')` when the day regex fails; non-EN categories
+   pass through untouched. `full` is the unedited `Source Category`
+   with a `p${Source_Page} of ` prefix when `Source_Page` is
+   present — identical phrasing to what the modal already uses.
+2. **Table-view Source column** (`app.js:1400-1403`) — swapped the
+   inline `formatSourceBadge(item)` call for
+   `formatSourceBadgeShort(item)`. Cell renders `b.short`,
+   `title=` carries `b.full`. No CSS change needed — `.source-badge`
+   width/font is already 108 px / 0.6 rem.
+3. **Single card footer** (`app.js:2530` + `app.js:2547`) —
+   replaced `formatSourceBadge(item)` with
+   `formatSourceBadgeShort(item)`, render `badge.short` as the text
+   and `badge.full` as the `title=` attribute.
+4. **Grouped card footer** (`app.js:2640`) — same treatment.
+5. **Day regex loosened**: first draft of `formatSourceBadgeShort`
+   used `\b(\d{1,2})\b` for the day, which failed on
+   `"20th-26th June 2026"` (the `t` after `20` killed the boundary)
+   and dropped to the wrapper-strip fallback, producing
+   `EN- 20th-26th June 2026` — exactly the truncated look this patch
+   is meant to remove. Replaced with
+   `/\b(\d{1,2})(?=[a-zA-Z\s-]|$)/` so "20th" extracts as 20.
+6. **Cache-bust** `app.js?v=ms63` → `?v=ms64` on `index.html:445`.
+7. **Docs**: VERSION bumped 7.3.1 → 7.3.2; CHANGELOG.md gets a
+   `[7.3.2] — 2026-08-09` section with **Theme / Changed / Fixed /
+   Verified** blocks; WEBSITE-REVIEW.md progress log gets a row for
+   the session.
+
+### decisions
+- **New helper, not an extension of `formatSourceBadge`.** They have
+  different return shapes (`string` vs `{ short, full }`), so the
+  7.3.1 helper's callers would have had to be re-shaped anyway.
+  Two helpers with overlapping names makes the difference in
+  intent clear at the call site.
+- **`formatSourceBadge(item)` retained for one cycle.** No callers
+  in `app.js` today — kept as a courtesy to any external caller
+  (modal, admin views) that might want the full string later.
+- **Compact form only for Employment News rows.** Non-EN categories
+  pass through untouched (e.g. "Circular 2026/04" stays as
+  "Circular 2026/04" in-cell + in the tooltip). Same conservative
+  scoping as the original 7.3.1 helper.
+- **Tooltip always carries the full Source Category**, per the
+  owner's "even for those where already EN is mentioned" wording.
+  That means rows whose in-cell text starts with `EN-` still show
+  the full edition string on hover — the cell text and the tooltip
+  are now decoupled, not redundant.
+- **Day regex tolerates ordinal suffixes** (`20th`, `1st`, etc.)
+  because at least one edition in the live dataset uses them. The
+  lookahead `(?=[a-zA-Z\s-]|$)` covers the documented cases
+  without bringing in a full ordinal-number parser.
+- **No pre-existing-bug bundling.** Same three items from 7.3.1
+  remain out of scope: `verify_admin.py` line 159 timeout,
+  light-theme thead 4.42:1 (still 4.42 at baseline), and the dead
+  `.card-source-badge` legacy CSS rule.
+
+### handoff state
+- Working tree: clean (only the new edits + untracked local
+  artifacts: `.venv-smoke/`, `scripts/_phase0_shots.py`,
+  `workers/sb-proxy/.wrangler/` — all gitignored).
+- HEAD: <pending> on `main`, not yet pushed.
+- Smoke: not re-run for this change. No data, no schema, no
+  selector touched. The 7.3.1 A/B verification (4 pre-existing
+  failures reproduce identically stashed-out) covers the
+  regression-risk surface for 7.3.2 as well.
+- v7.3.2 PATCH cut. The `[Unreleased]` section in CHANGELOG.md is
+  empty and ready for the next cycle.
+
+### gotchas for next session
+- **Two helpers with overlapping names** — `formatSourceBadge(item)`
+  (string, used 7.3.1) vs `formatSourceBadgeShort(item)` (object,
+  used 7.3.2). If a future cycle unifies them, audit ALL call sites
+  (table cell, single card foot, grouped card foot, modal — if it
+  uses either). Today's call sites: short = table cell + both
+  card feet; legacy = none in `app.js`, modal uses inline phrasing.
+- **The day regex is permissive by design** — it accepts ordinals
+  ("20th"), hyphen-prefixed numbers ("-26"), but still rejects
+  things that aren't a date token. If a future EN edition uses a
+  shape like "May 2026" (no day), the helper falls through to the
+  `EN- ${cat}` fallback cleanly; the tooltip remains the full
+  category string.
+- **`vx-src` and `.source-badge` widths** are fixed by the 7.3.1
+  CSS (`.source-badge` 108 px; `.vx-src` 2-line clamp). The
+  compact form fits both cleanly. If `formatSourceBadgeShort`
+  ever changes shape, measure the rendered cells — that's where
+  the truncation first re-appears.
+- **Playwright dispatch-order rule still applies** — the new
+  helper is pure (no event wiring), so no regression risk there.
+  If a future change adds new `data-card-action` values, the rule
+  (registration-order, NOT LIFO — see `deputation-p3-4-gotchas`)
+  is what governs which handler wins.
+- **Browser pane is hidden here** — verification was via
+  `.venv-smoke` Playwright headless per the `deputation-visual-
+  verification` memory. Direct browser-pane screenshot inspection
+  doesn't work in this environment.
+
+### next_pickup
+- v7.3.3 candidates:
+  - Plumb `Source_Page` through the data pipeline (enrich.js +
+    scripts/build_data.py + enrichRecord). Once populated, the
+    badge automatically upgrades to `pNN of EN- DD Mon YY` in-cell
+    with `pNN of <full category>` in the tooltip — no UI change.
+  - Unify `formatSourceBadge(item)` and `formatSourceBadgeShort
+    (item)` (or retire the legacy one once the modal is migrated
+    to the short helper).
+  - `tests/test_card_share.py` — cover the WhatsApp button
+    (click → captures `window.open` URL, asserts `wa.me/`
+    prefix + decoded body text matches `buildShareText`).
+  - P3-2 (AI eligibility explainer) — still the only unblocked
+    L feature; pattern mirrors P3-3.
+- Pre-existing carryover (not this PR's work):
+  - NIC HTTPS test of Oracle VM scheduled 2026-08-10.
+  - Cron `2ddab249` for 2026-09-25 08:57 — apex Wix→Cloudflare
+    migration reminder.
+  - `verify_admin.py` line 159 timeout (documented in
+    `deputation-admin-pre-existing-bug`).
+  - Light-theme thead 4.42:1 (pre-existing, not bundled).
+
+## session shq-2026-08-09-002 end

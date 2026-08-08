@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.3.1` (2026-08-09).** The `VERSION` file at the repo root
+**Current version: `7.3.2` (2026-08-09).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -27,6 +27,57 @@ counter_convention:
 ## [Unreleased]
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
+
+## [7.3.2] — 2026-08-09
+**Theme: the badge gets a short form.** The 7.3.1 badge restored the full
+edition string ("Employment News 30 May - 5th June 2026") under every Source
+PDF link. That string clips inside the 108 px table cell — visible truncation
+on most rows. The fix: keep the full source category in the tooltip, render
+only `EN- DD Mon YY` in-cell so the cell fits and the tooltip stays one
+consistent label everywhere.
+
+- counter: `app.js?v=ms63` → `app.js?v=ms64` on `index.html`
+- counter: `style.css` unchanged
+
+**Changed**
+- New `formatSourceBadgeShort(item)` helper (`app.js:885`) is the single
+  source of truth for both the cell text and the tooltip, mirroring the
+  modal's phrasing. Returns `{ short, full }`:
+  - `short` — `EN- DD Mon YY` for Employment News rows whose category
+    carries a day + month + year; falls back to the category with the
+    "Employment News" wrapper replaced by `EN- ` otherwise; non-EN
+    categories are passed through untouched.
+  - `full` — the unedited `Source Category` (with a `p${page} of ` prefix
+    when `Source_Page` is present). This is what the tooltip shows.
+- Both the **table cell** (`app.js:1400-1403`) and the **card foot**
+  (single at `app.js:2530` + 2547, grouped at `app.js:2640`) now read
+  from `formatSourceBadgeShort`. Cell text is `b.short`, `title=` is
+  `b.full`. The legacy `formatSourceBadge(item)` helper is retained for
+  any external caller and currently has no callers in `app.js` — left in
+  for one cycle in case the modal or admin views want it later.
+
+**Fixed**
+- Table-cell source badge clipping. The 7.3.1 badge rendered the full
+  edition string at 0.6rem inside a 108 px cell; "Employment News
+  30 May - 5th June 2026" overflowed on every row, getting cropped to
+  "EN 30 May-5 Jun 20…" with no ellipsis. Now the cell shows "EN- 30
+  May 26" — fits cleanly, with the full text one hover away.
+
+**Verified**
+- `node --check app.js` clean.
+- Playwright DOM sweep on the running static server:
+  - Table: all 10 rendered badges have `truncated=false`. Coverage
+    spans four edition shapes:
+    | Source Category | Short |
+    |---|---|
+    | `Employment News 30 May - 5th June 2026` | `EN- 30 May 26` |
+    | `Employment News (11-17 Apr 2026)` | `EN- 11 Apr 26` |
+    | `Employment News 20th-26th June 2026` | `EN- 20 Jun 26` |
+    | `EN 25 Apr 2026` | `EN- 25 Apr 26` |
+  - Card view: same compact form; title attribute carries the full
+    `Source Category` on every row.
+- Manual visual check: badge stays inside the cell on every row in
+  the table; tooltip text matches what the modal shows for the same row.
 
 ## [7.3.1] — 2026-08-09
 **Theme: a missing badge comes back, and WhatsApp gets its own button.**

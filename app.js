@@ -870,6 +870,49 @@ function formatSourceBadge(item) {
   return cat;
 }
 
+/**
+ * Shorter, cell-friendly form of the badge. The full edition string
+ * ("Employment News (11-17 Apr 2026)") clips inside the 108 px table cell;
+ * the EN- prefix is a stable marker so the tooltip always carries the full
+ * title even on rows whose in-cell text already starts with "EN".
+ *
+ * Returns { short, full } so callers can render the compact text in-cell
+ * and use the full `Source Category` (or page + category) as the title=
+ * tooltip. Returns null if there's nothing to show.
+ */
+const _EN_MONTHS = { jan:'Jan', feb:'Feb', mar:'Mar', apr:'Apr', may:'May',
+  jun:'Jun', jul:'Jul', aug:'Aug', sep:'Sep', oct:'Oct', nov:'Nov', dec:'Dec' };
+function formatSourceBadgeShort(item) {
+  const cat = safe(item['Source Category']);
+  const page = safe(item.Source_Page);
+  if (!cat) return null;
+  // Try to extract a day + month + year from the edition string. Works for
+  // both shapes present in the dataset: "EN 09-15 May 2026" and
+  // "Employment News (11-17 Apr 2026)". The first day number wins (ranges
+  // collapse to start day — same trade-off as enrich.js#enIssueCompact).
+  const norm = cat.replace(/^employment news\s*/i, '').replace(/^EN\s*/i, '').replace(/[()]/g, '');
+  // Day match tolerates ordinal suffixes like "20th-26th" — strip trailing
+  // letters before matching so "20th" still extracts as 20.
+  const dayMatch = norm.match(/\b(\d{1,2})(?=[a-zA-Z\s-]|$)/);
+  const monMatch = norm.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i);
+  const yearMatch = norm.match(/\b(\d{4})\b/);
+  let compact = '';
+  if (dayMatch && monMatch && yearMatch) {
+    const day = parseInt(dayMatch[1], 10);
+    const mon = _EN_MONTHS[monMatch[1].slice(0, 3).toLowerCase()];
+    const yy = yearMatch[1].slice(-2);
+    compact = `EN- ${day} ${mon} ${yy}`;
+  } else {
+    // Fallback: strip the "Employment News" wrapper if any; leave other
+    // sources (e.g. "Circular") untouched.
+    compact = cat.replace(/^employment news\s*/i, 'EN- ');
+  }
+  // Tooltip always carries the full edition string (and page if present),
+  // matching the modal's phrasing so users see one consistent label.
+  const full = page ? `p${page} of ${cat}` : cat;
+  return { short: page ? `p${page} of ${compact}` : compact, full };
+}
+
 function buildShareText(item) {
     const lines = [`📢 ${safe(item.Post_Name) || 'Deputation vacancy'} — ${withAcronym(item.Ministry) || ''}`.trim()];
     const lvl = safe(item.Level_Text);
@@ -1357,8 +1400,8 @@ function renderTable(data) {
             </a>
           ` : '—'}
           ${(() => {
-            const badge = formatSourceBadge(item);
-            return badge ? `<div class="table-source-line"><span class="source-badge" title="${escapeHtml(badge)}">${escapeHtml(badge)}</span></div>` : '';
+            const b = formatSourceBadgeShort(item);
+            return b ? `<div class="table-source-line"><span class="source-badge" title="${escapeHtml(b.full)}">${escapeHtml(b.short)}</span></div>` : '';
           })()}
         </td>
 
@@ -2486,7 +2529,7 @@ function cardMetaChips(item, { withLocation = true } = {}) {
 
 function cardFootHtml(item) {
   const pdf = normalizeUrl(safe(item.Official_Notification_Link));
-  const src = formatSourceBadge(item);
+  const badge = formatSourceBadgeShort(item);
   return `
     <div class="vx-foot">
       ${pdf ? `
@@ -2503,7 +2546,7 @@ function cardFootHtml(item) {
               title="Share on WhatsApp" aria-label="Share on WhatsApp">
         ${svgIcon('whatsapp')}
       </button>
-      ${src ? `<span class="vx-src" title="${escapeHtml(src)}">${escapeHtml(src)}</span>` : ''}
+      ${badge ? `<span class="vx-src" title="${escapeHtml(badge.full)}">${escapeHtml(badge.short)}</span>` : ''}
     </div>`;
 }
 
@@ -2596,8 +2639,8 @@ function renderGroupCard(group) {
           ${svgIcon('whatsapp')}
         </button>
         ${(() => {
-          const src = formatSourceBadge(rep);
-          return src ? `<span class="vx-src" title="${escapeHtml(src)}">${escapeHtml(src)}</span>` : '';
+          const badge = formatSourceBadgeShort(rep);
+          return badge ? `<span class="vx-src" title="${escapeHtml(badge.full)}">${escapeHtml(badge.short)}</span>` : '';
         })()}
       </div>
       <div class="vx-members" id="${escapeHtml(gid)}" ${expanded ? '' : 'hidden'}>${members}</div>
