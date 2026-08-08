@@ -855,6 +855,21 @@ function injectJsonLd() {
 
 /* ---------------- Share helpers ---------------- */
 
+/**
+ * Compact "Employment News edition + page" badge used under the Source PDF
+ * link in table + card views. Mirrors the modal's "pNN of <edition>" phrasing
+ * (see buildModalContent). When Source_Page is missing, falls back to just
+ * the edition string so every row that has a Source Category still shows it.
+ * Returns '' if neither field is populated.
+ */
+function formatSourceBadge(item) {
+  const cat = safe(item['Source Category']);
+  const page = safe(item.Source_Page);
+  if (!cat) return '';
+  if (page) return `p${page} of ${cat}`;
+  return cat;
+}
+
 function buildShareText(item) {
     const lines = [`📢 ${safe(item.Post_Name) || 'Deputation vacancy'} — ${withAcronym(item.Ministry) || ''}`.trim()];
     const lvl = safe(item.Level_Text);
@@ -1341,9 +1356,10 @@ function renderTable(data) {
               Source PDF
             </a>
           ` : '—'}
-          ${item.Source_Ref
-            ? `<div class="table-source-line"><span class="source-badge" title="${escapeHtml(safe(item['Source Category']))}">${escapeHtml(item.Source_Ref)}</span></div>`
-            : ''}
+          ${(() => {
+            const badge = formatSourceBadge(item);
+            return badge ? `<div class="table-source-line"><span class="source-badge" title="${escapeHtml(badge)}">${escapeHtml(badge)}</span></div>` : '';
+          })()}
         </td>
 
         <td class="table-heart-cell save-col" data-label="Bookmark">
@@ -1786,6 +1802,9 @@ kpiGrid.addEventListener('click', (e) => {
         if (!wasSaved) animateBookmarkButton(vacancyId);
       } else if (action === 'share') {
         shareVacancy(vacancyId);
+      } else if (action === 'share-wa') {
+        const item = getItemById(vacancyId);
+        if (item) window.open(`https://wa.me/?text=${encodeURIComponent(buildShareText(item))}`, '_blank', 'noopener');
       } else if (action === 'expand') {
         // Toggle in place — no re-render, no scroll jump.
         const key = cardAction.getAttribute('data-group') || '';
@@ -2467,7 +2486,7 @@ function cardMetaChips(item, { withLocation = true } = {}) {
 
 function cardFootHtml(item) {
   const pdf = normalizeUrl(safe(item.Official_Notification_Link));
-  const src = item.Source_Ref_Long || item.Source_Ref || '';
+  const src = formatSourceBadge(item);
   return `
     <div class="vx-foot">
       ${pdf ? `
@@ -2480,7 +2499,11 @@ function cardFootHtml(item) {
               title="Share this vacancy" aria-label="Share this vacancy">
         ${svgIcon('share')}
       </button>
-      ${src ? `<span class="vx-src" title="${escapeHtml(safe(item['Source Category']))}">${escapeHtml(src)}</span>` : ''}
+      <button type="button" class="vx-share vx-share-wa" data-card-action="share-wa" data-id="${escapeHtml(safe(item.Vacancy_ID))}"
+              title="Share on WhatsApp" aria-label="Share on WhatsApp">
+        ${svgIcon('whatsapp')}
+      </button>
+      ${src ? `<span class="vx-src" title="${escapeHtml(src)}">${escapeHtml(src)}</span>` : ''}
     </div>`;
 }
 
@@ -2568,7 +2591,14 @@ function renderGroupCard(group) {
                 title="Share this vacancy" aria-label="Share this vacancy">
           ${svgIcon('share')}
         </button>
-        ${rep.Source_Ref_Long || rep.Source_Ref ? `<span class="vx-src" title="${escapeHtml(safe(rep['Source Category']))}">${escapeHtml(rep.Source_Ref_Long || rep.Source_Ref)}</span>` : ''}
+        <button type="button" class="vx-share vx-share-wa" data-card-action="share-wa" data-id="${escapeHtml(safe(rep.Vacancy_ID))}"
+                title="Share on WhatsApp" aria-label="Share on WhatsApp">
+          ${svgIcon('whatsapp')}
+        </button>
+        ${(() => {
+          const src = formatSourceBadge(rep);
+          return src ? `<span class="vx-src" title="${escapeHtml(src)}">${escapeHtml(src)}</span>` : '';
+        })()}
       </div>
       <div class="vx-members" id="${escapeHtml(gid)}" ${expanded ? '' : 'hidden'}>${members}</div>
     </article>

@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.3.0` (2026-08-06).** The `VERSION` file at the repo root
+**Current version: `7.3.1` (2026-08-09).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -27,6 +27,59 @@ counter_convention:
 ## [Unreleased]
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
+
+## [7.3.1] — 2026-08-09
+**Theme: a missing badge comes back, and WhatsApp gets its own button.**
+Both changes are small, but both were visibly broken — the EN-edition badge
+that used to live under every Source PDF link had stopped appearing because
+the renderer was keyed on a field that the data pipeline no longer populates,
+and the WhatsApp share was reachable only from inside the modal. Together
+they restore two affordances that the dashboard had quietly lost.
+
+- counter: `app.js?v=ms62` → `app.js?v=ms63` on `index.html`
+- counter: `style.css` unchanged (no asset bump needed; new rules ride the
+  same `?v=ms62`)
+
+**Added**
+- WhatsApp share button beside the existing Share button on every card
+  (single card + grouped card), using the already-present `#i-whatsapp`
+  glyph from the icon sprite. New `data-card-action="share-wa"` branches
+  off the existing delegated click handler — opens
+  `https://wa.me/?text=${encodeURIComponent(buildShareText(item))}` using
+  the same body text the modal's WhatsApp button uses (`app.js:1194-1199`).
+  Same WhatsApp-green tint and hover state as the modal's `.share-wa`
+  button, with light-theme override for parity.
+
+**Fixed**
+- EN edition + page badge restored under the Source PDF link in **table view**
+  and **card view** (single + grouped). The modal already showed it (since
+  `6f0102d`); the table and card branches had been keyed on `item.Source_Ref`
+  — a field that is empty on every row in the live dataset, so the badge
+  never fired. New `formatSourceBadge(item)` helper (`app.js:865`) is the
+  single source of truth, mirroring the modal's phrasing: renders
+  `pNN of <edition>` when both fields are present, just `<edition>` when
+  only the category is, and nothing when both are absent. Today every badge
+  renders the edition string only (e.g. `EN 30 May-5 Jun 2026`); the
+  `pNN` prefix appears automatically the moment any row carries a
+  `Source_Page`.
+- Card-view badge wrap behaviour: `.vx-src` previously used `white-space:
+  nowrap` + `text-overflow: ellipsis`, so the longer "p33 of EN 30 May-5
+  Jun 2026" string would have been cropped. Switched to a 2-line `-webkit-
+  line-clamp` so the badge always shows in full, with a sensible cap.
+
+**Verified**
+- `node --check app.js` clean.
+- Full smoke suite at baseline + with the patch: same 5 pre-existing
+  failures (1 feedback-proxy ×2 — locator ` .sw-fb .like` not found; 3
+  region-filter; 1 semantic-search offline-mode), none of which touch the
+  table cell, card view, modal, or share dispatch this release changes.
+  A/B-verified by stashing the patch and re-running — every failure
+  reproduces identically without the changes. The watchlist 0→1 test
+  flake that fires only under full-suite load (per P3-4 gotchas memory,
+  handover `shq-2026-07-31-006`) passed cleanly on the dedicated rerun.
+- 37 of the remaining 40 tests pass (the 3 not in the pre-existing set
+  are the watchlist re-run that's a known flake, and the 2 feedback-
+  proxy tests which fail at baseline).
 
 ---
 

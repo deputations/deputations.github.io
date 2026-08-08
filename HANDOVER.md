@@ -3360,3 +3360,162 @@ New `liquid-glass.css` + `liquid-glass.js`, wired into `index.html` inside
   before blaming a change.
 
 ## session shq-2026-08-06-001 end
+
+---
+
+<!-- APPEND_NEW_BLOCKS_BELOW -->
+
+## session shq-2026-08-09-001
+```
+started:       2026-08-09
+ended:         2026-08-09
+model:         claude-opus-4-8
+driver:        solo
+branch:        main
+starting_head: af697c9
+ending_head:   ac50099
+focus:         two user-flagged UI restores: EN-edition badge under Source
+               PDF (table + card view) + WhatsApp share button on cards.
+               Cut as v7.3.1 PATCH — no schema / scheme / URL change.
+```
+
+### inbound context read
+- WEBSITE-REVIEW.md progress log 2026-08-08 row (Oracle VM pause)
+- HANDOVER shq-2026-08-06-001 (last closed session before this one)
+- Background investigation (two agents in parallel): (a) EN-edition data
+  path — `Source_Ref` empty in 384/384 rows, `Source_Page` missing from
+  every row, only `Source Category` reliably populated; (b) renderer
+  locations — `renderTable` at L1260, `cardFootHtml` at L2468, modal
+  phrasing at L2780-2786, modal WhatsApp click at L1194-1198, share
+  dispatch at L1776-1788.
+- memory `deputation-p3-4-gotchas` (Playwright dispatch-order rule +
+  A/B-against-stash before blaming a change)
+- memory `deputation-visual-verification` (Browser pane hidden here —
+  drive Playwright via `.venv-smoke` for verification)
+
+### work done
+1. **New helper `formatSourceBadge(item)`** (`app.js:865-877`) —
+   single source of truth mirroring the modal's `pNN of <edition>`
+   phrasing. Renders `p${Source_Page} of ${Source Category}` when both
+   present, just the category otherwise, empty string when neither.
+   Pure function, no side effects.
+2. **Table-view Source column** (`app.js:1356-1361`) — replaced the
+   `item.Source_Ref` gate with the new helper. Today every row reads
+   its `Source Category` (e.g. `EN 30 May-5 Jun 2026`); the `pNN`
+   prefix lights up the moment any row carries `Source_Page`.
+3. **Card-view footer** (`app.js:2489-2506`) — same swap; also added
+   the new WhatsApp button:
+   ```html
+   <button class="vx-share vx-share-wa" data-card-action="share-wa"
+           title="Share on WhatsApp" aria-label="Share on WhatsApp">
+     ${svgIcon('whatsapp')}
+   </button>
+   ```
+4. **Grouped-card footer** (`app.js:2594-2602`) — same treatment.
+5. **Click-dispatch branch** (`app.js:1805-1807`) — added
+   `else if (action === 'share-wa')` opening
+   `https://wa.me/?text=${encodeURIComponent(buildShareText(item))}`
+   via `window.open`, mirroring the modal's handler at
+   `app.js:1194-1198`. Reuses the existing delegated click listener
+   on `[data-card-action]` (no parallel wiring).
+6. **CSS** (`style.css`): new `.vx-share.vx-share-wa` block mirroring
+   the modal's `.card-action-btn.share-wa` tint (#25d366 green +
+   light-theme override #128c4b). `.vx-src` changed from `nowrap +
+   ellipsis` to a 2-line `-webkit-line-clamp` so the longer "p33 of
+   EN 30 May-5 Jun 2026" string is never cropped. No asset-bump rule
+   triggered (style.css ?v= unchanged at ms62).
+7. **Cache-bust** `app.js?v=ms62` → `?v=ms63` on `index.html:445`.
+8. **Docs**: VERSION bumped 7.3.0 → 7.3.1; CHANGELOG.md gets a
+   `[7.3.1] — 2026-08-09` section with **Theme / Added / Fixed /
+   Verified** blocks; WEBSITE-REVIEW.md progress log gets a row for
+   the session.
+9. **Verified by A/B against a stashed tree** (per the P3-4 gotchas).
+   4/5 of the failures the suite produced reproduce identically with
+   the patch stashed out (1 feedback-proxy ×2 locator ` .sw-fb .like`
+   not found; 3 region-filter dropdown / counts; 1 semantic-search
+   offline-mode). The 5th — watchlist `test_first_bookmark_pulses_*`
+   — passed cleanly on the dedicated re-run; it's the known
+   full-suite-only flake documented in handover `shq-2026-07-31-006`.
+   Net: regression-clean.
+
+### decisions
+- **Helper function, not inline conditional in each renderer.** Three
+  call sites (table, card, grouped-card) — and a fourth in the modal
+  if it's ever unified. Hoisting prevents the badge phrasing drifting
+  between views. Same shape as `buildShareText`, which is the
+  precedent.
+- **Today the badge is edition-only (no `pNN`)** because
+  `Source_Page` is empty in every row. That's fine — it's still
+  useful information (which edition the ad appeared in), and the
+  upgrade to `pNN of <edition>` is automatic the moment the data
+  pipeline starts populating `Source_Page`. **Did not touch
+  `enrich.js#backfillDerived` or `scripts/build_data.py`** — fixing
+  the data path is a separate piece of work, not bundled here.
+- **WhatsApp uses the same `buildShareText()` as the modal / clipboard**
+  — so a vacancy shared via the card looks identical to one shared
+  via the modal. Single source of truth for share copy.
+- **Reused the existing `#i-whatsapp` sprite symbol** (index.html:146
+  — pre-existing from the modal work). No icon file changes.
+- **Did NOT add a tooltip library or custom tooltip CSS.** Per the
+  investigation, the codebase uses native `title=` attributes
+  everywhere; this release matches that convention. Native browser
+  tooltip on hover with the "Share on WhatsApp" text is what the
+  user gets.
+- **No pre-existing-bug bundling.** Three defects tripped over
+  during the work were left alone: the same `verify_admin.py` line
+  159 timeout (still documented in `deputation-admin-pre-existing-bug`),
+  the `.card-source-badge` legacy CSS rule (dead since the card
+  markup was renamed to `.vx-src`), and the `.job-card-footer`
+  selector that no longer exists. None bundled.
+
+### handoff state
+- Working tree: clean (untracked: `.venv-smoke/`,
+  `scripts/_phase0_shots.py`, `workers/sb-proxy/.wrangler/` —
+  local artifacts, all gitignored except the throwaway shots script).
+- HEAD: `ac50099` on `main`, pushed to `origin/main`.
+- Smoke: 37/37 of non-pre-existing tests pass in 312 s.
+- v7.3.1 PATCH cut. The `[Unreleased]` section in CHANGELOG.md is
+  empty and ready for the next cycle.
+
+### gotchas for next session
+- **`Source_Page` is a data-side gap**, not a UI gap. Today's JSON
+  rows have no page info; the badge renders edition-only as a result.
+  When (if) the pipeline populates `Source_Page`, the badge
+  automatically upgrades to `pNN of <edition>` — no UI change needed.
+- **The card-view WhatsApp button is intentionally a *second*
+  button**, not a replacement for the existing Share icon. The
+  existing button tries `navigator.share` first (native iOS/Android
+  share sheet), then clipboard. The new button always opens WhatsApp.
+  Two affordances, two intents — keep both.
+- **`app.js:1194-1199` is the reference WhatsApp handler.** If the
+  new card-side branch ever drifts from the modal, copy from there.
+  Both use the same `buildShareText(item)` so the share copy stays
+  consistent.
+- **Watcher for regressions**: if `vx-share-wa` ever loses its
+  WhatsApp-green tint, the `[data-theme="light"]` override at
+  `style.css:5692-5693` is what makes the colour work on the light
+  theme. Don't drop one without the other.
+- **Playwright dispatch-order rule still applies**: the new
+  `data-card-action="share-wa"` is matched by the existing
+  `[data-card-action]` listener at `app.js:1776`. No new listener
+  needed — but if a future change ever moves the dispatch into a
+  per-render binding, remember the smoke test
+  `tests/test_card_share.py` (none exists yet — could be added in
+  a future cycle).
+
+### next_pickup
+- v7.3.2 candidates:
+  - Plumb `Source_Page` through the data pipeline so the badge can
+    actually upgrade to `pNN of <edition>` (separate piece of work —
+    `enrich.js` + `scripts/build_data.py` + `enrichRecord`).
+  - Add a `tests/test_card_share.py` covering the new WhatsApp
+    button (click → captures `window.open` URL, asserts `wa.me/`
+    prefix + decoded body text matches `buildShareText`).
+  - P3-2 (AI eligibility explainer) — still the only unblocked L
+    feature; pattern mirrors P3-3.
+- Pre-existing carryover (not this PR's work):
+  - NIC HTTPS test of Oracle VM scheduled 2026-08-10.
+  - Cron `2ddab249` for 2026-09-25 08:57 — apex Wix→Cloudflare
+    migration reminder.
+
+## session shq-2026-08-09-001 end
