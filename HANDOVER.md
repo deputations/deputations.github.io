@@ -3528,7 +3528,7 @@ model:         claude-opus-4-8
 driver:        solo
 branch:        main
 starting_head: 757e763
-ending_head:   <pending>
+ending_head:   d71ff98
 focus:         same-day patch on 7.3.1: short-form badge in-cell, full
                Source Category in tooltip. The 7.3.1 badge restored the
                full edition string ("Employment News 30 May - 5th June
@@ -3613,11 +3613,11 @@ focus:         same-day patch on 7.3.1: short-form badge in-cell, full
 - Working tree: clean (only the new edits + untracked local
   artifacts: `.venv-smoke/`, `scripts/_phase0_shots.py`,
   `workers/sb-proxy/.wrangler/` — all gitignored).
-- HEAD: <pending> on `main`, not yet pushed.
-- Smoke: not re-run for this change. No data, no schema, no
-  selector touched. The 7.3.1 A/B verification (4 pre-existing
-  failures reproduce identically stashed-out) covers the
-  regression-risk surface for 7.3.2 as well.
+- HEAD: `d71ff98` on `main`, pushed to `origin/main`.
+- Smoke: full suite ran with patch (6 failures: 2 feedback-proxy,
+  3 region-filter, 1 semantic-search offline) — every failure
+  reproduces identically with patch stashed (pre-existing baseline,
+  documented in handover `shq-2026-08-09-001` Verified block).
 - v7.3.2 PATCH cut. The `[Unreleased]` section in CHANGELOG.md is
   empty and ready for the next cycle.
 
