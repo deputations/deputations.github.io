@@ -126,7 +126,7 @@
   // ---------- load ----------------------------------------------------------
   async function load() {
     // Cache-bust by version — bump along with defex.js's ?v= query.
-    const V = "ms15";
+    const V = "ms16";
     const get = (p) => fetch(`${p}?v=${V}`).then(r => r.json());
     const [orgs, scores, reports, method, upd] = await Promise.all([
       get("data/defex/organisations.json"),
@@ -944,6 +944,13 @@
     if (!host) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
 
+    // Per-word stagger, in ms — the one knob for the pace. 55ms over 242 words
+    // is ~13s end to end. Literal reading speed (~230 wpm) would be 260ms and a
+    // 63-second animation, so this sits deliberately above reading pace: the
+    // reveal always stays ahead of the reader and never makes them wait, while
+    // still being slow enough to follow word by word.
+    const WORD_MS = 55;
+
     // Collect first, then replace — mutating during the walk would invalidate it.
     const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
     const textNodes = [];
@@ -968,6 +975,7 @@
     });
     if (!n) return;
 
+    host.style.setProperty("--word-ms", `${WORD_MS}ms`);
     host.dataset.typing = "pending";
     const run = () => requestAnimationFrame(() => { host.dataset.typing = "run"; });
 

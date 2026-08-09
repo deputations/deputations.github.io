@@ -650,8 +650,10 @@
 .dex-manpower[data-typing] .dex-type-w { opacity: 0; }
 .dex-manpower[data-typing="run"] .dex-type-w {
   opacity: 1;
-  transition: opacity 150ms ease-out;
-  transition-delay: calc(var(--w) * 11ms);
+  /* Fade is ~4x the stagger, so a handful of words are always in flight —
+     a soft wave rather than a hard on/off flicker per word. */
+  transition: opacity 220ms ease-out;
+  transition-delay: calc(var(--w) * var(--word-ms, 55ms));   /* --word-ms set by typeManpower() */
 }
 @media (prefers-reduced-motion: reduce) {
   .dex-manpower[data-typing] .dex-type-w,

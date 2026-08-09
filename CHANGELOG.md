@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.3.7` (2026-08-10).** The `VERSION` file at the repo root
+**Current version: `7.3.8` (2026-08-10).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -27,6 +27,33 @@ counter_convention:
 ## [Unreleased]
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
+
+## [7.3.8] — 2026-08-10
+**Theme: slow the #manpower reveal to a followable pace.**
+7.3.7 shipped the word-by-word reveal at an 11ms stagger — 242 words in
+2.7s. Owner saw it live and said it was too fast to follow.
+
+The stagger is now a single named constant, `WORD_MS = 55` in
+`typeManpower()`, pushed to CSS as `--word-ms` so the value lives in one
+place and `transition-delay: calc(var(--w) * var(--word-ms, 55ms))` reads
+it. 55ms over 242 words is **13.3s** end to end — 5× slower. The fade also
+went 150ms → 220ms, roughly 4× the stagger, so several words are always in
+flight and the leading edge reads as a soft wave rather than words
+snapping on one at a time.
+
+On "normal reading speed": literal reading pace is ~230 wpm, i.e. 260ms a
+word and a **63-second** animation, which is not a usable page effect. 55ms
+is ~1,090 wpm — deliberately above reading pace. That is the property worth
+keeping: the reveal always stays ahead of the reader, so it is visible as
+typing but never makes anyone wait for text. Change `WORD_MS` alone to
+retune; nothing else needs touching.
+
+Cache-bust `ms15 → ms16`.
+
+Verified: `--word-ms` applied, last-word delay 13.255s matching words × 55ms,
+fade 0.22s, reveal front sampled at 1s/3s/6s/10s = 52/95/150/223 words
+(gradual, never jumping to the end), settles fully visible, copy intact,
+zero console errors.
 
 ## [7.3.7] — 2026-08-10
 **Theme: full-width manpower section + word-by-word reveal.**

@@ -4172,3 +4172,60 @@ focus:   v7.3.7 — #manpower full width + word-by-word reveal
   release. Turning `SCOPE.on` off does not affect it.
 
 ## session shq-2026-08-10-002 end
+
+## session shq-2026-08-10-003
+```
+started: 2026-08-10
+ended:   2026-08-10
+model:   claude-opus-5
+driver:  solo
+branch:  main
+starting_head: 5c616bc
+ending_head:   <pending>
+focus:   v7.3.8 — slow the #manpower reveal to a followable pace
+```
+
+### inbound context read
+- session -002 above (v7.3.7, which shipped the reveal at an 11ms stagger)
+- typeManpower() in defex.js, the scope-limit-adjacent CSS block in defex.css
+
+### work done
+1. pushed 7.3.6+7.3.7 to origin/main (Pages deploy succeeded). Owner then saw the
+   reveal live and said it was too fast — asked for "normal reading speed".
+2. extracted the stagger into `WORD_MS = 55` in typeManpower(), pushed to CSS as
+   `--word-ms`; `transition-delay: calc(var(--w) * var(--word-ms, 55ms))`.
+3. fade 150ms → 220ms so the leading edge is a soft wave, not per-word snapping.
+4. cache-bump ms15 → ms16; VERSION 7.3.8; CHANGELOG; WEBSITE-REVIEW row; this block.
+
+### decisions
+- **did not implement literal reading speed.** ~230 wpm is 260ms a word, which
+  over 242 words is a 63-second animation — not a usable page effect, and the
+  owner would have bounced it straight back. Went to 55ms (~1,090 wpm, 13.3s).
+- **kept the reveal deliberately faster than reading.** This is the property that
+  makes the effect safe: the front always stays ahead of the reader, so it is
+  visible as typing but never leaves anyone waiting for words. Asserted in the
+  verification rather than left as an intention.
+- **one constant, not a settings object.** The pace is the only thing anyone will
+  want to change; WORD_MS in typeManpower() is the single source and CSS reads it
+  through --word-ms, so the number never has to be kept in sync in two files.
+
+### handoff state
+- working_tree: committed (see ending_head) and pushed; origin/main level.
+- CI "Smoke tests" is RED on main and has been for many releases — the failure is
+  tests/test_feedback_proxy.py::test_heart_click_triggers_record_sentiment_on_direct_hostname[.like]
+  (heart widget on index.html, nothing to do with defex). Confirmed red on v7.3.4,
+  v7.3.5 and earlier runs. Do NOT read a red badge as "my change broke it" without
+  checking which test.
+- open: P3-2, P3-10, P2-2, P1-7. Unchanged.
+
+### gotchas for next session
+- **the pace maths is word-count-dependent.** Run length = WORD_MS × word count.
+  If the copy grows, the tail stretches linearly; drop WORD_MS rather than adding
+  per-word timers.
+- **--word-ms has a CSS fallback of 55ms** so the cascade still works if the JS
+  property were ever not set. Keep the two numbers in step if you change one.
+- **fade duration should stay a few multiples of the stagger.** At 220ms vs 55ms
+  about four words are in flight; if the stagger goes up much without the fade
+  following, the effect degrades into words popping on individually.
+
+## session shq-2026-08-10-003 end
