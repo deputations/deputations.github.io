@@ -611,6 +611,40 @@
 .dex-correction-card h2 { font-family: "Sora", sans-serif; margin: 0 0 0.75rem; letter-spacing: -0.025em; }
 .dex-correction-card p { color: var(--text-secondary); line-height: 1.65; margin: 0 0 1rem; }
 
+/* ============== WHY DEPUTATION (manpower utilisation) ============== */
+.dex-manpower { margin-top: -0.5rem; }
+.dex-manpower-card {
+  /* Size the box to the text, not the other way round: 78ch is the readable
+     measure for body copy, and the card adds its own 2rem of side padding. */
+  max-width: calc(78ch + 4rem);
+  margin-inline: auto;
+  padding: 1.75rem 2rem;
+  background: var(--dex-card); border: 1px solid var(--dex-line);
+  border-radius: var(--dex-radius); backdrop-filter: blur(14px);
+}
+.dex-manpower-card h2 {
+  font-family: "Sora", sans-serif; font-size: 1.5rem; font-weight: 700;
+  letter-spacing: -0.03em; margin: 0 0 1.1rem;
+}
+.dex-manpower-card p {
+  color: var(--text-secondary); line-height: 1.75; margin: 0 0 1rem;
+}
+.dex-manpower-card p:last-child { margin-bottom: 0; }
+.dex-manpower-card strong { color: var(--text-primary); font-weight: 600; }
+/* Closing statement — set apart with a mint rule, same accent as the band pills. */
+.dex-manpower-close {
+  margin-top: 1.35rem !important;
+  padding: 0.95rem 1.15rem;
+  background: var(--dex-mint-soft);
+  border: 1px solid var(--dex-mint-line);
+  border-radius: var(--dex-radius-sm);
+}
+.dex-manpower-close strong { color: var(--text-primary); }
+@media (max-width: 560px) {
+  .dex-manpower-card { padding: 1.25rem 1.15rem; }
+  .dex-manpower-card h2 { font-size: 1.25rem; }
+}
+
 .dex-disclaimer { padding: 1.25rem 1.5rem; background: rgba(15, 23, 42, 0.5); border: 1px dashed var(--dex-line-strong); border-radius: var(--dex-radius-sm); }
 .dex-disclaimer-title { font-family: "Sora", sans-serif; font-size: 1.05rem !important; margin: 0 0 0.5rem; letter-spacing: 0; }
 .dex-disclaimer p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.65; margin: 0; }
@@ -999,6 +1033,10 @@ body.dex-drawer-open { overflow: hidden; }   /* scroll-lock the page behind the 
 [data-theme="light"] .dex-changelog strong { color: #0f172a; }
 
 /* Right to Correction */
+[data-theme="light"] .dex-manpower-card h2 { color: #0f172a; }
+[data-theme="light"] .dex-manpower-card p { color: #475569; }
+[data-theme="light"] .dex-manpower-card strong { color: #0f172a; }
+
 [data-theme="light"] .dex-correction-card {
   background: rgba(109, 40, 217, 0.04);
   border-color: rgba(109, 40, 217, 0.25);
@@ -1062,3 +1100,40 @@ body.dex-drawer-open { overflow: hidden; }   /* scroll-lock the page behind the 
   color: #ffffff;
   box-shadow: 0 12px 30px rgba(8, 145, 178, 0.35);
 }
+
+/* ══ BEGIN scope-limit ══════════════════════════════════════════════════════
+   Phase 1 publishes Ministries and Departments only. This block styles the one
+   element that limit adds — the note above the explorer, injected by
+   applyScope() in defex.js. Delete this block together with the SCOPE block
+   there; nothing else references these classes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.dex-scope-note {
+  display: flex; align-items: flex-start; gap: 0.7rem;
+  margin: -0.75rem 0 2rem;
+  padding: 0.85rem 1.05rem;
+  background: var(--dex-card); border: 1px solid var(--dex-line);
+  border-left: 3px solid var(--dex-mint-line);
+  border-radius: var(--dex-radius-sm); backdrop-filter: blur(14px);
+  color: var(--text-secondary); font-size: 0.92rem; line-height: 1.55;
+}
+.dex-scope-note strong { color: var(--text-primary); font-weight: 600; }
+.dex-scope-note-tag {
+  flex: none;
+  padding: 0.18rem 0.55rem; border-radius: 999px;
+  background: var(--dex-mint-soft); color: var(--dex-mint);
+  border: 1px solid var(--dex-mint-line);
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
+  text-transform: uppercase; white-space: nowrap;
+}
+/* Raised state — an out-of-scope deep link landed here. */
+.dex-scope-note--alert { border-left-color: var(--dex-amber); }
+.dex-scope-note--alert .dex-scope-note-tag {
+  background: rgba(251, 191, 36, 0.14); color: var(--dex-amber);
+  border-color: rgba(251, 191, 36, 0.32);
+}
+@media (max-width: 560px) {
+  .dex-scope-note { flex-direction: column; gap: 0.5rem; }
+}
+[data-theme="light"] .dex-scope-note { color: #475569; }
+[data-theme="light"] .dex-scope-note strong { color: #0f172a; }
+/* ══ END scope-limit ════════════════════════════════════════════════════════ */

@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.3.5` (2026-08-09).** The `VERSION` file at the repo root
+**Current version: `7.3.6` (2026-08-10).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -27,6 +27,90 @@ counter_convention:
 ## [Unreleased]
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
+
+## [7.3.6] — 2026-08-10
+**Theme: DeFeX Phase 1 — Ministries and Departments only.**
+`defex.html` published all 561 mapped organisations: ministries and
+departments alongside 169 attached offices, 117 autonomous bodies, 92
+subordinate offices, 73 statutory bodies and 26 PSUs. The owner wants
+only ministries and departments live for now, with the rest shown in a
+later release, and wants the rollback to be trivial.
+
+Implemented as a single fenced `SCOPE` object at the top of `defex.js`
+(`/* ══ BEGIN scope-limit ══ */ … /* ══ END scope-limit ══ */`). The
+filter is applied exactly once, in `load()`:
+
+```js
+state.allOrganisations = orgs;                       // untouched
+state.organisations    = orgs.filter(o => SCOPE.has(o));
+```
+
+Everything downstream already read `state.organisations`, so the explorer
+grid, hero search (the Fuse index is now built from the scoped list rather
+than the raw fetch), leaderboard, both tab counts, the ministry filter, the
+readiness-checklist dropdowns and deep-link resolution all follow with no
+per-view code. **561 → 77** organisations · 51 ministries · 37 rated · 9
+with an OM · 81 reports.
+
+Three supporting pieces, all no-ops when the switch is off:
+- **Counters.** The coverage strip used `updates.json`'s precomputed totals;
+  `SCOPE.counts()` recomputes them over the visible set so the tiles cannot
+  advertise 561 while the table shows 77.
+- **Copy.** `SCOPE.copy` / `SCOPE.attrs` override the eight strings the limit
+  invalidates — the hero lede ("or CCA"), the hero button and explorer `h2`
+  ("Explore organisations" → "Explore ministries & departments"), the explorer
+  sub, the first tile label, and the hero search placeholder, whose examples
+  ("CBIC", "Railway Board") are now out of scope and would dead-end. Applied by
+  `applyScope()` synchronously at the bottom of the IIFE — `defex.js` sits at the
+  end of `<body>`, so the swap lands before first paint. `defex.html` keeps the
+  full-coverage wording plus a pointer comment; it needs no edit to revert.
+- **Disclosure.** A "Phase 1" note above `#explorer` says what is missing and
+  why. An out-of-scope `#org=` deep link — a link shared before this landed —
+  flips it to an amber "Not shown yet" state naming the organisation and its
+  type, instead of failing silently.
+
+One source-data quirk is pinned around: **Ministry of Railways (Railway Board)**
+is typed `Attached Office` in the ingest xlsx, so a strict type filter deleted the
+whole Ministry of Railways — rated, DeFeX 90, Deputation-friendly — from the view.
+`SCOPE.alsoInclude` pins it by id and `SCOPE.typeLabel()` prints "Ministry" for it
+so its card, suggestion row and drawer don't read "Attached Office" inside a
+Ministries-only view. Fixing `type` in the source data makes both lines
+unnecessary. No data file was touched.
+
+**Reverting is `on: false`** — nothing else. That path was executed and verified
+end to end, not just asserted: all 561 organisations return, the original copy
+comes back, the note disappears, CBIC is searchable again, and the file diffs
+clean.
+
+### Also in this release, on the same page
+
+**"Deputation as a Tool for Better Manpower Utilisation."** New prose section
+(`#manpower`) directly below the DeFeX hero box, above the coverage strip —
+owner-supplied copy, six paragraphs, three inline bold runs and a bold closing
+statement set apart in a mint callout. The card is sized to the text rather than
+the container (`max-width: calc(78ch + 4rem)`, centred) so the measure stays
+readable instead of running the full 1240px like the disclaimer does.
+
+**Readiness Checklist withdrawn.** The whole `#checklist` box and the hero's
+"Check my readiness" button are commented out rather than deleted — uncomment
+both fences and the feature is back, no other file needs touching.
+`populateFilters()` and `bindChecklist()` now no-op when `#chk-ministry` is
+absent (they threw on `null` before), so the markup is the only switch. The
+`scripts/_verify_scope_limit.py` checklist assertion is likewise conditional and
+re-arms itself if the section returns.
+
+Cache-bust: `defex.css?v=ms12 → ms14`, `defex.js?v=ms12 → ms14`, and the in-file
+`V` constant that busts `data/defex/*.json` (kept in step per its own comment).
+
+Verified by `scripts/_verify_scope_limit.py` — 20 checks plus 1 skip covering
+every rendered row and card, CBIC's absence from search, exact counter values,
+all eight copy overrides, both deep-link paths and a zero-console-error sweep —
+plus a second pass over the checklist removal and the new section (markup gone,
+no `chk-` ids left, no dead `#checklist` anchor, section placed between hero and
+coverage strip, all four bold runs intact, both themes, no horizontal overflow at
+375px) and a real-Chrome run through the extension. `tests/test_defex.py` 4/4. The six
+suite failures in `test_feedback_proxy` / `test_region_filter` /
+`test_semantic_search` are pre-existing: confirmed identical on a stashed tree.
 
 ## [7.3.5] — 2026-08-09
 **Theme: drop the inner table scrollbar.**

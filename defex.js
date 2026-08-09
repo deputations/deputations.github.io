@@ -12,8 +12,100 @@
   const RANKED_MIN_CONF    = 0.20;       // require at least Low confidence to rank
   const PAGE_SIZE          = 50;         // leaderboard rows per page ("Show more" reveals the next 50)
 
+  /* ══ BEGIN scope-limit ═════════════════════════════════════════════════════
+     Phase 1 of the public rollout publishes Ministries and Departments only.
+     Everything else — attached and subordinate offices, autonomous and
+     statutory bodies, PSUs, academies — stays untouched in data/defex/*.json
+     and reappears the moment this switch is off.
+
+     TO REVERT: set `on: false`. That is the whole change. The filter is
+     applied once, right after load(), so every downstream view (explorer,
+     hero search, leaderboard, ministry dropdowns, readiness checklist, deep
+     links) derives from it; the copy overrides, the scope note and the
+     recomputed coverage counters are all no-ops when `on` is false.
+
+     TO REMOVE ENTIRELY: delete this block, the call sites tagged `scope-limit`
+     (load, bindMeta, handleHash, applyScope, scopeDeepLinkNotice), the three
+     `SCOPE.typeLabel(...)` calls in orgCard / suggRow / openDrawer — each
+     reverts to the plain `.type` field — and the matching fenced block at the
+     end of defex.css.
+     ════════════════════════════════════════════════════════════════════════ */
+  const SCOPE = {
+    on: true,
+    types: ["Ministry", "Department"],
+
+    // Source-data quirk, not an exception to the rule: the Railway Board *is*
+    // the Ministry of Railways' secretariat, but the xlsx types it "Attached
+    // Office". On a strict type filter the whole Ministry of Railways — a
+    // rated, Deputation-friendly entry — disappears from the view. Pinned in
+    // by id until the type is corrected upstream; delete this line to go back
+    // to the strict rule.
+    alsoInclude: ["ministry-of-railways__ministry-of-railways-railway-board"],
+
+    // Is this organisation part of the currently published scope?
+    has(o) {
+      return !this.on || this.types.includes(o.type) || this.alsoInclude.includes(o.id);
+    },
+
+    // A pinned entry carries the wrong `type` upstream, and printing "Attached
+    // Office" inside a Ministries-and-Departments view contradicts the view.
+    // Show the label its name already implies. Falls through to the raw field
+    // for everything else, and for everything once `on` is false.
+    typeLabel(o) {
+      return this.on && this.alsoInclude.includes(o.id) ? "Ministry" : (o.type || "");
+    },
+
+    // Coverage-strip counters, recomputed over the visible set so the numbers
+    // never claim more than the page will actually show.
+    counts(list) {
+      return {
+        organisations_mapped:  list.length,
+        ministries_covered:    new Set(list.map(o => o.ministry)).size,
+        organisations_rated:   list.filter(o => o.rated).length,
+        organisations_with_om: list.filter(o => o.has_om).length,
+        reports_total:         list.reduce((n, o) => n + (o.reports || 0), 0),
+      };
+    },
+
+    // Copy that would otherwise promise more than the page now shows.
+    // Selector -> HTML. Authored constants only; never user data.
+    copy: {
+      ".dex-hero-lede":
+        "A transparency layer for India's deputation system. Search any parent " +
+        "Ministry or Department and see what its <strong>rules</strong> say, what " +
+        "<strong>reports</strong> show, and what you should <strong>do next</strong> — " +
+        "with the signal strength always shown next to the signal.",
+      '.dex-hero-actions a[href="#explorer"]': "Explore ministries &amp; departments",
+      "#explorer-h": "Explore ministries &amp; departments",
+      "#explorer .dex-section-sub":
+        "Featured ministries and departments across friendliness bands. " +
+        "Search above or open any card.",
+      ".dex-coverage-tile:first-child .dex-tile-label": "Ministries &amp; departments mapped",
+    },
+
+    // Same idea, attribute surfaces. The hero placeholder matters most — its
+    // examples (CBIC, Railway Board) are out of scope and would dead-end.
+    attrs: {
+      "#dex-search-hero": {
+        placeholder: "Try “Ministry of Home Affairs”, “Department of Revenue”…",
+        "aria-label": "Search ministries and departments",
+      },
+    },
+
+    // The only element the scope limit adds to the page.
+    noteHtml:
+      '<p class="dex-scope-note" id="dex-scope-note">' +
+        '<span class="dex-scope-note-tag">Phase 1</span>' +
+        '<span>DeFeX currently publishes <strong>Ministries and Departments</strong> only. ' +
+        'Attached and subordinate offices, autonomous and statutory bodies, PSUs and ' +
+        'institutes are still being verified and will appear here in a later release.</span>' +
+      '</p>',
+  };
+  /* ══ END scope-limit ═══════════════════════════════════════════════════════ */
+
   const state = {
     organisations: [],
+    allOrganisations: [],                // pre-scope list — see SCOPE above
     scores: new Map(),
     reports: new Map(),                  // org_id -> [reports]
     methodology: null,
@@ -34,7 +126,7 @@
   // ---------- load ----------------------------------------------------------
   async function load() {
     // Cache-bust by version — bump along with defex.js's ?v= query.
-    const V = "ms12";
+    const V = "ms14";
     const get = (p) => fetch(`${p}?v=${V}`).then(r => r.json());
     const [orgs, scores, reports, method, upd] = await Promise.all([
       get("data/defex/organisations.json"),
@@ -43,7 +135,9 @@
       get("data/defex/methodology.json"),
       get("data/defex/updates.json"),
     ]);
-    state.organisations = orgs;
+    // scope-limit: one filter, applied once — every view below derives from it.
+    state.allOrganisations = orgs;
+    state.organisations = orgs.filter(o => SCOPE.has(o));
     state.scores = new Map(scores.map(s => [s.org_id, s]));
     reports.forEach(r => {
       if (!state.reports.has(r.org_id)) state.reports.set(r.org_id, []);
@@ -52,7 +146,7 @@
     state.methodology = method;
     state.updates = upd;
 
-    state.fuse = new Fuse(orgs, {
+    state.fuse = new Fuse(state.organisations, {   // scope-limit: search the visible set
       keys: [
         { name: "name", weight: 0.55 },
         { name: "ministry", weight: 0.30 },
@@ -69,7 +163,8 @@
     const u = state.updates, m = state.methodology;
     $("[data-bind='methodology_version']").textContent = m.version;
 
-    const c = u.counts;
+    // scope-limit: counters follow the visible set, not the full dataset.
+    const c = SCOPE.on ? SCOPE.counts(state.organisations) : u.counts;
     setCounter("organisations_mapped", c.organisations_mapped);
     setCounter("ministries_covered", c.ministries_covered);
     setCounter("organisations_rated", c.organisations_rated);
@@ -170,7 +265,7 @@
           <div>
             <div class="dex-card-min">${escapeHtml(o.ministry)}</div>
             <h3 class="dex-card-name">${escapeHtml(o.name)}</h3>
-            <div class="dex-card-type">${escapeHtml(o.type || "")}</div>
+            <div class="dex-card-type">${escapeHtml(SCOPE.typeLabel(o))}</div>
           </div>
           ${ring}
         </header>
@@ -236,7 +331,7 @@
       : `<span class="dex-suggestion-score" style="background:rgba(148,163,184,0.12);color:var(--text-secondary)">N/R</span>`;
     return `<div class="dex-suggestion ${active ? "dex-suggestion--active" : ""}">
       <div><div class="dex-suggestion-name">${escapeHtml(o.name)}</div>
-      <div class="dex-suggestion-min">${escapeHtml(o.ministry)} · ${escapeHtml(o.type || "—")}</div></div>
+      <div class="dex-suggestion-min">${escapeHtml(o.ministry)} · ${escapeHtml(SCOPE.typeLabel(o) || "—")}</div></div>
       ${score}</div>`;
   }
 
@@ -261,7 +356,11 @@
     $("#filter-ministry").innerHTML = '<option value="">All</option>' +
       mins.map(m => `<option>${escapeHtml(m)}</option>`).join("");
 
-    $("#chk-ministry").innerHTML = '<option value="">Select…</option>' +
+    // The Readiness Checklist is currently commented out of defex.html. Fill its
+    // ministry select only if the markup is on the page, so un-commenting the
+    // section is all it takes to bring the feature back.
+    const chkMin = $("#chk-ministry");
+    if (chkMin) chkMin.innerHTML = '<option value="">Select…</option>' +
       mins.map(m => `<option>${escapeHtml(m)}</option>`).join("");
   }
 
@@ -429,7 +528,7 @@
 
     $("#drawer-ministry").textContent = org.ministry;
     $("#drawer-title").textContent = org.name;
-    $("#drawer-type").textContent = org.type || "Organisation";
+    $("#drawer-type").textContent = SCOPE.typeLabel(org) || "Organisation";
     $("#drawer-reports").textContent = `${org.reports} report${org.reports === 1 ? "" : "s"}`;
 
     const ring = $("#drawer-ring");
@@ -655,12 +754,20 @@
     const h = location.hash;
     if (h.startsWith("#org=")) {
       const id = decodeURIComponent(h.slice("#org=".length));
-      if (state.organisations.find(o => o.id === id)) openDrawer(id, { push: false });
+      if (state.organisations.find(o => o.id === id)) { openDrawer(id, { push: false }); return; }
+      // scope-limit: a link shared before the limit landed shouldn't dead-end
+      // silently — say why the organisation isn't there.
+      const hidden = state.allOrganisations.find(o => o.id === id);
+      if (hidden) scopeDeepLinkNotice(hidden);
     }
   }
 
   // ---------- readiness checklist ------------------------------------------
+  // The section is commented out of defex.html for now; bail out rather than
+  // throwing on the missing markup. Un-commenting the section re-arms this.
   function bindChecklist() {
+    if (!$("#chk-ministry")) return;
+
     $("#chk-ministry").addEventListener("change", e => {
       const sel = $("#chk-org");
       const m = e.target.value;
@@ -793,6 +900,39 @@
     if (b) b.addEventListener("click", () => location.reload());
   }
 
+  // ---------- scope limit (copy + note) -------------------------------------
+  // scope-limit: swaps the copy the limit invalidates and drops the "Phase 1"
+  // note above the explorer. Called synchronously at the bottom of this file —
+  // defex.js sits at the end of <body>, so the DOM is parsed and the wider
+  // copy never flashes before the swap.
+  function applyScope() {
+    if (!SCOPE.on) return;
+    Object.entries(SCOPE.copy).forEach(([sel, html]) => {
+      const el = $(sel);
+      if (el) el.innerHTML = html;
+    });
+    Object.entries(SCOPE.attrs).forEach(([sel, attrs]) => {
+      const el = $(sel);
+      if (el) Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+    });
+    const anchor = $("#explorer");
+    if (anchor && !$("#dex-scope-note")) anchor.insertAdjacentHTML("beforebegin", SCOPE.noteHtml);
+  }
+
+  // scope-limit: explain an out-of-scope deep link instead of doing nothing.
+  function scopeDeepLinkNotice(org) {
+    const note = $("#dex-scope-note");
+    if (!note) return;
+    note.innerHTML =
+      '<span class="dex-scope-note-tag">Not shown yet</span>' +
+      `<span><strong>${escapeHtml(org.name)}</strong> (${escapeHtml(org.type || "Organisation")}) ` +
+      "isn't in the current view — DeFeX publishes Ministries and Departments only for now. " +
+      "It returns here when coverage expands.</span>";
+    note.classList.add("dex-scope-note--alert");
+    note.setAttribute("role", "status");
+    note.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
   // ---------- init ---------------------------------------------------------
   async function init() {
     showSkeleton();
@@ -828,5 +968,6 @@
     });
   }
 
+  applyScope();                                   // scope-limit: pre-paint copy swap
   document.addEventListener("DOMContentLoaded", init);
 })();

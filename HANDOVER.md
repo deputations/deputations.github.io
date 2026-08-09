@@ -3962,3 +3962,132 @@ focus:   v7.3.5 -- drop nested table scrollbar (P1-9b follow-up)
 - if the table ever grows past one page (e.g. owner enables a 'show all' view), the cleanest re-introduction is the Option-3 'showing N-M of X' pill from the briefing: a slim status pill at the top-right of the sticky header showing current row range / total. That replaces the inner scrollbar's 'more data exists' signal with a quieter in-place counter.
 
 ## session shq-2026-08-09-005 end
+
+## session shq-2026-08-10-001
+```
+started: 2026-08-10
+ended:   2026-08-10
+model:   claude-opus-5
+driver:  solo
+branch:  main
+starting_head: 2d962a5
+ending_head:   <pending — not committed>
+focus:   v7.3.6 — DeFeX Phase-1 scope limit (Ministries + Departments only)
+```
+
+### inbound context read
+- session -005 above (v7.3.5 nested scrollbar)
+- memory: deputation-visual-verification (Browser pane hidden here; drive Chromium
+  via .venv-smoke Playwright, and A/B against a stashed tree before blaming a change)
+- memory: website-review-doc, deputation-handover-protocol
+- defex.html / defex.js / defex.css in full; data/defex/organisations.json type census
+
+### work done
+1. owner asked to show only Ministries and Departments on defex.html "for the time
+   being", with other organisations coming later, and asked that reversion be easy.
+2. counted the data: 561 orgs across 10 `type` values — Attached Office 169,
+   Autonomous Body 117, Subordinate Office 92, Statutory Body 73, Department 43,
+   Ministry 33, PSU/Board/Trust 26, plus 8 in three long-tail buckets.
+3. traced every consumer of the org list. All of them read `state.organisations`
+   except the Fuse index, which was built from the raw `orgs` fetch — so a single
+   filter at load covers everything once that one line is repointed.
+4. built the fenced `SCOPE` block at the top of defex.js: `on` switch, `types`,
+   `has()`, `counts()`, `typeLabel()`, `copy`, `attrs`, `noteHtml`.
+5. filtered once in load(); kept the unfiltered list on `state.allOrganisations`.
+6. repointed the coverage counters at SCOPE.counts() (they were reading
+   updates.json's precomputed 561/51/51/10/101, which would have contradicted the
+   table). 77 / 51 / 37 / 9 / 81 now.
+7. overrode the 8 copy strings the limit invalidates via SCOPE.copy + SCOPE.attrs,
+   applied by applyScope() at the bottom of the IIFE (pre-paint, no flash).
+8. injected the "Phase 1" note above #explorer + fenced CSS block in defex.css
+   (dark + light). Out-of-scope `#org=` deep links flip it amber instead of
+   dead-ending.
+9. pinned Ministry of Railways (Railway Board) — see decisions.
+10. cache-bumped defex.css / defex.js / the in-file JSON `V` const ms12 → ms13.
+11. wrote scripts/_verify_scope_limit.py (21 checks), ran it, ran the real-Chrome
+    pass through the extension, ran test_defex.py (4/4) and the full suite.
+12. owner then asked for three follow-ups in the same batch: keep Ministry of
+    Railways (already pinned in step 9 — confirmed on screen, leaderboard rank 7,
+    DeFeX 90), remove the entire Readiness Checklist box, and add a supplied prose
+    section at the top after the DeFeX hero box.
+13. added `#manpower` — "Deputation as a Tool for Better Manpower Utilisation",
+    six paragraphs, three inline bold runs + a bold closing statement in a mint
+    callout — between the hero and the coverage strip. Fenced CSS block in
+    defex.css, dark + light.
+14. withdrew the Readiness Checklist by commenting out the `#checklist` section and
+    the hero's "Check my readiness" button behind matching fences, and made
+    populateFilters() / bindChecklist() no-op on missing markup.
+15. cache-bump ms13 → ms14 (css + js + the in-file JSON `V`).
+16. bumped VERSION 7.3.5 → 7.3.6, CHANGELOG [7.3.6], WEBSITE-REVIEW progress row,
+    this block.
+
+### decisions
+- **one switch, not scattered edits.** The whole limit keys off `SCOPE.on`. HTML
+  keeps its full-coverage wording and is overridden at runtime, so reverting needs
+  no HTML edit and no re-typing of deleted copy. Cost: the markup no longer matches
+  what renders — mitigated by a pointer comment above the hero in defex.html.
+- **counters recomputed, not left alone.** Leaving updates.json's 561 next to a
+  77-row table would have been a straight-up false claim on the page.
+- **copy applied pre-paint.** applyScope() is called at IIFE evaluation, not from
+  init() (which waits on DOMContentLoaded + the JSON fetches). The hero is above the
+  fold; init() timing would have flashed "or CCA" / "CBIC" first.
+- **pinned Ministry of Railways.** Railway Board is the ministry's secretariat but
+  the ingest xlsx types it `Attached Office`. Strict filtering deleted the entire
+  Ministry of Railways — rated, DeFeX 90, the joint-highest score in the set — from
+  a view whose whole promise is "all the ministries". Pinned by id in
+  SCOPE.alsoInclude, with SCOPE.typeLabel() printing "Ministry" so the card,
+  suggestion row and drawer don't contradict the view. Did NOT edit
+  organisations.json: it is generated from the xlsx and a manual fix would be
+  overwritten on the next build. Both lines become unnecessary once the source
+  `type` is corrected.
+- **out-of-scope deep links get an explanation, not the drawer.** Opening a hidden
+  org from a URL would undercut the limit; silence would break every share link
+  made before today. The amber note is the middle path.
+- **checklist commented out, not deleted.** The section is labelled "MVP placeholder
+  for Risk Scan" in its own comment, so it is likely to return. Commenting keeps the
+  restore to un-commenting two fences; deleting would have meant recovering ~55 lines
+  of markup from git later. The JS guards are the piece that makes that work — and
+  they are correct either way, since the functions threw on a null `#chk-ministry`.
+- **the manpower card is sized to its text, not to the container.** `.dex-correction-card`
+  and `.dex-disclaimer` run the full 1240px, which is fine for three lines but not for a
+  six-paragraph essay. `max-width: calc(78ch + 4rem)` + `margin-inline: auto` keeps the
+  measure readable and makes the narrower box look deliberate rather than broken.
+- **did not touch meta/OG description.** "Ministries, Departments and Cadre
+  Controlling Authorities" describes the product, not today's dataset, and crawlers
+  read it from static HTML where a runtime override wouldn't reach.
+
+### handoff state
+- working_tree: NOT COMMITTED. Modified — defex.js, defex.css, defex.html, VERSION,
+  CHANGELOG.md, WEBSITE-REVIEW.md, HANDOVER.md. New untracked —
+  scripts/_verify_scope_limit.py (its checklist assertion is conditional and re-arms
+  itself if #checklist is uncommented).
+- a `python -m http.server 8890` was left running for the Chrome pass; kill it.
+- suite: test_defex.py 4/4. Six failures elsewhere (test_feedback_proxy ×2,
+  test_region_filter ×3, test_semantic_search ×1) are PRE-EXISTING — reproduced
+  identically on a stashed tree. They exercise index.html / app.js, untouched here.
+- open: P3-2 (AI eligibility), P3-10 (light-theme contrast debt), P2-2
+  (hiring-data mini-report), P1-7 (SAR PDF bundles). Unchanged.
+
+### gotchas for next session
+- **the Fuse index was the one non-obvious consumer.** It was built from the raw
+  `orgs` fetch, not `state.organisations`, so a filter at the state assignment alone
+  would have left every hidden organisation reachable through the hero search while
+  the table hid it. If a new view is added, build it off `state.organisations`.
+- **`state.allOrganisations` exists only for the deep-link notice.** Don't render
+  from it — that would leak out-of-scope organisations back into the UI.
+- **a same-document hash change does not re-run init().** The first version of the
+  verify script navigated `#org=A` → `#org=B` and got no notice; the page never
+  reloaded, so handleHash() never fired (popstate's else-branch closed the drawer
+  instead). Go through about:blank when testing deep links. Not a product bug.
+- **popstate with a hidden org still just closes the drawer** — it does not show the
+  notice. Only a fresh load does. Fine today; worth knowing if drawer history is
+  reworked.
+- **`ministries_covered` counts distinct `ministry` strings**, so it stays 51 even
+  though only 77 of 561 rows survive — every ministry has at least one
+  ministry/department row (once Railways is pinned). Drop the pin and it falls to 50.
+- **restoring the other types is `on: false`, and that was tested, not assumed** —
+  561 back, original copy back, note gone, CBIC searchable, no residue. If a later
+  session instead wants a staged rollout (e.g. add Attached Offices next), extend
+  `SCOPE.types` rather than unpicking the block.
+
+## session shq-2026-08-10-001 end

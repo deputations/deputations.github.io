@@ -32,7 +32,7 @@
   <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
   <link rel="stylesheet" href="style.css?v=ms33">
   <link rel="stylesheet" href="navbar.css?v=4">
-  <link rel="stylesheet" href="defex.css?v=ms12">
+  <link rel="stylesheet" href="defex.css?v=ms14">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 </head>
 <body>
@@ -61,6 +61,14 @@
   </nav>
 
   <div class="app-container dex-page">
+
+    <!-- Phase 1 scope limit: DeFeX publishes Ministries and Departments only.
+         The hero lede, the hero "Explore" button, the search placeholder, the
+         explorer heading/sub and the first coverage-tile label below are
+         overridden at runtime by SCOPE.copy / SCOPE.attrs in defex.js, and a
+         "Phase 1" note is injected above #explorer. The markup here is the
+         full-coverage wording — it comes back untouched when SCOPE.on is
+         false. Search defex.js for "scope-limit". -->
 
     <!-- ============ HERO ============ -->
     <header class="dex-hero">
@@ -105,10 +113,65 @@
 
       <div class="dex-hero-actions">
         <a href="#explorer" class="dex-btn dex-btn-primary">Explore organisations</a>
+        <!-- Readiness Checklist withdrawn — restore this button together with the
+             fenced #checklist section further down.
         <a href="#checklist"  class="dex-btn dex-btn-ghost">Check my readiness</a>
+        -->
         <a href="#contribute" class="dex-btn dex-btn-attention">Report your Ministry / Department / Office →</a>
       </div>
     </header>
+
+    <!-- ============ WHY DEPUTATION ============ -->
+    <section class="dex-section dex-manpower" id="manpower" aria-labelledby="manpower-h">
+      <article class="dex-manpower-card">
+        <h2 id="manpower-h">Deputation as a Tool for Better Manpower Utilisation</h2>
+
+        <p>
+          Deputation should be viewed as a mechanism for <strong>optimum utilisation
+          and mobility of human resources within the Central Government</strong>,
+          rather than merely as the release of an employee from one office to another.
+        </p>
+
+        <p>
+          An employee ordinarily seeks deputation for a higher post, better emoluments
+          or deputation allowance, greater responsibility, wider experience, or a
+          posting closer to his or her preferred location. Since such movement is
+          voluntary, it is also likely to result in <strong>greater job satisfaction,
+          motivation and productivity</strong>.
+        </p>
+
+        <p>
+          From the Government’s perspective, deputation often enables a vacancy at a
+          higher and more responsible level to be filled by an experienced employee
+          already available within the system. Where manpower is limited, filling a
+          senior post involving greater responsibility and decision-making may carry
+          higher administrative value than retaining the same employee against a
+          comparatively junior post.
+        </p>
+
+        <p>
+          The lending organisation may face a temporary reduction in its working
+          strength; however, <strong>there is no corresponding loss of manpower to the
+          Central Government as a whole</strong>. The resulting vacancy may, subject to
+          applicable rules and administrative requirements, be addressed through
+          deputation, promotion, ad-hoc arrangements or other permissible modes of
+          staffing.
+        </p>
+
+        <p>
+          In cadres affected by prolonged promotional stagnation, such mobility can
+          also provide opportunities for career progression and improve overall
+          employee morale.
+        </p>
+
+        <p class="dex-manpower-close">
+          <strong>Deputation therefore merits encouragement as an instrument of
+          administrative efficiency, employee motivation and better deployment of
+          available Government manpower, subject to genuine administrative
+          exigencies.</strong>
+        </p>
+      </article>
+    </section>
 
     <!-- ============ COVERAGE STRIP ============ -->
     <section class="dex-coverage" aria-label="Coverage statistics">
@@ -233,7 +296,13 @@
       </div>
     </section>
 
-    <!-- ============ READINESS CHECKLIST (MVP placeholder for Risk Scan) ============ -->
+    <!-- ============ READINESS CHECKLIST (MVP placeholder for Risk Scan) ============
+         WITHDRAWN — the owner asked for the whole box to come off the page.
+         Kept here verbatim rather than deleted: uncomment this block to put it
+         back, no other file needs touching. defex.js's populateFilters() and
+         bindChecklist() already no-op when #chk-ministry is absent, and the
+         hero's "Check my readiness" button is fenced the same way above.
+
     <section class="dex-section" id="checklist" aria-labelledby="checklist-h">
       <div class="dex-section-head">
         <div>
@@ -287,6 +356,7 @@
       </form>
       <div class="dex-checklist-output" id="dex-checklist-output" hidden></div>
     </section>
+    ============ END READINESS CHECKLIST (withdrawn) ============ -->
 
     <!-- ============ CONTRIBUTE / SURVEY ============ -->
     <section class="dex-section dex-contribute" id="contribute" aria-labelledby="contribute-h">
@@ -484,7 +554,7 @@
   </button>
 
   <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
-  <script src="defex.js?v=ms12"></script>
+  <script src="defex.js?v=ms14"></script>
   <script src="config.js"></script>
   <script defer src="site-widgets.js?v=26"></script>
   <!-- BEGIN hero-wave -->
