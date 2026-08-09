@@ -3681,7 +3681,7 @@ model:         claude-opus-4-8
 driver:        solo
 branch:        main
 starting_head: 08d67d4
-ending_head:   efd8ee8
+ending_head:   66b5317
 focus:         nav-corner brand rebuild. Two user requests: (1) nav
                brand should display the website's actual name ("All
                Deputation Vacancies", matching the hero headline),
@@ -3749,7 +3749,7 @@ focus:         nav-corner brand rebuild. Two user requests: (1) nav
 - Working tree: clean (only the new edits + untracked local
   artifacts: `.venv-smoke/`, `scripts/_phase0_shots.py`,
   `workers/sb-proxy/.wrangler/` — all gitignored).
-- HEAD: `efd8ee8` on `main`, pushed to `origin/main`.
+- HEAD: `66b5317` on `main`, pushed to `origin/main`.
 - Smoke: not re-run for this change. No JS, no selectors, no data.
   Visual verification was Playwright DOM sweep on the running
   static server — 8/8 pages load the PNG (natural 400 × 400,
