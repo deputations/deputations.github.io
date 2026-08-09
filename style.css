@@ -6338,10 +6338,12 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
    vertical scroller, so the header AND the Post Name column stay pinned while
    the rows scroll. Pagination sits outside the wrapper and stays visible. */
 @media (min-width: 769px) {
-  #dataContainer.view-table .table-wrapper {
-    max-height: calc(100vh - 150px);
-    overflow-y: auto;
-  }
+  /* Wrapper no longer caps its own height — with the table paginated to
+     a small fixed row count (v7.3.4+), there's nothing to scroll inside it.
+     Page scroll owns the scroll context; sticky header + sticky Post Name
+     column (P1-9b) still work because `position: sticky` rides against any
+     scroll context, including the page itself. The existing top-of-page
+     scroll-progress bar already signals "more data" to the user. */
   /* No background overrides here: both themes already ship near-opaque themed
      header gradients (same approach as the pinned bookmark column), so the
      designed look rides along unchanged while the header is stuck. */

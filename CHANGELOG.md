@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.3.4` (2026-08-09).** The `VERSION` file at the repo root
+**Current version: `7.3.5` (2026-08-09).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -27,6 +27,38 @@ counter_convention:
 ## [Unreleased]
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
+
+## [7.3.5] — 2026-08-09
+**Theme: drop the inner table scrollbar.**
+The dashboard table on desktop (≥769px) had `max-height: calc(100vh −
+150px)` + `overflow-y: auto` on `.table-wrapper` — a leftover from
+when result sets could be longer than the viewport. The table is now
+paginated to a fixed small row count, so the inner scroll context
+serves no purpose. Removed the cap; the page scrolls natively. The
+P1-9b sticky header + sticky Post Name column still work because
+`position: sticky` rides against any scroll context (including the
+page itself). The existing top-of-page scroll-progress bar already
+owns the "more data" signal.
+
+- counter: `style.css?v=ms69` → `?v=ms70` on index.html only
+
+**Changed**
+- `style.css`: deleted `#dataContainer.view-table .table-wrapper {
+  max-height: calc(100vh - 150px); overflow-y: auto; }` and
+  the surrounding media-query comment block (which was describing
+  the deleted rule). Replaced with a short comment explaining why
+  the cap is gone.
+
+**Verified**
+- `node --check app.js` clean (no JS changes in this release).
+- Playwright DOM sweep on the running static server at three scroll
+  positions (top, 800px down, table-into-view). At every position
+  `wrapper.scrollHeight == wrapper.clientHeight` → `innerScrollable
+  = false` → no inner scrollbar. Sticky header `thead` position
+  confirmed pinned to top of visible table (`head.t = 1px` after
+  scroll, `head.t = 21px` when table is at viewport top).
+- 384-row live dataset: dashboard renders identically; pagination
+  controls, filters, modal all unaffected.
 
 ## [7.3.4] — 2026-08-09
 **Theme: corner brand and hero refinement.**

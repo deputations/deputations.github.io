@@ -3917,3 +3917,48 @@ focus:   v7.3.4 -- hero cursive 'All' + quieter V² logo-only nav corner
   anyone ever goes below 320px wide. Tested at 375 (iPhone SE) -- fine.
 
 ## session shq-2026-08-09-004 end
+
+## session shq-2026-08-09-005
+```
+started: 2026-08-09
+ended:   2026-08-09
+model:   claude-opus-4-8
+driver:  solo
+branch:  main
+starting_head: f8f51a6
+ending_head:   <pending>
+focus:   v7.3.5 -- drop nested table scrollbar (P1-9b follow-up)
+```
+
+### inbound context read
+- session -004 above (v7.3.4 hero + corner)
+- P1-9b (M4 sticky table header) commit referenced in HANDOVER shq-2026-07-29-004
+- memory: deputation-visual-verification (Browser pane hidden, drive Chromium via .venv-smoke Playwright)
+- style.css lines 6341-6344 (the cap I deleted this session)
+
+### work done
+1. owner asked to 'get rid of the nested scroll bar in the home page' and asked for the 'best / modern options'
+2. investigated: read style.css around the table wrapper, confirmed the inner cap (max-height: calc(100vh - 150px) + overflow-y: auto) at desktop was a leftover from when result sets could exceed the viewport. Confirmed with owner that table is paginated to 10 rows so it never grows past one viewport of content. Owner also flagged that a top-of-page scroll progress bar already exists, ruling out options that would add a second progress indicator.
+3. presented four modern options (A: edge-fade, B: scroll-driven progress rail, C: virtualization, D: Subgrid + flat page scroll). Owner picked Option D + A originally; after clarifying that the table is paginated and the top progress bar already exists, owner settled on Option 1 in my revised briefing: just drop the cap.
+4. deleted the two CSS lines (#dataContainer.view-table .table-wrapper { max-height: calc(100vh - 150px); overflow-y: auto; }), replaced the surrounding media-query comment block with a brief explanation of why the cap is gone and how the sticky behaviour survives.
+5. cache-bumped style.css?v=ms69 -> ?v=ms70 on index.html only.
+6. verified via Playwright DOM sweep at three scroll positions: at_top (table below fold), after_800px_scroll (page scrolled, table mid-viewport), table_at_viewport_top (scrollIntoView). At every position wrapper.scrollHeight == wrapper.clientHeight so innerScrollable = false. Sticky thead confirmed pinned at head.t = 1px (mid-scroll) and head.t = 21px (table at viewport top -- 21px is the top-of-table offset including the sticky header's own padding-top: 0.9em + line-height: 1.6 + -4deg rotation on .header-all above).
+7. bumped VERSION 7.3.4 -> 7.3.5, added [7.3.5] section to CHANGELOG.md, appended progress-log row to WEBSITE-REVIEW.md, this HANDOVER block.
+
+### decisions
+- chose deletion over a richer replacement (e.g. status pill, scroll-driven rail): with paginated data + existing top progress bar, the simplest correct change is the smallest one. 2 lines deleted, 0 added.
+- did NOT add a scroll-timeline progress rail inside the table: would duplicate the top-of-page rail's signal. Owner already flagged the existing rail.
+- did NOT switch to virtualization: 384 rows is not a perf problem; TanStack Virtual would add 6KB gz + lose the existing row 3D-plank effect unless reimplemented. Not worth it at this scale.
+- kept the surrounding media query (@media (min-width: 769px)): the mobile breakpoint below 768px still has its own .table-wrapper { overflow-x: auto } rule (style.css:2104) which is correct -- horizontal scroll for narrow screens is a different problem from vertical scroll. Untouched.
+
+### handoff state
+- working_tree: docs + 3 source files modified (VERSION, CHANGELOG, WEBSITE-REVIEW, HANDOVER, style.css, index.html). Preview server still running on 8124. Smoke suite unchanged.
+- 6 untracked helper scripts + .venv-smoke + .tmp-navcheck* -- same transient artefacts as session -004. Already gitignored.
+- open: still no P3-2 (AI eligibility), P3-10 (light-theme contrast debt), P2-2 (hiring-data mini-report), P1-7 (SAR PDF bundles).
+
+### gotchas for next session
+- sticky header offset: P1-9b's sticky thead pins to the top of whichever scroll container it's in. After this change, that's the page (window). When the table is mid-scroll the thead pins at the page top (head.t = 1px from the top of the visible area). If the owner ever wants the thead to NOT pin when the table is far below the fold, that'd need a JS IntersectionObserver + class toggle -- a feature, not a bug, deferred.
+- mobile vertical scroll still scrolls the page -- the @media (max-width: 768px) rule at style.css:2104 only sets overflow-x: auto, not max-height. The page scroll handles vertical scroll on mobile too. So mobile behaviour is identical to before this change.
+- if the table ever grows past one page (e.g. owner enables a 'show all' view), the cleanest re-introduction is the Option-3 'showing N-M of X' pill from the briefing: a slim status pill at the top-right of the sticky header showing current row range / total. That replaces the inner scrollbar's 'more data exists' signal with a quieter in-place counter.
+
+## session shq-2026-08-09-005 end
