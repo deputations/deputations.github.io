@@ -318,9 +318,37 @@ body {
   background-clip: text;
   color: transparent;
   display: inline-block;
-  
+
   /* Remove or comment out the line below to keep your HTML casing */
-  /* text-transform: lowercase; */ 
+  /* text-transform: lowercase; */
+}
+
+/* "All" superscript on the home hero — lively cursive script sitting
+   above the main "Deputation Vacancies" baseline. Great Vibes is the
+   more decorative / lively cousin of Sacramento, with deeper swash
+   tails and a more hand-drawn feel. Sized + padded so the swash never
+   clips at the top edge of its own line-box. */
+.header-all {
+  font-family: "Great Vibes", "Snell Roundhand", "Apple Chancery", cursive;
+  font-weight: 400;
+  font-size: 1.6rem;
+  line-height: 1.6;
+  vertical-align: baseline;
+  margin: 0 0.35em 0 0;
+  padding-top: 0.9em;
+  background: linear-gradient(135deg, #FF6B6B 0%, #a78bfa 50%, #f0abfc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+  transform: translateY(-0.25em) rotate(-4deg);
+  letter-spacing: 0.02em;
+  /* Give the swash tail room so it never clips the parent .app-header
+     bottom-border or the surrounding KPI strip below. */
+  overflow: visible;
+}
+@media (max-width: 768px) {
+  .header-all { font-size: 1.3rem; }
 }
 
 /* HEADER BUTTONS */

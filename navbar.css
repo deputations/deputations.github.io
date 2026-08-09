@@ -24,7 +24,7 @@
 .nav-brand {
   display: inline-flex;
   align-items: center;
-  gap: .6rem;
+  gap: .25rem;
   flex: none;
   text-decoration: none;
   border-radius: 12px;
@@ -47,6 +47,11 @@
   box-shadow: none;
   background: transparent;
 }
+/* Text-only brand (used on upcoming-projects.html where the centre
+   hero already carries the V² artwork — duplication avoided). */
+.nav-brand.nav-brand-text-only {
+  padding-left: .5rem;
+}
 
 .nav-brand-name {
   font-family: "Sora", "Plus Jakarta Sans", sans-serif;
@@ -56,6 +61,16 @@
   color: #eef6ff;
   white-space: nowrap;
   transition: color .2s ease;
+}
+/* Dark theme (default): light multi-colour on dark navy. */
+.nav-brand-name .nv2-pre,
+.nav-brand-name .nv2-post {
+  background-image: linear-gradient(135deg, #22d3ee 0%, #a78bfa 50%, #f0abfc 100%);
+}
+/* Light theme: dark multi-colour on near-white. */
+[data-theme="light"] .nav-brand-name .nv2-pre,
+[data-theme="light"] .nav-brand-name .nv2-post {
+  background-image: linear-gradient(135deg, #0e7490 0%, #6d28d9 50%, #be185d 100%);
 }
 
 /* ---- links ---- */

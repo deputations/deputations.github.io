@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.3.3` (2026-08-09).** The `VERSION` file at the repo root
+**Current version: `7.3.4` (2026-08-09).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -27,6 +27,52 @@ counter_convention:
 ## [Unreleased]
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
+
+## [7.3.4] — 2026-08-09
+**Theme: corner brand and hero refinement.**
+The v7.3.3 corner (full site name "All Deputation Vacancies" + V² logo
+inline) read as too busy. Two refinements were asked for: a cursive
+stylised "All" prefix on the home hero that turns the headline into
+"All Deputation Vacancies" with a lively superscript word, and a
+quieter nav corner that keeps only the V² chrome logo and surfaces
+the wording "a V² Product" as a hover tooltip on the logo. The
+upcoming-projects page drops the corner logo entirely (the centre
+hero already carries the V² artwork).
+
+- counter: `style.css?v=ms68` → `?v=ms69`, `navbar.css?v=6` → `?v=7`
+  on index.html + upcoming-projects.html (the only files where the
+  hero / corner rules changed)
+
+**Changed**
+- `index.html` hero `<h1>`: split into `<span class="header-all">All</span>`
+  + `<span class="gradient-text" data-tw>Deputation Vacancies</span>`.
+  Added Great Vibes (Google Fonts) to the fonts URL for the cursive.
+- `style.css`: new `.header-all` rule — Great Vibes at 1.6rem (1.3rem
+  on ≤768px), `line-height: 1.6`, `padding-top: 0.9em`, `-4deg` rotate,
+  multi-colour gradient (coral → violet → pink) painted via
+  `background-clip: text`. `margin-right` 0.08em → 0.35em so "All"
+  doesn't kiss the following word.
+- `index.html`, `defex.html`, `contact.html`, `faq.html`,
+  `my-deputation.html`, `report-vacancy.html`, `rules.html` nav brand:
+  now `<a class="nav-brand" title="a V² Product"><img class="nav-brand-mark
+  nav-brand-v2">…</a>` — just the chrome logo, with the brand wording
+  as the native browser tooltip on hover.
+- `upcoming-projects.html` nav brand: anchor removed entirely; corner
+  intentionally blank (centre hero carries the V² art).
+- `navbar.css`: deleted ~35 lines of dead `.nv2-pre` / `.nv2-post` /
+  in-flow-logo gradient rules that v7.3.3 added — the spans those
+  rules painted are gone.
+
+**Verified**
+- `node --check app.js` clean.
+- Playwright DOM sweep on the running static server, dark + light
+  theme, 4 pages × 2 themes = 8 captures. Nav corner resolves to:
+  `brandCount=1` on home/defex/faq, `brandCount=0` on upcoming-projects.
+  Brand anchor `title` attribute = `"a V² Product"` everywhere. The
+  `.nv2-pre` / `.nv2-post` selectors return `null` (cleaned up). Logo
+  `alt` = `"V² — V Square"` for a11y.
+- "All" hero: `gapBetweenAllAndGrad = 7px` in both themes (was 0
+  pre-fix).
 
 ## [7.3.3] — 2026-08-09
 **Theme: the nav corner carries the website name and the V² brand.**

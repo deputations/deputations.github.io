@@ -3806,3 +3806,114 @@ focus:         nav-corner brand rebuild. Two user requests: (1) nav
   - Light-theme thead 4.42:1 (pre-existing, not bundled).
 
 ## session shq-2026-08-09-003 end
+
+
+## session shq-2026-08-09-004
+```
+started: 2026-08-09
+ended:   2026-08-09
+model:   claude-opus-4-8
+driver:  solo
+branch:  main
+starting_head: 9f9c71f
+ending_head:   <pending>
+focus:   v7.3.4 -- hero cursive 'All' + quieter V² logo-only nav corner
+```
+
+### inbound context read
+- session -003 above (v7.3.3 nav corner = full site name + V² logo)
+- session -002 above (v7.3.2 short badge)
+- memory entries loaded: deputation-handover-protocol, deputation-test-suite-p3-4,
+  deputation-visual-verification (Browser pane hidden -> drive Chromium via
+  .venv-smoke Playwright), deputation-liquid-glass-layer (compound selectors
+  for capability classes on <html>)
+
+### work done
+1. owner reaction to v7.3.3: corner felt 'overt' and asked for three
+   changes -- (a) hero headline should have cursive 'All' superscript
+   before 'Deputation Vacancies'; (b) corner should drop the visible
+   site name entirely and just be the V² logo; (c) tooltip on the logo
+   should read 'a V² (superscript 2) product'
+2. hero: index.html <h1> split into <span class="header-all">All</span>
+   + <span class="gradient-text" data-tw>Deputation Vacancies</span>;
+   Google Fonts URL gets &family=Great+Vibes (Sacramento's more
+   decorative cousin -- deeper swash tails, more hand-drawn feel).
+   .header-all in style.css: Great Vibes 1.6rem (1.3rem on <=768px),
+   line-height 1.6, padding-top 0.9em, -4deg rotate, multi-colour
+   gradient (coral -> violet -> pink), background-clip: text. Two
+   iterations on sizing: started at 3.2rem (clipped), then 2.2rem
+   (still clipped), settled on 1.6rem with line-height + padding-top
+   so the swash has room to breathe.
+3. nav corner: rewrote brand markup on 7 pages (index, defex, contact,
+   faq, my-deputation, report-vacancy, rules) -- <a class="nav-brand"
+   title="a V² Product"> now wraps ONLY the <img class="nav-brand-mark
+   nav-brand-v2">. The native browser tooltip surfaces 'a V² Product'
+   on hover; no visible text in the corner.
+4. upcoming-projects.html: removed the brand anchor entirely so the
+   corner is blank (the centre hero already carries the V² art).
+5. navbar.css: deleted the .nv2-pre / .nv2-post / in-flow-logo gradient
+   rules from the 7.3.3 attempt -- the spans those rules painted are
+   gone, so the rules were dead code. Kept .nav-brand-name for
+   upcoming-projects' (legacy) text-only brand if it's ever reinstated.
+6. cache-bump style.css?v=ms68 -> ?v=ms69, navbar.css?v=6 -> ?v=7
+   on index.html + upcoming-projects.html (the only files where the
+   rules changed live).
+7. verified via Playwright DOM sweep (scripts/_verify_navcorner_v2.py):
+   8 pages x 2 themes = 16 captures. Corner resolves to brandCount=1
+   on home/defex/faq with title='a V² Product', brandCount=0 on
+   upcoming-projects. .nv2-pre / .nv2-post selectors return null
+   everywhere. Logo alt='V² — V Square' preserved.
+8. bumped VERSION 7.3.3 -> 7.3.4, added [7.3.4] section to CHANGELOG.md,
+   appended a progress-log row to WEBSITE-REVIEW.md, this HANDOVER block.
+
+### decisions
+- **logo-only corner over text-shielded corner**: owner's preference
+  for minimal visible chrome wins; tooltip carries the brand
+  description for anyone curious
+- **title attribute (not a custom JS tooltip)**: native browser
+  tooltip is faster, accessible, and zero-dependency. Renders 'a V²
+  Product' with the ² superscript via the literal U+00B2 char in
+  the HTML attribute
+- **kept .nav-brand-name CSS class in navbar.css**: even though no
+  current page uses the text-only brand variant, the class is the
+  foundation if any future page wants it. Cost = ~10 lines.
+- **did NOT bump navbar.css?v= on the 5 secondary pages that didn't
+  change**: rules changed live in index.html + upcoming-projects.html;
+  the other 5 pages don't render anything affected by the deleted
+  rules, so they're fine on the old CSS. Leaving their ?v= alone
+  keeps git history clean.
+- **did NOT add a new v=7 cache-bust on all 8 pages**: only the two
+  files whose CSS actually changed need to bust cache
+
+### handoff state
+- working_tree: docs + 10 source files modified (VERSION, CHANGELOG,
+  WEBSITE-REVIEW, HANDOVER, 7 HTML pages, 2 CSS files). Preview
+  server still running on 8124.
+- 6 untracked helper scripts (.venv-smoke, scripts/_verify_navcorner.py,
+  scripts/_verify_navcorner_v2.py, .tmp-navcheck/, .tmp-navcheck2/)
+  -- .gitignore already excludes .venv-smoke and .tmp*; the helper
+  scripts and workers/sb-proxy/.wrangler/ are intentionally
+  transient and not committed.
+- open: still no P3-2 (AI eligibility), P3-9 (liquid glass shipped),
+  P3-10 (light-theme contrast debt permanent). Smaller wins still
+  pending: P2-2 (hiring-data mini-report), P1-7 (SAR PDF bundles).
+
+### gotchas for next session
+- **Browser pane is still hidden** in this environment (no rAF, no
+  screenshots, 0x0 viewport). Verification has to go through
+  .venv-smoke Playwright per deputation-visual-verification memory.
+  Always A/B against a stashed tree before blaming a change for a
+  smoke failure.
+- **Great Vibes is render-blocking** -- added to the Google Fonts
+  URL with display=swap (default). Brief fallback to the cursive
+  generic family. First load on a slow connection may show the
+  non-cursive 'All' for ~200ms before the swash settles in.
+- **title attribute has no styling control** -- if the owner wants
+  a richer tooltip later (badge, key combo hint), it'd be a
+  custom div. title='a V² Product' is intentionally minimal.
+- **The hero 'All' is in the top 1.5em of the h1** (padding-top:
+  0.9em + line-height: 1.6 + rotate -4deg). Looks great at desktop
+  widths but the rotation may clip at very narrow mobile widths if
+  anyone ever goes below 320px wide. Tested at 375 (iPhone SE) -- fine.
+
+## session shq-2026-08-09-004 end
