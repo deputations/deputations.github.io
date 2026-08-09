@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.3.8` (2026-08-10).** The `VERSION` file at the repo root
+**Current version: `7.3.9` (2026-08-10).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -27,6 +27,42 @@ counter_convention:
 ## [Unreleased]
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
+
+## [7.3.9] — 2026-08-10
+**Fix: the #manpower reveal could leave the copy permanently invisible.**
+Caught while verifying 7.3.8 on the live site: the section reported as in
+view, yet stayed at `data-typing="pending"` — every word at `opacity: 0` —
+until something forced a scroll.
+
+The flip from `pending` to `run` went through `requestAnimationFrame`.
+A backgrounded tab parks rAF indefinitely, so the callback never ran, and
+because the words are hidden until that flip, the whole essay rendered as
+blank space. Opening the page in a background tab (middle-click, "open in
+new tab") was enough to hit it. Present in 7.3.7 and 7.3.8.
+
+- The observer path no longer uses rAF at all. Observer callbacks are
+  delivered after the rendering step, so the `pending` styles have already
+  resolved and the transition runs from a direct assignment. rAF survives
+  only on the no-IntersectionObserver fallback, where the flip would
+  otherwise coalesce into the same task as `pending` and skip the
+  transition entirely.
+- Added a 1s interval guard as a last line of defence: if the section is on
+  screen but still hidden, it forces the reveal and stops itself. Timers keep
+  running in a hidden tab; rAF does not. Missing the animation is fine —
+  unreadable copy is not.
+- The guard applies the *same* 5% visible-fraction test as the observer,
+  shared through one `VISIBLE_FRACTION` constant. The first cut of the guard
+  tripped on any single visible pixel, which overrode the observer threshold
+  and played the reveal while the section was barely peeking in at the
+  bottom of a short viewport — caught by the below-the-fold case.
+
+Cache-bust `defex.js ms16 → ms17`.
+
+Verified by parking `requestAnimationFrame` outright, which is exactly what
+the defect is: against shipped 7.3.8 the copy sits at 0/242 words revealed,
+`pending`, forever; with the fix it reveals normally. Plus foreground load
+animates and settles 242/242, below-the-fold still waits for the scroll and
+then reveals, and viewport heights 800/831/900/1000 all start at load.
 
 ## [7.3.8] — 2026-08-10
 **Theme: slow the #manpower reveal to a followable pace.**

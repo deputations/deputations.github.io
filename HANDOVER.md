@@ -4229,3 +4229,77 @@ focus:   v7.3.8 — slow the #manpower reveal to a followable pace
   following, the effect degrades into words popping on individually.
 
 ## session shq-2026-08-10-003 end
+
+## session shq-2026-08-10-004
+```
+started: 2026-08-10
+ended:   2026-08-10
+model:   claude-opus-5
+driver:  solo
+branch:  main
+starting_head: 6d3d56c
+ending_head:   <pending>
+focus:   v7.3.9 — fix: #manpower reveal could leave the copy permanently invisible
+```
+
+### inbound context read
+- session -003 above (v7.3.8, the pace change)
+- typeManpower() in defex.js as shipped in 7.3.7/7.3.8
+
+### work done
+1. after pushing 7.3.8, checked the live page through the Chrome extension.
+   #manpower reported `inView: true` (top 672, vh 831) but `data-typing` was
+   still `pending` and `revealedNow: 0` — the essay was rendering as blank
+   space. It only started after I sent a scroll event.
+2. reproduced the class of bug locally: the `pending` → `run` flip went through
+   requestAnimationFrame, and a backgrounded tab parks rAF indefinitely. Because
+   every word sits at opacity 0 until that flip, a parked rAF means permanently
+   invisible copy. Middle-clicking the page into a background tab is enough.
+3. fix: the observer path drops rAF (callbacks are delivered after the rendering
+   step, so the `pending` styles have resolved and a direct assignment
+   transitions correctly). rAF survives only on the no-IO fallback, where the
+   flip would otherwise coalesce into the same task as `pending`.
+4. added a 1s interval guard: on screen but still hidden → force the reveal,
+   then stop itself. Timers keep running in a hidden tab; rAF does not.
+5. cache-bump defex.js ms16 → ms17; VERSION 7.3.9; CHANGELOG; WEBSITE-REVIEW;
+   this block.
+
+### decisions
+- **the animation must never be the reason copy is unreadable.** That is the
+  whole principle behind the guard. Missing the effect costs nothing; a blank
+  essay on a government-facing page is a real failure.
+- **the guard shares the observer's threshold via one VISIBLE_FRACTION const.**
+  My first cut fired on any single visible pixel, which silently overrode the 5%
+  threshold and played the reveal while the section was barely peeking into a
+  700px viewport. The below-the-fold test caught it. If either number is ever
+  tuned, it must stay one constant.
+- **tested by parking rAF, not by trying to background a tab.** Playwright's
+  bring_to_front() does not produce visibilityState "hidden" in headless
+  Chromium — my first attempt asserted the failure condition was in place and it
+  wasn't, so the test was passing vacuously. `add_init_script("window.request
+  AnimationFrame = () => 0")` reproduces the defect exactly and deterministically.
+- **A/B'd the test against the shipped code before trusting it.** Against 7.3.8
+  it reports 0/242 revealed, `pending`, forever. A regression test that has never
+  been seen to fail is not evidence.
+
+### handoff state
+- working_tree: committed (see ending_head) and pushed; origin/main level.
+- CI "Smoke tests" still RED on main for the pre-existing
+  test_feedback_proxy heart-click failure — unrelated, see session -003.
+- open: P3-2, P3-10, P2-2, P1-7. Unchanged.
+
+### gotchas for next session
+- **never gate visibility on rAF.** If an element is hidden until JS flips
+  something, that flip must not depend on a callback the browser is free to park.
+  This applies to any future reveal/stagger work on this site.
+- **Playwright bring_to_front() does not hide the other page** in headless
+  Chromium — visibilityState stays "visible". Assert your failure condition is
+  actually in place before trusting a passing test.
+- **the guard polls once a second and stops on first success**, so it costs
+  nothing after the reveal. Do not "optimise" it away: it is the only thing
+  standing between a parked rAF and blank copy.
+- **the live check is what found this.** Local Playwright runs at vh 800-1000 all
+  passed and would have kept passing. Check the deployed page, in a real browser,
+  before calling a visual change done.
+
+## session shq-2026-08-10-004 end

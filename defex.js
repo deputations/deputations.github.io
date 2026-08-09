@@ -126,7 +126,7 @@
   // ---------- load ----------------------------------------------------------
   async function load() {
     // Cache-bust by version — bump along with defex.js's ?v= query.
-    const V = "ms16";
+    const V = "ms17";
     const get = (p) => fetch(`${p}?v=${V}`).then(r => r.json());
     const [orgs, scores, reports, method, upd] = await Promise.all([
       get("data/defex/organisations.json"),
@@ -977,15 +977,48 @@
 
     host.style.setProperty("--word-ms", `${WORD_MS}ms`);
     host.dataset.typing = "pending";
-    const run = () => requestAnimationFrame(() => { host.dataset.typing = "run"; });
+    const reveal = () => { host.dataset.typing = "run"; };
+
+    if (!("IntersectionObserver" in window)) {
+      // Flipping in the same task as "pending" would coalesce and skip the
+      // transition, so this one path does need a frame.
+      requestAnimationFrame(reveal);
+      return;
+    }
 
     // On desktop the section is in view at load, so this fires straight away; on
-    // a phone it waits for the scroll rather than playing to nobody.
-    if (!("IntersectionObserver" in window)) { run(); return; }
+    // a phone it waits for the scroll rather than playing to nobody. No rAF here:
+    // observer callbacks are delivered after the rendering step, so the "pending"
+    // styles have already resolved and the transition will run.
+    const VISIBLE_FRACTION = 0.05;
+    let guard = 0;
     const io = new IntersectionObserver((entries, obs) => {
-      if (entries.some(e => e.isIntersecting)) { obs.disconnect(); run(); }
-    }, { threshold: 0.05 });
+      if (!entries.some(e => e.isIntersecting)) return;
+      obs.disconnect();
+      clearInterval(guard);
+      reveal();
+    }, { threshold: VISIBLE_FRACTION });
     io.observe(host);
+
+    // Last line of defence. Every word sits at opacity 0 until that flip, so the
+    // animation must never be the reason the copy is unreadable — and a
+    // backgrounded tab parks requestAnimationFrame and can defer observer
+    // delivery indefinitely. Poll cheaply for "on screen but still hidden" and
+    // force it; timers keep running when a tab is hidden, rAF does not. Stops
+    // itself the moment the reveal starts.
+    guard = setInterval(() => {
+      if (host.dataset.typing === "run") { clearInterval(guard); return; }
+      // Same test the observer applies, deliberately — a looser one here would
+      // override the threshold and play the reveal while the section is barely
+      // peeking into view.
+      const b = host.getBoundingClientRect();
+      const shown = Math.min(b.bottom, window.innerHeight) - Math.max(b.top, 0);
+      if (b.height && shown / b.height >= VISIBLE_FRACTION) {
+        io.disconnect();
+        clearInterval(guard);
+        reveal();
+      }
+    }, 1000);
   }
 
   // ---------- init ---------------------------------------------------------
