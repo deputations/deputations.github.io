@@ -3926,7 +3926,7 @@ model:   claude-opus-4-8
 driver:  solo
 branch:  main
 starting_head: f8f51a6
-ending_head:   <pending>
+ending_head:   4a3b1b2
 focus:   v7.3.5 -- drop nested table scrollbar (P1-9b follow-up)
 ```
 
