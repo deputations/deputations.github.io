@@ -39,6 +39,14 @@
   border-radius: 9px;
   box-shadow: 0 6px 18px -6px rgba(34, 211, 238, .55);
 }
+/* V² brand mark — chrome V PNG with its own transparent background.
+   The default .nav-brand-mark masks it with a rounded square + glow that
+   fights the artwork, so neutralise those for the PNG variant only. */
+.nav-brand-mark.nav-brand-v2 {
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
 
 .nav-brand-name {
   font-family: "Sora", "Plus Jakarta Sans", sans-serif;

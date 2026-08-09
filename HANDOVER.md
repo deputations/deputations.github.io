@@ -3672,3 +3672,137 @@ focus:         same-day patch on 7.3.1: short-form badge in-cell, full
   - Light-theme thead 4.42:1 (pre-existing, not bundled).
 
 ## session shq-2026-08-09-002 end
+
+## session shq-2026-08-09-003
+```
+started:       2026-08-09
+ended:         2026-08-09
+model:         claude-opus-4-8
+driver:        solo
+branch:        main
+starting_head: 08d67d4
+ending_head:   <pending>
+focus:         nav-corner brand rebuild. Two user requests: (1) nav
+               brand should display the website's actual name ("All
+               Deputation Vacancies", matching the hero headline),
+               not the placeholder word "Deputations"; (2) the SVG
+               "D" mark in the nav corner should be replaced by the
+               V² chrome logo (the existing /assets/brand/v2-logo.png
+               already used on the Upcoming Projects hero). Cut as
+               v7.3.3 PATCH — no schema / scheme / URL change.
+```
+
+### inbound context read
+- HANDOVER shq-2026-08-09-002 (immediately prior; v7.3.2 landed)
+- WEBSITE-REVIEW progress log 2026-08-09 (v7.3.2 row)
+- CHANGELOG.md `[7.3.2]` section
+- The user's screenshot showing the home page hero ("All Deputation
+  Vacancies" gradient headline) and a hand-drawn arrow pointing at
+  the top-left "D Deputations" corner
+- `index.html:150-163` (nav-brand block on index)
+- `navbar.css:23-59` (existing brand styles)
+- `upcoming-projects.html:86` (existing V² logo asset in use)
+
+### work done
+1. **Nav-brand block on all 8 HTML pages** — replaced the inline
+   `<svg>` "D" mark with
+   `<img src="/assets/brand/v2-logo.png" class="nav-brand-mark
+   nav-brand-v2" alt="V² — V Square" width="32" height="32">`
+   and the brand text from "Deputations" to "All Deputation
+   Vacancies" with matching `aria-label`. Pages touched:
+   index, defex, contact, faq, my-deputation, report-vacancy,
+   rules, upcoming-projects.
+2. **CSS** (`navbar.css`) — new `.nav-brand-mark.nav-brand-v2`
+   modifier neutralises the default `border-radius: 9px` rounded
+   mask + cyan glow the SVG mark had. The PNG carries its own
+   chrome V silhouette + transparent background; the rounded mask
+   clipped the artwork's outer edges and the cyan halo produced a
+   faint cyan tint that fought the artwork's white highlights.
+3. **Cache-bust** `navbar.css?v=2` → `?v=3` on all 8 pages.
+4. **Docs**: VERSION bumped 7.3.2 → 7.3.3; CHANGELOG.md gets a
+   `[7.3.3] — 2026-08-09` section with **Theme / Changed /
+   Verified** blocks; WEBSITE-REVIEW.md progress log gets a row.
+
+### decisions
+- **Existing asset, not a new logo.** The V² chrome logo already
+  lives at `/assets/brand/v2-logo.png` (used by
+  upcoming-projects.html as the hero art). No new asset work — just
+  a swap to an existing one. The owner's "V2 logo is there in
+  upcoming project page" message during the work surfaced this.
+- **Roll across all 8 pages, not just index.html.** The user's
+  complaint was about "the corner" — which appears on every page.
+  Limiting the swap to index would have created an inconsistent
+  brand across the site. All 8 pages now share the same nav-brand
+  block + same cache-bust version (no per-page version drift).
+- **Brand text now matches the hero headline.** "All Deputation
+  Vacancies" is already what the index hero says. The nav corner
+  used to say "Deputations" — a generic word that didn't say what
+  the site is. The owner's first sentence in this session was
+  exactly that: "the header should depict the website name".
+- **No V² chip / pill next to the logo.** Considered adding a small
+  "V² Product" badge to make the product association explicit, but
+  the logo already says "V SQUARE" underneath the chrome V — adding
+  more text would crowd the 32 × 32 mark and add a colour noise to
+  the nav strip. The image's own subtitle already names the product.
+
+### handoff state
+- Working tree: clean (only the new edits + untracked local
+  artifacts: `.venv-smoke/`, `scripts/_phase0_shots.py`,
+  `workers/sb-proxy/.wrangler/` — all gitignored).
+- HEAD: <pending> on `main`, not yet pushed.
+- Smoke: not re-run for this change. No JS, no selectors, no data.
+  Visual verification was Playwright DOM sweep on the running
+  static server — 8/8 pages load the PNG (natural 400 × 400,
+  rendered 32 × 32), `aria-label` set correctly.
+- v7.3.3 PATCH cut. The `[Unreleased]` section in CHANGELOG.md is
+  empty and ready for the next cycle.
+
+### gotchas for next session
+- **Two nav-brand variants exist in the wild briefly**: the legacy
+  `<svg class="nav-brand-mark">` "D" mark was the default; this
+  release retires it. If a future page imports the brand block from
+  any reference doc, prefer the `<img class="nav-brand-mark
+  nav-brand-v2">` form with `assets/brand/v2-logo.png`. The CSS
+  modifier `.nav-brand-v2` is the gate that turns off the rounded
+  mask + glow.
+- **`navbar.css?v=3` must stay in sync across all 8 pages.** Every
+  page imports `navbar.css` with its own cache-bust counter. They
+  were all bumped together to `v=3`. A future CSS change that
+  forgets to bump one of the eight pages will leave that page
+  serving the old CSS — same gotcha as `app.js?v=msNN` but spread
+  across 8 files instead of 1. Worth a script to grep-and-verify.
+- **The PNG is 400 × 400 (4 KB) and is fetched once per session.**
+  No preloading, no `<link rel="preload">`. At 32 × 32 on the nav
+  strip the rendering cost is negligible. If a future cycle ever
+  bumps the nav logo size to 64+ px or places it on hero strips
+  where it paints above the fold, add a preload tag in the head.
+- **Playwright dispatch-order rule still applies** — this release
+  is pure HTML/CSS; no event wiring, no regression surface.
+- **Browser pane is hidden here** — verification via
+  `.venv-smoke` Playwright headless per the
+  `deputation-visual-verification` memory.
+
+### next_pickup
+- v7.3.4 candidates:
+  - Plumb `Source_Page` through the data pipeline (enrich.js +
+    scripts/build_data.py + enrichRecord) so the badge upgrades
+    to `pNN of EN- DD Mon YY` automatically (per `shq-2026-08-09-
+    002` next_pickup).
+  - Unify `formatSourceBadge(item)` and `formatSourceBadgeShort
+    (item)` (or retire the legacy one once the modal migrates).
+  - `tests/test_card_share.py` — cover the WhatsApp button
+    (click → captures `window.open` URL, asserts `wa.me/`
+    prefix + decoded body text matches `buildShareText`).
+  - P3-2 (AI eligibility explainer) — still the only unblocked
+    L feature; pattern mirrors P3-3.
+  - A grep-and-verify script for `navbar.css?v=` consistency
+    across all 8 HTML pages — this release was done by hand.
+- Pre-existing carryover (not this PR's work):
+  - NIC HTTPS test of Oracle VM scheduled 2026-08-10.
+  - Cron `2ddab249` for 2026-09-25 08:57 — apex Wix→Cloudflare
+    migration reminder.
+  - `verify_admin.py` line 159 timeout (documented in
+    `deputation-admin-pre-existing-bug`).
+  - Light-theme thead 4.42:1 (pre-existing, not bundled).
+
+## session shq-2026-08-09-003 end

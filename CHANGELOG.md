@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.3.2` (2026-08-09).** The `VERSION` file at the repo root
+**Current version: `7.3.3` (2026-08-09).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -27,6 +27,41 @@ counter_convention:
 ## [Unreleased]
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
+
+## [7.3.3] — 2026-08-09
+**Theme: the nav corner carries the website name and the V² brand.**
+The nav brand block in the top-left used to be "D Deputations" — a
+generic initial mark and a redundant label that already lived on every
+page. Two changes were asked for: the website's actual name ("All
+Deputation Vacancies", matching the hero headline) instead of the
+placeholder word, and the existing V² chrome logo
+(`/assets/brand/v2-logo.png`, already in use on the Upcoming Projects
+hero) instead of the hand-drawn cyan→violet "D" mark.
+
+- counter: `navbar.css?v=2` → `?v=3` on every page that loads it
+  (index + 7 secondary pages)
+
+**Changed**
+- Nav brand `<a class="nav-brand">` block, on **all 8 HTML pages**
+  (index, defex, contact, faq, my-deputation, report-vacancy, rules,
+  upcoming-projects): replaced the inline `<svg>` "D" mark with an
+  `<img src="/assets/brand/v2-logo.png" class="nav-brand-mark
+  nav-brand-v2" alt="V² — V Square">`, and the brand name from
+  "Deputations" to "All Deputation Vacancies". The `aria-label`
+  matches the visible name.
+- New `.nav-brand-mark.nav-brand-v2` modifier in `navbar.css` turns
+  off the default `border-radius: 9px` + cyan glow that the SVG mark
+  had. The PNG carries its own chrome V silhouette and transparent
+  background — the rounded mask clipped the artwork's outer edges and
+  the cyan glow produced a halo that fought the artwork's white
+  highlights. Both now reset to `none` for the PNG variant only.
+
+**Verified**
+- `node --check app.js` clean.
+- All 8 pages load `/assets/brand/v2-logo.png` (Playwright DOM sweep
+  on the running static server, 8/8 success). Rendered dimensions
+  32 × 32, natural 400 × 400. `aria-label="All Deputation Vacancies
+  — home"` present on every page.
 
 ## [7.3.2] — 2026-08-09
 **Theme: the badge gets a short form.** The 7.3.1 badge restored the full
