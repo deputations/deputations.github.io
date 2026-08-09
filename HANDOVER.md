@@ -145,7 +145,7 @@ model:   claude-opus-4-8[1m]
 driver:  relay
 branch:  main
 starting_head: 05aeec3
-ending_head:   <pending>
+ending_head:   1bec100
 focus:   trim 4 docs to AI-only consumption (no human voice)
 ```
 
