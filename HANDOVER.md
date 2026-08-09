@@ -3816,7 +3816,7 @@ model:   claude-opus-4-8
 driver:  solo
 branch:  main
 starting_head: 9f9c71f
-ending_head:   <pending>
+ending_head:   c27fc8c
 focus:   v7.3.4 -- hero cursive 'All' + quieter V² logo-only nav corner
 ```
 
