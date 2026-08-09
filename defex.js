@@ -126,7 +126,7 @@
   // ---------- load ----------------------------------------------------------
   async function load() {
     // Cache-bust by version — bump along with defex.js's ?v= query.
-    const V = "ms14";
+    const V = "ms15";
     const get = (p) => fetch(`${p}?v=${V}`).then(r => r.json());
     const [orgs, scores, reports, method, upd] = await Promise.all([
       get("data/defex/organisations.json"),
@@ -933,6 +933,53 @@
     note.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
+  // ---------- manpower section: word-by-word reveal -------------------------
+  // Wraps every word of #manpower in a span carrying its ordinal, then hands the
+  // timing to CSS (transition-delay: calc(var(--w) * 11ms)) so one attribute flip
+  // drives the whole cascade — no per-word timers, no reflow, since only opacity
+  // moves. Delete the typeManpower() call in init() to drop the effect; the
+  // markup and copy are untouched by it.
+  function typeManpower() {
+    const host = $("#manpower");
+    if (!host) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+
+    // Collect first, then replace — mutating during the walk would invalidate it.
+    const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+    let n = 0;
+    textNodes.forEach(node => {
+      if (!node.nodeValue.trim()) return;                  // pure whitespace — leave it
+      const frag = document.createDocumentFragment();
+      // Capturing split keeps the original whitespace, so wrapping cannot change
+      // where lines break or how <strong> runs sit against their punctuation.
+      node.nodeValue.split(/(\s+)/).forEach(part => {
+        if (!part) return;
+        if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+        const w = document.createElement("span");
+        w.className = "dex-type-w";
+        w.style.setProperty("--w", n++);
+        w.textContent = part;
+        frag.appendChild(w);
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+    if (!n) return;
+
+    host.dataset.typing = "pending";
+    const run = () => requestAnimationFrame(() => { host.dataset.typing = "run"; });
+
+    // On desktop the section is in view at load, so this fires straight away; on
+    // a phone it waits for the scroll rather than playing to nobody.
+    if (!("IntersectionObserver" in window)) { run(); return; }
+    const io = new IntersectionObserver((entries, obs) => {
+      if (entries.some(e => e.isIntersecting)) { obs.disconnect(); run(); }
+    }, { threshold: 0.05 });
+    io.observe(host);
+  }
+
   // ---------- init ---------------------------------------------------------
   async function init() {
     showSkeleton();
@@ -969,5 +1016,6 @@
   }
 
   applyScope();                                   // scope-limit: pre-paint copy swap
+  typeManpower();                                 // also pre-paint, or the words flash in first
   document.addEventListener("DOMContentLoaded", init);
 })();

@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.3.6` (2026-08-10).** The `VERSION` file at the repo root
+**Current version: `7.3.7` (2026-08-10).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -27,6 +27,65 @@ counter_convention:
 ## [Unreleased]
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
+
+## [7.3.7] — 2026-08-10
+**Theme: full-width manpower section + word-by-word reveal.**
+Follow-up to 7.3.6, same section. Owner asked for the copy to fill the
+full width and for the text to type in word by word, fast, on load.
+
+**Full width.** Dropped `max-width: calc(78ch + 4rem)` and
+`margin-inline: auto` from `.dex-manpower-card`. The card now measures
+1176px at a 1440px viewport — identical width and left edge to the
+coverage strip and the hero above it. 7.3.6 had capped it to keep the
+reading measure at 78ch; the owner asked for full width after seeing it,
+so the cap is gone.
+
+**Word-by-word reveal.** `typeManpower()` walks the section's text nodes,
+wraps each word in `<span class="dex-type-w">` carrying its ordinal in a
+`--w` custom property, then flips `data-typing` from `pending` to `run`.
+CSS does the rest:
+
+```css
+.dex-manpower[data-typing="run"] .dex-type-w {
+  opacity: 1;
+  transition: opacity 150ms ease-out;
+  transition-delay: calc(var(--w) * 11ms);
+}
+```
+
+One attribute change drives all 242 words — no per-word timers. Only
+opacity moves, so the words hold their space and nothing reflows. Total
+run ≈ 2.7s plus the 150ms tail fade.
+
+Details that matter:
+- **Called pre-paint**, next to `applyScope()` at the bottom of the IIFE,
+  not from `init()`. From `init()` the copy would paint at full opacity
+  first and then snap to transparent before fading back in.
+- **Splitting preserves whitespace** (`split(/(\s+)/)`), so wrapping cannot
+  move a line break or detach punctuation from its word. The four `<strong>`
+  runs survive intact — 55 of the 242 words sit inside them.
+- **Starts on intersection**, which on desktop is immediately at load and on
+  a phone waits for the scroll rather than playing to nobody.
+- **`prefers-reduced-motion: reduce` skips wrapping entirely**, and the CSS
+  carries a matching guard in case the preference changes after load.
+- **The `[data-typing]` attribute only exists once JS has run**, so with JS
+  off the copy is plainly visible — verified with `java_script_enabled=False`.
+
+Span count (242) runs three above the token count (239) because trailing
+punctuation sitting outside a `<strong>` is its own text node. There is no
+line-break opportunity between a word and a following comma, so it renders
+identically; the verified invariant is that no visible text is left
+unwrapped, not that spans equal tokens.
+
+Cache-bust: `defex.css` / `defex.js` / the in-file `V` constant `ms14 → ms15`.
+
+Verified with an ad-hoc Playwright pass: no unwrapped text, contiguous
+indices 0–241, bold runs intact, partial reveal mid-flight (a real
+animation, not an instant paint), fully settled after the run, all copy
+phrases byte-intact, card width equal to the coverage strip, reduced-motion
+and no-JS fallbacks, zero console errors, and no horizontal overflow at
+375px. `scripts/_verify_scope_limit.py` and `tests/test_defex.py` still pass
+unchanged.
 
 ## [7.3.6] — 2026-08-10
 **Theme: DeFeX Phase 1 — Ministries and Departments only.**

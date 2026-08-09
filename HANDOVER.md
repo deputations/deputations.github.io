@@ -4092,3 +4092,83 @@ focus:   v7.3.6 — DeFeX Phase-1 scope limit (Ministries + Departments only)
   `SCOPE.types` rather than unpicking the block.
 
 ## session shq-2026-08-10-001 end
+
+## session shq-2026-08-10-002
+```
+started: 2026-08-10
+ended:   2026-08-10
+model:   claude-opus-5
+driver:  solo
+branch:  main
+starting_head: da39df5
+ending_head:   <pending>
+focus:   v7.3.7 — #manpower full width + word-by-word reveal
+```
+
+### inbound context read
+- session -001 above (v7.3.6, which created #manpower and capped it at 78ch)
+- defex.css .dex-manpower* block, defex.js bottom-of-IIFE call sites
+
+### work done
+1. owner sent a screenshot of the capped card and asked to expand the text to
+   full width, and to add a fast word-by-word typing animation on page load.
+2. removed `max-width: calc(78ch + 4rem)` + `margin-inline: auto` from
+   `.dex-manpower-card`. Measured 1176px at a 1440px viewport, identical width
+   and left edge to `.dex-coverage` and the hero.
+3. added `typeManpower()`: TreeWalker over the section's text nodes, each word
+   wrapped in `span.dex-type-w` with its ordinal in a `--w` custom property,
+   then `data-typing` flipped `pending` → `run`. CSS
+   `transition-delay: calc(var(--w) * 11ms)` cascades all 242 words off that one
+   attribute change.
+4. cache-bump ms14 → ms15; VERSION 7.3.6 → 7.3.7; CHANGELOG [7.3.7];
+   WEBSITE-REVIEW row; this block.
+
+### decisions
+- **reversed my own 7.3.6 call on the measure.** I had capped the card at 78ch
+  because a six-paragraph essay at 1176px runs ~140 characters a line, and I
+  flagged that when handing it over. Owner looked at it and asked for full width.
+  That is their call on their own copy — cap removed, no further argument.
+- **CSS drives the timing, JS only wraps.** 242 `setTimeout`s would work but the
+  browser already schedules transitions well. One attribute flip + per-word
+  `transition-delay` means no timer bookkeeping, nothing to cancel on unload, and
+  the whole effect is inspectable in devtools.
+- **opacity only, no transform.** A `translateY` would need `inline-block` words,
+  which changes wrapping and spacing behaviour. Opacity keeps every word in its
+  final position from the first frame, so the paragraph never reflows.
+- **called pre-paint, not from init().** `init()` waits for DOMContentLoaded and
+  then the JSON fetches; by then the copy has painted at full opacity, so the
+  wrap would snap it to transparent and fade it back — a visible flicker on an
+  above-the-fold element.
+- **IntersectionObserver rather than a bare call.** Owner said "on page load",
+  which on desktop is what this does (the section is in view at load, so the
+  observer fires immediately). On a phone the section is below the fold and a
+  bare call would play the whole animation to nobody.
+- **reduced motion skips wrapping entirely** rather than wrapping and then
+  overriding in CSS — fewer DOM nodes for users who have asked for less motion.
+  The CSS guard stays as a second line in case the preference flips after load.
+
+### handoff state
+- working_tree: committed (see ending_head), NOT PUSHED.
+- untracked helpers unchanged: scripts/_verify_scope_limit.py and its five
+  siblings, .venv-smoke, .tmp-navcheck*.
+- open: P3-2, P3-10, P2-2, P1-7. Unchanged.
+
+### gotchas for next session
+- **242 spans vs 239 tokens is correct, not a bug.** Trailing punctuation that
+  sits outside a `<strong>` in the source markup (`…Central Government</strong>,`)
+  becomes its own text node and therefore its own span. There is no line-break
+  opportunity between a word and a following comma, so it renders identically.
+  The invariant to assert is "no visible text left unwrapped", not "spans ==
+  tokens" — I wrote the latter first and it failed for this reason.
+- **don't move typeManpower() into init().** See decisions; it must stay
+  pre-paint or the copy flickers.
+- **the wrap is one-way.** Re-running typeManpower() on an already-wrapped
+  section would nest spans. It bails on `prefers-reduced-motion` and on a missing
+  `#manpower`, but there is no idempotence guard — nothing calls it twice today.
+- **if the copy is ever edited, the word count changes and so does the run
+  length** (11ms × words). Past roughly 400 words the tail gets slow enough to
+  notice; drop the multiplier rather than adding timers.
+- **the animation is independent of the scope limit.** Different fence, different
+  release. Turning `SCOPE.on` off does not affect it.
+
+## session shq-2026-08-10-002 end

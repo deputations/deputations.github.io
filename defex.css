@@ -614,10 +614,6 @@
 /* ============== WHY DEPUTATION (manpower utilisation) ============== */
 .dex-manpower { margin-top: -0.5rem; }
 .dex-manpower-card {
-  /* Size the box to the text, not the other way round: 78ch is the readable
-     measure for body copy, and the card adds its own 2rem of side padding. */
-  max-width: calc(78ch + 4rem);
-  margin-inline: auto;
   padding: 1.75rem 2rem;
   background: var(--dex-card); border: 1px solid var(--dex-line);
   border-radius: var(--dex-radius); backdrop-filter: blur(14px);
@@ -643,6 +639,25 @@
 @media (max-width: 560px) {
   .dex-manpower-card { padding: 1.25rem 1.15rem; }
   .dex-manpower-card h2 { font-size: 1.25rem; }
+}
+
+/* Word-by-word reveal. typeManpower() in defex.js wraps each word, sets
+   data-typing="pending", then flips it to "run" — one class change drives the
+   whole cascade off transition-delay, so there is no per-word timer. Opacity
+   only: the words hold their space throughout, so nothing reflows.
+   Both guards below matter — the [data-typing] attribute only ever exists once
+   JS has run, so with JS off (or blocked) the copy is plainly visible. */
+.dex-manpower[data-typing] .dex-type-w { opacity: 0; }
+.dex-manpower[data-typing="run"] .dex-type-w {
+  opacity: 1;
+  transition: opacity 150ms ease-out;
+  transition-delay: calc(var(--w) * 11ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dex-manpower[data-typing] .dex-type-w,
+  .dex-manpower[data-typing="run"] .dex-type-w {
+    opacity: 1; transition: none; transition-delay: 0s;
+  }
 }
 
 .dex-disclaimer { padding: 1.25rem 1.5rem; background: rgba(15, 23, 42, 0.5); border: 1px dashed var(--dex-line-strong); border-radius: var(--dex-radius-sm); }
