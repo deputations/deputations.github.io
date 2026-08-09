@@ -3971,7 +3971,7 @@ model:   claude-opus-5
 driver:  solo
 branch:  main
 starting_head: 2d962a5
-ending_head:   <pending — not committed>
+ending_head:   19511c3
 focus:   v7.3.6 — DeFeX Phase-1 scope limit (Ministries + Departments only)
 ```
 
@@ -4057,8 +4057,9 @@ focus:   v7.3.6 — DeFeX Phase-1 scope limit (Ministries + Departments only)
   read it from static HTML where a runtime override wouldn't reach.
 
 ### handoff state
-- working_tree: NOT COMMITTED. Modified — defex.js, defex.css, defex.html, VERSION,
-  CHANGELOG.md, WEBSITE-REVIEW.md, HANDOVER.md. New untracked —
+- working_tree: committed as 19511c3 (7 files), NOT PUSHED — owner asked to commit
+  only. origin/main was level with HEAD at commit time, so no rebase was needed.
+- untracked, left that way to match the other ad-hoc verifiers in scripts/ —
   scripts/_verify_scope_limit.py (its checklist assertion is conditional and re-arms
   itself if #checklist is uncommented).
 - a `python -m http.server 8890` was left running for the Chrome pass; kill it.
