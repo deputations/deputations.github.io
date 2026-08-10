@@ -28,6 +28,43 @@ counter_convention:
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
 
+---
+
+## [7.3.14] — 2026-08-10
+
+### Changed
+- **AI search bar no longer disables itself on a startup probe.** The bar used
+  to run `ensureSupabaseAvailable()` once on load and, on a false result,
+  permanently set the placeholder to "Unavailable in NIC Network as of now -
+  Use Keyword search instead", disable the input, and grey out the badge.
+  Removed (`app.js`, cache-bust `?v=ms72` → `?v=ms73`).
+
+  Two reasons. It is no longer true — NIC reaches the backend through the
+  `api.alldeputations.com` proxy, so AI search works there. And it failed in
+  the wrong direction: the probe ran once and its verdict was permanent, so a
+  single slow or dropped probe on any congested network left the box greyed
+  out and untypable for the whole session with no way back. That is the
+  intermittent "search box blanked out" report.
+
+  Reachability is still checked per-request inside the search handler, which
+  degrades gracefully ("AI search unavailable on this network. Use the keyword
+  search above.") and re-evaluates on the next query.
+
+### Fixed (tests)
+- `test_feedback_proxy.py` — both heart tests asserted on `.sw-fb` without ever
+  navigating; the `page` fixture yields a blank context, so the widget could
+  never exist on `about:blank`. Failed on every push to main since the suite
+  landed. Added `page.goto()`; hostname skip now reads `base_url`.
+- `test_region_filter.py` — same missing-navigation bug, plus the Region group
+  only renders once `body.filters-collapsed` is lifted, so the tests now expand
+  the panel via `#desktopFilterToggle` the way a user does. Expectations
+  corrected: the dropdown label is `North-East` (not `NorthEast`), and
+  `Central` is no longer required — its only three rows are `Inactive`, so the
+  option correctly does not render on an Active-by-default board.
+- `test_watchlist.py::test_favbtn_title_tracks_watchlist_state` — read
+  `#favBtn`'s title before the watchlist-count pass had run. The race was
+  masked by the startup probe removed above; now waits for the count to land.
+
 ## [7.3.13] — 2026-08-09
 **Theme: neural loader for AI search latency.**
 The semantic-search Edge Function takes 500–1500ms on a healthy

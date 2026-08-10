@@ -3721,23 +3721,20 @@ function syncCardSortUI() {
         }, 300);
     }
 
-    // NIC's resolver sinkholes supabase.co (and the workers.dev proxy) into a
-    // walled garden, so the AI endpoint is unreachable there. Say so in the bar
-    // itself — that's where the user is about to type — instead of only in the
-    // offline banner further up the page. Disable the input so the user types
-    // nothing into a dead-end box; show the unavailability message in the
-    // placeholder AND keep the AI-POWERED badge visible (greyed out via the
-    // .is-unavailable CSS) so the affordance is still discoverable.
-    if (aiSearchInput && typeof window.ensureSupabaseAvailable === 'function') {
-        window.ensureSupabaseAvailable().then((ok) => {
-            if (ok) return;
-            aiSearchInput.placeholder = 'Unavailable in NIC Network as of now - Use Keyword search instead';
-            aiSearchInput.disabled = true;
-            aiSearchInput.setAttribute('aria-disabled', 'true');
-            const bar = aiSearchInput.closest('.ai-search-bar');
-            if (bar) bar.classList.add('is-unavailable');
-        });
-    }
+    // NOTE: the AI bar used to disable itself on load behind a one-shot
+    // `ensureSupabaseAvailable()` probe, swapping in an "Unavailable in NIC
+    // Network" placeholder. That gate is gone. Two reasons:
+    //
+    //   1. It is no longer true. NIC reaches the backend through the
+    //      api.alldeputations.com proxy, so the AI endpoint works there.
+    //   2. It failed open in the wrong direction. The probe ran once at
+    //      startup and its result was permanent — a single slow or dropped
+    //      probe (which happens on any congested network, NIC or not) left
+    //      the box greyed out and untypable for the rest of the session with
+    //      no way back, even though the endpoint was fine.
+    //
+    // Reachability is now judged per-request at the point of the search, where
+    // a failure is recoverable and the next query gets a fresh verdict.
 
     function hideSemanticResults() {
         if (semanticResults) semanticResults.hidden = true;

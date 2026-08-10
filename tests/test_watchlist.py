@@ -414,6 +414,13 @@ def test_favbtn_title_tracks_watchlist_state(page, base_url: str):
         ".includes('vacancies')"
     )
 
+    # The title is rewritten by the watchlist-count pass, which runs after the
+    # rows render — reading it the instant `resultsCount` settles is a race.
+    # Wait for the count to land instead of sampling and hoping.
+    page.wait_for_function(
+        "() => /\\d/.test(document.getElementById('favBtn')?.title || '')",
+        timeout=5000,
+    )
     title_one = page.locator("#favBtn").get_attribute("title") or ""
     assert "1" in title_one, f"title should mention count 1: {title_one!r}"
     assert "stored on this device" in title_one.lower(), (

@@ -28,6 +28,119 @@ schema:
 
 ---
 
+## session shq-2026-08-10-008
+```
+started: 2026-08-10
+ended:   2026-08-10
+model:   claude-opus-5
+driver:  relay
+branch:  main
+starting_head: dafc6be
+ending_head:   <pending>
+focus:   v7.3.14 -- remove the "Unavailable in NIC Network" AI-search gate; unblock CI
+```
+
+### inbound context read
+- session -007 above (CI smoke-test investigation, next_pickup = the 3-line
+  feedback-test fix)
+- memory: deputation-handover-protocol, deputation-visual-verification
+  (A/B against a stashed tree before blaming a change), deputation-p3-4-gotchas,
+  deputation-nic-network-issue, deputation-oracle-proxy-vm
+
+### work done
+1. **applied -007's next_pickup** -- tests/test_feedback_proxy.py never called
+   page.goto(), so `.sw-fb` could not exist on about:blank. Added navigation in
+   `_heart_request_made()` + `test_heart_widget_visible()`; hostname skip now
+   reads `base_url` instead of `page.url` (the honest signal once navigation
+   happens inside the helper). Committed alone as `b19308b fix(tests)`, no
+   VERSION bump, per -007's recommended commit shape.
+2. full-suite run surfaced the next failures: 3 region-filter + 1 semantic-search.
+   Found test_region_filter.py had the SAME missing-goto bug -- same class, second
+   file. Added `_load_dashboard()`.
+3. that fixed 1 of 3. Debugged the remaining two: `#filterRegionSS .ms-trigger`
+   resolved but was not visible. Walked the ancestor chain in the live DOM --
+   its `.filter-group` computes `display:none` because index.html ships
+   `body.filters-collapsed` and style.css:6076 hides every group that is not
+   `.fg-primary`. Region is secondary; Pay Level is primary, which is exactly
+   why Pay Level passed. Tests now click `#desktopFilterToggle` -- the user's
+   own path -- rather than stripping the class from JS.
+4. **owner redirected mid-session**: remove the "Unavailable in NIC Network as
+   of now - Use Keyword search instead" message, because the NIC route now works
+   via the proxy, and the search box was intermittently blanking out with it.
+   Removed the block at app.js:3724-3740 (one-shot `ensureSupabaseAvailable()`
+   on load -> placeholder swap + `disabled=true` + `.is-unavailable`).
+   Replaced with a comment recording WHY it is gone, so nobody reinstates it.
+5. verified the removal with Playwright in TWO network conditions (script at
+   /tmp/_verify_aibar.py, not committed): normal -> enabled, normal placeholder,
+   typing works; every backend call aborted (supabase.co AND
+   api.alldeputations.com) -> input STILL enabled and typable, and the
+   per-request message 'AI search unavailable on this network. Use the keyword
+   search above.' appears only on search. That per-request check (app.js ~3864)
+   is untouched and is what makes the removal safe.
+6. last region test still failed on stale expectations. Checked the DATA before
+   loosening anything: data/vacancies.json ships Region blank on all 384 rows
+   (client-side backfill), and the 3 rows that map to Central (2 Madhya Pradesh,
+   1 Chhattisgarh) are ALL `Inactive` -- on an Active-by-default board the option
+   correctly does not render. Also the dropdown renders the label 'North-East'
+   while the value is 'NorthEast'. Rewrote the assertion as a >=3-real-regions
+   floor + known-label check, which still catches the regression it guards.
+7. `test_watchlist.py::test_favbtn_title_tracks_watchlist_state` then went red.
+   A/B'd it against a stashed tree per memory: baseline PASSED, my tree FAILED --
+   so my change really did flip it. Mechanism: the removed startup probe was an
+   extra async hop that incidentally delayed the title read; the test had always
+   been racing the watchlist-count pass. Fixed the race in the test (wait for the
+   count to land) rather than restoring the delay. 3/3 stable after.
+8. bumped VERSION 7.3.13 -> 7.3.14, cache-bump app.js?v=ms72 -> ?v=ms73 on
+   index.html, CHANGELOG [7.3.14], 3 WEBSITE-REVIEW rows, this block.
+
+### decisions
+- **removed the gate rather than re-pointing it at the proxy.** Re-pointing would
+  have kept the one-shot-probe-is-permanent flaw, which is the actual cause of
+  the owner's intermittent blank-out. Per-request checking already exists and is
+  strictly better: it is recoverable and re-evaluates every query.
+- **fixed the watchlist race in the TEST, not by restoring the probe.** The probe
+  was masking a latent race; keeping it to hold a test up would be preserving a
+  bug to hide a bug.
+- **verified data before loosening the Central assertion.** Loosening a test to
+  make it pass is how real regressions get hidden -- confirmed from
+  data/vacancies.json that Central genuinely has zero Active rows first.
+- **did NOT delete the now-dead `.is-unavailable` CSS** (style.css:6461-6464,
+  liquid-glass.css:434-438). Nothing sets the class any more, so it is inert.
+  Left out to keep this diff to the behaviour the owner asked about; flag it as
+  a separate cleanup.
+- **did NOT touch the hidden Region filter itself** -- owner said to leave it if
+  it is not causing an issue, and it is not: the collapse is deliberate
+  progressive disclosure, not a bug.
+
+### handoff state
+- working_tree: app.js, index.html, VERSION, CHANGELOG.md, WEBSITE-REVIEW.md,
+  HANDOVER.md, tests/test_region_filter.py, tests/test_watchlist.py.
+  b19308b (the feedback-test fix) already committed.
+- open: P3-2 (AI eligibility), P3-10 (light-theme contrast debt),
+  P2-2 (hiring-data mini-report), P1-7 (SAR PDF bundles).
+
+### gotchas for next session
+- **the full suite is flaky LOCALLY and non-deterministically.** Three
+  consecutive full runs failed 4, then 6, then 5 tests -- a DIFFERENT set each
+  time, with `Page.goto` / `Page.reload` 15s timeouts, and every single one
+  passes when run alone or in a small subset. It is load contention on this
+  machine, and it PREDATES this session (the pre-change baseline full run also
+  failed 4). Do NOT chase a name out of a full-run log before re-running that
+  test on its own. CI on a clean runner is the real signal.
+- **because of that flakiness I could not demonstrate a green full local run.**
+  Every test touched this session passes individually and repeatedly. Whether
+  CI goes fully green on push is unverified -- watch the run.
+- **`--maxfail=1` in CI** still means the workflow reports only the FIRST
+  failure. Expect to iterate if something else surfaces behind these.
+- **do not reinstate the startup availability probe on the AI bar.** If someone
+  reports AI search failing on a network, the fix belongs in the per-request
+  path (app.js ~3864), which is recoverable. The comment at app.js:3724 records
+  this.
+
+## session shq-2026-08-10-008 end
+
+---
+
 ## session shq-2026-07-09-001
 ```
 started: 2026-07-09
