@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.3.10` (2026-08-10).** The `VERSION` file at the repo root
+**Current version: `7.3.11` (2026-08-10).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -27,6 +27,30 @@ counter_convention:
 ## [Unreleased]
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
+
+## [7.3.11] — 2026-08-10
+**Theme: #manpower reveal at literal reading pace.**
+Owner asked for ~230 wpm after 7.3.10's ~545 wpm. `WORD_MS` 110 → 260, so
+242 words take **~63s** end to end.
+
+This crosses a line the previous settings stayed on the right side of.
+At 11ms, 55ms and 110ms the reveal outran reading, so it could never make
+anyone wait for text. At 260ms it matches reading, so a reader following
+along now sits at the leading edge rather than behind it. Flagged before
+implementing; the owner reaffirmed. Raising `WORD_MS` back above ~150ms
+restores the headroom.
+
+The fade ratio inverts with it: 340ms → **200ms**, now deliberately
+*shorter* than the stagger so each word settles fully before the next
+begins. At the earlier fast staggers a long fade was what turned the
+leading edge into a wave; at reading pace that same overlap would mean
+asking the reader to read half-faded words. CSS `--word-ms` fallback
+110ms → 260ms in step with the JS constant.
+
+Cache-bust `defex.css` / `defex.js` `ms18 → ms19`.
+
+Not separately verified, per the owner's standing request — the change is
+the pace constant and its two paired values, on the code path 7.3.9 verified.
 
 ## [7.3.10] — 2026-08-10
 **Theme: halve the #manpower reveal pace again.**

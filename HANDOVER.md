@@ -4360,3 +4360,62 @@ focus:   v7.3.10 — halve the #manpower reveal pace again
   continuous cascade down the whole section.
 
 ## session shq-2026-08-10-005 end
+
+## session shq-2026-08-10-006
+```
+started: 2026-08-10
+ended:   2026-08-10
+model:   claude-opus-5
+driver:  solo
+branch:  main
+starting_head: ea69af2
+ending_head:   <pending>
+focus:   v7.3.11 — #manpower reveal at literal reading pace (~230 wpm)
+```
+
+### work done
+1. owner asked for ~230 wpm after 7.3.10's ~545 wpm. WORD_MS 110 → 260;
+   242 words × 260ms = ~63s end to end.
+2. fade 340ms → 200ms — the ratio inverts at this pace, see decisions.
+3. CSS `--word-ms` fallback 110ms → 260ms; cache-bump defex.css + defex.js
+   ms18 → ms19; VERSION 7.3.11; CHANGELOG; WEBSITE-REVIEW; this block.
+
+### decisions
+- **implemented it, having flagged the cost once.** Every earlier setting (11ms,
+  55ms, 110ms) kept the reveal faster than reading, which is what made the effect
+  safe: it could never leave anyone waiting for text. 260ms matches reading, so a
+  reader following along now sits at the leading edge instead of behind it. I put
+  that in one sentence and shipped what was asked; the owner has now pushed
+  slower three times running, so this is a settled preference, not a misreading.
+- **inverted the fade/stagger ratio.** Sessions -003 and -005 held the fade at
+  ~3-4x the stagger, because at a fast stagger the overlap is what makes the
+  leading edge a wave rather than a per-word flicker. At 260ms that same rule
+  would give a ~780ms fade, i.e. a word only a third visible when the next one
+  starts — asking the reader to read half-faded words at exactly the pace they
+  are reading. So the fade is now deliberately *shorter* than the stagger (200ms
+  < 260ms): each word settles fully before the next begins. The earlier gotcha
+  note is not wrong, it just only applies below roughly a 200ms stagger.
+- **did not test**, per the owner's standing request from session -005. `node
+  --check` plus a grep of all five changed values; arithmetic confirmed at 62.9s.
+
+### handoff state
+- working_tree: committed (see ending_head) and pushed; origin/main level.
+- NOT visually confirmed on the live page.
+- CI "Smoke tests" still RED for the pre-existing test_feedback_proxy heart-click
+  failure — unrelated, see session -003.
+- open: P3-2, P3-10, P2-2, P1-7. Unchanged.
+
+### gotchas for next session
+- **the pace has now been changed four times** (11 → 55 → 110 → 260ms). If it
+  moves again, the three coupled values are WORD_MS in defex.js, the `--word-ms`
+  CSS fallback, and the fade duration — and the fade rule flips around a ~200ms
+  stagger (longer fade below it, shorter fade above it).
+- **at 63s the single-cascade model is at its limit.** A reader who scrolls to the
+  section 30s after load lands mid-reveal with the lower half still blank. If the
+  owner wants slower again, switch to per-paragraph reveals triggered as each
+  paragraph scrolls into view, rather than one continuous cascade indexed across
+  the whole section.
+- **the 1s guard interval is unaffected** by the pace: it only forces the *start*,
+  and stops itself on first success.
+
+## session shq-2026-08-10-006 end

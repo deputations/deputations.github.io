@@ -650,10 +650,12 @@
 .dex-manpower[data-typing] .dex-type-w { opacity: 0; }
 .dex-manpower[data-typing="run"] .dex-type-w {
   opacity: 1;
-  /* Fade is ~3x the stagger, so a handful of words are always in flight —
-     a soft wave rather than a hard on/off flicker per word. */
-  transition: opacity 340ms ease-out;
-  transition-delay: calc(var(--w) * var(--word-ms, 110ms));   /* --word-ms set by typeManpower() */
+  /* At reading pace the fade is deliberately SHORTER than the stagger, so each
+     word settles fully before the next begins and nobody is asked to read a
+     half-faded word. The opposite ratio applies at fast staggers, where the
+     overlap is exactly what turns the leading edge into a wave. */
+  transition: opacity 200ms ease-out;
+  transition-delay: calc(var(--w) * var(--word-ms, 260ms));   /* --word-ms set by typeManpower() */
 }
 @media (prefers-reduced-motion: reduce) {
   .dex-manpower[data-typing] .dex-type-w,

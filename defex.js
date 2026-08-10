@@ -126,7 +126,7 @@
   // ---------- load ----------------------------------------------------------
   async function load() {
     // Cache-bust by version — bump along with defex.js's ?v= query.
-    const V = "ms18";
+    const V = "ms19";
     const get = (p) => fetch(`${p}?v=${V}`).then(r => r.json());
     const [orgs, scores, reports, method, upd] = await Promise.all([
       get("data/defex/organisations.json"),
@@ -944,12 +944,14 @@
     if (!host) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
 
-    // Per-word stagger, in ms — the one knob for the pace. 110ms over 242 words
-    // is ~27s end to end. Literal reading speed (~230 wpm) would be 260ms and a
-    // 63-second animation, so this still sits above reading pace (~545 wpm): the
-    // reveal stays ahead of the reader and never makes them wait, while being
-    // slow enough to follow word by word.
-    const WORD_MS = 110;
+    // Per-word stagger, in ms — the one knob for the pace. 260ms is ~230 wpm,
+    // literal reading speed, which is what the owner asked for: 242 words take
+    // ~63s end to end. Note what that costs — at every earlier setting the
+    // reveal outran the reader, so it could never make anyone wait for text.
+    // At reading pace it no longer does: someone reading along now sits at the
+    // leading edge rather than comfortably behind it. Raising this back above
+    // ~150ms restores that headroom.
+    const WORD_MS = 260;
 
     // Collect first, then replace — mutating during the walk would invalidate it.
     const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
