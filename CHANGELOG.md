@@ -26,7 +26,16 @@ counter_convention:
 
 ## [Unreleased]
 
-_(nothing yet — append here during the cycle, then cut a dated release)_
+### Fixed — admin Projects tab edits no longer reached the public page
+`upcoming-projects.js` had its own `SB_OK` regex gate
+(`/^https:\/\/[a-z0-9]+\.supabase\.co/`) that flipped to `false` whenever
+`window.SUPABASE_URL` is the Cloudflare Worker proxy at `api.alldeputations.com`.
+site-widgets.js was hardened to use `window.SUPABASE_READY()` (P3-7 PR 2); this
+page was missed. Result: `loadProjects()` early-returned `null`, the public
+rendered its 10-card offline `PROJECTS` fallback, so any reorder/publish/edit
+in the admin appeared to vanish even though every write had reached the
+database. Now delegates to `window.SUPABASE_READY()` like site-widgets.js.
+HTML cache-buster on `upcoming-projects.js` bumped `?v=8 -> ?v=9`.
 
 ---
 
