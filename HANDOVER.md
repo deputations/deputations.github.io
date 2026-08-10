@@ -4303,3 +4303,60 @@ focus:   v7.3.9 — fix: #manpower reveal could leave the copy permanently invis
   before calling a visual change done.
 
 ## session shq-2026-08-10-004 end
+
+## session shq-2026-08-10-005
+```
+started: 2026-08-10
+ended:   2026-08-10
+model:   claude-opus-5
+driver:  solo
+branch:  main
+starting_head: 36fb0d8
+ending_head:   <pending>
+focus:   v7.3.10 — halve the #manpower reveal pace again
+```
+
+### work done
+1. owner saw 7.3.8's 55ms pace live and asked to cut the pace to half, explicitly
+   asking me not to test in order to save tokens.
+2. WORD_MS 55 → 110 (242 words, ~13s → ~27s). Fade 220ms → 340ms to hold roughly
+   a 3x ratio to the stagger. CSS `--word-ms` fallback 55ms → 110ms in step.
+3. cache-bump defex.css ms16 → ms18, defex.js ms17 → ms18; VERSION 7.3.10;
+   CHANGELOG; WEBSITE-REVIEW; this block.
+
+### decisions
+- **read "reduce the pace to half" as half the speed, i.e. double the delay.**
+  Owner's previous two instructions both pushed slower ("very fast", "slow it
+  down"), so the direction is unambiguous even though the wording could in
+  principle mean half the duration.
+- **moved the fade with the stagger.** Session -003's own gotcha note says the
+  fade should stay a few multiples of the stagger or the soft leading edge
+  degrades into words popping on individually. 220ms against a 110ms stagger
+  would have been 2x; 340ms keeps it ~3x.
+- **kept the CSS fallback in step with the JS constant.** `--word-ms` has a CSS
+  default that only applies if the JS property were never set; leaving it at 55ms
+  would have made the two disagree.
+- **did not run the verification suites**, at owner's explicit request. The change
+  is one pace constant plus its two paired values, on the code path 7.3.9 already
+  verified. `node --check` and a grep of all five changed values were run.
+
+### handoff state
+- working_tree: committed (see ending_head) and pushed; origin/main level.
+- NOT visually confirmed on the live page — the last two live checks each found
+  something (7.3.8 too fast, 7.3.9's invisible-copy bug). If anything looks off,
+  check the deployed page first.
+- CI "Smoke tests" still RED for the pre-existing test_feedback_proxy heart-click
+  failure — unrelated, see session -003.
+- open: P3-2, P3-10, P2-2, P1-7. Unchanged.
+
+### gotchas for next session
+- **three values move together when the pace changes**: WORD_MS in defex.js, the
+  `--word-ms` CSS fallback, and the fade duration. Miss one and either the two
+  sources disagree or the wave degrades.
+- **~27s is long enough that a reader may well finish the first paragraphs before
+  the tail lands.** Still above reading pace (~545 wpm vs ~230), so nobody waits
+  on text, but there is not much headroom left if the owner asks for slower again
+  — at that point consider revealing per paragraph on scroll instead of one
+  continuous cascade down the whole section.
+
+## session shq-2026-08-10-005 end

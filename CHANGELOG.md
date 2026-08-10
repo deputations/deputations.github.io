@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.3.9` (2026-08-10).** The `VERSION` file at the repo root
+**Current version: `7.3.10` (2026-08-10).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -27,6 +27,23 @@ counter_convention:
 ## [Unreleased]
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
+
+## [7.3.10] — 2026-08-10
+**Theme: halve the #manpower reveal pace again.**
+Owner asked to cut the pace to half after seeing 7.3.8's 55ms live.
+`WORD_MS` 55 → 110, so 242 words now take ~27s instead of ~13s. Fade
+220ms → 340ms to hold roughly a 3x ratio to the stagger — without that,
+a wider stagger degrades the soft leading edge into words popping on one
+at a time. The CSS `--word-ms` fallback moved 55ms → 110ms in step with
+the JS constant.
+
+Still above reading pace at ~545 wpm vs ~230 wpm, so the reveal continues
+to stay ahead of the reader rather than making anyone wait for text.
+
+Cache-bust `defex.css ms16 → ms18`, `defex.js ms17 → ms18`.
+
+Not separately verified at owner's request — the change is the one pace
+constant plus its two paired values, on the code path 7.3.9 verified.
 
 ## [7.3.9] — 2026-08-10
 **Fix: the #manpower reveal could leave the copy permanently invisible.**
