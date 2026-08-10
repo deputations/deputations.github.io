@@ -41,8 +41,9 @@ def _heart_request_made(page, action_class):
 
 
 @pytest.mark.parametrize("action_class", [".like"])
-def test_heart_click_triggers_record_sentiment_on_proxy_hostname(page, action_class):
+def test_heart_click_triggers_record_sentiment_on_proxy_hostname(page, base_url: str, action_class):
     """Heart click on alldeputations.com must POST to the proxy's RPC endpoint."""
+    page.goto(f"{base_url}/index.html")
     if "alldeputations.com" not in page.url:
         pytest.skip("only runs against the proxy hostname")
     assert _heart_request_made(page, action_class), (
@@ -53,8 +54,9 @@ def test_heart_click_triggers_record_sentiment_on_proxy_hostname(page, action_cl
 
 
 @pytest.mark.parametrize("action_class", [".like"])
-def test_heart_click_triggers_record_sentiment_on_direct_hostname(page, action_class):
+def test_heart_click_triggers_record_sentiment_on_direct_hostname(page, base_url: str, action_class):
     """Heart click on github.io / localhost must POST to Supabase directly."""
+    page.goto(f"{base_url}/index.html")
     if "alldeputations.com" in page.url:
         pytest.skip("only runs against the direct Supabase URL")
     assert _heart_request_made(page, action_class), (
@@ -63,7 +65,8 @@ def test_heart_click_triggers_record_sentiment_on_direct_hostname(page, action_c
     )
 
 
-def test_heart_widget_visible(page):
+def test_heart_widget_visible(page, base_url: str):
     """Heart must be visible on every hostname (no probe gate)."""
+    page.goto(f"{base_url}/index.html")
     expect(page.locator(".sw-fb .like")).to_be_visible()
     expect(page.locator(".sw-fb .dislike")).to_be_visible()
