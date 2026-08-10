@@ -30,6 +30,43 @@ _(nothing yet — append here during the cycle, then cut a dated release)_
 
 ---
 
+## [7.4.3] — 2026-08-10
+
+### Changed — embedding build is now incremental (fixes the daily free-tier 429)
+
+`build_embeddings.py` re-embedded **every** ACTIVE vacancy on every run. That
+was fine at the ~67 rows its comment assumed, but the set grows with each
+approval — it reached 96 and tripped Gemini's free-tier limit, which disabled
+semantic search for the rest of the day. Nearly all of that work was wasted:
+on a normal day no vacancy's text changes, so identical input was re-embedded
+into an identical vector.
+
+Each row's embed text is now hashed into `vacancy_embeddings.content_hash`
+(migration `0019`) and a row whose hash is unchanged is skipped.
+
+- **A normal day costs zero requests.** A bulk approval of N vacancies costs N
+  requests once, not N every day thereafter.
+- The hash folds in the **model tag**, so changing embedding model or task type
+  invalidates every row automatically. Without that the build would keep old
+  vectors and mix two incompatible vector spaces in one index — similarity
+  scores that look plausible and mean nothing.
+- **Fails safe.** If the existing hashes can't be read, it rebuilds everything
+  rather than skipping: a redundant correct build is fine, a silently skipped
+  one leaves search stale.
+- **Degrades if migration 0019 hasn't run.** The hash column is probed; when
+  it's absent the build says so and falls back to the old full rebuild, rather
+  than sending a column PostgREST would reject on every upsert.
+- New `--force` flag re-embeds everything, for after an `EMBED_FIELDS` or model
+  change.
+
+> On **OpenRouter**: it can't serve this. Its catalogue is chat models —
+> checked live, 399 models and **zero** embedding models. Separately, embeddings
+> can't be mixed across providers at all: corpus and query must share one model,
+> or cosine similarity is noise. A second provider would mean a second complete
+> index, not a fallback.
+
+---
+
 ## [7.4.2] — 2026-08-10
 
 ### Fixed — pre-signed S3 links were silently freezing the whole dataset
