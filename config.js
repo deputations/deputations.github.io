@@ -18,30 +18,40 @@ window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
  * The NIC (National Informatics Centre) government's SSL-inspecting
  * middlebox returns ERR_SSL_PROTOCOL_ERROR for direct browser→Supabase
  * connections — TLS 1.3 + post-quantum + ECH, which NIC's middlebox can't
- * complete. The NIC firewall DOES, however, allow egress to Cloudflare
- * (the static-site loads from `alldeputations.com` which GitHub Pages
- * fronts via Cloudflare; the workers.dev subdomain is on the same
- * Cloudflare trust path).
+ * complete.
  *
- * `workers/sb-proxy/worker.js` is a transparent pass-through deployed
- * to `https://sb-proxy.ncrsarkarishaadi.workers.dev` that forwards to
- * Supabase. The browser speaks TLS to the workers.dev host (allowed by
- * NIC); the Worker speaks TLS to Supabase (Cloudflare→Cloudflare, no
- * middlebox in between).
+ * The Cloudflare Worker that used to sit here
+ * (`sb-proxy.ncrsarkarishaadi.workers.dev`) never actually worked on NIC,
+ * and the reason was NOT TLS: NIC's resolver **DNS-hijacks the whole
+ * `*.workers.dev` zone**. Measured from an NIC machine on 2026-08-10 —
+ * `dns.nic.in` answers that name with `10.40.124.9` (`e.wg.restricted.in`,
+ * the walled garden), so the request never leaves the building. A CNAME
+ * would inherit exactly the same fate, which is why the replacement had to
+ * be an A record to a bare IP: there is no third-party name left for NIC
+ * to intercept.
+ *
+ * Replacement: an Oracle Cloud Always Free VM in ap-mumbai-1 running Caddy
+ * as a transparent reverse proxy to Supabase, reached over an A record.
+ * Verified end to end from inside NIC on 2026-08-10:
+ *   - `dns.nic.in` resolves api.alldeputations.com → the real IP (no hijack)
+ *   - TLS 1.3 completes and the certificate arrives UNMODIFIED, i.e. NIC is
+ *     not MITM-ing this host (a self-signed probe came back byte-identical)
+ *   - a real REST query through the proxy returned HTTP 200
+ * The middlebox's problem was always Cloudflare's exotic handshake, not TLS
+ * itself; Caddy + Let's Encrypt negotiate an ordinary one.
  *
  * Wire-up: on production hostname `alldeputations.com` (or its www
- * variant), point SUPABASE_URL at the Worker. Anywhere else (github.io,
+ * variant), point SUPABASE_URL at the proxy. Anywhere else (github.io,
  * localhost, dev) keep the direct Supabase URL.
  *
- * To upgrade to a custom `api.alldeputations.com` host, see the comment
- * in `workers/sb-proxy/wrangler.toml` — that requires migrating the
- * apex `alldeputations.com` zone to this Cloudflare account.
+ * See the `deputation-oracle-proxy-vm` note for the VM, SSH key and the
+ * two traps (both firewalls must be opened; A record never CNAME).
  */
 (function () {
   try {
     var h = (typeof location !== "undefined" && location.hostname) || "";
     if (h === "alldeputations.com" || h === "www.alldeputations.com") {
-      window.SUPABASE_URL = "https://sb-proxy.ncrsarkarishaadi.workers.dev";
+      window.SUPABASE_URL = "https://api.alldeputations.com";
     }
   } catch (e) { /* SSR / tests: keep the direct URL */ }
 })();
