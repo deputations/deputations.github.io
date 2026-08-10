@@ -25,8 +25,13 @@ import pytest
 from playwright.sync_api import expect, sync_playwright
 
 
-def _heart_request_made(page, action_class):
-    """Click the heart and assert a POST to record_sentiment was observed."""
+def _heart_request_made(page, base_url, action_class):
+    """Click the heart and assert a POST to record_sentiment was observed.
+
+    The `page` fixture hands back a blank context, so the page must be
+    navigated first — `.sw-fb` is injected by site-widgets.js on load and
+    can never exist on about:blank.
+    """
     heard = {"yes": False}
 
     def on_request(request):
@@ -35,17 +40,19 @@ def _heart_request_made(page, action_class):
         heard["yes"] = True
 
     page.on("request", on_request)
+    page.goto(f"{base_url}/index.html")
+    page.wait_for_selector(".sw-fb " + action_class, timeout=5000)
     page.locator(".sw-fb " + action_class).click()
     page.wait_for_timeout(800)  # let the fetch fire
     return heard["yes"]
 
 
 @pytest.mark.parametrize("action_class", [".like"])
-def test_heart_click_triggers_record_sentiment_on_proxy_hostname(page, action_class):
+def test_heart_click_triggers_record_sentiment_on_proxy_hostname(page, base_url, action_class):
     """Heart click on alldeputations.com must POST to the proxy's RPC endpoint."""
-    if "alldeputations.com" not in page.url:
+    if "alldeputations.com" not in base_url:
         pytest.skip("only runs against the proxy hostname")
-    assert _heart_request_made(page, action_class), (
+    assert _heart_request_made(page, base_url, action_class), (
         "Heart click did not POST to /rest/v1/rpc/record_sentiment. "
         "SB_OK gate is mis-detecting the proxy URL as unreachable; check "
         "site-widgets.js#SB_OK now delegates to window.SUPABASE_READY()."
@@ -53,17 +60,18 @@ def test_heart_click_triggers_record_sentiment_on_proxy_hostname(page, action_cl
 
 
 @pytest.mark.parametrize("action_class", [".like"])
-def test_heart_click_triggers_record_sentiment_on_direct_hostname(page, action_class):
+def test_heart_click_triggers_record_sentiment_on_direct_hostname(page, base_url, action_class):
     """Heart click on github.io / localhost must POST to Supabase directly."""
-    if "alldeputations.com" in page.url:
+    if "alldeputations.com" in base_url:
         pytest.skip("only runs against the direct Supabase URL")
-    assert _heart_request_made(page, action_class), (
+    assert _heart_request_made(page, base_url, action_class), (
         "Heart click did not POST to /rest/v1/rpc/record_sentiment. "
         "SB_OK gate is rejecting the direct Supabase URL; check the regex."
     )
 
 
-def test_heart_widget_visible(page):
+def test_heart_widget_visible(page, base_url: str):
     """Heart must be visible on every hostname (no probe gate)."""
+    page.goto(f"{base_url}/index.html")
     expect(page.locator(".sw-fb .like")).to_be_visible()
     expect(page.locator(".sw-fb .dislike")).to_be_visible()
