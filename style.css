@@ -5622,31 +5622,30 @@ html:not([data-theme="light"]) .premium-credit {
 @media (prefers-reduced-motion: no-preference) {
   .post-col .vx-new.table-new { animation: tableNewPulse 2.6s ease-in-out infinite; }
 }
-/* "unverified" pill — a vacancy published in bulk that no admin has read yet
-   (two-stage approval, 0017_admin_verified.sql). Deliberately quieter than the
-   NEW pill: outlined amber rather than a filled gradient, and no pulse. It is a
-   caveat, not an advertisement — it should be findable when a visitor wonders
-   how trustworthy a row is, without competing with the post name for attention
-   or implying the listing is wrong. */
-.post-col .vx-unverified {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2em;
-  margin-left: 0.45rem;
-  padding: 0.12rem 0.42rem;
-  border-radius: 999px;
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  vertical-align: 0.12em;
-  white-space: nowrap;
-  color: #b8860b;
-  background: color-mix(in srgb, #f5b301 14%, transparent);
-  border: 1px solid color-mix(in srgb, #f5b301 55%, transparent);
-  cursor: help;
+/* Verification edge (two-stage approval, 0017_admin_verified.sql).
+   Amber = published in bulk, not yet read by an admin. Green = checked.
+
+   Deliberately the quietest signal on the row: a 3px strip on the leading edge
+   and nothing else — no pill, no text, no icon. It reads as trim rather than as
+   a warning, which is the point; an unverified vacancy is not a suspect one,
+   it just hasn't had its second pass yet. Rows from a data source that predates
+   the flag get no class at all and render exactly as before.
+
+   Drawn as an INSET BOX-SHADOW, not a pseudo-element or a real border:
+   `td::before` is already the row's 3D plank bottom-face (style.css:4884) and
+   its clip-path erases anything else parked there, while a real border-left
+   would shift every cell by 3px. An inset shadow collides with nothing and
+   costs no layout. */
+.clickable-row.vx-verif-pending td:first-child {
+  box-shadow: inset 3px 0 0 #f5b301;
 }
-[data-theme="dark"] .post-col .vx-unverified { color: #f5c451; }
+.clickable-row.vx-verif-ok td:first-child {
+  box-shadow: inset 3px 0 0 #37c46b;
+}
+
+/* Card view gets the same edge, so the two layouts agree. */
+.vx-card.vx-verif-pending { box-shadow: inset 3px 0 0 #f5b301; }
+.vx-card.vx-verif-ok { box-shadow: inset 3px 0 0 #37c46b; }
 
 @keyframes tableNewPulse {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary-color) 55%, transparent); }

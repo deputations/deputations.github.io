@@ -58,12 +58,16 @@ queue could only be cleared one row at a time. They are now separate.
   tooltip "Admin verification pending". Verify one, verify the checked set, or
   verify everything pending; the ribbon turns green and the row fades out
   before the list reloads. Paged 25/row with a tab badge.
-- **Public "unverified" hint.** Rows published in bulk carry a quiet outlined
-  amber `⚠ UNVERIFIED` pill next to the post name, explaining in its tooltip
-  that the vacancy came from the official source but has not been checked yet.
-  Deliberately calmer than the `NEW` pill — a caveat, not an advertisement.
-  Only an **explicit** `false` shows it, so a pre-0017 dataset (stale bundled
-  JSON, or the legacy spreadsheet) never gets branded unverified.
+- **Public verification edge.** A 3px strip on the leading edge of the row (and
+  of the card, in card view): amber = published in bulk and not yet read, green
+  = checked. No pill, no text, no icon — it reads as trim rather than a
+  warning, because an unverified vacancy is not a suspect one, it just hasn't
+  had its second pass. Three states, not two: a row from a data source that
+  predates the flag gets no edge at all and renders exactly as before, since
+  colouring the whole back catalogue amber would be a loud wrong answer.
+  Implemented as an inset box-shadow — `td::before` is already the row's 3D
+  plank face and its clip-path erases anything parked there, and a real
+  `border-left` would shift every cell by 3px.
 - Flag reaches both data paths: `enrich.js` maps it for the live API, and
   `build_data.py` carries it into `data/vacancies.json` for NIC users.
 - `scripts/verify_two_stage.py` — 15 headless checks over the whole flow
@@ -71,7 +75,7 @@ queue could only be cleared one row at a time. They are now separate.
   bulk verify batching, filter-wide verify). All passing.
 
 ### Changed
-- Cache-bust: `app.js?v=ms74`, `style.css?v=ms72`, `enrich.js?v=sb15`,
+- Cache-bust: `app.js?v=ms75`, `style.css?v=ms73`, `enrich.js?v=sb15`,
   `admin-ingest.js?v=sb52`.
 
 ---

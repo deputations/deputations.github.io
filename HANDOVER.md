@@ -137,6 +137,42 @@ shape with working links + a per-row approve and a bulk verify.
   tests fail on each full run, all pass individually. Re-run a name alone
   before believing it.
 
+
+### addendum — public marker revised (same session)
+Owner reviewed the first public marker and said it was **too explicit**: they
+wanted "just the little extra border of the Row / card on the left being yellow
+and when verified green".
+
+- removed the `⚠ UNVERIFIED` pill from `renderTable()` and its CSS entirely.
+- `isPendingVerification()` became `verificationClass(item)` returning
+  `vx-verif-pending` / `vx-verif-ok` / `''`. Note this is now a THREE-state
+  signal: verified rows get a GREEN edge (owner asked for it), and rows from a
+  source predating the flag get NO class, so they render exactly as before.
+- applied to BOTH layouts: `<tr class="clickable-row …">` in `renderTable()`
+  and `<article class="vx-card …">` in `renderVacancyCard()`.
+- **the first CSS attempt rendered invisibly** — I parked the strip on
+  `td:first-child::before`, but that pseudo-element is ALREADY the row's 3D
+  plank bottom-face (style.css:4884) and its `clip-path:
+  polygon(0 0, 100% 0, 100% 100%, var(--depth) 100%)` clipped a 3px box out of
+  existence. Computed styles looked correct (width 3px, amber, opacity .85)
+  while nothing painted, which is what made it confusing. Switched to
+  `box-shadow: inset 3px 0 0 <colour>` on the first cell / the card: collides
+  with no pseudo-element and costs no layout, unlike `border-left` which would
+  shift every cell by 3px.
+- cache-bump app.js ms74 -> ms75, style.css ms72 -> ms73. VERSION stays 7.4.0
+  (that commit was never pushed, so this folds into the same unreleased
+  feature rather than implying a shipped version carried the pill).
+- verified by `scripts/_verify_edge.py` (7 checks: state counts, amber/green
+  inset shadows, legacy rows uncoloured, old pill gone) and
+  `scripts/_verify_edge_cards.py` (4 checks on card view). All pass.
+  Screenshots: `_verify/edge_table.png`, `_verify/edge_card.png`.
+  tests/test_index.py + test_watchlist.py = 11 passed.
+
+**gotcha for next session:** if you ever need another per-row visual marker on
+the dashboard table, do NOT reach for `td::before` or `td:last-child::after` —
+both are taken by the 3D plank faces. An inset box-shadow on the cell is the
+free slot.
+
 ## session shq-2026-08-10-009 end
 
 ---
