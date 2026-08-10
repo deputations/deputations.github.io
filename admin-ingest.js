@@ -146,6 +146,28 @@ async function fetchAll(pathQuery) {
   }
 }
 
+/* ---- two-stage approval (see supabase/migrations/0017_admin_verified.sql) ----
+ *
+ * "Published" and "checked by a human" used to be the same act, which is why
+ * the queue could only be cleared one row at a time. They are now separate:
+ *
+ *   approving ONE row       → the admin read it → lands admin_verified (green)
+ *   approving in BULK       → published, but nobody claims to have read it
+ *                             → admin_verified = false (yellow), and it shows
+ *                               up in the Verify tab for a second pass
+ *
+ * Every status write goes through here so the two paths can never drift apart.
+ * `verified_at` is cleared on the bulk path so a row that was verified, sent
+ * back to draft, and then bulk-approved again does not keep a stale timestamp
+ * that implies a check nobody performed.
+ */
+function statusPatch(status, { verified = false } = {}) {
+  if (status !== 'approved') return { status };
+  return verified
+    ? { status, admin_verified: true, verified_at: new Date().toISOString() }
+    : { status, admin_verified: false, verified_at: null };
+}
+
 // Undo toast for approve/reject status changes: Undo restores the rows to
 // draft and reloads the queue. The source-PDF GC waits for the window to pass.
 function undoableStatus(ids, msg) {
@@ -883,6 +905,7 @@ async function loadOverview() {
   if ($('updatesCount')) $('updatesCount').textContent = updates ? `(${updates})` : '';
   if ($('flagCount')) $('flagCount').textContent = flags ? `(${flags})` : '';
   if ($('fbCount')) $('fbCount').textContent = feedbackNew ? `(${feedbackNew})` : '';
+  loadVerifyCount();
   loadRecentJobs();
   loadWaOverview();
 }
@@ -949,6 +972,7 @@ function wireApp() {
       $('paneFlags').classList.toggle('hidden', t !== 'flags');
       $('paneFeedback').classList.toggle('hidden', t !== 'feedback');
       $('paneUpdates').classList.toggle('hidden', t !== 'updates');
+      $('paneVerify').classList.toggle('hidden', t !== 'verify');
       $('paneProjects').classList.toggle('hidden', t !== 'projects');
       // leaving Manage by hand clears any flag-comparison context so it doesn't
       // re-trigger on a later manual visit (the flag's Open button re-sets it)
@@ -959,9 +983,19 @@ function wireApp() {
       if (t === 'flags') loadFlags();
       if (t === 'feedback') loadFeedback();
       if (t === 'updates') loadUpdates();
+      if (t === 'verify') loadVerifyQueue();
       if (t === 'projects') loadProjectsAdmin();
     };
   });
+
+  // Verify tab wiring
+  if ($('vfRefresh')) $('vfRefresh').onclick = () => loadVerifyQueue();
+  if ($('vfVerifyChecked')) $('vfVerifyChecked').onclick = verifyChecked;
+  if ($('vfVerifyAll')) $('vfVerifyAll').onclick = verifyAllPending;
+  if ($('vfCheckAll')) $('vfCheckAll').onclick = (e) => {
+    $('vfList').querySelectorAll('input[data-vf-id]').forEach((c) => { c.checked = e.currentTarget.checked; });
+    updateVerifyBulkBar();
+  };
 
   // Projects CMS (V² upcoming-projects) wiring
   if ($('projRefresh')) $('projRefresh').onclick = loadProjectsAdmin;
@@ -1213,11 +1247,12 @@ function wireApp() {
       // one PATCH; return=representation gives the exact ids for Undo
       const r = await api(`/rest/v1/vacancies?status=eq.draft${viewFilt}&${filt}&select=id`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: JSON.stringify({ status: 'approved' }),
+        body: JSON.stringify(statusPatch('approved')),
       });
       if (!r.ok) throw new Error(await r.text());
       const ids = (await r.json().catch(() => [])).map((x) => x.id);
-      undoableStatus(ids, `✅ Approved ${ids.length} ${levels.join('/')} draft(s)`);
+      undoableStatus(ids, `✅ Published ${ids.length} ${levels.join('/')} draft(s) — awaiting verification`);
+      loadVerifyCount();
       loadDrafts();
     } catch (e) { toast('Approve failed: ' + e.message); } finally { b.disabled = false; }
   };
@@ -1539,7 +1574,7 @@ async function bulkActOnChecked(action) {
     try {
       const r = await api(`/rest/v1/vacancies?id=in.(${ids.join(',')})`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(statusPatch(status)),
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       plain.forEach((el) => el.remove());
@@ -1552,17 +1587,18 @@ async function bulkActOnChecked(action) {
     try {
       const r = await api(`/rest/v1/vacancies?id=eq.${id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-        body: JSON.stringify({ ...collectFromCard(el), status }),
+        body: JSON.stringify({ ...collectFromCard(el), ...statusPatch(status) }),
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       el.remove(); ok++; okIds.push(id);
     } catch { fail++; }
   }
   if (bar) bar.querySelectorAll('button').forEach((b) => { b.disabled = false; });
-  const msg = `${action === 'approve' ? 'Approved' : 'Rejected'} ${ok}${fail ? `, ${fail} failed` : ''}`;
+  const msg = `${action === 'approve' ? 'Published' : 'Rejected'} ${ok}${action === 'approve' ? ' — awaiting verification' : ''}${fail ? `, ${fail} failed` : ''}`;
   if (okIds.length) undoableStatus(okIds, msg); else toast(msg);
   dropFromQueue(okIds);
   updateBulkBar();
+  loadVerifyCount();
 }
 
 /* ---- approve / reject the FILTERED set (all pages) ---- */
@@ -1615,17 +1651,18 @@ async function bulkActOnFiltered(action) {
       const part = ids.slice(i, i + 100);
       const r = await api(`/rest/v1/vacancies?id=in.(${part.join(',')})`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(statusPatch(status)),
       });
       if (r.ok) okIds.push(...part); else fail += part.length;
     }
   } finally { btns.forEach((b) => { b.disabled = false; }); }
-  const msg = `${action === 'approve' ? '✅ Approved' : 'Rejected'} ${okIds.length} filtered draft(s)${fail ? `, ${fail} failed` : ''}`;
+  const msg = `${action === 'approve' ? '✅ Published' : 'Rejected'} ${okIds.length} filtered draft(s)${action === 'approve' ? ' — awaiting verification' : ''}${fail ? `, ${fail} failed` : ''}`;
   if (okIds.length) undoableStatus(okIds, msg); else toast(msg);
   // remove the affected visible cards so dropFromQueue re-renders the page
   const gone = new Set(okIds.map(String));
   $('draftList').querySelectorAll('.draft').forEach((c) => { if (gone.has(c.dataset.id)) c.remove(); });
   dropFromQueue(okIds);
+  loadVerifyCount();
 }
 
 // Serialise an opened draft card's editor (mirrors the card-local collect()).
@@ -1940,7 +1977,9 @@ function draftCard(r) {
 
   el.querySelector('[data-act="approve"]').onclick = async () => {
     // Only serialise the editor if it was actually opened; otherwise approve as-is.
-    const body = el.dataset.built ? { ...collect(), status: 'approved' } : { status: 'approved' };
+    // One-at-a-time approval means this row was actually read → verified.
+    const approved = statusPatch('approved', { verified: true });
+    const body = el.dataset.built ? { ...collect(), ...approved } : approved;
     if (!confirmNotExpired([{ ...r, ...body }])) return;
     try { await patchRow(body); el.remove(); undoableStatus([r.id], '✅ Approved & published'); dropFromQueue([r.id]); }
     catch (e) { toast('Approve failed: ' + e.message); }
@@ -2516,6 +2555,236 @@ function feedbackCard(f) {
     } catch (e) { toast('Delete failed: ' + e.message); }
   });
   return el;
+}
+
+/* ============================================================================
+   Verify tab — the second pass over bulk-published vacancies.
+
+   Bulk approve publishes without anyone reading the row (see statusPatch()).
+   Those rows are live but carry admin_verified = false, and this is where they
+   are checked off. Verifying is the ONLY thing this tab does: it never edits,
+   rejects or unpublishes, because the row is already public — the decision here
+   is just "yes, I have read this".
+
+   The table deliberately mirrors the public dashboard's columns rather than the
+   Review queue's editor cards. You are checking what a visitor sees, so you
+   should be looking at what a visitor sees, with the source link one click away.
+   ========================================================================== */
+const VERIFY_PER = 25;
+let VERIFY_PAGE = 1;
+let VERIFY_TOTAL = 0;
+
+const VF_SELECT = [
+  'id', 'vacancy_id', 'post_name', 'organisation', 'department', 'ministry',
+  'level_text', 'location_city', 'location_state', 'last_date_to_apply',
+  'notification_date', 'official_notification_link', 'source_file_url',
+  'confidence', 'created_at',
+].join(',');
+
+// Tab badge. Called after every bulk publish and every verify so the number
+// never lies about how much is queued.
+async function loadVerifyCount() {
+  const n = await countOf('vacancies?status=eq.approved&admin_verified=eq.false');
+  const badge = $('verifyCount');
+  if (badge) badge.textContent = n ? `(${n})` : '';
+  const hdr = $('vfHdrCount');
+  if (hdr) hdr.textContent = n ? `— ${n} pending` : '';
+  return n;
+}
+
+async function loadVerifyQueue(page = VERIFY_PAGE) {
+  VERIFY_PAGE = Math.max(1, page);
+  const list = $('vfList');
+  if (!list) return;
+  list.innerHTML = '<p class="muted">Loading…</p>';
+  const offset = (VERIFY_PAGE - 1) * VERIFY_PER;
+  try {
+    const r = await api(
+      `/rest/v1/vacancies?status=eq.approved&admin_verified=eq.false`
+      + `&select=${VF_SELECT}&order=created_at.desc&limit=${VERIFY_PER}&offset=${offset}`,
+      { headers: { Prefer: 'count=exact' } },
+    );
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    VERIFY_TOTAL = parseInt(((r.headers.get('content-range') || '/0').split('/')[1]) || '0', 10) || 0;
+    const rows = await r.json();
+    // Deleting/verifying the last row of a page leaves you stranded past the
+    // end — step back a page instead of showing a spurious empty state.
+    if (!rows.length && VERIFY_PAGE > 1 && VERIFY_TOTAL > 0) return loadVerifyQueue(VERIFY_PAGE - 1);
+    renderVerifyTable(rows);
+    renderVerifyPager();
+    loadVerifyCount();
+  } catch (e) {
+    list.innerHTML = `<p class="muted">Load error: ${escapeHtml(e.message)}.`
+      + ` If this is the first run, apply <code>supabase/migrations/0017_admin_verified.sql</code> in the SQL editor.</p>`;
+  }
+}
+
+function vfLocation(r) {
+  return [r.location_city, r.location_state].map((x) => (x || '').trim()).filter(Boolean).join(', ') || '—';
+}
+
+function vfOrg(r) {
+  return (r.organisation || r.department || '').trim() || '—';
+}
+
+function renderVerifyTable(rows) {
+  const list = $('vfList');
+  if (!rows.length) {
+    list.innerHTML = '<p class="muted">🎉 Nothing pending — every published vacancy has been verified.</p>';
+    if ($('vfCheckAll')) $('vfCheckAll').checked = false;
+    updateVerifyBulkBar();
+    return;
+  }
+  const body = rows.map((r) => {
+    const link = (r.official_notification_link || '').trim();
+    return `
+      <tr class="vf-row" data-vf-row="${escapeHtml(String(r.id))}">
+        <td class="vf-ribbon-cell">
+          <span class="vf-ribbon" title="Admin verification pending" aria-label="Admin verification pending"></span>
+        </td>
+        <td><input type="checkbox" data-vf-id="${escapeHtml(String(r.id))}" aria-label="Select for bulk verify" /></td>
+        <td>
+          <strong>${escapeHtml(r.post_name || '—')}</strong>
+          <div class="muted" style="font-size:.85em">${escapeHtml(vfOrg(r))}</div>
+        </td>
+        <td>${escapeHtml(r.level_text || '—')}</td>
+        <td>${escapeHtml(r.ministry || '—')}</td>
+        <td>${escapeHtml(vfLocation(r))}</td>
+        <td>${escapeHtml(r.last_date_to_apply || '—')}</td>
+        <td>${link
+          ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">🔗 Official</a>`
+          : (r.source_file_url ? `<a href="${escapeHtml(r.source_file_url)}" target="_blank" rel="noopener noreferrer">📄 Source</a>` : '—')}</td>
+        <td><button class="good" data-vf-verify="${escapeHtml(String(r.id))}">✓ Verify</button></td>
+      </tr>`;
+  }).join('');
+
+  list.innerHTML = `
+    <table class="vf-table">
+      <thead>
+        <tr>
+          <th aria-label="Verification status"></th>
+          <th></th>
+          <th>Post / Organisation</th>
+          <th>Level</th>
+          <th>Ministry</th>
+          <th>Location</th>
+          <th>Last date</th>
+          <th>Link</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>${body}</tbody>
+    </table>`;
+
+  list.querySelectorAll('[data-vf-verify]').forEach((b) => {
+    b.onclick = () => verifyIds([b.dataset.vfVerify]);
+  });
+  list.querySelectorAll('input[data-vf-id]').forEach((c) => {
+    c.onchange = updateVerifyBulkBar;
+  });
+  if ($('vfCheckAll')) $('vfCheckAll').checked = false;
+  updateVerifyBulkBar();
+}
+
+function renderVerifyPager() {
+  const pager = $('vfPager');
+  if (!pager) return;
+  const pages = Math.max(1, Math.ceil(VERIFY_TOTAL / VERIFY_PER));
+  if (pages <= 1) { pager.innerHTML = ''; return; }
+  pager.innerHTML = `
+    <button ${VERIFY_PAGE <= 1 ? 'disabled' : ''} data-vf-page="${VERIFY_PAGE - 1}">← Prev</button>
+    <span class="muted">Page ${VERIFY_PAGE} / ${pages}</span>
+    <button ${VERIFY_PAGE >= pages ? 'disabled' : ''} data-vf-page="${VERIFY_PAGE + 1}">Next →</button>`;
+  pager.querySelectorAll('[data-vf-page]').forEach((b) => {
+    b.onclick = () => loadVerifyQueue(parseInt(b.dataset.vfPage, 10));
+  });
+}
+
+function checkedVerifyIds() {
+  return [...$('vfList').querySelectorAll('input[data-vf-id]:checked')].map((c) => c.dataset.vfId);
+}
+
+function updateVerifyBulkBar() {
+  const n = checkedVerifyIds().length;
+  const label = $('vfCheckedCount');
+  if (label) label.textContent = n ? `${n} selected` : '';
+  const btn = $('vfVerifyChecked');
+  if (btn) {
+    btn.disabled = !n;
+    btn.textContent = n ? `✓ Verify checked (${n})` : '✓ Verify checked';
+  }
+}
+
+/* Mark rows verified. The ribbon turns green in place and the row fades before
+ * it leaves, so the click has a visible result instead of the row just
+ * vanishing — with a batch of 25 near-identical rows, silent removal makes it
+ * genuinely hard to tell which one you just acted on. */
+async function verifyIds(ids) {
+  if (!ids.length) return;
+  const patch = { admin_verified: true, verified_at: new Date().toISOString() };
+  const okIds = [];
+  let fail = 0;
+  for (let i = 0; i < ids.length; i += 100) {
+    const part = ids.slice(i, i + 100);
+    try {
+      const r = await api(`/rest/v1/vacancies?id=in.(${part.join(',')})`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify(patch),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      okIds.push(...part);
+    } catch { fail += part.length; }
+  }
+  const gone = new Set(okIds.map(String));
+  $('vfList').querySelectorAll('[data-vf-row]').forEach((tr) => {
+    if (!gone.has(tr.dataset.vfRow)) return;
+    const ribbon = tr.querySelector('.vf-ribbon');
+    if (ribbon) { ribbon.classList.add('is-verified'); ribbon.title = 'Admin verified'; }
+    tr.classList.add('is-verified');
+    setTimeout(() => tr.classList.add('is-leaving'), 550);
+  });
+  toast(`✅ Verified ${okIds.length}${fail ? `, ${fail} failed` : ''}`);
+  // Let the green-then-fade play out before the list re-renders under it.
+  setTimeout(() => loadVerifyQueue(), 1000);
+}
+
+function verifyChecked() {
+  const ids = checkedVerifyIds();
+  if (!ids.length) return toast('Nothing checked');
+  if (!confirm(`Mark ${ids.length} vacanc${ids.length === 1 ? 'y' : 'ies'} as admin-verified?`)) return;
+  verifyIds(ids);
+}
+
+/* Verify EVERY pending row, not just this page. Same guard shape as Approve
+ * all: a large batch has to be confirmed by typing the count, because this
+ * clears the whole safety net in one click. */
+async function verifyAllPending() {
+  const n = await loadVerifyCount();
+  if (!n) return toast('Nothing pending');
+  const warn = `Mark ALL ${n} pending vacanc${n === 1 ? 'y' : 'ies'} as admin-verified?\n\n`
+    + `This covers every page, not just the rows on screen, and asserts that each one has been checked.`;
+  if (n >= 50) {
+    const typed = prompt(`${warn}\n\nThis is a large batch. Type the number ${n} to confirm:`);
+    if (String(typed || '').trim() !== String(n)) return toast('Cancelled — number did not match');
+  } else if (!confirm(warn)) {
+    return;
+  }
+  const btn = $('vfVerifyAll');
+  if (btn) btn.disabled = true;
+  try {
+    const r = await api('/rest/v1/vacancies?status=eq.approved&admin_verified=eq.false&select=id', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ admin_verified: true, verified_at: new Date().toISOString() }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const done = (await r.json().catch(() => [])).length;
+    toast(`✅ Verified ${done} vacanc${done === 1 ? 'y' : 'ies'}`);
+    loadVerifyQueue(1);
+  } catch (e) {
+    toast('Verify failed: ' + e.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 /* ============================================================================

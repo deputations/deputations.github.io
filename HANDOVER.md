@@ -28,6 +28,119 @@ schema:
 
 ---
 
+## session shq-2026-08-10-009
+```
+started: 2026-08-10
+ended:   2026-08-10
+model:   claude-opus-5
+driver:  relay
+branch:  main
+starting_head: 1874336
+ending_head:   <pending>
+focus:   v7.4.0 -- two-stage approval (bulk publish -> Verify tab -> admin verified)
+```
+
+### inbound context read
+- session -008 above (v7.3.14, NIC gate removal)
+- admin-ingest.html tab/pane structure, admin-ingest.js approve paths
+- supabase/migrations/0001_init.sql (vacancies schema), 0010 (column-add template)
+- app.js#renderTable, enrich.js#mapBase, scripts/build_data.py
+
+### owner's brief
+Approving one by one is too slow. Bulk approve, mark those as NOT admin
+verified (yellow ribbon + "Admin verification pending" tooltip), turn green
+once verified. One-by-one approval always lands admin-verified. New "Verify"
+tab beside Projects showing the bulk-approved rows in the index-page table
+shape with working links + a per-row approve and a bulk verify.
+
+### decisions taken WITH the owner (asked before building)
+- **bulk-approved rows go live immediately AND carry a public marker.** Owner
+  chose this over holding them back. So `status='approved'` still means
+  published; `admin_verified` is a separate axis.
+- **existing approved rows are grandfathered to verified.** They were approved
+  one at a time under the old flow, so the Verify queue starts empty rather
+  than dumping ~54 rows of back catalogue on day one.
+
+### work done
+1. migration `0017_admin_verified.sql`: `admin_verified boolean not null
+   default false` + `verified_at timestamptz`, a guarded backfill of existing
+   approved rows, and a PARTIAL index on the pending set (small, drains).
+2. `statusPatch(status, {verified})` in admin-ingest.js -- ONE helper every
+   status write goes through, so the single and bulk paths cannot drift apart.
+   Single approve -> verified:true + timestamp. All three bulk paths
+   (approveAllBtn / bulkActOnChecked / bulkActOnFiltered) -> verified:false and
+   `verified_at: null` (so a row that was verified, sent back to draft, then
+   bulk-approved again cannot keep a stale timestamp implying a check nobody did).
+3. new 🎗 Verify tab: button + pane in admin-ingest.html, `loadVerifyQueue()`
+   / `renderVerifyTable()` / `verifyIds()` / `verifyChecked()` /
+   `verifyAllPending()` / `loadVerifyCount()` in admin-ingest.js. Renders the
+   PUBLIC dashboard's columns, not the Review editor cards.
+4. ribbon CSS in admin-ingest.html: amber -> green, row fades on leave,
+   reduced-motion fallback.
+5. public marker: `isPendingVerification()` + `⚠ UNVERIFIED` pill in
+   app.js#renderTable, outlined-amber CSS in style.css, `Admin_Verified` added
+   to enrich.js#mapBase and to build_data.py's SUPABASE_TO_TITLE_MAP with a
+   `coerce_admin_verified()` normaliser.
+6. `scripts/verify_two_stage.py` (tracked, not underscore-prefixed): 15
+   headless checks on the stubbed admin harness -- all pass. Plus an ad-hoc
+   public-pill check (deleted after use) confirming the pill appears on an
+   explicit false and NOT on true or on a legacy row missing the key.
+7. VERSION 7.3.14 -> 7.4.0, cache-bumps (app.js ms74, style.css ms72,
+   enrich.js sb15, admin-ingest.js sb52), CHANGELOG, WEBSITE-REVIEW, this block.
+
+### decisions (mine)
+- **one `statusPatch()` rather than four literals.** Four call sites writing
+  `{status:'approved', admin_verified:...}` by hand is exactly how the single
+  and bulk paths would silently diverge later.
+- **the Verify table mirrors the PUBLIC columns, not the Review cards.** The
+  job on that page is "does what a visitor sees hold up", so it shows what a
+  visitor sees with the source link one click away. It deliberately cannot
+  edit / reject / unpublish -- the row is already public, and the only
+  decision here is "yes, I have read this".
+- **green-then-fade instead of instant removal.** With 25 near-identical rows,
+  a row vanishing silently makes it genuinely hard to tell which one you just
+  acted on.
+- **public pill fires only on an EXPLICIT false.** Defaulting a missing key to
+  "pending" would brand an entire pre-0017 dataset unverified -- a much more
+  visible wrong answer than staying quiet. Same reasoning in
+  `coerce_admin_verified()` on the Python side.
+- **the public pill is quieter than the NEW pill** (outlined, no pulse). It is
+  a caveat, not an advertisement, and it should not imply the listing is wrong.
+
+### handoff state
+- working_tree: migration 0017, admin-ingest.{html,js}, app.js, style.css,
+  enrich.js, scripts/build_data.py, scripts/verify_two_stage.py, VERSION,
+  CHANGELOG, WEBSITE-REVIEW, HANDOVER.
+- verification: scripts/verify_two_stage.py ALL PASS (15 checks);
+  tests/test_index.py + test_watchlist.py + test_region_filter.py = 14 passed.
+- open: P3-2 (AI eligibility), P3-10 (light-theme contrast debt),
+  P2-2 (hiring-data mini-report), P1-7 (SAR PDF bundles), the admin-ingest
+  401-refresh bug (see below).
+
+### gotchas for next session
+- **⚠ DEPLOY ORDER: apply `supabase/migrations/0017_admin_verified.sql` in the
+  SQL editor BEFORE this JS reaches production.** Every approve now writes
+  `admin_verified`, so approving anything 400s until the column exists. The
+  Verify tab degrades politely (its catch names the migration file), but the
+  approve buttons do not.
+- **CI is red for an UNRELATED, pre-existing reason.** `Verify admin-ingest
+  (authenticated flows)` (scripts/verify_admin.py) times out on
+  `draftCount.includes('50')` -- the admin 401-refresh bug documented since
+  July. It had been SKIPPED on earlier pushes because pytest failed first;
+  v7.3.14 made pytest green (44 passed), which unmasked it. Do not read a red
+  CI badge as this feature failing -- check WHICH step.
+- **scripts/verify_two_stage.py is NOT wired into CI.** It runs standalone
+  (`.venv-smoke/Scripts/python.exe scripts/verify_two_stage.py`). Wiring it in
+  would mean touching the workflow while the admin step is already broken;
+  left for whoever fixes that step.
+- **the full pytest suite is flaky locally** (see session -008) -- different
+  tests fail on each full run, all pass individually. Re-run a name alone
+  before believing it.
+
+## session shq-2026-08-10-009 end
+
+---
+
 ## session shq-2026-08-10-008
 ```
 started: 2026-08-10

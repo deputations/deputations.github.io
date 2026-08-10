@@ -430,6 +430,11 @@
       Source_Website: norm(row.source_website),
       Functional_Area: norm(row.functional_area),
       Mode_of_Application: norm(row.mode_of_application),
+      // Two-stage approval (0017): true once an admin has actually read the
+      // row. Bulk-published rows are live with this false, and the dashboard
+      // shows a "pending verification" hint on them, so it has to survive the
+      // mapping rather than staying an admin-only field.
+      Admin_Verified: row.admin_verified === true,
       // pipeline/provenance (handy for the admin review UI)
       _status: row.status,
       _confidence: row.confidence,

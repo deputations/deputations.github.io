@@ -5622,6 +5622,32 @@ html:not([data-theme="light"]) .premium-credit {
 @media (prefers-reduced-motion: no-preference) {
   .post-col .vx-new.table-new { animation: tableNewPulse 2.6s ease-in-out infinite; }
 }
+/* "unverified" pill — a vacancy published in bulk that no admin has read yet
+   (two-stage approval, 0017_admin_verified.sql). Deliberately quieter than the
+   NEW pill: outlined amber rather than a filled gradient, and no pulse. It is a
+   caveat, not an advertisement — it should be findable when a visitor wonders
+   how trustworthy a row is, without competing with the post name for attention
+   or implying the listing is wrong. */
+.post-col .vx-unverified {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  margin-left: 0.45rem;
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: 0.12em;
+  white-space: nowrap;
+  color: #b8860b;
+  background: color-mix(in srgb, #f5b301 14%, transparent);
+  border: 1px solid color-mix(in srgb, #f5b301 55%, transparent);
+  cursor: help;
+}
+[data-theme="dark"] .post-col .vx-unverified { color: #f5c451; }
+
 @keyframes tableNewPulse {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary-color) 55%, transparent); }
   55%      { box-shadow: 0 0 0 5px color-mix(in srgb, var(--primary-color) 0%, transparent); }

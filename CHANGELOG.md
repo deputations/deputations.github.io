@@ -30,6 +30,52 @@ _(nothing yet — append here during the cycle, then cut a dated release)_
 
 ---
 
+## [7.4.0] — 2026-08-10
+
+### Added — two-stage approval (bulk publish, then verify)
+
+> ⚠️ **Deploy order: apply `supabase/migrations/0017_admin_verified.sql` BEFORE
+> shipping this JS.** Approving anything writes `admin_verified`, so every
+> approve will fail with a PostgREST 400 until the column exists.
+
+Publishing and "a human has read this" used to be the same act, so the review
+queue could only be cleared one row at a time. They are now separate.
+
+- **`admin_verified` + `verified_at` on `vacancies`** (migration `0017`).
+  Existing approved rows are grandfathered to verified — they were approved
+  one-by-one under the old flow, which is exactly the careful path. Partial
+  index on the pending set, which is small and drains over time.
+- **Approving one row still means verified.** Single approve in the Review
+  queue sets `admin_verified = true` and stamps `verified_at`, and never
+  touches the new tab.
+- **Bulk approve publishes without claiming a read.** "Approve all", "Approve
+  checked" and "Approve filtered" all set `admin_verified = false`. Toasts now
+  say "Published N — awaiting verification" rather than "Approved".
+- **New 🎗 Verify tab** listing every published-but-unread vacancy in the
+  public dashboard's own columns (post/org, level, ministry, location, last
+  date, source link) — you are checking what a visitor sees, so you look at
+  what a visitor sees. Each row carries an amber ribbon on its leading edge,
+  tooltip "Admin verification pending". Verify one, verify the checked set, or
+  verify everything pending; the ribbon turns green and the row fades out
+  before the list reloads. Paged 25/row with a tab badge.
+- **Public "unverified" hint.** Rows published in bulk carry a quiet outlined
+  amber `⚠ UNVERIFIED` pill next to the post name, explaining in its tooltip
+  that the vacancy came from the official source but has not been checked yet.
+  Deliberately calmer than the `NEW` pill — a caveat, not an advertisement.
+  Only an **explicit** `false` shows it, so a pre-0017 dataset (stale bundled
+  JSON, or the legacy spreadsheet) never gets branded unverified.
+- Flag reaches both data paths: `enrich.js` maps it for the live API, and
+  `build_data.py` carries it into `data/vacancies.json` for NIC users.
+- `scripts/verify_two_stage.py` — 15 headless checks over the whole flow
+  (single→verified, bulk→unverified, ribbon colour + tooltip, per-row verify,
+  bulk verify batching, filter-wide verify). All passing.
+
+### Changed
+- Cache-bust: `app.js?v=ms74`, `style.css?v=ms72`, `enrich.js?v=sb15`,
+  `admin-ingest.js?v=sb52`.
+
+---
+
 ## [7.3.14] — 2026-08-10
 
 ### Changed

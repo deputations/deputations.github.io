@@ -1311,6 +1311,23 @@ function updateMobileFilterToggle() {
   });
 }
 
+/* Two-stage approval (0017_admin_verified.sql). A row published in bulk is live
+ * before any admin has read it, and this is what tells a visitor so.
+ *
+ * Only an EXPLICIT false counts as pending. A missing key means the data source
+ * predates the flag (a stale bundled JSON, or the legacy spreadsheet), and
+ * defaulting those to "pending" would brand the entire dataset unverified —
+ * far worse than showing nothing. Handles both shapes because the live API
+ * path yields a real boolean while the bundled JSON carries whatever
+ * build_data.py wrote.
+ */
+function isPendingVerification(item) {
+  const v = item.Admin_Verified;
+  if (v === undefined || v === null || v === '') return false;
+  if (typeof v === 'boolean') return v === false;
+  return String(v).trim().toLowerCase() === 'false';
+}
+
 function orgDisplayName(item) {
   return safe(item.Organisation) || safe(item.Department) || safe(item.Department_Organisation) || '';
 }
@@ -1333,7 +1350,7 @@ function renderTable(data) {
     return `
       <tr class="clickable-row ${saved ? 'row-bookmarked' : ''}" data-open-details="${escapeHtml(vacancyId)}">
         <td class="post-col" data-label="Post Name">
-          <strong>${escapeHtml(safe(item.Post_Name) || '—')}</strong>${isNewVacancy(item) ? ' <span class="vx-new table-new" title="Added in the last 7 days">NEW</span>' : ''}
+          <strong>${escapeHtml(safe(item.Post_Name) || '—')}</strong>${isNewVacancy(item) ? ' <span class="vx-new table-new" title="Added in the last 7 days">NEW</span>' : ''}${isPendingVerification(item) ? ' <span class="vx-unverified" title="Published from the official source but not yet checked by an admin — verify against the source notification before acting on it." aria-label="Pending verification">⚠ unverified</span>' : ''}
           ${(() => {
             // Phase 2 item 8: the organisation is clamped to two lines in CSS
             // to stop it driving row height, so carry the full string in a

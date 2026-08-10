@@ -332,6 +332,11 @@ SUPABASE_TO_TITLE_MAP: dict[str, str] = {
     "source_ref":                "Source_Ref",
     "confidence":                "Confidence",
     "ingest_job_id":             "Ingest_Job_ID",
+    # Two-stage approval (0017_admin_verified.sql): false means the row was
+    # published in bulk and no admin has read it yet. The dashboard shows a
+    # "pending verification" hint on those, so the flag has to reach the
+    # bundled JSON too — NIC users are served from that file, not from the API.
+    "admin_verified":            "Admin_Verified",
 }
 
 
@@ -381,6 +386,28 @@ def validate_required_columns(rows: list[dict[str, str]]) -> None:
         raise RuntimeError(f"Missing required columns: {', '.join(missing)}")
 
 
+def coerce_admin_verified(raw: Any) -> bool:
+    """Normalise the two-stage-approval flag to a real bool for the JSON.
+
+    The Supabase path stringifies the boolean on the way through
+    (`str(val)` in fetch_supabase_rows), so it arrives as "True"/"False"; the
+    legacy spreadsheet path has no such column at all.
+
+    Absent means "this source does not track verification", which is treated as
+    verified. Defaulting the other way would paint a "pending verification"
+    hint on every row of a pre-0017 dataset — a scarier and more visible wrong
+    answer than staying quiet.
+    """
+    if raw is None:
+        return True
+    if isinstance(raw, bool):
+        return raw
+    s = str(raw).strip().lower()
+    if s == "":
+        return True
+    return s not in {"false", "0", "no", "f"}
+
+
 def transform_rows(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
     transformed: list[dict[str, Any]] = []
 
@@ -419,6 +446,7 @@ def transform_rows(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
         item["delhi_ncr_flag"] = delhi_ncr_flag
         item["expired_flag"] = expired_flag
         item["closing_soon"] = closing_soon
+        item["Admin_Verified"] = coerce_admin_verified(row.get("Admin_Verified"))
         item["search_text"] = build_search_text(row)
         item["completeness_score"] = compute_completeness_score(row)
         item["data_quality_flag"] = compute_data_quality_flag(item["completeness_score"])

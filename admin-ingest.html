@@ -115,6 +115,29 @@
     button.ov b{font-size:14px}
     button.ov.warn b{color:var(--warn)}
     button.ov.bad b{color:var(--bad)}
+
+    /* ---- Verify tab (bulk-published rows awaiting a human read) ----
+       The ribbon is a slim bar clipped to the row's leading edge, sitting
+       OUTSIDE the text so it reads as a status marker on the row rather than
+       as another column of data. Amber = pending, green = just verified. */
+    .vf-table{width:100%;border-collapse:collapse;font-size:13.5px}
+    .vf-table th,.vf-table td{padding:8px 10px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+    .vf-table th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+    .vf-table tbody tr:hover{background:var(--panel2)}
+    .vf-ribbon-cell{width:10px;padding:0 !important}
+    .vf-ribbon{display:block;width:6px;min-height:42px;height:100%;border-radius:3px;
+               background:linear-gradient(180deg,#f5b301,#e08a00);
+               box-shadow:0 0 0 1px rgba(0,0,0,.12),0 0 10px rgba(245,179,1,.45);
+               transition:background .35s ease,box-shadow .35s ease}
+    .vf-ribbon.is-verified{background:linear-gradient(180deg,#37c46b,#1f9e4d);
+               box-shadow:0 0 0 1px rgba(0,0,0,.12),0 0 12px rgba(55,196,107,.55)}
+    .vf-row{transition:opacity .4s ease,transform .4s ease}
+    .vf-row.is-verified{background:rgba(55,196,107,.10)}
+    .vf-row.is-leaving{opacity:0;transform:translateX(14px)}
+    @media (prefers-reduced-motion:reduce){
+      .vf-ribbon,.vf-row{transition:none}
+      .vf-row.is-leaving{opacity:0;transform:none}
+    }
   </style>
 </head>
 <body>
@@ -152,6 +175,7 @@
         <button id="tabUpdates" data-tab="updates">🔀 Updates <span id="updatesCount"></span></button>
         <button id="tabFlags" data-tab="flags">⚑ Flags <span id="flagCount"></span></button>
         <button id="tabFeedback" data-tab="feedback">✉️ Feedback <span id="fbCount"></span></button>
+        <button id="tabVerify" data-tab="verify">🎗 Verify <span id="verifyCount"></span></button>
         <button id="tabProjects" data-tab="projects">🚀 Projects <span id="projCount"></span></button>
       </div>
 
@@ -366,6 +390,32 @@
       </section>
 
       <!-- PROJECTS (V² upcoming-projects CMS) -->
+      <section id="paneVerify" class="card hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">🎗 Awaiting verification <span id="vfHdrCount" class="muted"></span></h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button id="vfRefresh" title="Reload the pending list">↻</button>
+            <button id="vfVerifyChecked" class="good" disabled>✓ Verify checked</button>
+            <button id="vfVerifyAll" class="primary">✓✓ Verify all pending</button>
+          </div>
+        </div>
+        <p class="muted">
+          These vacancies were <b>published in bulk</b>, so they are already live on
+          <a href="/index.html" target="_blank" rel="noopener">the public site</a> but nobody has read them yet —
+          the public row shows a “pending verification” hint until you do.
+          Check the details against the source link, then verify. Verifying removes the row from this list and turns its ribbon green.
+          Approving a vacancy <b>one at a time</b> in the Review queue skips this page entirely — that already counts as verified.
+        </p>
+        <div id="vfBulkBar" class="muted" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+          <label style="display:flex;gap:6px;align-items:center;cursor:pointer;white-space:nowrap">
+            <input type="checkbox" id="vfCheckAll" style="width:auto;margin:0" /> Select all on this page
+          </label>
+          <span id="vfCheckedCount"></span>
+        </div>
+        <div id="vfList" class="table-wrapper"><p class="muted">Loading…</p></div>
+        <div id="vfPager" style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px"></div>
+      </section>
+
       <section id="paneProjects" class="card hidden">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
           <h2 style="margin:0">🚀 Upcoming Projects <span id="projHdrCount" class="muted"></span></h2>
@@ -443,8 +493,8 @@
   </div>
 
   <script src="config.js?v=sb4"></script>
-  <script src="enrich.js?v=sb13"></script>
+  <script src="enrich.js?v=sb15"></script>
   <script src="shared/vacancy-utils.js?v=sb3"></script>
-  <script src="admin-ingest.js?v=sb51"></script>
+  <script src="admin-ingest.js?v=sb52"></script>
 </body>
 </html>
