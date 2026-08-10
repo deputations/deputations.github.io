@@ -4101,7 +4101,7 @@ model:   claude-opus-5
 driver:  solo
 branch:  main
 starting_head: da39df5
-ending_head:   <pending>
+ending_head:   da1525d
 focus:   v7.3.7 — #manpower full width + word-by-word reveal
 ```
 
