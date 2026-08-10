@@ -62,9 +62,11 @@ queue could only be cleared one row at a time. They are now separate.
   of the card, in card view): amber = published in bulk and not yet read, green
   = checked. No pill, no text, no icon — it reads as trim rather than a
   warning, because an unverified vacancy is not a suspect one, it just hasn't
-  had its second pass. Three states, not two: a row from a data source that
-  predates the flag gets no edge at all and renders exactly as before, since
-  colouring the whole back catalogue amber would be a loud wrong answer.
+  had its second pass. Only an **explicit** "not verified" is amber: anything
+  already posted counts as verified and shows green, matching the migration's
+  grandfather rule. That also keeps the dashboard sane before the first
+  post-0017 data build, since the bundled JSON that NIC users are served
+  carries no such key yet.
   Implemented as an inset box-shadow — `td::before` is already the row's 3D
   plank face and its clip-path erases anything parked there, and a real
   `border-left` would shift every cell by 3px.

@@ -168,6 +168,23 @@ and when verified green".
   Screenshots: `_verify/edge_table.png`, `_verify/edge_card.png`.
   tests/test_index.py + test_watchlist.py = 11 passed.
 
+### addendum 2 — already-posted data counts as verified
+Owner: "treat already posted data as verified". So the marker is TWO states,
+not three: only an explicit `false` is amber; a missing `Admin_Verified` key
+now yields GREEN rather than no edge.
+
+- `verificationClass()` simplified — `pending` is the only special case.
+- this lines up the three places that had to agree: the migration's grandfather
+  backfill, `coerce_admin_verified()` in build_data.py (already defaulted to
+  True), and the dashboard.
+- it also matters BEFORE the first post-0017 data build: `data/vacancies.json`
+  has no `Admin_Verified` key yet, so the previous "absent → no edge" rule left
+  NIC users with no marker at all, and an "absent → pending" rule would have
+  turned the whole dashboard amber. Absent → verified is the only default that
+  is both correct and quiet.
+- re-verified: `scripts/_verify_edge.py` 7/7 pass (1 amber, 4 green including
+  the two no-key rows, none unmarked).
+
 **gotcha for next session:** if you ever need another per-row visual marker on
 the dashboard table, do NOT reach for `td::before` or `td:last-child::after` —
 both are taken by the 3D plank faces. An inset box-shadow on the cell is the

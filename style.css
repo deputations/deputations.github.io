@@ -5628,8 +5628,8 @@ html:not([data-theme="light"]) .premium-credit {
    Deliberately the quietest signal on the row: a 3px strip on the leading edge
    and nothing else — no pill, no text, no icon. It reads as trim rather than as
    a warning, which is the point; an unverified vacancy is not a suspect one,
-   it just hasn't had its second pass yet. Rows from a data source that predates
-   the flag get no class at all and render exactly as before.
+   it just hasn't had its second pass yet. Only an explicit "not verified" is
+   amber — anything already posted counts as verified and shows green.
 
    Drawn as an INSET BOX-SHADOW, not a pseudo-element or a real border:
    `td::before` is already the row's 3D plank bottom-face (style.css:4884) and

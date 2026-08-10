@@ -1320,20 +1320,24 @@ function updateMobileFilterToggle() {
  * wonders how vetted a listing is has an answer without the row shouting a
  * warning at them.
  *
- * Three states, not two. A missing key means the data source predates the flag
- * (a stale bundled JSON, or the legacy spreadsheet), which is NOT the same as
- * "unverified" — those rows get no edge at all, because colouring the whole
- * back catalogue amber would be a loud wrong answer. Handles both value shapes:
- * the live API yields a real boolean, the bundled JSON whatever build_data.py
- * wrote.
+ * Only an EXPLICIT false is pending. Everything else is verified, including a
+ * missing key — anything already posted was approved one row at a time under
+ * the old flow, which is exactly the careful path, so it is verified by
+ * definition. This also matters before the first post-0017 data build: the
+ * bundled JSON that NIC users are served carries no such key yet, and treating
+ * absent as pending would turn the entire dashboard amber. Same default as
+ * `coerce_admin_verified()` in scripts/build_data.py and the same grandfather
+ * rule as the migration's backfill.
+ *
+ * Handles both value shapes: the live API yields a real boolean, the bundled
+ * JSON whatever build_data.py wrote.
  */
 function verificationClass(item) {
   const v = item.Admin_Verified;
-  if (v === undefined || v === null || v === '') return '';
-  const verified = typeof v === 'boolean'
-    ? v
-    : String(v).trim().toLowerCase() !== 'false';
-  return verified ? 'vx-verif-ok' : 'vx-verif-pending';
+  const pending = (typeof v === 'boolean')
+    ? v === false
+    : String(v ?? '').trim().toLowerCase() === 'false';
+  return pending ? 'vx-verif-pending' : 'vx-verif-ok';
 }
 
 function orgDisplayName(item) {
