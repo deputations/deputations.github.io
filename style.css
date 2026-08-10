@@ -6621,6 +6621,199 @@ html[data-theme="light"] .semantic-results-status { color: #475569; }
 html[data-theme="light"] .semantic-bar { background: rgba(15, 23, 42, 0.12); }
 
 /* ============================================================================
+   v7.3.13 — AI search neural loader.
+
+   Shown while runSemanticSearch() awaits the Edge Function response. Pure
+   CSS + SVG — no library, no extra network calls. Three overlapping phases
+   mirror the visual brief: nodes emerge and pulse, edges draw between them,
+   a central energy core brightens, status text cycles every 1.3 s. When the
+   response resolves (any path), app.js adds `.is-leaving` and the loader
+   fades out in 280 ms — never outlasts the real response.
+
+   Hidden by default; only revealed by JS adding the .is-active class. NIC
+   users (whose ensureSupabaseAvailable() returns false) never reach this
+   code path, so the loader stays hidden for them.
+   ============================================================================ */
+.semantic-loader {
+  position: relative;
+  margin: .6rem 0 0;
+  padding: .55rem 0 .35rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .28s ease, transform .28s ease;
+  pointer-events: none;
+  /* Sit *above* the search bar text but *below* the panel boundary; the
+     SVG is sized so it doesn't push the layout. */
+}
+.semantic-loader[hidden] { display: none !important; }
+.semantic-loader.is-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+.semantic-loader.is-leaving {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* SVG stage. 240x160 viewBox; nodes positioned in JS via absolute coords
+   within this coordinate space. */
+.semantic-loader-net {
+  width: 240px;
+  height: 90px;
+  display: block;
+  overflow: visible;
+}
+
+/* Edges (lines). Stroke is set on the parent <g> via CSS to avoid one
+   style attr per line; .sem-net-edges line picks up the gradient. */
+.sem-net-edges line {
+  stroke: url(#semNetGrad);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  fill: none;
+  /* draw-in: dasharray + dashoffset animated from full length to 0. The
+     line lengths are computed at runtime in app.js. */
+  stroke-dasharray: var(--len, 120);
+  stroke-dashoffset: var(--len, 120);
+  opacity: 0;
+}
+.semantic-loader.is-active .sem-net-edges line {
+  animation:
+    sem-edge-draw 1.6s cubic-bezier(.2,.8,.2,1) forwards,
+    sem-edge-fade 2.4s ease-in-out 1.6s infinite;
+}
+@keyframes sem-edge-draw {
+  0%   { stroke-dashoffset: var(--len, 120); opacity: 0; }
+  20%  { opacity: .55; }
+  100% { stroke-dashoffset: 0;             opacity: .55; }
+}
+@keyframes sem-edge-fade {
+  0%, 100% { opacity: .35; }
+  50%      { opacity: .75; }
+}
+
+/* Nodes (circles). 6 of them, positioned by JS into the SVG <g>. */
+.sem-net-nodes circle {
+  fill: #22d3ee;
+  filter: drop-shadow(0 0 6px rgba(34, 211, 238, .85));
+  opacity: 0;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.semantic-loader.is-active .sem-net-nodes circle {
+  animation:
+    sem-node-in .55s cubic-bezier(.2,1.4,.4,1) forwards,
+    sem-node-pulse 2.2s ease-in-out infinite;
+}
+/* Stagger per-node entry so they pop in one after another (Phase 1). */
+.sem-net-nodes circle:nth-child(1) { animation-delay: 0s,    1.5s; }
+.sem-net-nodes circle:nth-child(2) { animation-delay: .12s,  1.7s; }
+.sem-net-nodes circle:nth-child(3) { animation-delay: .24s,  1.9s; }
+.sem-net-nodes circle:nth-child(4) { animation-delay: .36s,  2.1s; }
+.sem-net-nodes circle:nth-child(5) { animation-delay: .48s,  2.3s; }
+.sem-net-nodes circle:nth-child(6) { animation-delay: .60s,  2.5s; }
+@keyframes sem-node-in {
+  0%   { transform: scale(0);   opacity: 0; }
+  60%  { transform: scale(1.4); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+@keyframes sem-node-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px  rgba(34, 211, 238, .85)); }
+  50%      { filter: drop-shadow(0 0 14px rgba(167, 139, 250, 1)); }
+}
+
+/* Central energy core (Phase 3 prep). Hidden initially; fades in late so
+   the network "converges" before the loader dismisses. */
+.sem-net-core {
+  opacity: 0;
+  transform-origin: 120px 80px;
+  transform-box: view-box;
+  filter: drop-shadow(0 0 18px rgba(34, 211, 238, .9))
+          drop-shadow(0 0 32px rgba(167, 139, 250, .65));
+}
+.semantic-loader.is-active .sem-net-core {
+  animation: sem-core-in 1.2s ease-out 1.6s forwards,
+             sem-core-pulse 1.8s ease-in-out 2.8s infinite;
+}
+@keyframes sem-core-in {
+  0%   { opacity: 0; transform: scale(.2); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes sem-core-pulse {
+  0%, 100% { transform: scale(1);    opacity: .9; }
+  50%      { transform: scale(1.18); opacity: 1;  }
+}
+
+/* Status text — soft white with cyan glow, fades upward as it cycles.
+   The data-loader-msg span is replaced by JS every 1.3s. */
+.semantic-loader-status {
+  margin: 0;
+  font-size: .82rem;
+  letter-spacing: .01em;
+  font-weight: 500;
+  color: rgba(238, 246, 255, .92);
+  text-shadow: 0 0 12px rgba(34, 211, 238, .55);
+  min-height: 1.1em;
+  transition: opacity .35s ease, transform .35s ease;
+}
+.semantic-loader-status.is-swapping {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+.semantic-loader-echo {
+  margin: 0;
+  font-size: .72rem;
+  color: rgba(238, 246, 255, .45);
+  font-style: italic;
+  max-width: 280px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Light theme variant: deeper navy + indigo accents instead of cyan glow. */
+html[data-theme="light"] .sem-net-edges line {
+  /* SVG <linearGradient> is the same definition; in light theme the lines
+     render against a near-white background so we thicken + darken via
+     CSS so they stay readable. */
+  stroke-width: 1.4;
+  opacity: .85;
+  stroke: url(#semNetGrad);
+}
+html[data-theme="light"] .sem-net-nodes circle {
+  fill: #6d28d9;
+  filter: drop-shadow(0 0 6px rgba(109, 40, 217, .55));
+}
+html[data-theme="light"] .sem-net-core {
+  filter: drop-shadow(0 0 18px rgba(109, 40, 217, .65))
+          drop-shadow(0 0 32px rgba(14, 116, 144, .55));
+}
+html[data-theme="light"] .semantic-loader-status {
+  color: #0b1628;
+  text-shadow: none;
+}
+html[data-theme="light"] .semantic-loader-echo { color: #475569; }
+
+/* Reduced motion: collapse the loader to a static dot + plain status text.
+   The .is-leaving fade still works. */
+@media (prefers-reduced-motion: reduce) {
+  .semantic-loader.is-active .sem-net-edges line,
+  .semantic-loader.is-active .sem-net-nodes circle,
+  .semantic-loader.is-active .sem-net-core {
+    animation: none;
+    opacity: .55;
+  }
+  .semantic-loader.is-active .sem-net-nodes circle { opacity: 1; }
+  .semantic-loader.is-active .sem-net-core        { opacity: 1; }
+}
+
+/* ============================================================================
    P3-10 — light-theme headline contrast
 
    The brand gradient (#FF6B6B -> #6B66FF) passes comfortably on the dark theme

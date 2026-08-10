@@ -74,7 +74,7 @@
   >
 
   <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
-  <link rel="stylesheet" href="style.css?v=ms70">
+  <link rel="stylesheet" href="style.css?v=ms71">
   <link rel="stylesheet" href="navbar.css?v=7">
   <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the script below to revert) -->
   <link rel="stylesheet" href="home-flourish.css?v=4">
@@ -377,6 +377,34 @@
             <span id="aiSearchHint" class="ai-search-hint">AI-powered</span>
           </div>
 
+          <!-- v7.3.13: Neural loader for AI search latency. Pure CSS+SVG; shown
+               by app.js after the Supabase probe succeeds, auto-dismissed on
+               response (success/error/disabled/abort). Hidden by default so
+               NIC users (who never reach this branch) see nothing change. -->
+          <div id="semanticLoader" class="semantic-loader" hidden aria-hidden="true">
+            <svg class="semantic-loader-net" viewBox="0 0 240 160" aria-hidden="true">
+              <defs>
+                <linearGradient id="semNetGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%"   stop-color="#22d3ee"/>
+                  <stop offset="50%"  stop-color="#a78bfa"/>
+                  <stop offset="100%" stop-color="#f0abfc"/>
+                </linearGradient>
+                <radialGradient id="semCoreGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%"   stop-color="#67e8f9"/>
+                  <stop offset="55%"  stop-color="#a78bfa"/>
+                  <stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+              <g class="sem-net-edges"></g>
+              <g class="sem-net-nodes"></g>
+              <circle class="sem-net-core" cx="120" cy="80" r="14" fill="url(#semCoreGrad)"/>
+            </svg>
+            <p class="semantic-loader-status" aria-live="polite" aria-atomic="true">
+              <span data-loader-msg>Understanding your request…</span>
+            </p>
+            <p class="semantic-loader-echo"></p>
+          </div>
+
           <section id="semanticResults" class="semantic-results" hidden
                    aria-label="AI-ranked matches">
             <header class="semantic-results-head">
@@ -432,7 +460,7 @@
 
   <script src="config.js?v=sb4"></script>
   <script src="enrich.js?v=sb14"></script>
-  <script src="app.js?v=ms64"></script>
+  <script src="app.js?v=ms72"></script>
   <!-- vacancy push alerts (review P1-3); no-op unless Push is supported + VAPID configured -->
   <script defer src="push-client.js?v=1"></script>
   <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the stylesheet above to revert) -->

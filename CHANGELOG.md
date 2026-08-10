@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.3.12` (2026-08-09).** The `VERSION` file at the repo root
+**Current version: `7.3.13` (2026-08-09).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -27,6 +27,57 @@ counter_convention:
 ## [Unreleased]
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
+
+## [7.3.13] — 2026-08-09
+**Theme: neural loader for AI search latency.**
+The semantic-search Edge Function takes 500–1500ms on a healthy
+network and 3–6s on NIC (after the P3-7 proxy fix). Until now the
+only feedback during that window was a tiny status line ("Finding
+AI-ranked matches…"). This release adds a 6-node / 15-edge SVG
+neural network above the AI search bar that emerges while the
+request is in flight: nodes pop in one by one, edges draw between
+them, the network pulses, a status text cycles every 1.3s through
+four phases of intent extraction.
+
+- counter: `style.css?v=ms70` → `?v=ms71`, `app.js?v=ms64` → `?v=ms72`
+  on index.html only (the loader is scoped to the AI bar there)
+
+**Changed**
+- `index.html`: new `<div id="semanticLoader">` template injected as a
+  sibling of `.ai-search-bar` inside `.ai-search-section`. Contains a
+  240×160 SVG (gradient defs, two empty `<g>` containers the JS fills
+  with nodes/edges), a `.semantic-loader-status` paragraph, and a
+  `.semantic-loader-echo` line for the user's query. Hidden by default.
+- `style.css`: ~140 lines for `.semantic-loader` + its keyframes
+  (`sem-edge-draw`, `sem-edge-fade`, `sem-node-in`, `sem-node-pulse`,
+  `sem-core-in`, `sem-core-pulse`), light-theme override (deeper
+  navy + indigo dropshadow instead of cyan), and a reduced-motion
+  fallback that collapses the animation to a static dot + plain status
+  text.
+- `app.js`: ~80 lines added in the semantic-search block —
+  `SEMANTIC_STATUS[]` (4 messages), `SEMANTIC_NODE_POS[]` (6
+  positions), `buildSemanticLoaderNetwork()` (idempotent SVG fill,
+  15 edges with per-line `--len` for stroke-dasharray draw-in),
+  `showSemanticLoader(query)` (reveal + start 1.3s status cycle),
+  `hideSemanticLoader()` (fade-out + 300ms hidden). `runSemanticSearch()`
+  now calls `showSemanticLoader(query)` after the Supabase probe
+  succeeds and `hideSemanticLoader()` in the `finally` block.
+
+**Verified**
+- `node --check app.js` clean.
+- Playwright DOM sweep at 4 checkpoints (load, after_typing,
+  after_cycle_1, after_5s):
+    - hidden=true at load
+    - hidden=false + isActive=true after a 3+ char keystroke
+    - edgeCount=15, nodeCount=6 (every node connected to every other)
+    - status text cycled from "Understanding your request…" →
+      "Extracting intent & filters…" within 1.4s
+    - hidden=true, isActive=false after 5s (response resolved and
+      loader auto-truncated)
+- NIC safety: `showSemanticLoader()` is only called AFTER
+  `ensureSupabaseAvailable()` returns true, so NIC users (who fail
+  the TLS probe) never see the loader — they keep the existing
+  "AI search unavailable on this network" message instead.
 
 ## [7.3.12] — 2026-08-09
 **Theme: rewrite the "Why Deputation" copy on DeFeX.**

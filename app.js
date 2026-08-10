@@ -3615,10 +3615,111 @@ function syncCardSortUI() {
 
     let semanticTimer = null;
     let semanticInflight = null;
+    let semanticLoaderTimer = null;
+    let semanticLoaderActive = false;
     const aiSearchInput = document.getElementById('aiSearchInput');
     const semanticResults = document.getElementById('semanticResults');
     const semanticResultsList = document.getElementById('semanticResultsList');
     const semanticResultsStatus = document.getElementById('semanticResultsStatus');
+    const semanticLoader = document.getElementById('semanticLoader');
+
+    // v7.3.13 — neural loader for AI search latency.
+    // Builds a 6-node / ~9-edge SVG network inside #semanticLoader on first
+    // show, then cycles status text every 1.3s. Idempotent: subsequent
+    // shows skip the rebuild. Auto-truncates the moment the response lands.
+    const SEMANTIC_STATUS = [
+        'Understanding your request…',
+        'Extracting intent & filters…',
+        'Scanning ministries & organizations…',
+        'Matching eligibility & ranking results…',
+    ];
+    const SEMANTIC_NODE_POS = [
+        { x: 120, y: 20  },
+        { x:  40, y: 50  },
+        { x: 200, y: 50  },
+        { x:  70, y: 110 },
+        { x: 170, y: 110 },
+        { x: 120, y: 140 },
+    ];
+
+    function buildSemanticLoaderNetwork() {
+        if (!semanticLoader) return;
+        const edgesG = semanticLoader.querySelector('.sem-net-edges');
+        const nodesG = semanticLoader.querySelector('.sem-net-nodes');
+        if (!edgesG || !nodesG) return;
+        if (edgesG.childElementCount > 0) return;        // already built
+        const nodes = SEMANTIC_NODE_POS;
+        // Inject nodes
+        nodes.forEach((n) => {
+            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', n.x);
+            c.setAttribute('cy', n.y);
+            c.setAttribute('r', 5);
+            nodesG.appendChild(c);
+        });
+        // Inject edges — connect every node to every other (15 total). Skip
+        // duplicates (line "1-2" same as "2-1") by only emitting j > i.
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                const a = nodes[i], b = nodes[j];
+                const len = Math.round(Math.hypot(b.x - a.x, b.y - a.y));
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', a.x);
+                line.setAttribute('y1', a.y);
+                line.setAttribute('x2', b.x);
+                line.setAttribute('y2', b.y);
+                line.style.setProperty('--len', len);
+                edgesG.appendChild(line);
+            }
+        }
+    }
+
+    function showSemanticLoader(query) {
+        if (!semanticLoader) return;
+        buildSemanticLoaderNetwork();
+        const echo = semanticLoader.querySelector('.semantic-loader-echo');
+        const msgSpan = semanticLoader.querySelector('[data-loader-msg]');
+        if (echo) echo.textContent = `“${query}”`;
+        if (msgSpan) msgSpan.textContent = SEMANTIC_STATUS[0];
+        semanticLoader.hidden = false;
+        semanticLoader.removeAttribute('aria-hidden');
+        // next frame so the transition picks up the .is-active class
+        requestAnimationFrame(() => {
+            semanticLoader.classList.add('is-active');
+            semanticLoader.classList.remove('is-leaving');
+        });
+        semanticLoaderActive = true;
+        // Cycle status text every 1.3s
+        let idx = 0;
+        clearInterval(semanticLoaderTimer);
+        semanticLoaderTimer = setInterval(() => {
+            if (!semanticLoaderActive) return;
+            idx = (idx + 1) % SEMANTIC_STATUS.length;
+            const s = semanticLoader.querySelector('.semantic-loader-status');
+            const m = semanticLoader.querySelector('[data-loader-msg]');
+            if (!s || !m) return;
+            s.classList.add('is-swapping');
+            setTimeout(() => {
+                m.textContent = SEMANTIC_STATUS[idx];
+                s.classList.remove('is-swapping');
+            }, 220);
+        }, 1300);
+    }
+
+    function hideSemanticLoader() {
+        if (!semanticLoader || !semanticLoaderActive) return;
+        semanticLoaderActive = false;
+        clearInterval(semanticLoaderTimer);
+        semanticLoaderTimer = null;
+        semanticLoader.classList.add('is-leaving');
+        setTimeout(() => {
+            if (semanticLoader) {
+                semanticLoader.classList.remove('is-active', 'is-leaving');
+                semanticLoader.hidden = true;
+                semanticLoader.setAttribute('aria-hidden', 'true');
+            }
+        }, 300);
+    }
 
     // NIC's resolver sinkholes supabase.co (and the workers.dev proxy) into a
     // walled garden, so the AI endpoint is unreachable there. Say so in the bar
@@ -3777,6 +3878,11 @@ function syncCardSortUI() {
         const ctrl = new AbortController();
         semanticInflight = ctrl;
         showSemanticMessage('Finding AI-ranked matches…');
+        // v7.3.13: only show the neural loader AFTER the Supabase probe
+        // succeeds — NIC users (who fail the probe) never see it. The
+        // loader auto-truncates in `finally` below, so it never outlasts
+        // the real response even if the response is fast.
+        showSemanticLoader(query);
 
         try {
             const url = `${window.SUPABASE_URL}/functions/v1/semantic-search`;
@@ -3817,6 +3923,7 @@ function syncCardSortUI() {
             showSemanticMessage('AI search unavailable — try keywords instead.');
         } finally {
             if (semanticInflight === ctrl) semanticInflight = null;
+            hideSemanticLoader();
         }
     }
 
