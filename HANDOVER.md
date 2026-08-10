@@ -4181,7 +4181,7 @@ model:   claude-opus-5
 driver:  solo
 branch:  main
 starting_head: 5c616bc
-ending_head:   <pending>
+ending_head:   e490fc0
 focus:   v7.3.8 — slow the #manpower reveal to a followable pace
 ```
 
