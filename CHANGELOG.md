@@ -30,6 +30,33 @@ _(nothing yet — append here during the cycle, then cut a dated release)_
 
 ---
 
+## [7.4.1] — 2026-08-10
+
+### Fixed — newly approved vacancies never reached the dashboard
+
+Approving a vacancy that was not already in `data/vacancies.json` published it
+to Supabase but left it **invisible on the public site** until the next cron
+rebuilt the JSON. Surfaced when 55 vacancies were bulk-published and none
+appeared, but the bug predates the two-stage approval work.
+
+`fetchVacancies()` merges the bundled JSON with a live Supabase read and adds
+any "Supabase-only" rows. That filter tested `r.Vacancy_ID`, but at that point
+`sbRows` are still **raw snake_case** — `enrichRecord()` on the very next line
+is what maps them to Title_Case. The Title_Case key was therefore `undefined`
+on every row, the filter was always falsy, and the Supabase-only set was always
+empty. The console said so all along: `… 439 live, 384 json, 0 sb-only
+enriched`.
+
+Now compares `r.vacancy_id`. Same run reports `55 sb-only enriched`, and the
+new vacancies render (with the amber pending edge, as they are unverified).
+No approved row has a null `vacancy_id`, so the guard drops nothing, and
+`enrichRecord()` derives Region and eligibility tiers itself, so merged rows
+work with the Region and Pay Level filters.
+
+- Cache-bust: `app.js?v=ms76`.
+
+---
+
 ## [7.4.0] — 2026-08-10
 
 ### Added — two-stage approval (bulk publish, then verify)

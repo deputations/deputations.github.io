@@ -585,8 +585,16 @@ function fetchVacancies() {
             //   • After all rows are uniform Title_Case, recompute Status from
             //     last_date_to_apply — JSON's Status field becomes stale as
             //     days tick by, and the dashboard should always show truth.
+            // NB: `sbRows` are still RAW snake_case here — enrichRecord below is
+            // what maps them to Title_Case. So the id to compare is
+            // `vacancy_id`, NOT `Vacancy_ID`. Reading the Title_Case key at this
+            // point yields undefined for every row, which made the whole filter
+            // falsy and silently dropped EVERY Supabase-only vacancy: newly
+            // approved postings stayed invisible on the dashboard until the next
+            // cron rebuilt data/vacancies.json. `jsonIds` is built from JSON rows,
+            // which ARE Title_Case, so that side is correct as written.
             const jsonIds = new Set(json.map(r => r.Vacancy_ID));
-            const sbOnly = sbRows.filter(r => r.Vacancy_ID && !jsonIds.has(r.Vacancy_ID));
+            const sbOnly = sbRows.filter(r => r.vacancy_id && !jsonIds.has(r.vacancy_id));
             const sbOnlyEnriched = sbOnly.map(r =>
                 window.DepEnrich ? window.DepEnrich.enrichRecord(r) : r
             );

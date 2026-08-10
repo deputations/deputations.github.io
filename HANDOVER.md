@@ -190,6 +190,39 @@ the dashboard table, do NOT reach for `td::before` or `td:last-child::after` —
 both are taken by the 3D plank faces. An inset box-shadow on the cell is the
 free slot.
 
+### addendum 3 — v7.4.1: newly approved vacancies never reached the dashboard
+Owner applied migration 0017, bulk-approved 55 vacancies, confirmed they showed
+in the Verify tab — but they did NOT appear on the public site.
+
+**This is a PRE-EXISTING bug, not part of the two-stage feature.** Committed
+separately (per the protocol) with its own version bump.
+
+- diagnosed against LIVE Supabase: 439 approved vs 384 in data/vacancies.json;
+  none of the new Vacancy_IDs present in the JSON; 54 with admin_verified=false.
+- root cause `app.js#fetchVacancies()`:
+  `sbRows.filter(r => r.Vacancy_ID && !jsonIds.has(r.Vacancy_ID))` — sbRows are
+  still RAW snake_case there (enrichRecord on the NEXT line does the mapping),
+  so `r.Vacancy_ID` was undefined for every row and the Supabase-only set was
+  ALWAYS empty. Any vacancy approved since the last cron dump was invisible
+  until the JSON was rebuilt.
+- the console had been announcing it: `439 live, 384 json, 0 sb-only enriched`.
+- fix: compare `r.vacancy_id` (one word). A/B proven with a stashed tree:
+  0 sb-only + unfindable BEFORE, 55 sb-only + renders AFTER.
+- checked before fixing: NO approved row has a null vacancy_id (guard drops
+  nothing) and enrichRecord() derives Region + eligibility_tiers (so merged
+  rows work with the Region / Pay Level filters).
+
+**gotchas:**
+- **`sbRows` are snake_case until `enrichRecord()`.** Anything reading a
+  Title_Case key before that line silently yields undefined. Worth grepping for
+  other Title_Case reads on raw rows.
+- **NIC users still need a data rebuild.** The live merge only helps browsers
+  that can reach the backend; the bundled-JSON fallback stays at 384 rows until
+  build_data.py runs. Trigger the data workflow to close that gap.
+- verification script: `scripts/_verify_merge.py` (hits the REAL project; it is
+  a diagnostic, not a smoke test — it depends on live data and on specific
+  Vacancy_IDs that will drift as rows are verified).
+
 ## session shq-2026-08-10-009 end
 
 ---
