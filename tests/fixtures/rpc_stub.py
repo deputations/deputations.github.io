@@ -13,6 +13,7 @@ project. Tests that need to *observe* an RPC call can register an additional
 from __future__ import annotations
 
 import json
+import re
 
 from playwright.sync_api import Page
 
@@ -35,7 +36,10 @@ def install(page: Page, *, anon_key: str = "") -> None:
                 f"rpc_stub routed {route.request.url} but expected {SUPA_HOST}"
             )
             reply_json(route, body)
-        page.route(f"**/supabase.co/rest/v1/rpc/{name}", handler)
+        page.route(
+            re.compile(rf"^https?://[a-z0-9.-]*supabase\.co/rest/v1/rpc/{name}(\?|$)"),
+            handler,
+        )
 
     rpc("bump_visit", {"ok": True, "count": 42})
     rpc("heartbeat", {"ok": True})
