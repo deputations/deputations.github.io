@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.3.11` (2026-08-10).** The `VERSION` file at the repo root
+**Current version: `7.3.12` (2026-08-09).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -27,6 +27,38 @@ counter_convention:
 ## [Unreleased]
 
 _(nothing yet — append here during the cycle, then cut a dated release)_
+
+## [7.3.12] — 2026-08-09
+**Theme: rewrite the "Why Deputation" copy on DeFeX.**
+The `#manpower` section on `defex.html` (the rationale block that opens
+the page above the explorer) carried a 6-paragraph prose version of
+"why deputation is good for Government". Owner asked for a rewrite
+that lands harder: lead with the "win-win" framing, name the human
+incentives, walk the Government's logic in the same register, address
+the lending-office concern head-on, and close with a quotable
+declarative line ("deserves to be facilitated, not discouraged").
+
+- counter: none (text-only, no asset bump)
+
+**Changed**
+- `defex.html` `#manpower-h` heading: "Deputation as a Tool for Better
+  Manpower Utilisation" → "Deputation: A Win-Win That Deserves
+  Encouragement".
+- `defex.html` `#manpower` article body: 6 paragraphs + closing
+  bold-line replaced with 7 paragraphs in the same shape — opening
+  one-liner, 4 body paragraphs (mechanism, employee side, Government
+  side, lending-office concern), one bridging paragraph on
+  promotional stagnation, and the new bold closing.
+- Inline `<a href="#manpower-foot">` on the phrase "have greater value"
+  so the closing line is reachable from the body without scrolling
+  hunt.
+
+**Verified**
+- Playwright DOM sweep on the running static server: heading reads
+  "Deputation: A Win-Win That Deserves Encouragement", 7 paragraphs
+  present in expected order, `#manpower-foot` anchor resolved.
+- Section screenshot captured at `.tmp-navcheck3/defex-manpower-new.png`
+  matches the supplied reference.
 
 ## [7.3.11] — 2026-08-10
 **Theme: #manpower reveal at literal reading pace.**
