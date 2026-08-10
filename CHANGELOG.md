@@ -30,6 +30,41 @@ _(nothing yet — append here during the cycle, then cut a dated release)_
 
 ---
 
+## [7.4.2] — 2026-08-10
+
+### Fixed — pre-signed S3 links were silently freezing the whole dataset
+
+Eleven MMRCL notification links were stored as AWS **pre-signed** URLs, with
+`X-Amz-Credential=AKIA…` in the query string. GitHub push protection reads that
+as a leaked AWS key and **rejects the data commit**, so a single such link
+stopped *every* data build from publishing.
+
+The failure was invisible: the workflow's push-retry loop swallowed the
+rejection and the run still reported **success**, so the dataset just quietly
+stopped updating. The 55 newly published vacancies never reached
+`data/vacancies.json` for that reason.
+
+The credential belongs to the publishing organisation, not to this project, and
+an access key ID is unusable on its own — the secret half never appears in a
+pre-signed URL. Nothing of ours was exposed. The links were also **already
+dead**: `X-Amz-Expires=10800` is a three-hour window and they were signed on
+2026-06-13. The bucket is private, so trimming the query string yields a 403
+rather than a working link.
+
+- `normalize_url()` now drops any pre-signed link outright. A dead link helps
+  nobody, and no single vacancy is worth blocking the dataset.
+- New `assert_no_credentials()` gate: the build **refuses to write** a dump
+  containing an AWS-style key, and fails loudly, rather than producing a file
+  that gets rejected at push time and reported as green.
+- `supabase/migrations/0018_drop_presigned_links.sql` clears the stored links
+  so the admin UI stops showing dead ones too.
+
+Verified: build now emits **439 rows** (was stuck at 384) with zero `AKIA` /
+`X-Amz-` anywhere in `vacancies.json`, `filters.json`, `stats.json` or
+`feed.xml`; the guard fires on a planted credential and passes clean data.
+
+---
+
 ## [7.4.1] — 2026-08-10
 
 ### Fixed — newly approved vacancies never reached the dashboard

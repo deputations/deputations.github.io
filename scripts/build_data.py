@@ -118,12 +118,41 @@ def compute_days_left(last_date_iso: str) -> int | None:
         return None
 
 
+# A pre-signed S3 link carries the signing credentials in its query string
+# (`X-Amz-Credential=AKIA…`, `X-Amz-Signature=…`). Two independent reasons to
+# refuse to publish one:
+#
+#   1. It is already dead. Pre-signed links are minted with a short expiry —
+#      the ones that triggered this were `X-Amz-Expires=10800`, i.e. three
+#      hours — so by the time a visitor clicks it from a daily data dump it has
+#      long since stopped working. The bucket is private, and stripping the
+#      query string just yields a 403, so there is no usable link to salvage.
+#   2. It wedges the whole pipeline. GitHub push protection reads `AKIA…` as a
+#      leaked AWS key and REJECTS the data commit, so one such link stops every
+#      future build from publishing — not just its own row. That happened on
+#      2026-08-10: eleven MMRCL links blocked the dump, and the workflow still
+#      reported success because the push failure was swallowed by its retries.
+#
+# The key ID belongs to whoever published the notification, not to us, and an
+# access key ID is not by itself usable (the secret half is never in the URL).
+# We drop these links anyway — a dead link helps nobody, and no single vacancy
+# is worth blocking the dataset.
+PRESIGNED_MARKERS = ("x-amz-credential=", "x-amz-signature=")
+
+
+def is_presigned_url(text: str) -> bool:
+    lowered = text.lower()
+    return any(marker in lowered for marker in PRESIGNED_MARKERS)
+
+
 def normalize_url(value: Any) -> str:
     text = safe_str(value)
     if not text:
         return ""
     lowered = text.lower()
     if lowered in {"-", "—", "na", "n/a", "null", "undefined"}:
+        return ""
+    if is_presigned_url(text):
         return ""
     if text.startswith(("http://", "https://")):
         return text
@@ -597,6 +626,39 @@ def build_feed(vacancies: list) -> str:
     return "\n".join(out) + "\n"
 
 
+# AWS access key IDs, as GitHub's push protection matches them.
+CREDENTIAL_RE = re.compile(r"(?:AKIA|ASIA|ABIA|ACCA)[0-9A-Z]{16}")
+
+
+def assert_no_credentials(vacancies: list[dict[str, Any]]) -> None:
+    """Refuse to write a dump that GitHub will reject at push time.
+
+    `normalize_url()` already drops pre-signed links, but it only sees the two
+    link columns. If a credential ever reaches the dump through some other
+    field, the failure mode is genuinely nasty: the build "succeeds", the push
+    is rejected by secret scanning, the workflow's retry loop swallows the
+    error and still reports green, and the data silently stops updating. That
+    is exactly what happened on 2026-08-10 and it cost a full debugging session
+    to notice.
+
+    So fail here instead, loudly, while the reason is still on screen.
+    """
+    offenders: list[str] = []
+    for row in vacancies:
+        for key, value in row.items():
+            if isinstance(value, str) and CREDENTIAL_RE.search(value):
+                offenders.append(f"{row.get('Vacancy_ID', '?')}.{key}")
+    if offenders:
+        raise RuntimeError(
+            "Refusing to write the data dump: an AWS-style credential survived "
+            "into these fields, and GitHub push protection would reject the "
+            f"commit: {', '.join(offenders[:10])}"
+            + (f" (+{len(offenders) - 10} more)" if len(offenders) > 10 else "")
+            + ". If it arrived in a link, extend normalize_url(); otherwise "
+            "clean the source row in Supabase."
+        )
+
+
 def main() -> None:
     # Source priority: Supabase (live, where admin approvals land) → Google
     # Sheet (legacy, where vacancies used to be hand-entered). Fall back only
@@ -635,6 +697,7 @@ def main() -> None:
         validate_required_columns(rows)
 
     vacancies = transform_rows(rows)
+    assert_no_credentials(vacancies)
     filters = build_filters(vacancies)
     stats = build_stats(vacancies)
     meta_source = (
