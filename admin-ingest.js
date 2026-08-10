@@ -2857,12 +2857,35 @@ function projectCard(p, i, n) {
   return el;
 }
 
+/* An UPDATE that changes NOTHING is not an error to PostgREST.
+ *
+ * With `Prefer: return=minimal` a PATCH returns 204 whether it updated the row
+ * or matched nothing at all — and RLS filters rows out *before* the update, so
+ * a policy that denies the write is indistinguishable from a successful one.
+ * That is why the ▲▼ / Publish buttons appeared to do nothing while still
+ * announcing "Reordered" and "Unpublished": every call returned 204 and the
+ * reload simply re-drew the unchanged data.
+ *
+ * `return=representation` makes the row count observable, so a write that
+ * touched nothing is reported as the failure it is. deleteProject() has
+ * carried this guard for a while (see the note there about a missing DELETE
+ * policy) — the update path never got the same treatment.
+ */
 async function patchProject(id, patch) {
   const r = await api(`/rest/v1/upcoming_projects?id=eq.${id}`, {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
     body: JSON.stringify(patch),
   });
   if (!r.ok) throw new Error('HTTP ' + r.status);
+  const rows = await r.json().catch(() => []);
+  if (!Array.isArray(rows) || !rows.length) {
+    throw new Error(
+      'nothing was updated — the row is missing, or RLS is blocking the write '
+      + '(check the up_admin_write policy on upcoming_projects and that your '
+      + 'email is in public.admins)');
+  }
+  return rows[0];
 }
 
 // Reorder by renumbering all rows to clean 0,10,20… positions after the move.
@@ -2932,12 +2955,21 @@ async function saveProject() {
   };
   $('pf_save').disabled = true; msg.textContent = 'Saving…';
   try {
+    // Same reasoning as patchProject(): an edit blocked by RLS comes back 204
+    // under return=minimal and would report "Project updated" having saved
+    // nothing. Ask for the row back so the write is verifiable.
     const r = id
-      ? await api(`/rest/v1/upcoming_projects?id=eq.${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(body) })
-      : await api('/rest/v1/upcoming_projects', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(body) });
+      ? await api(`/rest/v1/upcoming_projects?id=eq.${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(body) })
+      : await api('/rest/v1/upcoming_projects', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(body) });
     if (!r.ok) {
       const t = await r.text().catch(() => '');
       throw new Error('HTTP ' + r.status + (/duplicate key/i.test(t) ? ' — slug already exists' : (t ? ' — ' + t.slice(0, 120) : '')));
+    }
+    const saved = await r.json().catch(() => []);
+    if (!Array.isArray(saved) || !saved.length) {
+      throw new Error('nothing was saved — RLS is blocking the write (check the '
+        + 'up_admin_write policy on upcoming_projects and that your email is in '
+        + 'public.admins)');
     }
     toast(id ? 'Project updated' : 'Project added');
     $('projForm').classList.add('hidden');

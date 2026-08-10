@@ -30,6 +30,39 @@ _(nothing yet — append here during the cycle, then cut a dated release)_
 
 ---
 
+## [7.4.4] — 2026-08-10
+
+### Fixed — admin Projects tab reported success for writes that never happened
+
+▲▼ / Publish / Unpublish / Edit in the Projects tab appeared to do nothing,
+while still toasting "Reordered" and "Unpublished".
+
+`patchProject()` sent `Prefer: return=minimal` and only checked `r.ok`. An
+UPDATE that changes nothing is not an error to PostgREST: it answers **204**
+whether it updated the row or matched none — and RLS filters rows out *before*
+the update, so a policy denying the write is indistinguishable from a
+successful one. Every click returned 204, the list reloaded unchanged, and the
+UI announced success.
+
+`deleteProject()` has carried a guard against exactly this since a missing
+DELETE policy caused it once before; the update path never got the same
+treatment.
+
+- `patchProject()` and `saveProject()` now use `return=representation` and
+  fail loudly when zero rows come back, naming the likely cause (the
+  `up_admin_write` policy, or the signed-in email missing from
+  `public.admins`).
+- `supabase/migrations/0020_repair_upcoming_projects_rls.sql` re-asserts both
+  policies, and carries the two diagnostic queries to run first.
+
+Note the list rendering never depended on any of this: `up_public_read` lets
+anon read published rows, so the tab looks healthy even when the session is not
+recognised as an admin. Only writes need `up_admin_write`.
+
+- Cache-bust: `admin-ingest.js?v=sb53`.
+
+---
+
 ## [7.4.3] — 2026-08-10
 
 ### Changed — embedding build is now incremental (fixes the daily free-tier 429)
