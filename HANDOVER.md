@@ -4802,3 +4802,93 @@ focus:   v7.3.5 -- drop nested table scrollbar (P1-9b follow-up)
 - if the table ever grows past one page (e.g. owner enables a 'show all' view), the cleanest re-introduction is the Option-3 'showing N-M of X' pill from the briefing: a slim status pill at the top-right of the sticky header showing current row range / total. That replaces the inner scrollbar's 'more data exists' signal with a quieter in-place counter.
 
 ## session shq-2026-08-09-005 end
+
+## session shq-2026-08-10-007
+```
+started: 2026-08-10
+ended:   2026-08-10
+model:   claude-opus-4-8
+driver:  relay
+branch:  main
+starting_head: 10a0df1
+ending_head:   10a0df1
+focus:   CI smoke-test failure investigation (v7.3.13 push) -- pre-existing broken feedback test
+```
+
+### inbound context read
+- owner reported 'failed in github' with a screenshot: pytest failure
+  `test_heart_click_triggers_record_sentiment_on_direct_hostname[.like]`
+  -- TimeoutError: Locator.click, 15000ms, waiting for `.sw-fb .like`.
+  1 failed, 14 passed, 1 skipped in 41.36s. The suite runs
+  `python -m pytest tests/ -v --tb=short --maxfail=1` -- maxfail=1 means
+  '1 failed' is the FIRST failure point, not the whole run.
+- memory: deputation-visual-verification (A/B before blaming a change)
+
+### work done
+1. read tests/test_feedback_proxy.py -- 3 tests, all exercising the `.sw-fb`
+   heart widget. `_heart_request_made()` clicks `.sw-fb .like` and asserts a
+   POST to /rest/v1/rpc/record_sentiment; `test_heart_widget_visible`
+   asserts `.sw-fb .like` / `.sw-fb .dislike` visible.
+2. local repro: `.venv-smoke/Scripts/python.exe -m pytest tests/test_feedback_proxy.py -v`
+   -> 2 failed + 1 skipped. Both failures show `page.url == 'about:blank'`
+   and the `.sw-fb` locator never found. ROOT CAUSE: neither
+   `_heart_request_made()` nor `test_heart_widget_visible()` ever calls
+   `page.goto()` -- the `page` fixture (tests/conftest.py:70) creates a
+   fresh blank context with no autouse navigation. The `.sw-fb` widget is
+   injected by site-widgets.js when a real page loads, so it can never
+   exist on about:blank.
+3. confirmed NOT a v7.3.13 regression via CI history:
+   `gh run list --workflow=smoke-tests.yml` shows the same failure on ALL
+   recent main pushes -- 31354975216 (058fa26 handover docs), 31362010519
+   (2a763e6 fix nic), 31380182536 (1b9fc92 v7.3.12), 31381292714 (10a0df1
+   v7.3.13, the run owner saw). v7.3.13 touched index.html / style.css /
+   app.js only -- no site-widgets.js, no feedback markup, no test change.
+4. HANDOVER shq-2026-08-09-001 (v7.3.1) had ALREADY documented this exact
+   failure as pre-existing: '1 feedback-proxy x2 locator .sw-fb .like not
+   found', reproduced identically with the patch stashed out.
+5. confirmed the widget itself works when a page IS loaded:
+   tests/test_nic_overview.py:57 does `page.goto(index)` first, then
+   asserts `.sw-fb`, `.sw-fb .like`, `.sw-fb .dislike`, `.sw-fb .cnt` --
+   the reference pattern for the fix.
+6. applied NO source changes this session (owner switched sessions;
+   saving state only).
+
+### decisions
+- **this is a broken TEST, not a broken feature.** site-widgets.js is
+  fine; the heart works when a page is actually loaded (proven by
+  test_nic_overview passing). The fix belongs in tests/test_feedback_proxy.py,
+  NOT in app.js / site-widgets.js / index.html.
+- **fix = add page.goto(), 3 lines.** In `_heart_request_made()` add
+  `page.goto(f"{base_url}/index.html")` before `page.locator(...).click()`;
+  same at the top of `test_heart_widget_visible()`. `base_url` is a
+  session fixture already provided by tests/conftest.py:38.
+- **recommended commit shape**: single `fix(tests)` commit, no VERSION
+  bump (test-only). Do NOT bundle any other pre-existing fix into it
+  (per deputation-handover-protocol).
+
+### handoff state
+- working_tree: clean except untracked transient artefacts
+  (.tmp-navcheck*, .venv-smoke, scripts/_*.py) -- all gitignored.
+- HEAD: 10a0df1 (v7.3.13). The WEBSITE-REVIEW row + this block are the
+  only changes; committed as docs.
+- open: P3-2 (AI eligibility), P3-10 (light-theme contrast debt),
+  P2-2 (hiring-data mini-report), P1-7 (SAR PDF bundles).
+- next_pickup: apply the 3-line test fix, run
+  `pytest tests/test_feedback_proxy.py -v` (expect all pass), run the full
+  suite locally, push to unblock CI.
+
+### gotchas for next session
+- **`--maxfail=1`**: CI only reports the FIRST failure. After fixing the
+  feedback test, re-run the full suite locally (`.venv-smoke/Scripts/python.exe
+  -m pytest tests/ -v --tb=short`) to surface whatever the next
+  first-failure would be (handover shq-2026-08-09-001 mentions 3 region-filter
+  dropdown / counts + 1 semantic-search offline-mode as other known
+  pre-existing failures).
+- **do not 'fix' the failure in site-widgets.js / app.js** -- it will do
+  nothing: the widget never loads on about:blank. The A/B evidence (all
+  recent main pushes failing identically) is conclusive.
+- **several HANDOVER blocks carry `<pending>` in ending_head** (e.g. the
+  v7.3.5 block) -- they were closed later; the last `## session ... end`
+  delimiter is the source of truth. All blocks are closed as of this write.
+
+## session shq-2026-08-10-007 end
