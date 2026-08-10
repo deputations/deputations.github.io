@@ -32,7 +32,13 @@
   /* ---------- Supabase helpers (mirror site-widgets.js / contact.js) ---------- */
   var SB_URL = (window.SUPABASE_URL || "").replace(/\/+$/, "");
   var SB_KEY = window.SUPABASE_ANON_KEY || "";
-  var SB_OK  = /^https:\/\/[a-z0-9]+\.supabase\.co/.test(SB_URL) && SB_KEY.length > 20;
+  // P3-7 PR 2 hardened site-widgets.js to delegate to config.js's SUPABASE_READY()
+  // because SUPABASE_URL on alldeputations.com is the Cloudflare Worker proxy
+  // (api.alldeputations.com), not *.supabase.co. Upcoming Projects never got the
+  // same fix: loadProjects() therefore bailed to the offline fallback array,
+  // so admin edits in the Projects tab never reached the public page even
+  // though the writes were succeeding.
+  var SB_OK  = !!(window.SUPABASE_READY && window.SUPABASE_READY());
   var SB_HEAD = { "Content-Type": "application/json", apikey: SB_KEY, Authorization: "Bearer " + SB_KEY };
 
   function rpc(fn, body) {
