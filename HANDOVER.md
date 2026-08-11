@@ -5486,3 +5486,94 @@ focus:          hotfix 2 — Verify Edit auto-open survives WA_PENDING re-render
   `if (toggle.textContent === 'Edit') toggle.click();` — if it says
   `Hide`, we don't click. Save is safe.
 ```
+
+## session shq-2026-08-12-004
+```
+started:        2026-08-12
+ended:          2026-08-12
+model:          claude-opus-4-8
+driver:         solo
+branch:         main
+starting_head:  1268b6d
+ending_head:    cd653fe
+focus:          hotfix 3 — Verify Edit deep-link navigates to the right page
+```
+
+### inbound context read
+- User copy-pasted the DevTools console from the live site:
+  ```
+  [openManageForRow] card not found for target b475c552-ad3a-480d-938f-c22ef26d4307 — current page DOM has 25 cards
+  ```
+  That диагноз is unambiguous: the auto-open path is reaching loadManage(),
+  fetching rows, rendering 25 cards (a full page), but the target UUID
+  isn't among them. So the row is on a *different* Manage page.
+- Re-read `renderManage()`: sorts by `created_at desc, id asc`, slices
+  `start..start+MG_PAGE_SIZE` (25). The deep-link's reset puts
+  `MG_PAGE = 1`, so we always render the 25 newest approved rows. If the
+  Verify target is older than 25th-newest approved, it's not on the page.
+- 25 cards with default sort = full page 1. The target UUID implies a
+  backlog where the row hasn't been admin-verified yet.
+
+### work done
+1. **Extracted `getManageViewRows()`** at `admin-ingest.js:2217` —
+   does the `mgSearch` + `mgSource` + `mgSort` filter/sort that's
+   currently inlined in `renderManage()`. Returns the sorted view.
+   `renderManage()` now calls it once.
+2. **Page-navigate step** in `loadManage()` at line 2171 (right after
+   the first `renderManage()`):
+   - Compute `view = getManageViewRows()` (same filter+sort as render).
+   - `idx = view.findIndex(r => String(r.id) === OPEN_MANAGE_ROW)`.
+   - If `idx < 0`: log warning (`target filtered out of view`) — row
+     exists in MANAGE_ROWS but a filter slipped past our reset.
+   - Else compute `wantPage = Math.floor(idx / MG_PAGE_SIZE) + 1`.
+   - If `wantPage !== MG_PAGE`: set `MG_PAGE = wantPage`, re-render.
+3. **Order preserved**: page-navigate happens *before* the
+   `requestAnimationFrame` + `setTimeout 600` openRow plan from session
+   003. The 600ms re-open still survives any WA_PENDING re-render.
+4. **Removed dead `mode` variable** from `renderManage()` (was rendered
+   redundant after `getManageViewRows()` extracted it).
+5. **Commit** `cd653fe fix(admin): Verify Edit deep-link navigates to
+   the right Manage page` (1 file, +33/-5).
+
+### decisions
+- **Page-navigate vs filter-widen.** Considered widening
+  `MANAGE_ROWS` query to fetch all rows (no `limit`). Rejected: on a
+  busy admin with 1000+ approved rows, the per-row editor data (raw
+  extraction, tiers, etc.) is heavy and the page would hang. Page-
+  navigate within the existing 25-row fetch is O(1).
+- **filter+sort in `getManageViewRows()` exactly as renderManage.** If
+  the two drifted, the auto-open could land on a page whose DOM
+  doesn't match the filter the user sees. Extracting the exact same
+  code path is the safest.
+- **Don't auto-advance MG_PAGE on manual interactions.** The page-
+  navigate only runs when `OPEN_MANAGE_ROW` is set (i.e. only during
+  a deep-link from Verify). Manual Manage visits use the saved
+  `MG_PAGE` from `loadUI()` as before.
+
+### handoff state
+- committed: `cd653fe` (this session's fix).
+- working tree: clean (only this file's diff, now committed).
+- pushed: pending — push in your next session.
+
+### gotchas for next session
+- **If Edit still fails, the new console.warn `[openManageForRow]
+  target filtered out of view`** would tell us the row is in
+  MANAGE_ROWS but no current mgSearch/mgSource/mgSort combination
+  surfaces it. The fix in that case: investigate which filter is
+  re-applying (we reset three, but `mgSort` is the most likely
+  silent culprit — `sortRows` could produce a different order than
+  the server's `created_at desc, id asc`).
+- **The `mgSource` select** is populated dynamically by
+  `populateManageSourceFilter()` after the fetch. If the user changed
+  it before, then deep-linked, our reset `mgSource.value = ''` may run
+  *before* the populate, leaving the visible UI as "All" but the
+  cached filter logic still applied. The page-navigate step uses
+  `getManageViewRows()` which reads `$('mgSource').value` live, so
+  the check should be correct. But if the populate happens *after*
+  our reset, the UI select might briefly show the wrong value. Add
+  a follow-up if the user reports mismatched UI.
+- **WA_PENDING 600ms re-open still matters.** The page-navigate adds
+  a second `renderManage()`; the WA bridge can still fire a third.
+  The 600ms timed re-open wins all three races.
+```
+
