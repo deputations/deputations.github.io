@@ -5577,3 +5577,78 @@ focus:          hotfix 3 — Verify Edit deep-link navigates to the right page
   The 600ms timed re-open wins all three races.
 ```
 
+## session shq-2026-08-12-005
+```
+started:        2026-08-12
+ended:          2026-08-12
+model:          claude-opus-4-8
+driver:         solo
+branch:         main
+starting_head:  508ae1e
+ending_head:    508ae1e
+focus:          user verification + pre-existing smoke failure triage
+```
+
+### inbound context read
+- User confirmed live fix: "yes it opened" — clicking ✎ Edit now lands on
+  the right Manage page with the editor open and the indigo flash.
+  Sessions 003 + 004 collectively closed the bug.
+- CI smoke run on `main` after pushing 508ae1e failed at
+  `scripts/verify_admin.py:143`:
+  ```
+  page.wait_for_function("document.getElementById('draftCount').textContent.includes('60')", timeout=10000)
+  playwright._impl._errors.TimeoutError: Page.wait_for_function: Timeout 10000ms exceeded.
+  ```
+
+### work done
+1. **User verified the fix works.** Marked the page-navigate task done.
+2. **Read `scripts/verify_admin.py:130-160`** — the failure is on a
+   `wait_for_function` asserting that the draft count text **includes
+   the literal string `'60'`**. If the live DB has any other number of
+   drafts (50, 70, 100), the wait times out and the test fails.
+3. **Recognised this as a pre-existing failure** documented in
+   `memory/deputation-admin-pre-existing-bug.md`. The script is one of
+   the PR-4 ad-hoc verifiers that asserts exact counts against a
+   live-ish DB. It was failing before the Verify Edit work, and would
+   fail on any push to main regardless of what changed.
+4. **Decided NOT to fix in this session.** Per HANDOVER protocol +
+   memory note: pre-existing bugs in scripts MUST NOT be bundled into
+   feature commits. A separate session can either (a) update the
+   fixture or (b) make the wait tolerant (e.g. wait for the count to
+   settle, not match `'60'`).
+
+### decisions
+- **No commit this session.** The state on disk matches the pushed
+  HEAD `508ae1e`. The CI failure is in `.github/workflows/smoke-tests.yml`
+  + `scripts/verify_admin.py`, which I haven't touched and won't.
+- **No code changes this session.** Just a status note.
+
+### handoff state
+- pushed: `305d30a` (feature) → `1791911` (handover 001) →
+  `13c9d84` (filter-reset hotfix) → `3da1c00` (handover 002) →
+  `de23c78` (WA re-render hotfix) → `1268b6d` (handover 003) →
+  `cd653fe` (page-navigate hotfix) → `508ae1e` (handover 004).
+- working tree: clean.
+- CI: red on `Verify admin-ingest (authenticated flows)` because of
+  the pre-existing `wait_for_function draftCount.includes('60')`.
+  pytest suite (1m 57s) is green. The CI red is independent of the
+  Verify Edit work.
+
+### gotchas for next session
+- **Fixing `verify_admin.py` requires either (a) updating the live
+  DB to have exactly 60 drafts (fragile), or (b) rewriting the wait
+  to be range-tolerant**. The right fix is (b): wait for the count
+  element to be non-empty + the initial fetch to have completed, not
+  for an exact string. PR-4 had this brittleness built in; the work
+  to harden it should land as its own commit + handover block.
+- **The other PR-4 wait at line 158** (`draftCount.includes('50')`)
+  has the same shape. Same brittleness. Bundle both fixes if you
+  take this on.
+- **The smoke workflow uses `--maxfail=1`**, so the pytest step ran
+  for 1m57s and passed completely. The admin verify step ran after
+  and is what failed. CI is reporting the correct failure, just on
+  the wrong script for triage.
+- **`memory/deputation-admin-pre-existing-bug.md`** has the full
+  history; re-read it before touching `verify_admin.py`.
+```
+
