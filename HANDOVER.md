@@ -5828,3 +5828,86 @@ focus:          user verification + pre-existing smoke failure triage
   the feed, the suggest toggle now uses z-index: 1 (above .up-body
   only). If you ever add a third interactive layer to the card, give
   it `z-index: 2` minimum or it will be eaten by the sticky nav.
+
+
+## session shq-2026-08-12-006
+
+### started: 2026-08-12
+### ended: 2026-08-12
+### model: claude-opus-5
+### driver: solo
+### branch: main
+### starting_head: 1d49ef2
+### ending_head: <this commit>
+### focus: home KPI grid — card order/rename + Ministries counts ACTIVE only
+
+### inbound context read
+- Continuing from `1d49ef2` (suggest toggle hit area).
+- User supplied a screenshot of the KPI strip and asked: (1) move Total
+  Vacancies to last and Active (renamed "Active Vacancies") to first,
+  (2) the Ministries card shows 47, which is the all-vacancies number —
+  it should count active vacancies only.
+- Memory: deputation-visual-verification (Browser pane is 0x0 here — drive
+  Chromium via `.venv-smoke` Playwright instead), deputation-handover-protocol
+  (one open HANDOVER, no pre-existing bundling), deputation-p3-4 (smoke suite).
+
+### work done
+1. **app.js `renderKPIs()` (~line 2248)** — reordered the four
+   `buildKpiCard()` calls to Active Vacancies -> Closing Soon -> Ministries
+   -> Total Vacancies; renamed `'Active'` to `'Active Vacancies'`.
+2. **app.js `setLoadingUI()` (~line 1186)** — same reorder + rename in the
+   skeleton array, so the loading placeholders match the real cards and the
+   grid does not reshuffle when data lands.
+3. **app.js `getKpiSnapshot()` (~line 2226)** — hoisted `activeData` out of
+   the `active` count and pointed the `ministries` Set at it instead of the
+   full `filteredData`. 47 -> 33.
+4. **index.html** — `app.js?v=ms76 -> ?v=ms77`.
+5. **CHANGELOG.md** — appended to the existing `[Unreleased]` section.
+
+### decisions
+- **Colour tone and filter key travel with the card, not the position.**
+  `buildKpiCard(title, value, icon, tone, delta, filterKey)` already takes
+  both as arguments, and no CSS anywhere keys off `nth-child` (checked
+  style.css, liquid-glass.css, home-flourish.css). So the reorder is a pure
+  reorder — green stays on Active, cyan on Total, and clicking each card
+  still applies the filter it always did. The verify script asserts this
+  explicitly rather than trusting it.
+- **Ministries card click behaviour left alone.** It sets `kpiFilter = 'all'`
+  and sorts by Ministry without clearing the Status dropdown (which defaults
+  to Active), so the table it produces was already active-only. The count now
+  agrees with what the click shows.
+- **The `KPI: Active` filter chip (app.js ~2399) was NOT renamed.** It is a
+  compact chip, not a heading; flagged to the user rather than changed.
+- **`scripts/_verify_kpi_order.py` recomputes its expected numbers** instead
+  of hardcoding 170/33 — see gotcha below.
+
+### handoff state
+- committed: app.js, index.html, CHANGELOG.md, HANDOVER.md (this block).
+- not committed: `scripts/_verify_kpi_order.py` is untracked scratch, like
+  the ~20 other `_verify_*.py` / `probe_*.py` files in the tree. It does not
+  enter the commit.
+- not pushed: this commit is the next push.
+- **Stale from the previous session:** the `shq-2026-08-12-003` block (the
+  second one, ~line 5755) still reads `ended: <pending>`, `ending_head:
+  <pending>` and `committed: NONE YET` even though that work landed as
+  `1d49ef2`. Also note the block ids collide — there are two `-002`/`-003`
+  sequences in this file. Left untouched; someone should reconcile the
+  numbering in a docs-only commit.
+
+### gotchas for next session
+- **`Status` in `data/vacancies.json` is dead weight — the browser ignores
+  it.** `recomputeStatus()` (app.js:617) throws the stored value away on
+  every load and re-derives Active/Inactive from `Last_Date_To_Apply` vs
+  today. My first verify run failed (`active = 164` expected vs 170 on the
+  page) purely because the script read `Status` out of the JSON: six rows
+  were stored Active but past their deadline. Any script asserting on KPI
+  numbers must redo the date math, and must recompute rather than hardcode
+  — 170/33 drift downward every day as deadlines pass.
+- **The KPI numbers come from `baseFilteredData`** (filters applied, Status
+  filter deliberately not), while the Ministry *dropdown* counts come from
+  unfiltered `rawData` (~app.js:1500). They agree at page load and diverge
+  once the user filters. That is intended, not a bug.
+- **No test in `tests/` asserts KPI titles or order** — only
+  `test_semantic_search.py` touches `.kpi-grid`, and only for its position
+  relative to the AI search bar. If the KPI grid gets more churn, that is
+  a coverage gap worth closing in the real suite.

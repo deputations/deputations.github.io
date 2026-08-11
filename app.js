@@ -1184,10 +1184,10 @@ function updateMobileFilterToggle() {
         // cards with placeholder values and correctly shaped row/card shimmers
         // — so the first paint never looks empty; data drops in when it lands.
         kpiGrid.innerHTML = [
-            ['Total Vacancies', 'briefcase', 'cyan'],
-            ['Active', 'check-circle', 'green'],
+            ['Active Vacancies', 'check-circle', 'green'],
             ['Closing Soon', 'clock', 'red'],
             ['Ministries', 'building', 'purple'],
+            ['Total Vacancies', 'briefcase', 'cyan'],
         ].map(([title, icon, tone]) => `
             <div class="kpi-card kpi-${tone} kpi-skeleton shimmer" aria-hidden="true">
                 <div class="kpi-icon">${svgIcon(icon)}</div>
@@ -1958,7 +1958,8 @@ kpiGrid.addEventListener('click', (e) => {
    function renderDashboard(resetPageIfNeeded = true) {
   syncExperienceState();
   // KPI cards summarise the whole set regardless of the Status dropdown:
-  // "Total Vacancies" = all (Status: All), "Active" = the active subset of them.
+  // "Total Vacancies" = all (Status: All); "Active Vacancies" / "Ministries"
+  // = the active subset of them.
   const baseFilteredData = getFilteredData({ applyKpiFilter: false, applyStatusFilter: false });
   const filteredData = sortData(getFilteredData({ applyKpiFilter: true }));
 
@@ -2223,15 +2224,19 @@ function isNewVacancy(item) {
 }
 
     function getKpiSnapshot(filteredData) {
+        const activeData = filteredData.filter(d => safe(d.Status) === 'Active');
+
         return {
             total: filteredData.length,
-            active: filteredData.filter(d => safe(d.Status) === 'Active').length,
+            active: activeData.length,
             closingSoon: filteredData.filter(d => {
                 const days = parseInt(d.Days_Left, 10);
                 return !Number.isNaN(days) && days >= 0 && days <= 15;
             }).length,
+            // Ministries counts only those with at least one ACTIVE vacancy —
+            // matching the Ministry filter dropdown, which is also active-only.
             ministries: new Set(
-                filteredData.map(d => safe(d.Ministry)).filter(Boolean)
+                activeData.map(d => safe(d.Ministry)).filter(Boolean)
             ).size
         };
     }
@@ -2246,10 +2251,10 @@ function isNewVacancy(item) {
   const ministriesDelta = previous ? current.ministries - previous.ministries : 0;
 
   kpiGrid.innerHTML = `
-    ${buildKpiCard('Total Vacancies', current.total, 'briefcase', 'cyan', totalDelta, 'all')}
-    ${buildKpiCard('Active', current.active, 'check-circle', 'green', activeDelta, 'active')}
+    ${buildKpiCard('Active Vacancies', current.active, 'check-circle', 'green', activeDelta, 'active')}
     ${buildKpiCard('Closing Soon', current.closingSoon, 'clock', 'red', closingSoonDelta, 'closingSoon')}
-   ${buildKpiCard('Ministries', current.ministries, 'building', 'purple', ministriesDelta, 'ministries')}
+    ${buildKpiCard('Ministries', current.ministries, 'building', 'purple', ministriesDelta, 'ministries')}
+    ${buildKpiCard('Total Vacancies', current.total, 'briefcase', 'cyan', totalDelta, 'all')}
   `;
 
   animateKpiCounters();

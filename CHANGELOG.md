@@ -73,6 +73,30 @@ Two follow-up fixes on the `/upcoming-projects` suggest form:
 Verified with `verify_suggest.py`: toggle min-height 36px, click opens the
 form, textarea 600 × 140 px / rows=5 / min-height 132px, send 187 × 66 px.
 
+### Changed — KPI cards reordered; Ministries now counts ACTIVE vacancies only
+Two changes to the home-page KPI grid in `app.js`:
+
+- **Order + rename.** The grid led with "Total Vacancies" (527) and buried the
+  number people actually come for. Reordered to **Active Vacancies → Closing
+  Soon → Ministries → Total Vacancies**, and renamed "Active" to "Active
+  Vacancies" for symmetry with the last card. Applied in both `renderKPIs()`
+  and the `setLoadingUI()` skeleton so the placeholders don't reshuffle when
+  data lands. Each card keeps its own `data-kpi-filter` key and colour tone,
+  so click-to-filter and the green/red/purple/cyan styling travel with the
+  card rather than with its position.
+- **Ministries was counting the wrong set.** `getKpiSnapshot()` built its
+  distinct-ministry set from the whole filtered set, so it showed 47 — the
+  count across all vacancies including expired ones — while every other card
+  and the Ministry filter dropdown are active-only. Now derived from the
+  active subset: **47 → 33**, matching the dropdown, which already counted
+  only ministries with ≥1 active vacancy.
+
+HTML cache-buster on `app.js` bumped `?v=ms76 -> ?v=ms77`.
+
+Verified with `scripts/_verify_kpi_order.py` against the real dataset:
+order + tones + filter keys correct, Total 527, Active 170, Ministries 33,
+and the Active card still toggles `aria-pressed` on click.
+
 ---
 
 ## [7.4.4] — 2026-08-10
