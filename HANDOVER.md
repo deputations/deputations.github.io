@@ -5392,3 +5392,97 @@ focus:          hotfix — Verify Edit deep-link now lands on the right page
   site. Static checks (`node --check` + 11-point indexOf sweep) were the
   only verification path.
 ```
+
+## session shq-2026-08-12-003
+```
+started:        2026-08-12
+ended:          2026-08-12
+model:          claude-opus-4-8
+driver:         solo
+branch:         main
+starting_head:  3da1c00
+ending_head:    de23c78
+focus:          hotfix 2 — Verify Edit auto-open survives WA_PENDING re-render
+```
+
+### inbound context read
+- User verified `13c9d84` on the live site: clicking ✎ Edit on a Verify
+  row opened the Manage tab but "nothing happens". The fallback toast
+  (`Row opened on Manage — find it under the search results...`) was no
+  longer firing (filters were reset correctly), so the auto-open path
+  must have been reaching the `toggle.click()` call but the editor was
+  vanishing immediately.
+- Re-read `loadManage()` at line 2159:
+  ```
+  refreshWaPending().then(() => { if (WA_PENDING && !$('paneManage').classList.contains('hidden')) renderManage(); });
+  ```
+  This fires *after* the first `renderManage()` in the same function. If
+  the WA bridge (a localhost service running on the live admin's local
+  machine) responds within ~100ms, `renderManage()` re-runs and wipes
+  + re-creates every `.draft` card — including the one I just opened.
+
+### work done
+1. **Double-RAF auto-open** at `admin-ingest.js:2172`:
+   - `requestAnimationFrame(openRow)` — runs on the first paint, opens
+     the editor immediately.
+   - `setTimeout(openRow, 600)` — runs 600ms later, re-opens the editor
+     in case `WA_PENDING`'s second `renderManage()` wiped it. The WA
+     bridge either answers in <600ms (we re-open after its re-render)
+     or the response is null (no re-render, first open sticks).
+2. **Diagnostic logging** under the `[openManageForRow]` tag:
+   - `console.warn` if the card isn't found (includes count of cards on
+     page so we can tell "filtered out" vs "paged out" vs "not yet
+     rendered").
+   - `console.warn` if the toggle button is missing on the card.
+   - `console.info` when the open succeeds, including the toggle's
+     prior state (`Edit`/`Hide`) so we can confirm it was actually
+     clicked.
+3. **Commit** `de23c78 fix(admin): Verify Edit auto-open survives WA
+   re-render` (1 file, +18/-3).
+
+### decisions
+- **Two-opens, not one-wait.** Considered just `setTimeout(openRow, 700)`
+  and skipping the immediate RAF. Rejected: that adds 700ms latency on
+  the common case where WA doesn't re-render (live site, bridge down).
+  The double-open costs nothing when WA is silent and self-heals when
+  WA re-renders.
+- **600ms timeout is empirical.** The WA bridge is a localhost service;
+  a 100-300ms round-trip is typical. 600ms is safely past that without
+  being noticeable.
+- **Console warnings, not toasts.** DevTools console is the right place
+  for "what the JS is doing" diagnostics. Toasts would spam the user
+  with implementation chatter; the warning only fires on the unhappy
+  path.
+
+### handoff state
+- committed: `de23c78` (this session's fix).
+- working tree: clean (only this file's diff, now committed).
+- pushed: pending — push in your next session.
+
+### gotchas for next session
+- **If Edit still doesn't work, ask the user to open DevTools console
+  and report the [openManageForRow] lines.** Three possible logs:
+  - `card not found for target ... — current page DOM has N cards`:
+    the row isn't on the current Manage page. Either (a) the row's
+    `id` doesn't match the `data-mg-id` stamp (possible if a Supabase
+    UUID parse mismatch) or (b) `mgStatus`/`mgSearch`/`mgSource`
+    filters we reset still include something we forgot.
+  - `opening card ... toggle was Edit`: success — editor should be
+    open and `mg-flash` should have run. If the user reports
+    "nothing happens" with this log, the bug is post-open (Save
+    handler, or the editor rendered off-screen).
+  - no log at all: the `OPEN_MANAGE_ROW` branch in `loadManage()`
+    isn't being reached. Either the click handler isn't wired, or
+    `loadManage()` is erroring before the `if (OPEN_MANAGE_ROW)`
+    check.
+- **The browser pane CAN'T exercise this path** — it needs real auth +
+  live Supabase + a session allow-listed in the `admins` table.
+  Static checks + console logs from the user's DevTools are the only
+  verification path until the P3-4 suite grows admin auth fixtures.
+- **The double-open might fight Save.** If the admin clicks Save in the
+  600ms grace window, the second open finds the toggle's text changed
+  from `Hide` back to `Edit` (because Save re-renders the card via
+  `el.replaceWith(manageCard(r, false))`). My guard is
+  `if (toggle.textContent === 'Edit') toggle.click();` — if it says
+  `Hide`, we don't click. Save is safe.
+```
