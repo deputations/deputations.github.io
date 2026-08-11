@@ -2162,8 +2162,29 @@ async function loadManage() {
     MANAGE_ROWS = await fetchAll(q);
     populateManageSourceFilter();
     renderManage();
-    // If the Verify tab's ✎ Edit button brought us here, auto-open + scroll.
-    // Cleared after one use so a manual refresh doesn't re-trigger.
+    // If the Verify tab's ✎ Edit button brought us here, navigate to the page
+    // that actually contains the target row before kicking off auto-open. The
+    // first renderManage() above ran on MG_PAGE=1 (we reset it in
+    // openManageForRow); if the target is older than the 25th-newest approved
+    // vacancy, it's not on page 1's DOM. Find its index in the same filter+sort
+    // view renderManage uses, then jump to its page + re-render.
+    if (OPEN_MANAGE_ROW) {
+      const view = getManageViewRows();
+      const idx = view.findIndex((r) => String(r.id) === OPEN_MANAGE_ROW);
+      if (idx < 0) {
+        // Row is in MANAGE_ROWS but got filtered out by mgSearch/mgSource. The
+        // reset in openManageForRow should have cleared those, but if a future
+        // filter slips through, this guard keeps the flow graceful.
+        console.warn('[openManageForRow] target filtered out of view:', OPEN_MANAGE_ROW,
+          'view length', view.length, 'MANAGE_ROWS length', MANAGE_ROWS.length);
+      } else {
+        const wantPage = Math.floor(idx / MG_PAGE_SIZE) + 1;
+        if (wantPage !== MG_PAGE) {
+          MG_PAGE = wantPage;
+          renderManage();
+        }
+      }
+    }
     if (OPEN_MANAGE_ROW) {
       const target = OPEN_MANAGE_ROW; OPEN_MANAGE_ROW = null;
       // Two-RAF open: WA_PENDING may call renderManage() a second time after the
@@ -2214,13 +2235,20 @@ function populateManageSourceFilter() {
   if (prev && srcs.includes(prev)) sel.value = prev;
 }
 
-function renderManage() {
+// Apply the current mgSearch / mgSource / mgSort to MANAGE_ROWS and return the
+// result. Used by renderManage() and by loadManage() to locate the Verify-tab
+// target's page (so the deep-link lands on the page that actually contains it).
+function getManageViewRows() {
   const q = ($('mgSearch').value || '').toLowerCase().trim();
   const src = ($('mgSource') && $('mgSource').value || '').trim();
   let filtered = !q ? MANAGE_ROWS : MANAGE_ROWS.filter((r) => rowMatchesQuery(r, q));
   if (src) filtered = filtered.filter((r) => String(r.source_category || r.source_type || '').trim() === src);
   const mode = ($('mgSort') && $('mgSort').value) || 'upload';
-  const rows = sortRows(filtered, mode);
+  return sortRows(filtered, mode);
+}
+
+function renderManage() {
+  const rows = getManageViewRows();
   $('manageCount').textContent = `(${rows.length})`;
   const list = $('manageList');
   const pager = $('mgPager');
@@ -2234,7 +2262,7 @@ function renderManage() {
   if (MG_PAGE > pages) MG_PAGE = pages;
   const start = (MG_PAGE - 1) * MG_PAGE_SIZE;
   const slice = rows.slice(start, start + MG_PAGE_SIZE);
-  const showHeaders = mode === 'source';
+  const showHeaders = (($('mgSort') && $('mgSort').value) || 'upload') === 'source';
   let lastSrc = null;
   slice.forEach((r) => {
     if (showHeaders) {
