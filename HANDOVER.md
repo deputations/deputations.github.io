@@ -5652,3 +5652,102 @@ focus:          user verification + pre-existing smoke failure triage
   history; re-read it before touching `verify_admin.py`.
 ```
 
+## session shq-2026-08-12-002
+
+### started: 2026-08-12
+### ended: <pending>
+### model: claude-opus-4-8
+### driver: solo
+### branch: main
+### starting_head: 1791911
+### ending_head: <pending>
+### focus: upcoming-projects — re-apply carousel + keyboard nav (lost in reset)
+
+### inbound context read
+- Session resumed after the 305d30a/1791911 admin-Verify commit landed.
+- Working tree had reverted to the original bento-grid layout for
+  `/upcoming-projects.html` — the four CSS fixes and the keyboard nav from
+  the previous session (`shq-2026-08-11-001`, which the prior session
+  documented as "lost work") were not on disk.
+- Memory: deputation-handover-protocol (no pre-existing bundling),
+  upcoming-projects-js-sb-ok-gate (audit SB_OK), deputation-p3-4
+  (.venv-smoke Playwright, not Browser pane), deputation-nic-network-issue
+  (Supabase unreachable locally — but here, against http://localhost:8000
+  + the Cloudflare Worker proxy, live Supabase data DID load; the
+  verify_keys.py assertion had to switch from the offline-fallback
+  PROJECTS array names to a live DOM-order assertion).
+- User asked: re-apply carousel + fixes + keyboard nav (chose option 1
+  over "bento only" and "abandon").
+
+### work done
+1. **upcoming-projects.css**: replaced the bento grid (`display: grid;
+   grid-template-columns: 1fr 1fr`) with the flex/carousel track
+   (`display: flex; scroll-snap-type: x mandatory`), plus the full
+   coverflow / active-card / prev-next-in-3D transform rules, plus
+   side-floating absolute-positioned album buttons pinned to the album's
+   left/right edges. Removed `overflow: hidden` from `.up-project` and
+   `max-height: min(82vh, 760px)` from `.up-feed` / `.up-project` so
+   the suggest form's "Send suggestion" button is never clipped. Dropped
+   `.up-media` from 188/300 px to 96/168 px; placeholder glyph 84→56 px,
+   initial letter 4.5→3 rem. `align-items: flex-start` on the feed so
+   the flex stretch no longer overrides the fixed media height.
+2. **upcoming-projects.html**: wrapped the feed in `<section class="up-album">`
+   with prev/next buttons and the dot strip. Cache-busters: `?v=8 -> ?v=10`,
+   `?v=9 -> ?v=11`.
+3. **upcoming-projects.js**: restored the full album machinery
+   (`currentAlbum / setActiveIndex / paintDots / buildDots / swapAlbum /
+   setupAlbum / rePinActive`) plus the new `setupAlbumKeys / isTypingTarget`.
+   Wired them into the `Promise.all(jobs).then(...)` callback after
+   `applyLeaderboard`. ArrowLeft/Right step, Home/End jump to first/last,
+   form fields carve out (textarea / input / select / contenteditable
+   still own the arrows), and Ctrl/Cmd/Alt/Shift pass through.
+4. **CHANGELOG** — appended an Unreleased section describing the carousel
+   restore + keyboard nav.
+5. **Verified**:
+   - `verify_fixes.py` PASS — Send button 187×66 px on-screen, no max-height,
+     nav absolute-positioned 28 px from edges, media 84-156 px (was 188-300).
+   - `verify_keys.py` PASS — ArrowRight/Left, End, Home, form carve-out,
+     Ctrl+ArrowRight all green on 6 live cards.
+   - Live screenshot at `_verify/album_with_send.png` shows the expanded
+     form with Send button visible, side arrows floating, coverflow rotation
+     on the neighbour card, compact top.
+
+### decisions
+- **`align-items: flex-start` on `.up-feed`** instead of `stretch`. The
+  carousel positions cards with `translateZ` / `rotateY`; stretching them
+  to match the row height forced `.up-media` to expand past its declared
+  96 px. Flex-start lets each card keep its own height (coverflow makes
+  the visible "row height" effectively the active card's height).
+- **Home/End pick the shorter direction.** With 10 cards, jumping from
+  end to first via `prev` would traverse 9 cards and hit the swap-lock;
+  flipping to `next` from the halfway mark gets there in one step.
+- **Live DOM-order assertion in verify_keys.py.** The offline-fallback
+  PROJECTS array has 10 cards with hard-coded names, but the production
+  build pulls live Supabase data (6 cards right now). Asserting against
+  the actual DOM order makes the verify self-updating.
+
+### handoff state
+- committed: NONE YET — pending this commit.
+- not committed: NONE. `admin-ingest.js` is clean (was reverted by the
+  prior `git reset --hard bb5741f` and re-applied cleanly as 305d30a).
+- working tree: 4 files modified — upcoming-projects.{css,html,js} and
+  CHANGELOG.md. About to commit.
+- not pushed: this commit is the next push.
+
+### gotchas for next session
+- **The NIC Supabase block doesn't always apply.** This repo's local
+  Playwright runs against `http://localhost:8000`, which serves the raw
+  HTML/JS. If `window.SUPABASE_READY()` returns true (config.js sees the
+  Worker proxy as a "ready" Supabase endpoint), `loadProjects()` actually
+  pulls live data — verify scripts that hard-coded offline-fallback card
+  names will fail until they switch to a live DOM-order assertion.
+- **`overflow: hidden` on `.up-project` is the silent submit-clipper.**
+  The card's `border-radius: 26px` clips the corners, so removing the
+  overflow doesn't visibly bleed; but the rounded `::after` rim still
+  gets its clip via the mask, not via overflow. Safe to remove.
+- **Cache-buster + the manual editor.** The user's manual edits to the
+  three files don't always survive a tool round-trip if they happen to
+  coincide with my own `git reset --hard`. After this commit lands, push
+  immediately and trust the working tree to be safe until a future
+  session has to clean up again.
+

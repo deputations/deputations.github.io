@@ -26,6 +26,38 @@ counter_convention:
 
 ## [Unreleased]
 
+### Changed — Upcoming Projects restored to a carousel + keyboard nav
+The page had drifted back to a 2-column bento grid; the four card-layout
+fixes from the previous session (submit visible, side-floating prev/next,
+cards expand with content, top wasted space shrunk) and the keyboard album
+navigation were lost in the same `git reset --hard bb5741f` that wiped the
+admin Verify-tab work. Re-applied in a single commit:
+
+- `upcoming-projects.css`: replaced the bento grid with the flex/carousel
+  layout; removed `overflow: hidden` on `.up-project` and `max-height` on
+  the feed so the suggest form's "Send suggestion" button never clips;
+  side-floating prev/next arrows (absolute, vertical-centre, edge-pinned);
+  media block dropped from 188/300 px to 96/168 px and the placeholder
+  glyph + initial scaled to match.
+- `upcoming-projects.html`: wrapped the feed in `<section class="up-album">`
+  with prev/next buttons and the dot strip; cache-busters `?v=8 -> ?v=10`,
+  `?v=9 -> ?v=11`.
+- `upcoming-projects.js`: restored `currentAlbum / setActiveIndex /
+  paintDots / buildDots / swapAlbum / setupAlbum / rePinActive` plus the
+  new `setupAlbumKeys / isTypingTarget`. ArrowLeft/Right step the album,
+  Home/End jump to first/last, the handler carves out form fields so the
+  suggest textarea still uses the arrow keys to move the caret, and
+  Ctrl/Cmd/Alt/Shift presses pass through to the browser.
+
+Verified locally with `.venv-smoke/Scripts/python.exe verify_fixes.py`
+(layout: send button visible, no max-height, side arrows pinned, compact
+media) and `verify_keys.py` (ArrowRight/Left, End, Home, form carve-out,
+Ctrl+ArrowRight all pass).
+
+---
+
+## [7.4.4] — 2026-08-10
+
 ### Fixed — admin Projects tab edits no longer reached the public page
 `upcoming-projects.js` had its own `SB_OK` regex gate
 (`/^https:\/\/[a-z0-9]+\.supabase\.co/`) that flipped to `false` whenever

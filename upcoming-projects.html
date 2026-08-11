@@ -38,7 +38,7 @@
 
   <link rel="stylesheet" href="style.css?v=ms68">
   <link rel="stylesheet" href="navbar.css?v=6">
-  <link rel="stylesheet" href="upcoming-projects.css?v=8">
+  <link rel="stylesheet" href="upcoming-projects.css?v=10">
   <script src="config.js?v=sb4"></script>
 </head>
 <body>
@@ -95,9 +95,20 @@
     </section>
 
     <!-- ============ PROJECT FEED (rendered by JS) ============ -->
-    <section class="up-feed" id="upFeed" aria-label="Upcoming projects">
-      <div class="up-skeleton" aria-hidden="true"></div>
-      <div class="up-skeleton" aria-hidden="true"></div>
+    <section class="up-album" aria-roledescription="carousel" aria-label="Upcoming projects">
+      <div class="up-feed" id="upFeed">
+        <div class="up-skeleton" aria-hidden="true"></div>
+        <div class="up-skeleton" aria-hidden="true"></div>
+      </div>
+      <div class="up-album-controls">
+        <button type="button" class="up-album-btn" data-album="prev" aria-label="Previous project">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+        <ol class="up-album-dots" aria-label="Slide indicator"></ol>
+        <button type="button" class="up-album-btn" data-album="next" aria-label="Next project">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
     </section>
 
     <!-- ============ CTA FOOTER ============ -->
@@ -114,7 +125,7 @@
     <div class="up-sr" aria-live="polite"></div>
   </main>
 
-  <script src="upcoming-projects.js?v=9"></script>
+  <script src="upcoming-projects.js?v=11"></script>
   <script defer src="site-widgets.js?v=26"></script>
   <!-- BEGIN hero-wave -->
   <script type="importmap">

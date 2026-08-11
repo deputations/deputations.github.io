@@ -208,12 +208,134 @@
 .up-turnout-bar > i { display: block; height: 100%; transform-origin: left; transform: scaleX(0); background: var(--up-grad); transition: transform .9s var(--up-ease-out); }
 
 /* =========================================================================
-   FEED / BENTO
+   FEED / ALBUM  (horizontal track; one-card-peek, scroll-snap, coverflow)
    ========================================================================= */
-.up-feed { display: grid; gap: 1.5rem; }
-@media (min-width: 880px) {
-  .up-feed { grid-template-columns: 1fr 1fr; align-items: stretch; }
-  .up-project.is-featured { grid-column: 1 / -1; }
+.up-album {
+  position: relative; perspective: 1400px; perspective-origin: 50% 50%;
+  margin: 0 -1rem; padding: 0 1rem;
+}
+.up-feed {
+  display: flex; gap: 1.5rem; overflow-x: auto; overflow-y: visible;
+  scroll-snap-type: x mandatory; scroll-padding-inline: 1rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; -ms-overflow-style: none;
+  padding: 1.5rem calc(50% - min(310px, 31vw)) ; /* equal half-card padding on both sides → active card is centred */
+  min-height: 320px;
+  /* Cards now grow with their content (no more inner scroll / clipped submit). */
+  align-items: flex-start;  /* let each card keep its own height; coverflow uses transforms, not stretch */
+}
+.up-feed::-webkit-scrollbar { display: none; }
+/* snap each card to the centre; the JS-driven swap uses coverflow so this is the touch fallback */
+.up-feed > .up-project, .up-feed > .up-skeleton {
+  flex: 0 0 min(560px, 84vw); scroll-snap-align: center; scroll-snap-stop: always;
+  height: auto; max-height: none; overflow: visible;
+}
+.up-feed > .up-skeleton { min-height: 300px; }
+@media (min-width: 1100px) {
+  .up-feed > .up-project, .up-feed > .up-skeleton { flex-basis: min(620px, 62vw); }
+}
+/* mobile: drop to full-width single column (no coverflow) */
+@media (max-width: 720px) {
+  .up-album { margin: 0; padding: 0; perspective: none; }
+  .up-feed { overflow-x: hidden; flex-direction: column; gap: 1.2rem; padding: 0; }
+  .up-feed > .up-project, .up-feed > .up-skeleton { flex-basis: auto; width: 100%; scroll-snap-align: none; scroll-snap-stop: normal; max-height: none; height: auto; }
+}
+
+/* ---------- Active card (the one in the spotlight) ---------- */
+.up-project { transition: transform .55s var(--up-ease-out), box-shadow .3s, opacity .35s; transform-origin: 50% 50%; }
+/* When the swap is idle, push neighbours back into 3D space and lift the active card.
+   rotateY on the neighbours is what gives the album its "coverflow" depth. */
+@media (min-width: 901px) and (hover: hover) and (pointer: fine) {
+  .up-feed:not(.is-swapping-next):not(.is-swapping-prev) .up-project:not(.is-active) {
+    opacity: .5; filter: saturate(.65) brightness(.94);
+    transform: perspective(1100px) rotateY(0deg) translateZ(-60px) scale(.92);
+  }
+  /* The card immediately before the active one folds back to the left */
+  .up-feed:not(.is-swapping-next):not(.is-swapping-prev) .up-project.is-prev {
+    transform: perspective(1100px) rotateY(34deg) translateZ(-30px) translateX(-4%) scale(.88);
+  }
+  /* The card immediately after folds back to the right */
+  .up-feed:not(.is-swapping-next):not(.is-swapping-prev) .up-project.is-next {
+    transform: perspective(1100px) rotateY(-34deg) translateZ(-30px) translateX(4%) scale(.88);
+  }
+  .up-feed:not(.is-swapping-next):not(.is-swapping-prev) .up-project.is-active {
+    transform: perspective(1100px) translateZ(60px) scale(1);
+    box-shadow: 0 50px 100px -40px rgba(0,0,0,.7);
+  }
+}
+
+/* ---------- Coverflow swap animations ---------- */
+@keyframes up-coverflow-out-next {
+  0%   { transform: translateX(0) translateZ(40px) rotateY(0) scale(1); opacity: 1; filter: none; }
+  100% { transform: translateX(-58%) translateZ(-40px) rotateY(-72deg) scale(.82); opacity: 0; filter: blur(2px); }
+}
+@keyframes up-coverflow-in-next {
+  0%   { transform: translateX(58%) translateZ(-40px) rotateY(72deg) scale(.82); opacity: 0; filter: blur(2px); }
+  100% { transform: translateX(0) translateZ(40px) rotateY(0) scale(1); opacity: 1; filter: none; }
+}
+@keyframes up-coverflow-out-prev {
+  0%   { transform: translateX(0) translateZ(40px) rotateY(0) scale(1); opacity: 1; filter: none; }
+  100% { transform: translateX(58%) translateZ(-40px) rotateY(72deg) scale(.82); opacity: 0; filter: blur(2px); }
+}
+@keyframes up-coverflow-in-prev {
+  0%   { transform: translateX(-58%) translateZ(-40px) rotateY(-72deg) scale(.82); opacity: 0; filter: blur(2px); }
+  100% { transform: translateX(0) translateZ(40px) rotateY(0) scale(1); opacity: 1; filter: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .up-feed.is-swapping-next .up-project.is-active    { animation: up-coverflow-out-next 560ms var(--up-ease-out) forwards; }
+  .up-feed.is-swapping-next .up-project.is-incoming  { animation: up-coverflow-in-next  560ms var(--up-ease-out) forwards; }
+  .up-feed.is-swapping-prev .up-project.is-active    { animation: up-coverflow-out-prev 560ms var(--up-ease-out) forwards; }
+  .up-feed.is-swapping-prev .up-project.is-incoming  { animation: up-coverflow-in-prev  560ms var(--up-ease-out) forwards; }
+}
+/* during the swap, neutralise the spotlight dim on non-active cards */
+.up-feed.is-swapping-next .up-project,
+.up-feed.is-swapping-prev .up-project { opacity: 1 !important; filter: none !important; }
+
+/* ---------- Album controls (side-floating prev/next, dot indicator stays centered below) ---------- */
+.up-album-controls {
+  display: flex; align-items: center; justify-content: center; gap: 1.1rem;
+  margin-top: 1.4rem;
+}
+.up-album-btn {
+  --magx: 0; --magy: 0;
+  /* Side-floating vertical-centre: anchored to the album viewport, outside the card flow. */
+  position: absolute; top: 50%; transform: translate(var(--magx), calc(-50% + var(--magy)));
+  z-index: 6;
+  width: 48px; height: 48px; border-radius: 999px; cursor: pointer;
+  display: inline-grid; place-items: center;
+  background: var(--up-card); color: var(--up-text);
+  border: 1px solid var(--up-border-2);
+  backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: 0 16px 40px -16px rgba(0,0,0,.6), 0 0 0 1px color-mix(in srgb, var(--up-text) 4%, transparent) inset;
+  transition: color .2s, border-color .2s, transform .14s var(--up-ease-out), box-shadow .2s, opacity .25s;
+}
+.up-album-btn[data-album="prev"] { left: clamp(8px, 2.5vw, 28px); }
+.up-album-btn[data-album="next"] { right: clamp(8px, 2.5vw, 28px); }
+.up-album-btn:hover { color: var(--up-primary); border-color: var(--up-primary); box-shadow: 0 18px 44px -16px color-mix(in srgb, var(--up-primary) 55%, transparent); transform: translate(var(--magx), calc(-50% + var(--magy))) scale(1.06); }
+.up-album-btn:active { transform: translate(var(--magx), calc(-50% + var(--magy))) scale(.94); }
+.up-album-btn svg { width: 20px; height: 20px; }
+.up-album-btn[disabled] { opacity: .35; cursor: not-allowed; }
+.up-album-dots {
+  display: inline-flex; align-items: center; gap: .5rem; list-style: none; padding: 0; margin: 0;
+}
+.up-album-dot {
+  width: 9px; height: 9px; border-radius: 999px;
+  background: color-mix(in srgb, var(--up-text) 22%, transparent);
+  border: 1px solid var(--up-border);
+  transition: background .25s, width .35s var(--up-ease-spring), border-color .25s;
+  cursor: pointer; padding: 0; font: inherit;
+}
+.up-album-dot.is-active {
+  width: 28px; background: var(--up-grad); border-color: transparent;
+  box-shadow: 0 0 14px -2px color-mix(in srgb, var(--up-accent) 70%, transparent);
+}
+.up-album-dot:focus-visible { outline: 2px solid var(--up-primary); outline-offset: 2px; }
+
+@media (max-width: 720px) {
+  .up-album-controls { margin-top: 1rem; }
+  .up-album-btn { width: 42px; height: 42px; }
+  .up-album-btn[data-album="prev"] { left: 6px; }
+  .up-album-btn[data-album="next"] { right: 6px; }
 }
 
 .up-skeleton {
@@ -231,7 +353,7 @@
    ========================================================================= */
 .up-project {
   --mx: 50%; --my: 50%; --rx: 0deg; --ry: 0deg; --up-heat: 0; --magx: 0; --magy: 0;
-  position: relative; border-radius: 26px; overflow: hidden;
+  position: relative; border-radius: 26px;
   background: var(--up-card); border: 1px solid var(--up-border);
   backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%);
   box-shadow:
@@ -277,9 +399,6 @@
 
 /* inner wrapper carries the scroll reveal (so tilt on .up-project never collides) */
 .up-inner { display: flex; flex-direction: column; height: 100%; }
-@media (min-width: 880px) {
-  .up-project.is-featured .up-inner { display: grid; grid-template-columns: 1.08fr 1fr; align-items: stretch; }
-}
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .up-inner { animation: up-reveal linear both; animation-timeline: view(); animation-range: entry 2% cover 24%; }
@@ -288,8 +407,8 @@
 }
 
 /* ---------- Media ---------- */
-.up-media { position: relative; min-height: 188px; display: grid; place-items: center; overflow: hidden; background: var(--up-card-2); }
-.up-project.is-featured .up-media { min-height: 300px; }
+.up-media { position: relative; height: 96px; display: grid; place-items: center; overflow: hidden; background: var(--up-card-2); }
+.up-project.is-featured .up-media { height: 168px; }
 .up-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .up-media--ph {
   position: absolute; inset: 0;
@@ -298,8 +417,8 @@
     radial-gradient(120% 120% at 100% 100%, color-mix(in srgb, var(--up-accent) 42%, transparent), transparent 60%),
     linear-gradient(calc(120deg + var(--i, 0) * 47deg), color-mix(in srgb, var(--up-primary) 22%, var(--up-bg)), color-mix(in srgb, var(--up-accent) 26%, var(--up-bg)));
 }
-.up-ph-glyph { position: relative; width: 84px; height: 84px; opacity: .92; color: #fff; filter: drop-shadow(0 8px 24px rgba(0,0,0,.35)); }
-.up-ph-initial { position: absolute; right: 14px; bottom: 8px; font-family: "Unbounded", sans-serif; font-weight: 800; font-size: 4.5rem; line-height: 1; color: rgba(255,255,255,.16); pointer-events: none; user-select: none; }
+.up-ph-glyph { position: relative; width: 56px; height: 56px; opacity: .92; color: #fff; filter: drop-shadow(0 8px 24px rgba(0,0,0,.35)); }
+.up-ph-initial { position: absolute; right: 14px; bottom: 6px; font-family: "Unbounded", sans-serif; font-weight: 800; font-size: 3rem; line-height: 1; color: rgba(255,255,255,.16); pointer-events: none; user-select: none; }
 .up-status {
   position: absolute; top: 14px; left: 14px; z-index: 2;
   display: inline-flex; align-items: center; gap: .4rem;

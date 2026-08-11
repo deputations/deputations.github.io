@@ -343,6 +343,178 @@
     io.observe(hero);
   }
 
+  /* ---------- Album (horizontal carousel with coverflow swap) ---------- */
+  function currentAlbum() {
+    var feed = document.getElementById("upFeed");
+    return {
+      feed: feed,
+      album: feed ? feed.closest(".up-album") : null,
+      cards: feed ? Array.prototype.slice.call(feed.querySelectorAll(".up-project")) : [],
+      active: feed ? feed.querySelector(".up-project.is-active") : null
+    };
+  }
+  function setActiveIndex(idx) {
+    var a = currentAlbum(); if (!a.feed) return;
+    var cards = a.cards; if (!cards.length) return;
+    var i = ((idx % cards.length) + cards.length) % cards.length;
+    a.active = cards[i];
+    cards.forEach(function (c) { c.classList.remove("is-active", "is-incoming", "is-prev", "is-next"); });
+    cards[i].classList.add("is-active");
+    if (cards[i - 1]) cards[i - 1].classList.add("is-prev");
+    if (cards[i + 1]) cards[i + 1].classList.add("is-next");
+    paintDots(i);
+    var prevBtn = a.album && a.album.querySelector('.up-album-btn[data-album="prev"]');
+    var nextBtn = a.album && a.album.querySelector('.up-album-btn[data-album="next"]');
+    if (prevBtn) prevBtn.disabled = (cards.length <= 1);
+    if (nextBtn) nextBtn.disabled = (cards.length <= 1);
+  }
+  function paintDots(activeIdx) {
+    var a = currentAlbum(); if (!a.album) return;
+    var dots = a.album.querySelectorAll(".up-album-dot");
+    dots.forEach(function (d, i) {
+      d.classList.toggle("is-active", i === activeIdx);
+      d.setAttribute("aria-current", i === activeIdx ? "true" : "false");
+    });
+  }
+  function buildDots() {
+    var a = currentAlbum(); if (!a.album) return;
+    var list = a.album.querySelector(".up-album-dots"); if (!list) return;
+    list.innerHTML = a.cards.map(function (c, i) {
+      return '<li><button type="button" class="up-album-dot" data-dot="' + i + '" aria-label="Go to project ' + (i + 1) + '"></button></li>';
+    }).join("");
+  }
+  function swapAlbum(dir, targetIdx) {
+    var a = currentAlbum(); if (!a.feed || a.feed.__swapping) return;
+    if (!a.cards.length || a.cards.length < 2) return;
+    var idx = a.cards.indexOf(a.active);
+    if (idx < 0) idx = 0;
+    var nextIdx = (typeof targetIdx === "number") ? targetIdx : (dir === "next" ? idx + 1 : idx - 1);
+    if (nextIdx < 0 || nextIdx >= a.cards.length) return; // clamp at ends (no looping — feels intentional)
+    if (nextIdx === idx) return;
+    var outgoing = a.active;
+    var incoming = a.cards[nextIdx];
+    a.feed.__swapping = true;
+    incoming.classList.add("is-incoming");
+    a.feed.classList.add(dir === "next" ? "is-swapping-next" : "is-swapping-prev");
+    var newNextIdx = nextIdx + 1;
+    if (a.cards[newNextIdx]) a.cards[newNextIdx].classList.add("is-next");
+    var newPrevIdx = idx - 1;
+    if (a.cards[newPrevIdx]) a.cards[newPrevIdx].classList.add("is-prev");
+    var title = (incoming.querySelector(".up-name") || {}).textContent || "";
+    announce("Project " + (nextIdx + 1) + " of " + a.cards.length + (title ? ": " + title : ""));
+
+    var cleaned = false;
+    function finish() {
+      if (cleaned) return; cleaned = true;
+      a.feed.classList.remove("is-swapping-next", "is-swapping-prev");
+      a.feed.__swapping = false;
+      setActiveIndex(nextIdx);
+      try {
+        var feed = a.feed;
+        var card = feed.querySelector(".up-project.is-active");
+        if (!card) return;
+        var cw = card.offsetWidth;
+        var fr = feed.getBoundingClientRect();
+        var cr = card.getBoundingClientRect();
+        var target = (cr.left - fr.left) + feed.scrollLeft - (fr.width / 2 - cw / 2);
+        var max = feed.scrollWidth - feed.clientWidth;
+        if (target < 0) target = 0;
+        if (target > max) target = max;
+        if (MM_MOTION) feed.scrollTo({ left: target, behavior: "smooth" });
+        else feed.scrollLeft = target;
+      } catch (e) {}
+    }
+    if (MM_MOTION) {
+      var done = 0;
+      function once() { if (++done >= 2) finish(); }
+      outgoing.addEventListener("animationend", once, { once: true });
+      incoming.addEventListener("animationend", once, { once: true });
+      setTimeout(finish, 700);
+    } else {
+      finish();
+    }
+  }
+  function setupAlbum() {
+    var a = currentAlbum(); if (!a.album) return;
+    var cards = a.cards;
+    buildDots();
+    if (!a.feed.querySelector(".up-project.is-active") && cards.length) setActiveIndex(0);
+    else paintDots(cards.indexOf(a.feed.querySelector(".up-project.is-active")));
+    var prevBtn = a.album.querySelector('.up-album-btn[data-album="prev"]');
+    var nextBtn = a.album.querySelector('.up-album-btn[data-album="next"]');
+    if (prevBtn) prevBtn.addEventListener("click", function () { swapAlbum("prev"); });
+    if (nextBtn) nextBtn.addEventListener("click", function () { swapAlbum("next"); });
+    var dots = a.album.querySelector(".up-album-dots");
+    if (dots) dots.addEventListener("click", function (e) {
+      var d = e.target.closest(".up-album-dot"); if (!d) return;
+      var i = parseInt(d.getAttribute("data-dot") || "-1", 10);
+      if (i < 0) return;
+      var cur = a.cards.indexOf(a.active);
+      if (i === cur) return;
+      swapAlbum(i > cur ? "next" : "prev", i);
+    });
+  }
+  // After applyLeaderboard has reordered the cards, re-pin is-active to the
+  // card the user is currently looking at (by name).
+  function rePinActive() {
+    var a = currentAlbum(); if (!a.feed) return;
+    var activeText = a.active ? (a.active.querySelector(".up-name") || {}).textContent : null;
+    if (!activeText) return;
+    var target = Array.from(a.feed.querySelectorAll(".up-project")).find(function (c) {
+      return (c.querySelector(".up-name") || {}).textContent === activeText;
+    });
+    if (target && target !== a.active) {
+      Array.from(a.feed.querySelectorAll(".up-project")).forEach(function (c) {
+        c.classList.remove("is-active", "is-incoming");
+      });
+      target.classList.add("is-active");
+      var idx = Array.from(a.feed.querySelectorAll(".up-project")).indexOf(target);
+      paintDots(idx);
+    }
+  }
+
+  /* ---------- Keyboard navigation (page-wide, with form-field carve-out) ---------- */
+  // Mirrors a carousel pattern: ArrowLeft/Right step the album, Home/End jump
+  // to the first/last card. Swallowed when the user is typing into a form
+  // field (suggest textarea / name / email) or any element that legitimately
+  // owns those keys (input, textarea, contenteditable, select).
+  function isTypingTarget(t) {
+    if (!t || !t.tagName) return false;
+    var tag = t.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+    if (t.isContentEditable) return true;
+    return false;
+  }
+  function setupAlbumKeys() {
+    addEventListener("keydown", function (e) {
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return; // leave browser shortcuts alone
+      if (isTypingTarget(e.target)) return;                        // don't hijack arrows while typing
+      var a = currentAlbum();
+      if (!a.feed || !a.cards.length) return;
+      var cur = a.cards.indexOf(a.active);
+      if (cur < 0) cur = 0;
+      if (e.key === "ArrowRight") { e.preventDefault(); swapAlbum("next"); }
+      else if (e.key === "ArrowLeft")  { e.preventDefault(); swapAlbum("prev"); }
+      else if (e.key === "Home")        {
+        e.preventDefault();
+        if (cur !== 0) {
+          // Pick the shorter direction so a single swap gets us there instead
+          // of being swallowed by the swap-lock on a long multi-step traverse.
+          var dir = (cur > a.cards.length / 2) ? "next" : "prev";
+          swapAlbum(dir, 0);
+        }
+      }
+      else if (e.key === "End")         {
+        e.preventDefault();
+        var last = a.cards.length - 1;
+        if (cur !== last) {
+          var dir2 = (cur < last / 2) ? "next" : "prev";
+          swapAlbum(dir2, last);
+        }
+      }
+    });
+  }
+
   /* ---------- Leaderboard (decided ONCE on load; layout-stable) ---------- */
   function applyLeaderboard() {
     var feed = document.getElementById("upFeed");
@@ -665,7 +837,14 @@
         setMeter(card, r ? r.ups : 0, r ? r.downs : 0, false);
       });
     });
-    Promise.all(jobs).then(function () { applyLeaderboard(); setupCountUps(); refreshStats(); });
+    Promise.all(jobs).then(function () {
+      applyLeaderboard();
+      rePinActive();
+      setupAlbum();           // builds dots + wires prev/next/dots AFTER reorder
+      setupAlbumKeys();       // page-wide ArrowLeft/Right/Home/End (with form carve-out)
+      setupCountUps();
+      refreshStats();
+    });
 
     feed.addEventListener("click", function (e) {
       var vb = e.target.closest(".up-btn[data-vote]");
