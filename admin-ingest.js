@@ -1003,6 +1003,18 @@ function wireApp() {
   // side-effects (tab persistence, mark-flag context) identical to a manual click.
   window.openManageForRow = (id) => {
     OPEN_MANAGE_ROW = String(id);
+    // Reset any persisted Manage filter that could hide the row:
+    //   - MG_PAGE comes from saveUI({mgPage:...}) — the admin's last page (e.g. 7)
+    //     lands on a slice that doesn't contain the Verify row.
+    //   - mgStatus saved as draft/rejected/marked excludes approved rows.
+    //   - mgSearch / mgSource from a prior session may not match the row.
+    // The Verify tab only deals with approved rows, so landing on the approved
+    // status + page 1 + empty search is always where the row lives.
+    MG_PAGE = 1;
+    if ($('mgStatus')) $('mgStatus').value = 'approved';
+    if ($('mgSearch')) $('mgSearch').value = '';
+    if ($('mgSource')) $('mgSource').value = '';
+    saveUI({ mgPage: 1, mgStatus: 'approved', mgSearch: '', mgSource: '' });
     document.querySelectorAll('.tabs button').forEach((x) => x.classList.remove('active'));
     const manageBtn = document.querySelector('.tabs button[data-tab="manage"]');
     if (manageBtn) manageBtn.classList.add('active');
