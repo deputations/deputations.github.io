@@ -12,8 +12,10 @@ so no real backend (and no magic-link login) is needed. Exercises:
 Screenshots land in _verify/.
 """
 import json
+import re
 import sys
 import time
+from datetime import date, timedelta
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
@@ -34,6 +36,15 @@ OUT = ROOT / "_verify"
 OUT.mkdir(exist_ok=True)
 
 
+# Fixture dates are RELATIVE to the run date. Hard-coded 2026-06/07 dates were
+# in the future when this script was written and quietly rotted into the past,
+# at which point the "expired" quick chip matched all 60 drafts instead of 10
+# and the Pack E bulk-reject assertions could never pass.
+TODAY = date.today()
+EXPIRED_DATE = (TODAY - timedelta(days=20)).isoformat()
+FUTURE_DATE = (TODAY + timedelta(days=45)).isoformat()
+
+
 def draft(i):
     past = i <= 10  # ten expired drafts for the "expired" chip test
     return {
@@ -42,8 +53,8 @@ def draft(i):
         "location_city": "Delhi", "confidence": ["high", "medium", "low"][i % 3],
         "status": "draft", "source_type": "employment_news", "source_category": "EN Test",
         "source_file_url": "", "official_notification_link": "",
-        "notification_date": "2026-05-01",
-        "last_date_to_apply": "2026-06-01" if past else "2026-07-01",
+        "notification_date": (TODAY - timedelta(days=60)).isoformat(),
+        "last_date_to_apply": EXPIRED_DATE if past else FUTURE_DATE,
         "created_at": f"2026-06-0{(i % 9) + 1}T10:00:00", "ingest_job_id": 1,
         "raw_extraction": None,
     }
@@ -56,7 +67,8 @@ def live(i):
         "location_city": "Mumbai", "status": "approved",
         "source_type": "notification", "source_category": "NCLT",
         "official_notification_link": "https://example.gov.in/x.pdf",
-        "notification_date": "2026-05-20", "last_date_to_apply": "2026-07-15",
+        "notification_date": (TODAY - timedelta(days=40)).isoformat(),
+        "last_date_to_apply": FUTURE_DATE,
         "created_at": f"2026-05-{(i % 28) + 1:02d}T09:00:00", "raw_extraction": None,
     }
 
@@ -71,6 +83,40 @@ def page_slice(rows, url):
     off = int(qs.get("offset", ["0"])[0])
     lim = int(qs.get("limit", ["1000"])[0])
     return rows[off:off + lim]
+
+
+def count_for(url):
+    """Row count for a countOf() probe, derived from the LIVE fixture lists.
+
+    countOf() reads `Content-Range: a-b/N` and the page paints that N into the
+    tab badges (`#draftCount` etc.). Returning a constant here made the badge
+    contradict the 60 rows the same fixture serves to the list query, so the
+    "(60)" and "(50)" waits below could never pass. Deriving N from DRAFTS /
+    MANAGE keeps the badge and the list in agreement, including after the bulk
+    reject removes ten rows.
+    """
+    if "status=eq.draft" in url:
+        if "marked_for_review=eq.true" in url:
+            return 0
+        return len(DRAFTS)
+    if "status=eq.approved" in url:
+        return len(MANAGE)
+    return 0
+
+
+def apply_bulk_patch(url, body):
+    """Mirror a bulk `?id=in.(...)` status PATCH onto the fixture lists.
+
+    Without this the queue count never moves and the post-reject "(50)" wait
+    hangs: the page re-reads the count straight after the PATCH.
+    """
+    if "status" not in body or "rejected" not in body:
+        return
+    m = re.search(r"id=in\.\(([^)]*)\)", url)
+    if not m:
+        return
+    ids = {int(x) for x in m.group(1).split(",") if x.strip().isdigit()}
+    DRAFTS[:] = [d for d in DRAFTS if d["id"] not in ids]
 
 
 def sb_handler(route):
@@ -94,11 +140,14 @@ def sb_handler(route):
         return
     if "/rest/v1/vacancies" in url:
         if method == "PATCH":
-            STATE["patches"].append((url, req.post_data or ""))
+            body = req.post_data or ""
+            STATE["patches"].append((url, body))
+            apply_bulk_patch(url, body)
             reply_json(route, [])
             return
         if "select=id&limit=1" in url:  # countOf()
-            reply_json(route, [], extra_headers={"Content-Range": "0-0/3"})
+            n = count_for(url)
+            reply_json(route, [], extra_headers={"Content-Range": f"0-0/{n}"})
             return
         if "status=eq.draft" in url:
             if not STATE["draft_401_done"]:  # Pack A: expire the token once
@@ -110,6 +159,28 @@ def sb_handler(route):
         reply_json(route, page_slice(MANAGE, url))  # Manage list (status=eq.approved)
         return
     reply_json(route, {"error": "not mocked"}, status=404)
+
+
+def wait_badge(page, element_id, expected, timeout=10000):
+    """Wait for a tab badge to read exactly `expected`, reporting what it held.
+
+    A bare wait_for_function() on the badge text only ever says "timeout", which
+    hides whether the badge was empty (still loading) or simply held a different
+    number (fixture disagreeing with itself). Re-raise with the actual text.
+    """
+    try:
+        page.wait_for_function(
+            "([id, want]) => (document.getElementById(id)?.textContent || '').trim() === want",
+            arg=[element_id, expected],
+            timeout=timeout,
+        )
+    except Exception:
+        got = page.evaluate(
+            "(id) => (document.getElementById(id)?.textContent || '').trim()", element_id
+        )
+        raise AssertionError(
+            f"#{element_id} never reached {expected!r} within {timeout}ms — last value {got!r}"
+        ) from None
 
 
 def main():
@@ -140,7 +211,7 @@ def main():
         print("== boot + Pack A (401 -> refresh -> retry) ==")
         page.goto(f"http://localhost:{PORT}/admin-ingest.html")
         page.wait_for_selector("#app:not(.hidden)", timeout=15000)
-        page.wait_for_function("document.getElementById('draftCount').textContent.includes('60')", timeout=10000)
+        wait_badge(page, "draftCount", "(60)")
         check(STATE["draft_401_done"], "first drafts fetch 401'd, queue still loaded (refresh+retry)")
 
         print("== Review queue + Pack E (filtered bulk) ==")
@@ -155,7 +226,7 @@ def main():
         check("(10)" in page.locator("#filtRejectBtn").inner_text(), "Reject filtered shows (10)")
         page.screenshot(path=str(OUT / "admin_filtered_bar.png"))
         page.click("#filtRejectBtn")  # confirm auto-accepted
-        page.wait_for_function("document.getElementById('draftCount').textContent.includes('50')", timeout=10000)
+        wait_badge(page, "draftCount", "(50)")
         check(any("id=in." in u and '"rejected"' in b for u, b in STATE["patches"]),
               "one id=in.() PATCH with status rejected sent")
         check("Rejected 10" in page.locator("#toast").inner_text(), "undo toast reports Rejected 10")

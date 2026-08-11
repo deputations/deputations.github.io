@@ -22,7 +22,33 @@ and renders whatever it gets back.
 """
 from __future__ import annotations
 
+import json
+
+from tests.fixtures.constants import REPO_ROOT
 from tests.pages.route_helpers import reply_json
+
+
+def real_vacancy_ids(n: int) -> list[str]:
+    """The first `n` distinct Vacancy_IDs actually present in data/vacancies.json.
+
+    The ranked-match rows are clickable only when `getItemById()` can resolve
+    their id against the loaded dataset — `openVacancyModal()` returns silently
+    for an id it doesn't know. Hard-coding ids here rotted the moment the daily
+    cron rebuilt the dump, and a dead row fails as an unexplained modal timeout
+    rather than as "this id doesn't exist", so read them from the data instead.
+    """
+    rows = json.loads((REPO_ROOT / "data" / "vacancies.json").read_text(encoding="utf-8"))
+    if isinstance(rows, dict):
+        rows = rows.get("vacancies", [])
+    out: list[str] = []
+    for row in rows:
+        vid = str(row.get("Vacancy_ID") or "").strip()
+        if vid and vid not in out:
+            out.append(vid)
+        if len(out) == n:
+            break
+    assert len(out) == n, f"data/vacancies.json yielded only {len(out)} distinct ids"
+    return out
 
 
 def test_ai_search_bar_is_visible_on_load(page, base_url: str):
@@ -131,11 +157,13 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
     page.wait_for_selector("#searchPost")
     page.wait_for_selector("#aiSearchInput", timeout=5000)
 
-    # Three fixture matches — IDs match the data/vacancies.json shape so the
-    # modal-open path can resolve them via getItemById().
+    # Three fixture matches. The display fields are invented (the panel renders
+    # whatever the Edge Function returns), but every `vacancy_id` must be a REAL
+    # one from data/vacancies.json — see real_vacancy_ids() for why.
+    vid_1, vid_2, vid_3 = real_vacancy_ids(3)
     fixture_results = [
         {
-            "vacancy_id": "A-2026-L6-014",
+            "vacancy_id": vid_1,
             "post_name": "Accountant",
             "organisation": "NMPB",
             "ministry": "AYUSH",
@@ -144,7 +172,7 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
             "score": 0.704,
         },
         {
-            "vacancy_id": "A-2026-L8-022",
+            "vacancy_id": vid_2,
             "post_name": "Deputy Director (Finance)",
             "organisation": "Ministry of Finance",
             "ministry": "Finance",
@@ -153,7 +181,7 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
             "score": 0.617,
         },
         {
-            "vacancy_id": "A-2026-L10-005",
+            "vacancy_id": vid_3,
             "post_name": "Director",
             # Ampersand on purpose — the sub-line used to be escaped twice and
             # rendered "Small &amp; Medium" on screen.
@@ -202,7 +230,7 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
     #   0.617 → 37%
     #   0.545 → below floor → 0%
     first = rows.first
-    assert first.get_attribute("data-vid") == "A-2026-L6-014"
+    assert first.get_attribute("data-vid") == vid_1
     score_text = first.locator(".semantic-score").text_content() or ""
     assert "86%" in score_text, f"top hit should read 86%: {score_text!r}"
 
@@ -235,8 +263,22 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
 
     # Clicking a row opens the existing modal. The modal is a <dialog>;
     # it's "open" when the `open` attribute is set.
+    #
+    # Centre the row first. Playwright's own scroll leaves it flush against the
+    # bottom edge, where the fixed visit-counter widget lives and where a late
+    # layout shift moved the click onto the NEXT row — on CI that silently
+    # opened nothing, because the row below carried a different vacancy.
+    first.evaluate("el => el.scrollIntoView({ block: 'center' })")
+    page.wait_for_timeout(200)
     first.click()
     page.wait_for_selector("#modal[open]", timeout=5000)
+
+    # The modal that opened must be the one belonging to the row we clicked —
+    # openVacancyModal() writes ?v=<id>, so a mis-landed click is caught here
+    # with a readable message instead of a bare timeout above.
+    assert f"v={vid_1}" in page.url, (
+        f"modal opened for the wrong row: url={page.url!r}, expected v={vid_1}"
+    )
     body_text = page.locator("#modalBody").text_content() or ""
     assert len(body_text) > 20, f"modal body too short: {body_text!r}"
 

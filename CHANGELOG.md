@@ -97,6 +97,47 @@ Verified with `scripts/_verify_kpi_order.py` against the real dataset:
 order + tones + filter keys correct, Total 527, Active 170, Ministries 33,
 and the Active card still toggles `aria-pressed` on click.
 
+### Fixed — green CI: semantic-search modal timeout + admin badge waits
+The Smoke tests workflow had been red on every run for weeks, on two
+independent faults.
+
+**1. `test_semantic_search_renders_ranked_matches` (the pytest step).** Two of
+the three fixture `vacancy_id`s never existed in `data/vacancies.json`, despite
+a comment claiming all three resolved. `openVacancyModal()` returns silently
+when `getItemById()` misses, so those rows were dead on click — no error, no
+console line. On the Linux runner the click meant for row 1 landed on row 2
+(row 1 sits flush against the viewport bottom, under the fixed visit-counter
+widget), and the test timed out waiting for `#modal[open]`. The failure
+screenshot shows the focus ring on the second row.
+
+- `tests/test_semantic_search.py`: new `real_vacancy_ids(n)` reads ids out of
+  `data/vacancies.json` at test time, so the daily rebuild can't rot them; the
+  row is centred before the click; and the test now asserts `?v=<id>` matches
+  the row it clicked, turning a mis-landed click into a readable failure.
+- `app.js`: the semantic click handler resolves the id first and, on a miss,
+  logs `[semantic] no loaded vacancy for <id>` and writes a line into
+  `#semanticResultsStatus` instead of doing nothing. It sets the status element
+  directly rather than calling `showSemanticMessage()`, which clears the list —
+  one stale row shouldn't wipe the other matches.
+
+**2. `scripts/verify_admin.py` (the admin step).** The `countOf()` stub returned
+a hard-coded `Content-Range: 0-0/3` while the same fixture served 60 rows, so
+`#draftCount` painted "(3)" and the `includes('60')` wait could never pass. The
+fixture's dates were also hard-coded 2026-06/07 — future when written, past by
+now — so the "expired" quick chip matched all 60 drafts instead of 10. Counts
+are now derived from the live fixture lists, a bulk `id=in.()` reject really
+removes those rows, dates are relative to `date.today()`, and the badge waits
+report the value they actually saw.
+
+**3. `.github/workflows/smoke-tests.yml`:** dropped the "Upload HTML report"
+step — it pointed at a file nothing writes, so every run ended on a "No files
+were found" warning.
+
+HTML cache-buster on `app.js` bumped `?v=ms77 -> ?v=ms78`.
+
+Local: `pytest tests/` 44 passed, 1 skipped; `scripts/verify_admin.py` all
+checks passed.
+
 ---
 
 ## [7.4.4] — 2026-08-10

@@ -3979,9 +3979,22 @@ function syncCardSortUI() {
             const li = e.target.closest('li[data-vid]');
             if (!li) return;
             const vid = li.getAttribute('data-vid');
-            if (vid && typeof openVacancyModal === 'function') {
-                openVacancyModal(vid);
+            if (!vid || typeof openVacancyModal !== 'function') return;
+            // The AI index and the loaded dataset can drift apart (a row pulled
+            // from Supabase after the last JSON dump, say). openVacancyModal()
+            // returns silently for an id it can't resolve, so the row would
+            // just look broken — say so instead of dying quietly.
+            // Note the status line only — showSemanticMessage() would clear the
+            // whole panel, and one stale row shouldn't wipe the other matches.
+            if (!getItemById(vid)) {
+                console.warn('[semantic] no loaded vacancy for', vid);
+                if (semanticResultsStatus) {
+                    semanticResultsStatus.textContent =
+                        'That vacancy is no longer in the current list.';
+                }
+                return;
             }
+            openVacancyModal(vid);
         });
     }
 });

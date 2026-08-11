@@ -69,11 +69,8 @@ jobs:
             _verify/**
           retention-days: 7
 
-      - name: Upload HTML report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: smoke-report-${{ github.run_id }}
-          path: tests/_artifacts/report.html
-          retention-days: 14
-        continue-on-error: true
+      # NB: there is deliberately no HTML-report upload. The step that used to
+      # live here pointed at tests/_artifacts/report.html, which nothing ever
+      # writes (pytest-html isn't a dependency), so every single run ended on a
+      # "No files were found with the provided path" warning. The trace zips and
+      # failure screenshots in the artifact above are what triage actually uses.

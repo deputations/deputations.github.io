@@ -5911,3 +5911,113 @@ focus:          user verification + pre-existing smoke failure triage
   `test_semantic_search.py` touches `.kpi-grid`, and only for its position
   relative to the AI search bar. If the KPI grid gets more churn, that is
   a coverage gap worth closing in the real suite.
+
+
+## session shq-2026-08-12-007
+
+### started: 2026-08-12
+### ended: 2026-08-12
+### model: claude-opus-5
+### driver: solo
+### branch: main
+### starting_head: c8d5b39
+### ending_head: <this commit>
+### focus: green CI — semantic-search modal timeout + verify_admin badge waits
+
+### inbound context read
+- User pointed at the failing Smoke tests run 31532586495 and asked for it
+  and "other failings in github" to be fixed.
+- GitHub Copilot had already commented on the run, diagnosing it as missing
+  wiring: "the AI search results are probably rendering plain list items
+  without wiring them into the open-vacancy-details behavior", suggesting we
+  add `data-vid` and a click handler. That diagnosis is WRONG — both already
+  exist (app.js ~3864 renders `data-vid`, ~3977 binds a delegated click that
+  calls `openVacancyModal`). Copilot said itself it had not seen the JS file.
+  Do not act on that comment.
+
+### root causes (two separate CI failures)
+1. **`test_semantic_search_renders_ranked_matches`** — the pytest step.
+   Two of the three fixture `vacancy_id`s (`A-2026-L8-022`, `A-2026-L10-005`)
+   DO NOT EXIST in data/vacancies.json; only `A-2026-L6-014` does, despite the
+   fixture comment claiming all three resolve. `openVacancyModal()` returns
+   silently when `getItemById()` misses, so a click on row 2 or 3 does nothing
+   at all — no error, no console line. On the Linux runner the click meant for
+   row 1 landed on row 2 (row 1 sits flush against the viewport bottom, under
+   the fixed visit-counter widget), so the test timed out on `#modal[open]`.
+   Proof: the failure screenshot in artifact `smoke-failures-31532586495` shows
+   the focus ring on ROW 2, and clicking rows 2/3 locally reproduces the silent
+   no-op exactly.
+2. **`scripts/verify_admin.py`** — the admin step, the long-standing failure
+   recorded in memory/deputation-admin-pre-existing-bug.md. TWO real bugs, not
+   the brittle-wait one that memory guessed at:
+   a. the `countOf()` stub returned a hard-coded `Content-Range: 0-0/3` while
+      the same fixture served 60 rows, so `#draftCount` painted "(3)" and the
+      `includes(60)` wait could never pass;
+   b. the fixture dates were hard-coded 2026-06/07 — future when written, past
+      by now — so the "expired" quick chip matched all 60 drafts instead of 10.
+
+### work done
+1. **tests/test_semantic_search.py** — added `real_vacancy_ids(n)`, which reads
+   the first n distinct `Vacancy_ID`s out of data/vacancies.json at test time;
+   the three fixture rows now use those instead of literals. Centre the row
+   (`scrollIntoView({block:"center"})`) before clicking so it is nowhere near
+   the fixed widget at the viewport edge. After the modal opens, assert
+   `?v=<vid_1>` is in the URL, so a mis-landed click fails with "modal opened
+   for the wrong row" instead of a bare 5 s timeout.
+2. **app.js** — the semantic click handler now checks `getItemById(vid)` first
+   and, on a miss, logs `[semantic] no loaded vacancy for <id>` and writes a
+   line into `#semanticResultsStatus`. Uses the status element directly rather
+   than `showSemanticMessage()`, which clears the whole list — one stale row
+   must not wipe the other matches.
+3. **scripts/verify_admin.py** — `count_for(url)` derives the `Content-Range`
+   count from the live DRAFTS/MANAGE lists; `apply_bulk_patch()` removes the
+   rejected ids from DRAFTS so the badge really falls 60 -> 50; fixture dates
+   are now relative to `date.today()`; `wait_badge()` replaces the two bare
+   `wait_for_function` calls and reports the badge value it actually saw.
+4. **.github/workflows/smoke-tests.yml** — dropped the "Upload HTML report"
+   step. It pointed at tests/_artifacts/report.html, which nothing writes
+   (pytest-html is not a dependency), so every run ended on a "No files were
+   found" warning.
+5. **index.html** — `app.js?v=ms77 -> ?v=ms78`.
+
+### decisions
+- **Fixture ids are READ FROM THE DATA, not re-hard-coded.** Picking three
+  fresh literals would rot again the next time the cron rebuilds the dump.
+- **Kept a real click rather than `dispatch_event("click")`.** Dispatching
+  would have made the test pass without proving the row is actually clickable.
+  Centring the row plus the `?v=` assertion keeps the real hit-test AND makes a
+  mis-landed click loud.
+- **`scripts/_verify_kpi_order.py` fixed too**: its 400 ms sleep after the KPI
+  click was too tight (the re-render rides a view transition, ~400-1000 ms).
+  Now waits on the selector. That was the script, not the product.
+- **Node 20 deprecation warnings left alone.** actions/checkout@v4,
+  setup-python@v5 and upload-artifact@v4 are being force-run on Node 24 and
+  warn about it every run. Bumping all three is a separate, riskier change and
+  they are warnings, not failures — not bundled into a CI-repair commit.
+
+### handoff state
+- committed: app.js, index.html, tests/test_semantic_search.py,
+  scripts/verify_admin.py, .github/workflows/smoke-tests.yml, CHANGELOG.md,
+  HANDOVER.md.
+- not committed: scripts/_verify_semantic_rows.py, _repro_semantic_ci.py and
+  _verify_kpi_order.py are untracked scratch, like the rest of the
+  `_verify_*` / `probe_*` family.
+- local state at commit time: `pytest tests/` 44 passed 1 skipped;
+  `scripts/verify_admin.py` ALL CHECKS PASSED (first green in weeks).
+
+### gotchas for next session
+- **`openVacancyModal()` fails silently for an unknown id** — `if (!item ||
+  !modal || !modalBody) return;`. That one line cost an hour of forensics. It
+  now warns for the semantic path; the table/bookmark paths still return quiet.
+- **The CI runner reaches Supabase; this machine does not.** CI logs
+  "Supabase live + JSON merged 526 live, 527 json, 0 sb-only". Ruled out as the
+  cause here (scripts/_repro_semantic_ci.py fakes the merged branch and still
+  passes), but it is a real behavioural fork between local and CI — remember it
+  before blaming Linux for the next divergence.
+- **Playwright trace zips are the fastest route to a CI-only failure.**
+  `gh run download <id> -n smoke-failures-<id>` then read trace.trace as JSONL:
+  console lines, the actionability log, AND the response bodies under
+  resources/. That is how the wrong-row click and the merged-branch console
+  line were confirmed without guessing.
+- **data/vacancies.json has 527 rows but only 518 distinct Vacancy_IDs.** Nine
+  duplicates. Anything keyed by id should expect collisions.
