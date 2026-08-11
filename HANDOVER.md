@@ -5318,3 +5318,77 @@ focus:          admin Verify tab — add Edit button to each row
   is intentional — a manual refresh should not re-open the editor.
 
 ```
+
+## session shq-2026-08-11-002
+```
+started:        2026-08-11
+ended:          2026-08-11
+model:          claude-opus-4-8
+driver:         solo
+branch:         main
+starting_head:  1791911
+ending_head:    13c9d84
+focus:          hotfix — Verify Edit deep-link now lands on the right page
+```
+
+### inbound context read
+- User verified `305d30a` on the live site: clicking ✎ Edit on a Verify row
+  opened the Manage tab but the auto-open "did nothing". The toast
+  "Row opened on Manage — find it under the search results to edit it" was
+  firing (the fallback I built for the filtered-out case).
+- Re-read `wireApp()` at line 950: `MG_PAGE = Math.max(1, parseInt(ui.mgPage,
+  10) || 1)` — persisted page index is restored from `localStorage` before
+  any tab click runs. With 25 rows/page and ~885 total, an admin who last
+  visited Manage on page 7 lands on a slice that doesn't contain the row
+  they just clicked Edit on.
+- Also checked `mgStatus` `<select>` defaults (line 327 of admin-ingest.html):
+  verified rows are `status=approved`; saved values of `draft`/`rejected`/
+  `marked` would filter them out. Same risk for `mgSearch` and `mgSource`.
+
+### work done
+1. **openManageForRow()** at `admin-ingest.js:1004` — added a 4-line filter
+   reset before `loadManage()`:
+   - `MG_PAGE = 1`
+   - `$('mgStatus').value = 'approved'` (Verify rows are approved)
+   - `$('mgSearch').value = ''`
+   - `$('mgSource').value = ''`
+   - `saveUI({ mgPage: 1, mgStatus: 'approved', mgSearch: '', mgSource: '' })`
+     so subsequent tab clicks don't re-trigger the stale filters.
+2. **No changes to `loadManage()`** — the auto-open path (`requestAnimationFrame`
+   → `[data-mg-id]` lookup → `toggle.click()` → `scrollIntoView` + `mg-flash`)
+   is correct as-is; the bug was upstream filter state.
+3. **Commit** `13c9d84 fix(admin): Verify Edit deep-link resets Manage filters`
+   (1 file, +12).
+
+### decisions
+- **One-time reset, no restore.** The admin's saved filter preferences are
+  wiped by this deep-link. Trade-off: the alternative (snapshot filters,
+  reset, auto-open, restore) would triple the helper's complexity and risk
+  partial restores if the user manually changes filters mid-edit. The
+  reset is a one-off nuisance; the restore would be a recurring bug.
+- **Why `approved` (not `all`)?** Verify rows are always `status=approved`
+  + `admin_verified=false`, so `approved` is the right landing filter. `all`
+  would also work but show more visual noise. Avoid `marked` — a saved
+  `marked` filter would also exclude approved rows.
+- **Don't reset `mgSort`.** Sort order doesn't hide rows, just reorders them.
+  The Verify row is in the list regardless.
+
+### handoff state
+- committed: `13c9d84` (this session's hotfix).
+- working tree: clean (only this file's diff, now committed).
+- pushed: `1791911` and `305d30a` from session 001, plus `13c9d84` once
+  you push — both blocks are local right now.
+
+### gotchas for next session
+- **Same filter-reset trap exists on the Review/Marked tabs.** If a `paneReview`
+  card ever grows an Edit button that deep-links to Manage, it'll hit the
+  same problem. The fix here is reusable — just call `openManageForRow(id)`
+  and the filter reset handles the rest.
+- **Verify tab's row fetch uses `select=VF_SELECT`** (a narrow projection).
+  The deep-link doesn't need the full row at click time — Manage fetches
+  `select=*` independently. So the `r.id` we pass is sufficient.
+- **Browser pane is now visible** in this session as well. The admin page
+  still requires live Supabase + auth, so visual verification needs the live
+  site. Static checks (`node --check` + 11-point indexOf sweep) were the
+  only verification path.
+```
