@@ -997,6 +997,29 @@ function wireApp() {
     updateVerifyBulkBar();
   };
 
+  // Deep-link from Verify ✎ Edit → Manage data, auto-opening this row's editor.
+  // OPEN_MANAGE_ROW is consumed inside loadManage() once the card list is on screen.
+  // Using the same pane-toggles as the real tab handler keeps the badge / saveUI
+  // side-effects (tab persistence, mark-flag context) identical to a manual click.
+  window.openManageForRow = (id) => {
+    OPEN_MANAGE_ROW = String(id);
+    document.querySelectorAll('.tabs button').forEach((x) => x.classList.remove('active'));
+    const manageBtn = document.querySelector('.tabs button[data-tab="manage"]');
+    if (manageBtn) manageBtn.classList.add('active');
+    $('paneIngest').classList.add('hidden');
+    $('paneReview').classList.add('hidden');
+    $('paneManage').classList.remove('hidden');
+    $('paneFlags').classList.add('hidden');
+    $('paneFeedback').classList.add('hidden');
+    $('paneUpdates').classList.add('hidden');
+    $('paneVerify').classList.add('hidden');
+    $('paneProjects').classList.add('hidden');
+    // Note: ACTIVE_FLAG is intentionally NOT cleared here (we're entering Manage,
+    // not leaving it) — the original handler clears it on `t !== 'manage'` only.
+    saveUI({ tab: 'manage' });
+    loadManage();
+  };
+
   // Projects CMS (V² upcoming-projects) wiring
   if ($('projRefresh')) $('projRefresh').onclick = loadProjectsAdmin;
   if ($('projAddBtn')) $('projAddBtn').onclick = () => openProjectForm(null);
@@ -2107,6 +2130,14 @@ async function refreshWaPending() {
   } catch { WA_PENDING = null; }
 }
 
+// Set by openManageForRow() when an admin clicks ✎ Edit from the Verify tab;
+// loadManage() consumes it once the list is on screen to scroll to + auto-open
+// the target row. Cleared after one use so a manual refresh doesn't re-trigger.
+// Declared immediately above loadManage() so the declaration → read order is
+// obvious in the source (avoids any TDZ surprise if the closure is ever invoked
+// during module-load).
+let OPEN_MANAGE_ROW = null;
+
 async function loadManage() {
   const status = $('mgStatus').value;
   let q = 'vacancies?select=*&order=created_at.desc,id.asc';
@@ -2119,6 +2150,26 @@ async function loadManage() {
     MANAGE_ROWS = await fetchAll(q);
     populateManageSourceFilter();
     renderManage();
+    // If the Verify tab's ✎ Edit button brought us here, auto-open + scroll.
+    // Cleared after one use so a manual refresh doesn't re-trigger.
+    if (OPEN_MANAGE_ROW) {
+      const target = OPEN_MANAGE_ROW; OPEN_MANAGE_ROW = null;
+      requestAnimationFrame(() => {
+        const card = document.querySelector(`.draft[data-mg-id="${CSS.escape(target)}"]`);
+        if (!card) {
+          // Row may be on a different Manage page (newest-first ordering usually
+          // keeps it on page 1, but the source/sort filters or a long backlog can
+          // hide it). Tell the admin where to look rather than leaving silence.
+          toast('Row opened on Manage — find it under the search results to edit it');
+          return;
+        }
+        const toggle = card.querySelector('[data-act="toggle"]');
+        if (toggle && toggle.textContent === 'Edit') toggle.click();
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        card.classList.add('mg-flash');
+        setTimeout(() => card.classList.remove('mg-flash'), 1200);
+      });
+    }
   } catch (e) { toast('Load error: ' + e.message); }
 }
 
@@ -2169,7 +2220,12 @@ function renderManage() {
         lastSrc = src;
       }
     }
-    list.appendChild(manageCard(r, false));
+    const card = manageCard(r, false);
+    // Stamp data-mg-id on the card root so openManageForRow() can scroll to +
+    // auto-open the one requested from the Verify tab. (The card has no other
+    // data-* attribute on its root element to hook into.)
+    card.dataset.mgId = r.id;
+    list.appendChild(card);
   });
   wirePager(pager, MG_PAGE, pages, start, slice.length, rows.length, 'row(s)',
     (p) => { MG_PAGE = p; saveUI({ mgPage: p }); renderManage(); });
@@ -2654,7 +2710,7 @@ function renderVerifyTable(rows) {
         <td>${link
           ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">🔗 Official</a>`
           : (r.source_file_url ? `<a href="${escapeHtml(r.source_file_url)}" target="_blank" rel="noopener noreferrer">📄 Source</a>` : '—')}</td>
-        <td><button class="good" data-vf-verify="${escapeHtml(String(r.id))}">✓ Verify</button></td>
+        <td><button class="good" data-vf-verify="${escapeHtml(String(r.id))}">✓ Verify</button><button class="vf-edit" data-vf-edit="${escapeHtml(String(r.id))}" title="Open this row in Manage data to edit it" style="margin-left:6px">✎ Edit</button></td>
       </tr>`;
   }).join('');
 
@@ -2678,6 +2734,9 @@ function renderVerifyTable(rows) {
 
   list.querySelectorAll('[data-vf-verify]').forEach((b) => {
     b.onclick = () => verifyIds([b.dataset.vfVerify]);
+  });
+  list.querySelectorAll('[data-vf-edit]').forEach((b) => {
+    b.onclick = () => openManageForRow(b.dataset.vfEdit);
   });
   list.querySelectorAll('input[data-vf-id]').forEach((c) => {
     c.onchange = updateVerifyBulkBar;
