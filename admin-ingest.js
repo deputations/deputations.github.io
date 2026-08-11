@@ -2166,21 +2166,36 @@ async function loadManage() {
     // Cleared after one use so a manual refresh doesn't re-trigger.
     if (OPEN_MANAGE_ROW) {
       const target = OPEN_MANAGE_ROW; OPEN_MANAGE_ROW = null;
-      requestAnimationFrame(() => {
+      // Two-RAF open: WA_PENDING may call renderManage() a second time after the
+      // bridge responds, which wipes + re-creates the cards. If we open on the
+      // first paint and WA re-renders, the editor disappears. Re-open after a
+      // 500ms grace window that outlasts a typical WA bridge round-trip, so the
+      // final visible state always has the editor open.
+      const openRow = () => {
         const card = document.querySelector(`.draft[data-mg-id="${CSS.escape(target)}"]`);
         if (!card) {
           // Row may be on a different Manage page (newest-first ordering usually
           // keeps it on page 1, but the source/sort filters or a long backlog can
           // hide it). Tell the admin where to look rather than leaving silence.
+          console.warn('[openManageForRow] card not found for target', target,
+            '— current page DOM has',
+            document.querySelectorAll('.draft[data-mg-id]').length, 'cards');
           toast('Row opened on Manage — find it under the search results to edit it');
           return;
         }
         const toggle = card.querySelector('[data-act="toggle"]');
-        if (toggle && toggle.textContent === 'Edit') toggle.click();
+        if (!toggle) {
+          console.warn('[openManageForRow] no [data-act="toggle"] on card', target);
+          return;
+        }
+        console.info('[openManageForRow] opening card', target, 'toggle was', toggle.textContent);
+        if (toggle.textContent === 'Edit') toggle.click();
         card.scrollIntoView({ behavior: 'smooth', block: 'start' });
         card.classList.add('mg-flash');
         setTimeout(() => card.classList.remove('mg-flash'), 1200);
-      });
+      };
+      requestAnimationFrame(openRow);
+      setTimeout(openRow, 600);
     }
   } catch (e) { toast('Load error: ' + e.message); }
 }
