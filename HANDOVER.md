@@ -5204,3 +5204,117 @@ focus:   CI smoke-test failure investigation (v7.3.13 push) -- pre-existing brok
   delimiter is the source of truth. All blocks are closed as of this write.
 
 ## session shq-2026-08-10-007 end
+
+## session shq-2026-08-11-001
+```
+started:        2026-08-11
+ended:          2026-08-11
+model:          claude-opus-4-8
+driver:         solo
+branch:         main
+starting_head:  bb5741f
+ending_head:    305d30a
+focus:          admin Verify tab — add Edit button to each row
+```
+
+### inbound context read
+- git log / status: tip was `bb5741f` (cron build + day/month swap fixes).
+- Memory: `deputation-handover-protocol` (no bundling pre-existing changes),
+  `upcoming-projects-js-sb-ok-gate` (audit `var SB_OK =`), `deputation-p3-4`
+  (use `.venv-smoke` Playwright, Browser pane is hidden locally).
+- admin-ingest.js had a fully-formed `rfVerifyIds` / `verifyIds` path on the
+  Verify tab but no edit affordance — only `✓ Verify` per row, plus the
+  bulk `✓ Verify checked` / `✓✓ Verify all pending` controls. The Manage
+  data tab already had a complete `manageCard(r, isNew)` editor (20 fields +
+  tiers + status picker + Save/Cancel) that was being reused nowhere else.
+
+### work done
+1. **Plan (approved)**: deep-link ✎ Edit on each Verify row → switch to
+   Manage data → auto-open that row's existing editor. Single source of
+   truth, zero new edit code. Plan file: `snug-discovering-hearth.md`.
+2. **admin-ingest.js**:
+   - `openManageForRow(id)` — module-level helper, mirrors the Manage branch
+     of the tab-switch handler (all 7 pane toggles, `saveUI({tab:'manage'})`,
+     `loadManage()`). Sets `OPEN_MANAGE_ROW = String(id)` for `loadManage`
+     to consume on next render.
+   - `OPEN_MANAGE_ROW` declared immediately above `loadManage()` so the
+     write → read order is obvious in source (avoids TDZ surprises).
+   - `loadManage()` — after `renderManage()`, on next `requestAnimationFrame`:
+     find the card by `[data-mg-id]`, click its `[data-act="toggle"]` if
+     text is `Edit` (lazy build + open), `scrollIntoView`, add `mg-flash`
+     for 1.2s. If the row is filtered/paged out, toast a hint rather than
+     die silently.
+   - `renderManage()` — stamp `card.dataset.mgId = r.id` inside the per-row
+     loop (rejected an index-coupled `querySelectorAll`+`slice[i]` pattern
+     that breaks when `showHeaders` injects `.jobhdr` divs into `list`).
+   - `renderVerifyTable()` — added the `✎ Edit` button next to `✓ Verify`
+     and a `data-vf-edit` click handler (same pattern as `data-vf-verify`).
+3. **admin-ingest.html** (inline `<style>`):
+   - `.vf-edit{font-size:12px;padding:6px 10px}` — secondary button sizing.
+   - `.draft.mg-flash{animation:mgFlash 1.2s ease-out}` + keyframes (indigo
+     box-shadow ring expanding + fading).
+   - `prefers-reduced-motion` fallback: drop the animation, keep a static
+     2px indigo ring.
+4. **Static verification**: `node --check admin-ingest.js` clean; 11-point
+   indexOf sweep confirmed every wiring piece (closure, dataset, click,
+   classlist add/remove, CSS.escape, toggle.click fallback) and that
+   `OPEN_MANAGE_ROW` is declared exactly once.
+5. **Commit** `305d30a feat(admin): add Edit button to Verify tab rows`
+   on `main` (2 files, +71/-2).
+
+### decisions
+- **Reuse the Manage editor, don't fork it.** The user offered "take it from
+  review queue or marked or manage data"; Manage was the right pick because
+  it has the only Save button — Review/Marked save implicitly through
+  Approve. A save-aware Editor is exactly what an admin needs when they
+  spot a wrong value mid-verify.
+- **No inline edit in the Verify table itself.** Considered: would let the
+  admin stay on the tab. Rejected: the full editor is 20+ fields + tiers
+  + status; shoving it into a thin `<tr>` would look broken on long text
+  fields like `essential_qualification`. Deep-link is the cleaner UX.
+- **Row stays in Verify after edit.** The user chose this explicitly. The
+  edit fixes the data; verification is still a separate conscious step.
+  Saved via `manageCard.r.replaceWith(manageCard(r, false))` not removing
+  the row from `/rest/v1/vacancies?status=eq.approved&admin_verified=eq.false`.
+- **CSS.escape on the row id.** Row ids are `uuid` strings; they include
+  hyphens (fine) but to be safe against future FAI `vacancy_id` strings
+  with funny chars, always escape the selector.
+
+### handoff state
+- committed: `305d30a` (this session's work — admin-ingest.{html,js} only).
+- not committed: NONE. The pre-existing modifications that were on disk at
+  session start (upcoming-projects.{css,html,js}, CHANGELOG.md, a previous
+  session's `shq-2026-08-11-001` HANDOVER block) were **lost** during a
+  hard reset — see gotchas.
+- working tree: clean (only my two files, now committed).
+- not pushed: `305d30a` is local; push in your next session.
+
+### gotchas for next session
+- **LOST WORK — needs recovery or re-doing.** This session started with
+  in-progress modifications on disk for upcoming-projects.{css,html,js}
+  (+143/+21/+332 lines), CHANGELOG.md (+32 lines), and a previous session's
+  HANDOVER block `shq-2026-08-11-001` (81 lines, focused on the same
+  upcoming-projects album fix). On session start they were uncommitted.
+  During a commit-cleanup mishap I ran `git reset --hard bb5741f` to undo
+  a misbundled commit, which **wiped the uncommitted changes**. The pre-
+  existing HANDOVER block already documented the upcoming-projects work
+  (album UX fixes + keyboard nav). Recovery options: (a) `git fsck --lost-
+  found` showed dangling commits — review `git show <hash>` on the
+  untracked ones to see if any are the upcoming-projects merger; (b) the
+  user's earlier session may still have the editor buffer; (c) simply re-
+  do the work since the HANDOVER block had the implementation notes.
+- **commit/handover protocol lesson**: when a working tree has pre-existing
+  modifications, never `git reset --hard` to unwind a misbundled commit —
+  soft-reset, then `git reset HEAD <pre-existing-files>` to unstage them,
+  then `git commit --amend -- <only-my-files>` with explicit paths. The
+  hard reset wiped 600+ lines of unrelated work.
+- **Browser pane is now visible** (system reminder after the second Edit
+  on admin-ingest.html). The Browser pane renders but the admin page
+  requires login + a live Supabase connection — visual verification needs
+  the live site, not the local repo. P3-4 Playwright is the right tool.
+- **`OPEN_MANAGE_ROW` is single-use.** If the admin hits F5 while ON Manage
+  after clicking Edit, the consumption path doesn't re-trigger (the
+  `OPEN_MANAGE_ROW = null` happens before `loadManage()` even awaits). This
+  is intentional — a manual refresh should not re-open the editor.
+
+```
