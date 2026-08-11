@@ -231,7 +231,7 @@
             '<div class="up-suggest">' +
               '<button type="button" class="up-suggest-toggle" aria-expanded="false">' + SVG.plus + 'Suggest an improvement</button>' +
               '<form class="up-suggest-form" hidden>' +
-                '<textarea required rows="3" aria-label="Your suggestion for ' + esc(p.title) + '" placeholder="How would you make this more useful?"></textarea>' +
+                '<textarea required rows="5" aria-label="Your suggestion for ' + esc(p.title) + '" placeholder="How would you make this more useful?"></textarea>' +
                 '<div class="up-suggest-row">' +
                   '<input type="text" class="up-sug-name" placeholder="Name (optional)" autocomplete="name">' +
                   '<input type="email" class="up-sug-email" placeholder="Email (optional)" autocomplete="email">' +

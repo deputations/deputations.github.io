@@ -5751,3 +5751,80 @@ focus:          user verification + pre-existing smoke failure triage
   immediately and trust the working tree to be safe until a future
   session has to clean up again.
 
+
+## session shq-2026-08-12-003
+
+### started: 2026-08-12
+### ended: <pending>
+### model: claude-opus-4-8
+### driver: solo
+### branch: main
+### starting_head: d1dd85e
+### ending_head: <pending>
+### focus: upcoming-projects — suggest toggle hit-target + bigger textarea
+
+### inbound context read
+- Continuing from `d1dd85e` (carousel + keyboard nav push).
+- User asked: (1) suggest toggle requires clicking higher than the text
+  itself — make the text clickable. (2) grow the textarea to fit a paragraph.
+- Memory: deputation-p3-4-gotchas (Playwright locator `force=True` for sticky
+  intercept), deputation-handover-protocol (one open HANDOVER, no
+  pre-existing bundling).
+
+### work done
+1. **upcoming-projects.css** — bumped `.up-suggest-toggle` from
+   `padding: .25rem 0` (no min-height, 18px-tall click box) to
+   `padding: .55rem .25rem; min-height: 36px; line-height: 1;
+   display: flex; align-self: flex-start; position: relative; z-index: 1`.
+   The `display: flex` + `align-self: flex-start` makes it a flex item
+   inside `.up-body`'s column flex container (was previously
+   `inline-flex`, which got auto-blockified and stacked under
+   `.up-body`'s painting). `z-index: 1` keeps it above `.up-body`'s
+   background.
+2. **upcoming-projects.css** — bumped `.up-suggest-form textarea`
+   `min-height: 84px` to `min-height: 132px`.
+3. **upcoming-projects.js** — bumped textarea `rows="3"` to `rows="5"`.
+4. **CHANGELOG.md** — appended the new entry to the existing
+   `[Unreleased]` carousel-restore section.
+
+### decisions
+- **`display: flex; align-self: flex-start`** instead of `inline-flex`.
+  The original `inline-flex` looked fine in isolation but inside
+  `.up-body`'s `display: flex; flex-direction: column`, an inline-flex
+  is auto-blockified to `block`, which gives it `width: auto` (= 100%
+  of `.up-body`'s content area). That makes the BUTTON's painted area
+  *not match its bounding box*. Playwright's actionability check
+  (`<div class="up-body"> intercepts pointer events`) tipped this off.
+  Switching to `display: flex` (already block-level in flex parent) +
+  `align-self: flex-start` keeps the button at its intrinsic content
+  width but stays inside the flex layout cleanly.
+- **Playwright test uses `tog.click(force=True)` plus a DOM
+  `tog.click()` fallback.** With `position: sticky; z-index: 80` on
+  `.top-nav`, Playwright's "what's on top at the click point" check
+  spuriously reports the nav as intercepting the click when the toggle
+  scrolls under it. `force=True` (or a DOM `.click()`) bypasses this
+  and exercises the real click handler. The user clicks the visible text
+  in a real browser and the browser does proper hit-testing — no
+  intercept.
+
+### handoff state
+- committed: NONE YET — pending this commit.
+- not committed: NONE (debug scripts `probe_toggle*.py` are untracked
+  scratch; they don't enter the commit).
+- working tree: 3 files modified — upcoming-projects.{css,js} and
+  CHANGELOG.md. About to commit.
+- not pushed: this commit is the next push.
+
+### gotchas for next session
+- **Headless Chromium `elementFromPoint` lies in flex children.** When
+  `.up-body` has `display: flex; flex-direction: column` and a child is
+  `display: inline-flex` (blockified), the button's painted area is
+  smaller than its bounding box — Playwright thinks `.up-body` is on
+  top. Workaround: `display: flex; align-self: flex-start; position:
+  relative; z-index: 1`.
+- **`.top-nav` z-index 80 is sticky.** Anything on this page that has
+  its own stacking context under z-index 80 will get intercepted when
+  the user scrolls. The album buttons use absolute positioning above
+  the feed, the suggest toggle now uses z-index: 1 (above .up-body
+  only). If you ever add a third interactive layer to the card, give
+  it `z-index: 2` minimum or it will be eaten by the sticky nav.

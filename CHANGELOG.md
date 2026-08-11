@@ -54,6 +54,25 @@ Verified locally with `.venv-smoke/Scripts/python.exe verify_fixes.py`
 media) and `verify_keys.py` (ArrowRight/Left, End, Home, form carve-out,
 Ctrl+ArrowRight all pass).
 
+### Changed — Suggest toggle is now a proper hit target; textarea is paragraph-sized
+Two follow-up fixes on the `/upcoming-projects` suggest form:
+
+- `.up-suggest-toggle` had `padding: .25rem 0` and no `min-height`, so the
+  clickable box was only high enough to hit the line of text above the
+  visible glyphs — clicking the text itself did nothing, you had to click
+  higher. Bumped to `padding: .55rem .25rem; min-height: 36px; line-height: 1`
+  and converted to `display: flex; align-self: flex-start; position: relative;
+  z-index: 1` so the button is a flex item (not a blockified inline-flex) and
+  wins the stacking context against `.up-body` cleanly. Toggle box is now
+  219.7 × 38.1 px instead of the previous ~18 px tall.
+- The textarea was 84 px / 3 rows — too short for a real paragraph. Bumped
+  in `upcoming-projects.css` to `min-height: 132px` and in
+  `upcoming-projects.js` to `rows="5"`. Now 600 × 140 px on the active card
+  with a 3-line paragraph fitting comfortably.
+
+Verified with `verify_suggest.py`: toggle min-height 36px, click opens the
+form, textarea 600 × 140 px / rows=5 / min-height 132px, send 187 × 66 px.
+
 ---
 
 ## [7.4.4] — 2026-08-10

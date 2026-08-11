@@ -520,7 +520,7 @@
 
 /* ---------- Suggest ---------- */
 .up-suggest { margin-top: .35rem; border-top: 1px dashed var(--up-border-2); padding-top: .9rem; }
-.up-suggest-toggle { display: inline-flex; align-items: center; gap: .45rem; cursor: pointer; background: none; border: 0; padding: .25rem 0; font: inherit; font-weight: 700; font-size: .9rem; color: var(--up-primary); }
+.up-suggest-toggle { display: flex; align-items: center; gap: .45rem; cursor: pointer; background: none; border: 0; padding: .55rem .25rem; font: inherit; font-weight: 700; font-size: .9rem; color: var(--up-primary); min-height: 36px; line-height: 1; align-self: flex-start; width: auto; position: relative; z-index: 1; }
 .up-suggest-toggle svg { width: 17px; height: 17px; transition: transform .25s; }
 .up-suggest:has(.up-suggest-form:not([hidden])) .up-suggest-toggle svg.up-plus { transform: rotate(45deg); }
 .up-suggest-form { display: grid; gap: .6rem; margin-top: .8rem; }
@@ -529,7 +529,7 @@
   width: 100%; font: inherit; font-size: .92rem; color: var(--up-text);
   background: var(--up-card-2); border: 1px solid var(--up-border-2); border-radius: 12px; padding: .7rem .85rem; resize: vertical;
 }
-.up-suggest-form textarea { min-height: 84px; }
+.up-suggest-form textarea { min-height: 132px; }
 .up-suggest-form textarea:focus, .up-suggest-form input:focus { outline: none; border-color: var(--up-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--up-primary) 22%, transparent); }
 .up-suggest-row { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
 @media (max-width: 520px) { .up-suggest-row { grid-template-columns: 1fr; } }
