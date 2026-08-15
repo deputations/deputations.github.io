@@ -140,6 +140,39 @@ checks passed.
 
 ---
 
+### Fixed — link preview card still advertised deputations.github.io
+
+Sharing `alldeputations.com` on WhatsApp rendered a card whose artwork carried
+a `deputations.github.io` pill. The `og:image` / `og:url` meta tags were
+already correct — the old domain was **baked into the PNG**, so no amount of
+tag auditing would have found it.
+
+`assets/brand/og-home.png` repainted in place, pill only:
+
+- font identified by pixel-matching candidates against the existing glyphs —
+  Plus Jakarta Sans Bold @ 30px, the site's own display face
+- old pill erased and the background gradient rebuilt underneath by
+  Coons-patch interpolation (validated against clean control regions of the
+  same size: mean error 0.29/255, max 1.56)
+- pill redrawn with the measured originals: fill `#0D1424`, 2px `#22D3EE`
+  stroke at alpha 160/255 composited over the *background* (not over the
+  fill — that is what the channel arithmetic showed), radius 32, left edge
+  x=88 to stay aligned with the logo and subtitle, unchanged baseline
+- width 420 -> 435px; padding was a lopsided 29/69, now symmetric at 29
+
+Method was verified by rebuilding the *original* pill first and diffing:
+mean error 0.013/255. Every pixel outside the pill band is byte-identical.
+
+`og:image` + `twitter:image` bumped to `og-home.png?v=2` in `index.html`,
+`defex.html`, `upcoming-projects.html` and `astro/src/layouts/Layout.astro`.
+Without this the platforms keep serving the card they already cached.
+
+Also corrected a comment in `scripts/build_og_images.py` that described the
+per-vacancy footer as `deputations.github.io` when it draws
+`alldeputations.com`.
+
+---
+
 ## [7.4.4] — 2026-08-10
 
 ### Fixed — admin Projects tab edits no longer reached the public page

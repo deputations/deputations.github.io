@@ -204,7 +204,7 @@ def make_image(row, out_path):
         d.text((pill_x + 16, pill_y + 7), text, font=FONT_SM, fill=fg)
         pill_x += tw + 12
 
-    # Tiny footer: deputations.github.io URL
+    # Tiny footer: site URL
     d.text((60, H - 36), "alldeputations.com", font=FONT_TINY, fill=TXT_DIM)
 
     img.save(out_path, "PNG", optimize=True)
