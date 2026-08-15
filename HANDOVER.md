@@ -6021,3 +6021,88 @@ focus:          user verification + pre-existing smoke failure triage
   line were confirmed without guessing.
 - **data/vacancies.json has 527 rows but only 518 distinct Vacancy_IDs.** Nine
   duplicates. Anything keyed by id should expect collisions.
+
+---
+
+## session shq-2026-08-16-001
+```
+started: 2026-08-16
+ended:   2026-08-16
+model:   claude-opus-5
+driver:  solo
+branch:  main
+starting_head: 137d985
+ending_head:   088cbc5
+focus:   OG link-preview card still advertised deputations.github.io
+```
+
+### inbound context read
+- owner's screenshot of a WhatsApp share of alldeputations.com
+- og/twitter meta blocks in index.html, defex.html, upcoming-projects.html,
+  astro/src/layouts/Layout.astro
+- scripts/build_og_images.py (per-vacancy generator; does NOT build og-home)
+
+### work done
+- **Diagnosed:** every `og:image` / `og:url` tag already pointed at
+  alldeputations.com. The stale domain was **inside the PNG artwork** — the
+  cyan pill at the bottom of `assets/brand/og-home.png`. Tag-level auditing
+  would never have found it.
+- Repainted the pill in place to read `www.alldeputations.com`:
+  - font identified by pixel-matching candidates against the existing glyphs
+    -> Plus Jakarta Sans Bold @ 30px (the site's own display face)
+  - old pill erased, background gradient rebuilt underneath by Coons-patch
+    (transfinite) interpolation from the 1px ring outside the erase box
+  - pill redrawn from measured values: fill `#0D1424` opaque, 2px `#22D3EE`
+    stroke at alpha 160/255, radius 32, left edge x=88, unchanged baseline
+  - 420 -> 435px wide; padding was 29 left / 69 right, now symmetric at 29
+- Bumped `og:image` + `twitter:image` to `og-home.png?v=2` in all four files.
+- Fixed a comment in `scripts/build_og_images.py` naming the wrong domain.
+
+### decisions
+- **Repaint, not regenerate.** No generator for og-home.png exists in the
+  repo, so a from-scratch rebuild would have had to re-derive the whole
+  composition. Repainting one element keeps every other pixel identical.
+- **Symmetric padding.** The original 29/69 split was a flaw, not a design
+  choice; the new string is longer anyway, so the pill had to be resized.
+- **`?v=2` rather than a rename.** Matches the repo's existing `?v=N`
+  convention and keeps the canonical asset path stable.
+- **robots.txt left alone.** Its `Sitemap:` still points at
+  deputations.github.io — a real SEO bug, but unrelated to the preview card,
+  so it was NOT bundled into this commit. Flagged as a separate task.
+
+### handoff state
+- committed: assets/brand/og-home.png, index.html, defex.html,
+  upcoming-projects.html, astro/src/layouts/Layout.astro,
+  scripts/build_og_images.py, CHANGELOG.md, HANDOVER.md.
+- **not pushed.** `main` was 5 commits behind origin at commit time (all
+  `chore: build deputation data` cron builds). Rebase before pushing.
+- no test run: this change touches a binary asset and four meta tags, and the
+  smoke suite asserts neither.
+
+### gotchas for next session
+- **When a link preview is wrong, look at the image bytes before the meta
+  tags.** An hour of grepping `og:` tags finds nothing when the domain is
+  rasterised into the artwork.
+- **Reproduce before you replace.** Rebuilding the *original* pill first and
+  diffing it (mean error 0.013/255) is what proved the fill/stroke/alpha
+  values were right. Without that check a wrong alpha would only have shown
+  up as a faint seam after deploy.
+- **The stroke composites over the BACKGROUND, not over the fill.** Channel
+  arithmetic settles it: alpha 0.625 over bg reproduces all three channels at
+  both pill ends; over the opaque fill the red channel is off by ~4. In
+  Pillow this falls out for free — draw fill and outline onto one transparent
+  RGBA overlay, then `alpha_composite`.
+- **Coons-patch inpainting is enough for these gradients.** Validated on
+  clean same-size control regions: mean 0.29/255, max 1.56. Pick control
+  regions with no ink in them — the two that scored ~21 and ~28 were sitting
+  on the wordmark and the subtitle.
+- **`/tmp` is not a Python path here.** Git Bash maps it to
+  `C:/Users/vivek/AppData/Local/Temp`; `ImageFont.truetype("/tmp/x.ttf")`
+  raises "cannot open resource". Use `cygpath -w` / `pwd -W`.
+- **Google Fonts is reachable from this machine** (the NIC block is specific
+  to supabase.co / workers.dev). `fonts.google.com/download` returns a
+  non-zip, but `github.com/google/fonts/raw/main/ofl/<family>/<Family>[wght].ttf`
+  works and gives you the variable font — `set_variation_by_axes([700])`.
+- Per-vacancy OG images still draw `alldeputations.com` (no `www.`), so the
+  home card and the vacancy cards differ by that prefix. Left as-is:
+  regenerating them is a 500+ file churn nobody asked for.
