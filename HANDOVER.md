@@ -6106,3 +6106,61 @@ focus:   OG link-preview card still advertised deputations.github.io
 - Per-vacancy OG images still draw `alldeputations.com` (no `www.`), so the
   home card and the vacancy cards differ by that prefix. Left as-is:
   regenerating them is a 500+ file churn nobody asked for.
+
+---
+
+## session shq-2026-08-16-001-cont1
+```
+started: 2026-08-16
+ended:   2026-08-16
+model:   claude-opus-5
+driver:  solo
+branch:  main
+starting_head: 46564eb
+ending_head:   e5de8f8 (fix) / 6f757ed (docs)
+focus:   corrects shq-2026-08-16-001 — rebased; push BLOCKED on wrong gh account
+```
+
+### correction to shq-2026-08-16-001
+That block recorded `ending_head: 088cbc5` and "**not pushed**". The owner then
+asked for the push. The SHA is now stale; the "not pushed" still stands:
+
+- rebased onto `origin/main` (5 `chore: build deputation data` cron commits,
+  touching only `data/*.json` — zero overlap, no conflicts)
+- the rebase **rewrote both SHAs**: `088cbc5 -> e5de8f8` (fix),
+  `46564eb -> 6f757ed` (docs). Cite the new ones.
+- **push FAILED, 403.** Still unpushed. See below.
+
+### the push blocker (unresolved)
+`git push` returns `Permission to deputations/deputations.github.io.git denied
+to crackfmge`. Cause, in order:
+
+- `~/.gitconfig` sets `credential.https://github.com.helper` to
+  `gh auth git-credential`, so **gh — not Git Credential Manager — serves the
+  credential for github.com**, despite the system gitconfig naming `manager`.
+- `gh auth status` shows BOTH accounts logged in: `crackfmge` (active) and
+  `deputations` (inactive). gh hands back the *active* one, and `crackfmge`
+  has no write access to this repo.
+
+Two fixes, neither applied — this is the owner's call, and the narrow one was
+denied by the permission classifier when attempted:
+
+1. repo-scoped: `git remote set-url origin
+   https://deputations@github.com/deputations/deputations.github.io.git`
+   — gh matches the username in the URL to the right token. Nothing global
+   changes. Revert by removing the `deputations@`.
+2. global: `gh auth switch --user deputations` — affects every later gh/git
+   operation on the machine until switched back.
+
+### gotchas for next session
+- **`.git/rebase-merge/` was sitting in the repo, empty, dated 2026-08-11.**
+  A vestigial leftover from an abandoned rebase in an earlier session. It
+  carried no state (no `head-name`, `onto`, `orig-head` or todo) and
+  `git status` reported no rebase in progress, but its mere existence made
+  `git rebase` refuse to start with "I am stopping in case you still have
+  something valuable there." `rmdir` cleared it — deliberately `rmdir` and
+  not `rm -rf`, so it could only succeed if the dir really was empty. If a
+  rebase refuses to start in this repo again, check for that directory and
+  inspect its contents BEFORE deleting.
+- Still outstanding: `robots.txt` line 5 points its `Sitemap:` at
+  deputations.github.io. Deferred by the owner, not forgotten.
