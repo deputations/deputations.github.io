@@ -6168,12 +6168,12 @@ denied by the permission classifier when attempted:
 ## session shq-2026-08-23-001
 
 ### started: 2026-08-23
-### ended: <pending>
+### ended: 2026-08-23
 ### model: claude-opus-4-8
 ### driver: solo
 ### branch: main
 ### starting_head: 1d49ef2
-### ending_head: <pending>
+### ending_head: f660495
 ### focus: notification-date bug — day/month swap on 51 rows in data/vacancies.json
 
 ### inbound context read
@@ -6255,3 +6255,107 @@ denied by the permission classifier when attempted:
   whatever is in the JSON first. So the JSON file IS the source of
   truth for the live site as long as the merge logic stands
   (line 596-597 of app.js). Fix data, not JS.
+
+## session shq-2026-08-23-001-cont1
+
+### started: 2026-08-23
+### ended: 2026-08-23
+### model: claude-opus-4-8
+### driver: solo
+### branch: main
+### starting_head: f660495
+### ending_head: 7e2b211
+### focus: architectural fix — enforce ND/LD invariants at the ingest, paste and cron layers so the 2026-08-23 bug can't recur
+
+### inbound context read
+- Closing `shq-2026-08-23-001`. Previous commit `f660495` patched 50 rows
+  already in `data/vacancies.json`; user response was "if we only fix the
+  rows which appears wrong by updating the data we have not fixed the
+  issue...we need to fix the problem itself why this has happened" — so
+  this block does the root-cause fix.
+- User follow-up: "if the prompt in ingest — 'Paste rows from your own AI
+  chat (Gemini / Claude) — best for Employment News' needs updation for
+  this ..do it". The dropdown label itself is just UI text; the actual
+  prompts are `EN_PROMPT` (admin-ingest.js) and `NOTIF_PROMPT` (same
+  file), and the LLM prompt is `BASE_RULES` in extract/index.ts. All
+  three were strengthened.
+
+### work done
+1. **`supabase/functions/extract/index.ts`** — added
+   `validateAndFixDates` helper (mirrors admin-ingest.js) that:
+   - validates `notification_date <= today` (a notification can't be in
+     the future)
+   - validates `notification_date < last_date_to_apply` (notify strictly
+     precedes close)
+   - tries a swap when both invariants fail; falls back to "flag for
+     review" otherwise
+   Wired into the main row-mapping `kept.map(...)` at the row
+   construction site so every `it` object passed through LLM
+   extraction gets cleaned (or flagged low-confidence) before it lands
+   in the DB.
+   Strengthened `BASE_RULES` prompt with the same invariant in plain
+   English so the LLM doesn't generate the bad shape in the first place.
+
+2. **`admin-ingest.js`** — added the matching `validateAndFixDates`
+   helper. Wired into `mapPasted` (the only row-builder for the
+   Paste-an-AI-chat path): now sets `notification_date` and
+   `last_date_to_apply` on the row from the cleaned values, propagates
+   `confidence` (low when flagged), and stamps the row with a
+   `date_fix_note` so the admin can see what changed.
+   Strengthened `EN_PROMPT` and `NOTIF_PROMPT` with the same invariant +
+   an explicit "will be REJECTED at ingest" warning so the user catches
+   it at paste time instead of debug time.
+
+3. **`scripts/build_data.py`** — added `validate_and_fix_row_dates`
+   helper. Wired into `transform_rows` so the cron rebuild cannot
+   republish a future ND even if the DB already holds one (e.g. a row
+   admitted before layer 1 / 2 were deployed). `transform_rows` now
+   returns `(vacancies, date_fixes_count)`; the count + per-row log line
+   surface in the cron output so a regression at any of the three layers
+   shows up in tomorrow's build instead of on the dashboard.
+
+### decisions
+- **Same fix logic at three layers, not one.** The extract Edge Function
+  is the only thing that *prevents* the bad data. admin-ingest.js is the
+  user's paste-time safety net. build_data.py is the cron-time safety
+  net for any row that slipped through. Dropping any one of them means
+  the next cron rebuild re-bakes the bug.
+- **Flag don't drop.** When both invariants are unfixable, the helpers
+  clear `notification_date` but keep `last_date_to_apply` and stamp
+  `confidence: low` so the row reaches `data/vacancies.json` (the
+  countdown still works) but `flagged` flows back to the admin queue.
+  Silently dropping the row would lose vacancies.
+- **One helper per language, not one shared module.** JS / TS / Python
+  each have their own copy, with a cross-reference comment. Sharing one
+  module would mean deploying a single source that all three layers
+  could `import` from — that crosses a build-system boundary (Deno vs
+  Node vs Python cron) and is not worth the wiring for ~40 lines per
+  file. Tied together by the test suites instead.
+- **Push the architectural fix in its own commit.** Could not be
+  bundled into `f660495` per the handover protocol; pre-existing
+  data-only fixes never carry feature / validation work.
+
+### handoff state
+- committed: `7e2b211 fix(extract): enforce ND/LD date invariants at
+  ingest, paste and cron rebuild`. Pushed to origin as of this block.
+- not committed: NONE.
+- not pushed: NONE.
+- working tree: clean.
+
+### gotchas for next session
+- **`gh auth status` now reports `deputations` as active.** Earlier in
+  the week it was `crackfmge` and pushes returned 403. The push blocker
+  memory is updated to reflect this; the only deferred item from
+  that family is the `robots.txt` Sitemap URL still pointing at
+  `deputations.github.io` instead of `alldeputations.com` (line 5).
+- **`transform_rows` signature changed.** It used to return
+  `list[dict[str, Any]]`; it now returns
+  `tuple[list[dict[str, Any]], int]`. Only one in-tree caller
+  (`scripts/build_data.py` main()), already updated.
+- **Schema is still `text`, not `date`.** The DB will still accept any
+  string in the two columns. The validators now check / fix at all
+  three ingress points so the DB no longer sees garbage, but a future
+  schema change to `date` would be a defence-in-depth add, not required
+  for this fix.
+- **Cron log line format is `date-fix: cleared/swapped ND/LD on
+  <Vid> → ND='…' LD='…'`.** Grep that on the next cron failure.
