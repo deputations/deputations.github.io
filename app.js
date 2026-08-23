@@ -1364,13 +1364,13 @@ function renderVerificationLegend() {
       <span class="vx-verif-legend-item">
         <span class="vx-verif-swatch vx-verif-swatch-pending" aria-hidden="true"></span>
         <span class="vx-verif-legend-label">
-          <strong>System Approved</strong> — extracted by the AI ingestion pipeline, pending admin review
+          <strong>System Approved</strong><em>— extracted by the AI ingestion pipeline, pending admin review</em>
         </span>
       </span>
       <span class="vx-verif-legend-item">
         <span class="vx-verif-swatch vx-verif-swatch-ok" aria-hidden="true"></span>
         <span class="vx-verif-legend-label">
-          <strong>Verified by Admin</strong> — checked against the source notification
+          <strong>Verified by Admin</strong><em>— checked against the source notification</em>
         </span>
       </span>
     </div>
@@ -2523,15 +2523,18 @@ function applyTheme(theme) {
 
     function renderTableResults(rows, totalCount, totalPages) {
         dataContainer.className = 'data-container view-table';
+        // Legend sits between the table and the pagination so the visual gap
+        // the user flagged (big white stretch before pagination) disappears —
+        // it acts as the bridge element.
         dataContainer.innerHTML = totalCount
-            ? `${renderTable(rows)}${renderPagination(totalPages)}${renderVerificationLegend()}`
+            ? `${renderTable(rows)}${renderVerificationLegend()}${renderPagination(totalPages)}`
             : emptyStateHtml();
     }
 
     function renderCardResults(groups, totalGroups, totalRows, shownRows) {
         dataContainer.className = 'data-container view-card';
         dataContainer.innerHTML = totalRows
-            ? `${renderCards(groups)}${renderLoadMore(groups.length, totalGroups, shownRows, totalRows)}${renderVerificationLegend()}`
+            ? `${renderCards(groups)}${renderVerificationLegend()}${renderLoadMore(groups.length, totalGroups, shownRows, totalRows)}`
             : emptyStateHtml();
     }
 
