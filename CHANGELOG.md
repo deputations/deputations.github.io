@@ -73,6 +73,27 @@ Two follow-up fixes on the `/upcoming-projects` suggest form:
 Verified with `verify_suggest.py`: toggle min-height 36px, click opens the
 form, textarea 600 × 140 px / rows=5 / min-height 132px, send 187 × 66 px.
 
+### Fixed — 50 rows had Notification_Date later than today (day/month swapped at ingest)
+The user spotted the dashboard's Notification Date column rendering future
+dates like "05 Nov 2026" for vacancies whose notification was actually in
+May or June 2026. 51 rows in `data/vacancies.json` had `Notification_Date`
+greater than today (2026-08-23) — clearly wrong, because the closing date
+that's supposed to be ~60 days after the notification was also correctly
+in the future. Root cause: the LLM extraction at ingest time frequently
+grabbed the day from `last_date_to_apply` and the month from the source
+category when both were on the same PDF page, producing a day/month mix-up.
+
+Fix: re-derived `Notification_Date` (and `Notification_Date_Display`) from
+the `Source Category` field (Employment News issue week — e.g. "30 May -
+5th June 2026" → 2026-05-30) for every row where the stored date is in
+the future. 50 of 51 rows were auto-corrected; the remaining one
+(`E-2026-L13-014`) has both ND and LD in the past (stale row, out of scope).
+
+The fix is data-only — no JS or migration change. The user verified the
+manual-add path already produces correct ISO dates (their test row
+ND=2026-08-23, LD=2026-09-23 stored verbatim and displayed correctly).
+The bug only existed in the JSON-via-extract path, not the form path.
+
 ### Changed — KPI cards reordered; Ministries now counts ACTIVE vacancies only
 Two changes to the home-page KPI grid in `app.js`:
 

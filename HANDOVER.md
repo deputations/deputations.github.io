@@ -6164,3 +6164,94 @@ denied by the permission classifier when attempted:
   inspect its contents BEFORE deleting.
 - Still outstanding: `robots.txt` line 5 points its `Sitemap:` at
   deputations.github.io. Deferred by the owner, not forgotten.
+
+## session shq-2026-08-23-001
+
+### started: 2026-08-23
+### ended: <pending>
+### model: claude-opus-4-8
+### driver: solo
+### branch: main
+### starting_head: 1d49ef2
+### ending_head: <pending>
+### focus: notification-date bug — day/month swap on 51 rows in data/vacancies.json
+
+### inbound context read
+- Continuing from `1d49ef2` (the suggest-toggle + textarea push).
+- User: "I think the notification date display got days and months wrong
+  ...as 08 Dec 2026 is in future...so it may be (12 08 2026) 12 Aug 2026
+  ...this is the issue in many records"
+- User added a test row via the manual-add form: ND=2026-08-23, LD=2026-09-23,
+  Vacancy_ID=MEA-2026-L10-37855. Said: "I entered through add manually not
+  through json...if it is fine then the issue is only when importing
+  through json".
+- Memory: deputation-handover-protocol (no pre-existing bundling),
+  deputation-pending-push-2026-08-16 (push still blocked, but locally we
+  commit and let the user push from their environment if needed).
+
+### work done
+1. **Audit (Python)** — 526 rows in `data/vacancies.json`. 92 had ND > today
+   or ND >= LD. Of those, 51 had ND strictly > today (clearly wrong). Pattern:
+   the day field of ND matches the day field of LD ±1-3 (extraction grabbed
+   the LD's day by mistake) while the month field matches the source
+   category's month.
+2. **Confirmed manual-add path is clean** — probed Supabase via the page
+   anon key. 833 approved rows, only 1 with ND >= today (the user's test row
+   ND=2026-08-23). Schema column is `text`, no DB coercion. Both
+   `wireSave` (manual) and `importPasted` (JSON) use `<input type="date">`
+   via `fieldHtml`/`toISODateInput` which always writes ISO `YYYY-MM-DD`.
+   So the bug originated upstream of the DB — in the LLM extraction at
+   ingest time when generating the JSON payload.
+3. **Built a `Source Category` parser** — the 12 distinct source strings
+   ("EN 02 May 2026", "Employment News 30 May - 5th June 2026", ...) all
+   normalise to a single ISO start date. Tested 12/12 correct. Key
+   trick: `re.sub(r'(\d+)\s*-\s*\d+', r'\1', s)` collapses the range
+   before matching, otherwise `(\d{1,2})[\s-]+([a-z]+)` greedily matches
+   the END of a range (`09-15 May` → `15 May`) instead of the start.
+4. **Fixed 50 of 51 bad rows** by overwriting `Notification_Date` and
+   `Notification_Date_Display` with the parsed start date. The 1 row
+   skipped (`E-2026-L13-014`) has both ND and LD in the past (stale row),
+   can't be auto-fixed from source.
+5. **CHANGELOG.md** — appended entry describing the fix.
+
+### decisions
+- **Re-derive from `Source Category`, not from `Official_Notification_Link`.**
+  Source Category is human-typed text that's always populated and easy to
+  parse. The notification PDF is binary and would require per-row checks.
+  Source Category's start date is a 1-7 day approximation of the real
+  notification publication date, but it's the BEST signal we have without
+  fetching each PDF.
+- **Skip stale rows rather than fabricate.** Rows where the existing LD
+  is also in the past (39 of 92) are not part of this fix — they're
+  vacancies that have already closed and should fall off the active
+  dashboard via the `Days Left` filter, not via date column rewriting.
+- **No JS / no migration change.** The display formatter
+  (`formatDisplayDate` in `shared/vacancy-utils.js`) is correct for any
+  ISO input. The bug is purely in the static data; the JSON is the
+  single source of truth per `fetchVacancies()` comment line 518.
+
+### handoff state
+- committed: NONE YET — pending this commit.
+- not committed: NONE.
+- working tree: 2 files modified — `data/vacancies.json` (50 ND + 50
+  Display fields fixed) and `CHANGELOG.md`.
+- not pushed: this commit is the next push.
+
+### gotchas for next session
+- **`EN 09-15 May 2026` parser trap.** The naive regex
+  `(\d{1,2})[\s-]+([a-z]+)` greedily matches the END of a date range
+  (catches "15 May"). Collapse ranges first:
+  `re.sub(r'(\d+)\s*-\s*\d+', r'\1', s)` BEFORE matching, then
+  `re.search(r'(\d{1,2})[\s]+([a-z]+)', s_norm)`. Picked this up only
+  because the test set had both single-date and range strings.
+- **Schema is `text`, not `date`.** `notification_date` and
+  `last_date_to_apply` are text columns in Supabase (per migration
+  0001 lines 81-82). The DB accepts any string, so a future ingest
+  mistake with `DD-MM-YYYY` will get stored verbatim and re-render
+  weirdly. Migration 0022 already handles this for 17 rows but the
+  pattern can recur with new ingest sessions.
+- **The merge in `fetchVacancies()` keeps JSON rows for IDs present in
+  both.** Even though Supabase is clean, the public dashboard shows
+  whatever is in the JSON first. So the JSON file IS the source of
+  truth for the live site as long as the merge logic stands
+  (line 596-597 of app.js). Fix data, not JS.
