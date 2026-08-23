@@ -5647,6 +5647,76 @@ html:not([data-theme="light"]) .premium-credit {
 .vx-card.vx-verif-pending { box-shadow: inset 3px 0 0 #f5b301; }
 .vx-card.vx-verif-ok { box-shadow: inset 3px 0 0 #37c46b; }
 
+/* Legend that sits below the table/cards so the 3px edge stops being a
+   mystery. Two swatches + labels — the swatches reproduce the exact inset
+   shadow the rows use so the legend matches what the user sees. Inline
+   padding mirrors the cards' own horizontal rhythm so it never looks
+   pasted on. Hidden on very narrow screens where the cards already show
+   ample context (the legend would crowd the page). */
+.vx-verif-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.4rem;
+  align-items: center;
+  margin: 1.1rem 0 0.25rem;
+  padding: 0.7rem 0.95rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  background: rgba(15, 23, 42, 0.28);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+[data-theme="light"] .vx-verif-legend { background: #f4f7fa; }
+.vx-verif-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+.vx-verif-legend-label {
+  /* keep the helper copy in one tight block, not wrapped per word */
+  white-space: normal;
+}
+.vx-verif-legend-label strong {
+  color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: 0.005em;
+}
+/* The swatch is a 12px × 18px block with the same inset shadow the rows
+   carry — visually a tiny version of the leading edge on a real vacancy. */
+.vx-verif-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  border: 1px solid var(--border-color);
+}
+.vx-verif-swatch-pending {
+  background: rgba(15, 23, 42, 0.35);
+  box-shadow: inset 3px 0 0 #f5b301;
+}
+[data-theme="light"] .vx-verif-swatch-pending {
+  background: #fff;
+}
+.vx-verif-swatch-ok {
+  background: rgba(15, 23, 42, 0.35);
+  box-shadow: inset 3px 0 0 #37c46b;
+}
+[data-theme="light"] .vx-verif-swatch-ok {
+  background: #fff;
+}
+@media (max-width: 520px) {
+  /* On phone-width screens the cards already fill the column — a horizontal
+     legend would crowd them, so stack the two items vertically instead. */
+  .vx-verif-legend {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.45rem;
+  }
+}
+
 @keyframes tableNewPulse {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary-color) 55%, transparent); }
   55%      { box-shadow: 0 0 0 5px color-mix(in srgb, var(--primary-color) 0%, transparent); }

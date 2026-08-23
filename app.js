@@ -1348,6 +1348,35 @@ function verificationClass(item) {
   return pending ? 'vx-verif-pending' : 'vx-verif-ok';
 }
 
+// Small key at the bottom of the table/card list so the 3px amber/green
+// edge stops being a mystery to first-time visitors. The two swatches are
+// the exact inset-shadow the rows/cards use, scaled down to inline-block
+// strips with a label next to each one.
+//
+// Order is pending → ok because the eye reads the rarer signal first, and
+// "System Approved" is the state the public site lives in most of the
+// time (the cron bulk-publishes everything to /vacancies and an admin
+// checks them off later). The helper text keeps both labels under ~12
+// words so it never breaks the table's bottom rhythm.
+function renderVerificationLegend() {
+  return `
+    <div class="vx-verif-legend" role="note" aria-label="Verification edge legend">
+      <span class="vx-verif-legend-item">
+        <span class="vx-verif-swatch vx-verif-swatch-pending" aria-hidden="true"></span>
+        <span class="vx-verif-legend-label">
+          <strong>System Approved</strong> — extracted by the AI ingestion pipeline, pending admin review
+        </span>
+      </span>
+      <span class="vx-verif-legend-item">
+        <span class="vx-verif-swatch vx-verif-swatch-ok" aria-hidden="true"></span>
+        <span class="vx-verif-legend-label">
+          <strong>Verified by Admin</strong> — checked against the source notification
+        </span>
+      </span>
+    </div>
+  `;
+}
+
 function orgDisplayName(item) {
   return safe(item.Organisation) || safe(item.Department) || safe(item.Department_Organisation) || '';
 }
@@ -2495,14 +2524,14 @@ function applyTheme(theme) {
     function renderTableResults(rows, totalCount, totalPages) {
         dataContainer.className = 'data-container view-table';
         dataContainer.innerHTML = totalCount
-            ? `${renderTable(rows)}${renderPagination(totalPages)}`
+            ? `${renderTable(rows)}${renderPagination(totalPages)}${renderVerificationLegend()}`
             : emptyStateHtml();
     }
 
     function renderCardResults(groups, totalGroups, totalRows, shownRows) {
         dataContainer.className = 'data-container view-card';
         dataContainer.innerHTML = totalRows
-            ? `${renderCards(groups)}${renderLoadMore(groups.length, totalGroups, shownRows, totalRows)}`
+            ? `${renderCards(groups)}${renderLoadMore(groups.length, totalGroups, shownRows, totalRows)}${renderVerificationLegend()}`
             : emptyStateHtml();
     }
 
