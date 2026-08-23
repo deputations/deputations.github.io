@@ -1364,7 +1364,7 @@ function renderVerificationLegend() {
       <span class="vx-verif-legend-item">
         <span class="vx-verif-swatch vx-verif-swatch-pending" aria-hidden="true"></span>
         <span class="vx-verif-legend-label">
-          <strong>System Approved</strong><em>— extracted by the AI ingestion pipeline, pending admin review</em>
+          <strong>System Approved</strong><em>— found, parsed &amp; cross-checked by AI, pending admin review</em>
         </span>
       </span>
       <span class="vx-verif-legend-item">
