@@ -1,9 +1,9 @@
 {
-  "generated_at_utc": "2026-08-22T04:07:30Z",
+  "generated_at_utc": "2026-08-23T04:09:57Z",
   "record_count": 647,
-  "active_count": 193,
-  "inactive_count": 391,
-  "closing_soon_count": 72,
+  "active_count": 186,
+  "inactive_count": 398,
+  "closing_soon_count": 65,
   "source": "supabase_rest_api_via_anon_key",
   "filter_counts": {
     "levels": 18,
