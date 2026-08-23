@@ -1364,13 +1364,13 @@ function renderVerificationLegend() {
       <span class="vx-verif-legend-item">
         <span class="vx-verif-swatch vx-verif-swatch-pending" aria-hidden="true"></span>
         <span class="vx-verif-legend-label">
-          <strong>System Approved</strong><em>— found, parsed &amp; cross-checked by AI, pending admin review</em>
+          <strong>System Approved</strong><em>— AI-researched, analysed, interpreted, cross-verified &amp; enriched</em>
         </span>
       </span>
       <span class="vx-verif-legend-item">
         <span class="vx-verif-swatch vx-verif-swatch-ok" aria-hidden="true"></span>
         <span class="vx-verif-legend-label">
-          <strong>Verified by Admin</strong><em>— checked against the source notification</em>
+          <strong>Verified by Admin</strong>
         </span>
       </span>
     </div>
