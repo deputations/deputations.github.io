@@ -6359,3 +6359,92 @@ denied by the permission classifier when attempted:
   for this fix.
 - **Cron log line format is `date-fix: cleared/swapped ND/LD on
   <Vid> → ND='…' LD='…'`.** Grep that on the next cron failure.
+
+---
+
+## session shq-2026-08-23-002
+```
+started:        2026-08-23
+ended:          2026-08-23
+model:          claude-opus-4-8
+driver:         solo
+branch:         main
+starting_head:  2c1990a
+ending_head:    <this commit>
+focus:          About-project popup on the top-nav logo
+```
+
+### inbound context read
+- shq-2026-08-23-001 + shq-2026-08-23-001-cont1 (the three-layer
+  ND/LD date validation, all on origin/main).
+- `site-widgets.js` `buildDisclaimer()` (lines 439-500) for the modal
+  pattern: gradient backdrop, signature block, Esc + X + backdrop close.
+- The `nav-brand` anchor is identical markup on all 8 HTML pages
+  (index/contact/defex/faq/my-deputation/report-vacancy/rules/upcoming-projects).
+
+### work done
+- `site-widgets.js`:
+  - added `buildAboutProject()` (next to `buildDisclaimer()` in `init()`).
+    Reuses the existing `sw-modal` / `sw-sign` / `sw-sign-pic` /
+    `sw-sign-info` classes so the two popups look like siblings. New
+    helpers `P()` (prose paragraph) and `H()` (section heading) keep
+    the template literal readable.
+  - added CSS extensions: `.sw-section` (with gradient-dot bullet and
+    top-border divider), `.sw-about-prose` (Lora serif italic to match
+    the legend's stylish serif), `.sw-link` (cyan with dashed underline),
+    `.sw-quote` (left-bordered pull-quote in italic Lora), and
+    `.sw-about-disclaimer` (amber-tinted caution block). Mobile responsive
+    font-size step at `max-width: 520px`.
+  - wired the click handler: intercepts plain left-click on `.nav-brand`
+    so the popup opens, but lets modifier keys (Cmd/Ctrl/Shift/Alt) and
+    middle/right-click fall through to the existing `href="/index.html"`.
+  - focus moves into the dialog when it opens (focus the close button)
+    so Esc + Tab start somewhere sensible.
+- All 8 HTML pages: bumped `site-widgets.js?v=26` → `?v=27`. The logo
+  `aria-label`/`title` was already "About this project" from the legend
+  session — left intact.
+- `verify_about_modal.py`: new Playwright suite that asserts modal mounts
+  on init, click opens it, both section headings ("Why alldeputations.com?"
+  + "Built independently") render, signature has all five identity fields,
+  disclaimer block has the expected copy + amber background, pull-quote
+  is in italic Lora, the `www.alldeputations.com` link is rendered in the
+  primary colour, prose uses Lora (not the body font), X / Esc / backdrop
+  each close cleanly, and no unexpected console errors fire. PASS.
+- Screenshots: `about-modal-desktop.png` + `about-modal-mobile.png` saved
+  in the repo root for visual reference. Not committed.
+
+### decisions
+- **Single source for the modal lives in `site-widgets.js`.** All 8 pages
+  already load it; no per-page duplication. `buildAboutProject()` early-
+  returns if `.nav-brand` is absent, so it is safe on any page shape.
+- **No "navigate to home" on plain click — open the popup.** If a user
+  wants the homepage, Home is in `nav-links`. The href is preserved so
+  Cmd-click / middle-click "Open in new tab" still works.
+- **The popup reuses the disclaimer modal's classes and shadow stack
+  rather than introducing a new `sw-about-modal` family.** The two
+  popups share visual DNA: same backdrop, same X button, same signature
+  block — only the content density differs.
+- **Lora italic for prose, not the body font.** Same serif as the
+  verification-legend explainer, so the project reads as an editorial
+  "behind the project" essay rather than another feature card.
+- **Pre-existing `verify_verif_legend.py` was left out of this commit.**
+  It had been edited during the legend session but never committed, and
+  the edits are verification work for the legend feature, not the
+  about-modal feature. Restored to HEAD before staging.
+
+### handoff state
+- not committed: NONE.
+- not pushed: NONE.
+- working tree: clean (after restore).
+
+### gotchas for next session
+- **`site-widgets.js?v=27` is now live on origin after this push.**
+  When editing the modal again, bump to v=28 on all 8 pages.
+- **The popup owns focus on open (`.cls` button).** Any future
+  modification that adds an interactive element before the close button
+  in the modal markup will need a corresponding focus change — keep the
+  close button first or the focus order will land mid-document.
+- **`verify_about_modal.py` is a per-session smoke test, not part of
+  the long-term test suite.** The long-term suite is P3-4 (Playwright +
+  pytest, 25 tests). If this check needs to live on, add it to the P3-4
+  suite rather than leaving it as a one-off at the repo root.

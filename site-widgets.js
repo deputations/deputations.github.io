@@ -232,6 +232,22 @@
   ".sw-sign-info{display:flex;flex-direction:column;gap:1px;line-height:1.45}" +
   ".sw-sign-info strong{font-family:'Sora','Plus Jakarta Sans',sans-serif;color:var(--sw-accent);font-size:1.02rem;font-weight:800}" +
   ".sw-sign-info span{font-size:.84rem;color:var(--sw-muted)}" +
+  /* === about-project popup extensions ===================================== */
+  /* Longer essay-like content: heading + serif prose + a pull quote +
+     disclaimer block. Reuses .sw-modal/.sw-sign above; these rules only add
+     what's specific to this popup so the disclaimer stays compact. */
+  ".sw-modal .bd .sw-section{margin:22px 0 12px;padding-top:14px;border-top:1px solid var(--sw-border);font-family:'Sora','Plus Jakarta Sans',sans-serif;font-size:.96rem;font-weight:800;letter-spacing:-.01em;color:var(--sw-text);display:flex;align-items:center;gap:8px}" +
+  ".sw-modal .bd .sw-section:first-child{margin-top:6px;padding-top:0;border-top:0}" +
+  ".sw-modal .bd .sw-section::before{content:'';width:6px;height:6px;border-radius:50%;background:linear-gradient(135deg,var(--sw-primary),var(--sw-accent));box-shadow:0 0 8px rgba(34,211,238,.35);flex:0 0 auto}" +
+  ".sw-modal .bd .sw-about-prose{margin:0 0 13px;font-family:'Lora','Iowan Old Style','Georgia',serif;font-size:.94rem;line-height:1.72;color:var(--sw-text);font-weight:500}" +
+  ".sw-modal .bd .sw-about-prose strong{font-family:'Plus Jakarta Sans','Sora',sans-serif;font-weight:800;color:var(--sw-accent)}" +
+  ".sw-modal .bd .sw-link{color:var(--sw-primary);text-decoration:none;border-bottom:1px dashed rgba(34,211,238,.55);padding-bottom:1px;font-weight:700;transition:color .18s,border-color .18s}" +
+  ".sw-modal .bd .sw-link:hover{color:var(--sw-accent);border-bottom-color:var(--sw-accent)}" +
+  ".sw-modal .bd .sw-quote{display:block;margin:14px 0 18px;padding:12px 16px;border-left:3px solid var(--sw-primary);background:rgba(34,211,238,.07);border-radius:0 10px 10px 0;font-family:'Lora',serif;font-style:italic;font-size:.98rem;color:var(--sw-text);line-height:1.6}" +
+  ".sw-modal .bd .sw-about-disclaimer{margin-top:24px;padding:14px 16px;border-radius:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.28);font-size:.82rem;color:var(--sw-muted);line-height:1.55}" +
+  ".sw-modal .bd .sw-about-disclaimer p{margin:0}" +
+  ".sw-modal .bd .sw-about-disclaimer strong{color:#f5b301;font-weight:700}" +
+  "@media(max-width:520px){.sw-modal .bd .sw-about-prose{font-size:.92rem}.sw-modal .bd .sw-quote{font-size:.94rem;padding:10px 14px}}" +
   ".sw-modal .cls{position:absolute;top:15px;right:17px;width:38px;height:38px;border-radius:50%;border:1px solid var(--sw-border);" +
     "background:var(--sw-surface2);color:var(--sw-text);cursor:pointer;font-size:1.25rem;line-height:1;display:flex;align-items:center;justify-content:center}" +
   ".sw-modal .cls:hover{border-color:var(--sw-primary);color:var(--sw-primary)}" +
@@ -499,6 +515,122 @@
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
   }
 
+  /* ===================== ABOUT PROJECT (logo → popup) =====================
+     The .nav-brand anchor in the top-nav now opens a styled "Behind All
+     Deputations" modal instead of navigating home. The href is preserved so
+     middle-click / cmd-click / right-click "Open in new tab" still work, but
+     plain left-click is intercepted.
+
+     Reuses the same sw-modal / sw-sign / sw-sign-pic / sw-sign-info classes
+     the disclaimer uses, so the two modals look like siblings. Adds a few
+     small extensions for the longer content: section headings (.sw-section)
+     and inline links (.sw-link) styled in the primary accent. */
+  function buildAboutProject() {
+    if (document.querySelector(".sw-about")) return;       // only mount once
+    var brand = document.querySelector(".nav-brand");
+    if (!brand) return;
+
+    // Personal-narrative paragraphs render in Lora italic — same stylish serif
+    // the verification legend uses — so the popup reads as an editorial
+    // "behind the project" essay rather than a generic feature card.
+    var P = function (s) { return "<p class='sw-about-prose'>" + s + "</p>"; };
+    var H = function (s) { return "<h4 class='sw-section'>" + s + "</h4>"; };
+    var SITE = "<a class='sw-link' href='" + rootPrefix() + "index.html' target='_blank' rel='noopener'>www.alldeputations.com</a>";
+
+    var intro = [
+      "I have always been fascinated by technology — the ability to take a problem, understand it deeply and build something that makes the experience better. Artificial intelligence has only strengthened that fascination by dramatically expanding what an individual builder can explore and create.",
+      "My journey began with Computer Science Engineering at <strong>NIT Durgapur</strong>, followed by a stint as a Software Engineer with an IT multinational in Bengaluru, where I developed web- and Windows-based applications.",
+      "I later left the well settled corporate job to work for the nation and become an IAS officer, appearing in the <strong>UPSC Civil Services Mains</strong> on multiple occasions. A Government position that I had initially taken alongside those preparations eventually opened another world to me: the scale, complexity and impact of public administration.",
+      "Today, I am proud to be a member of the <strong>Central Secretariat Service (CSS)</strong>, a service that works at the core of policy formulation and administration across the Central Government.",
+      "More recently, I completed my <strong>MBA in Financial Management (2024–26)</strong> from AJNIFM. My final-term dissertation explored a subject particularly close to my interests: a proposal for an AI-Augmented Decision Support System for Public Governance in Indian Central Ministries.",
+      "I have recently joined the <strong>Ministry of Road Transport &amp; Highways</strong> as <strong>Section Officer (Toll)</strong>."
+    ].map(P).join("");
+
+    var whyBlock = [
+      "A deputation opportunity should not be discovered by chance.",
+      "Yet, as a Government employee, I repeatedly encountered exactly that problem.",
+      "Deputation vacancies were scattered across many different sources. eHRMS provided an interface, but it did not capture everything I was looking for. Employment News still had to be scanned. Some notifications appeared on individual Government websites. Some reached us through colleagues or WhatsApp groups. And occasionally, a useful opportunity was noticed only after someone happened to come across it.",
+      "It was remarkably easy to miss a vacancy simply because you had not looked at the right place at the right time.",
+      "The project therefore began very modestly: a personal attempt to collect deputation information in an Excel sheet and present it to my friends more usefully.",
+      "Then I started improving it.",
+      "One problem revealed another. Search needed to be better. Eligibility needed to be easier to understand. Deadlines needed attention. Locations, organisations, pay levels and experience requirements needed structure. The interface needed to work from the perspective of an officer actually searching for an opportunity — not merely as another repository of notifications.",
+      "That small hobby project gradually evolved through more than <strong>600 development iterations and rebuilds</strong> into what you see today.",
+      "Throughout its development, I have tried to approach " + SITE + " as both its builder and its end user — examining even small friction points and repeatedly asking a simple question:",
+      "<em class='sw-quote'>\"If I were searching for the right deputation today, what would I expect this service to do for me?\"</em>",
+      "That question continues to shape the platform."
+    ].map(P).join("");
+
+    var builtBlock = [
+      SITE + " is a personal, independently developed project.",
+      "There is no large product team behind it. It is an ongoing experiment in using modern software engineering, automation and AI to solve a very specific real-world information problem experienced by Government officers.",
+      "And it is still evolving.",
+      "I am also exploring a few other technology and AI projects, particularly around improving information discovery, decision support and digital experiences in public-sector contexts.",
+      "For me, the most exciting aspect of today's technology is not technology itself.",
+      "It is what a sufficiently curious individual can now build with it."
+    ].map(P).join("");
+
+    var disclaimerBlock =
+      "<div class='sw-about-disclaimer'>" +
+        "<p><strong>All Deputations is an independent personal initiative</strong> and is not an official website of the Government of India. The views, design and functionality of this project are personal and do not represent the Government of India or Ministry of Road Transport &amp; Highways or any other Government organisation or institution mentioned above.</p>" +
+      "</div>";
+
+    var signHtml =
+      "<div class='sw-sign'>" +
+        "<div class='sw-sign-pic' aria-hidden='true'>" +
+          "<svg viewBox='0 0 24 24' fill='currentColor'><path d='M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z'/></svg>" +
+        "</div>" +
+        "<div class='sw-sign-info'>" +
+          "<strong>Vivek Vishal</strong>" +
+          "<span>Section Officer (Toll) — Ministry of Road Transport &amp; Highways</span>" +
+          "<span>B. Tech CSE, NIT Durgapur · MBA (FM), AJNIFM</span>" +
+          "<span>Central Secretariat Service</span>" +
+        "</div>" +
+      "</div>";
+
+    var SVG_USER = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='8' r='4'/><path d='M4 21c0-4 4-6 8-6s8 2 8 6'/></svg>";
+
+    var modal = document.createElement("div");
+    modal.className = "sw-modal sw-about";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-label", "Behind All Deputations");
+    modal.innerHTML =
+      "<div class='card'>" +
+        "<button class='cls' aria-label='Close'>×</button>" +
+        "<div class='hd'><span class='ic'>" + SVG_USER + "</span>" +
+          "<div><h3>Behind All Deputations</h3>" +
+          "<p class='sub'>An independent project at the intersection of technology, AI and public service.</p></div></div>" +
+        "<div class='bd'>" +
+          intro +
+          H("Why " + SITE + "?") + whyBlock +
+          H("Built independently") + builtBlock +
+          signHtml +
+          disclaimerBlock +
+        "</div>" +
+      "</div>";
+    document.body.appendChild(modal);
+
+    function open() {
+      modal.classList.add("open");
+      // Move focus into the dialog so Esc + Tab start somewhere sensible.
+      var btn = modal.querySelector(".cls");
+      if (btn) btn.focus();
+    }
+    function close() { modal.classList.remove("open"); }
+
+    // Intercept the plain left-click. Right-click, middle-click, ctrl/cmd-click
+    // still hit the href so users can open About in a new tab if they want.
+    brand.addEventListener("click", function (e) {
+      // Allow modifiers (open-in-new-tab gestures) and non-left buttons through.
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      open();
+    });
+    modal.querySelector(".cls").addEventListener("click", close);
+    modal.addEventListener("click", function (e) { if (e.target === modal) close(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+  }
+
   /* ===================== MOBILE NAV (hamburger + bottom sheet) ============ */
   /* The nav row silently cuts off on small screens (review M2): several links
      were undiscoverable. A hamburger (<=768px via CSS) opens a bottom sheet
@@ -603,6 +735,7 @@
     try { buildTypewriter(); } catch (e) {}
     try { buildMobileNav(); } catch (e) {}
     try { buildDisclaimer(); } catch (e) {}
+    try { buildAboutProject(); } catch (e) {}
 
     // P3-7 PR 1 (fix): render the visitor counter and feedback widget
     // UNCONDITIONALLY. The previous shape gated both on an eager

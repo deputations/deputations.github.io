@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.3.13` (2026-08-09).** The `VERSION` file at the repo root
+**Current version: `7.4.5` (2026-08-23).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -25,6 +25,38 @@ counter_convention:
 ---
 
 ## [Unreleased]
+
+### Added — top-nav logo now opens a "Behind All Deputations" popup
+The logo (top-left, identical markup on all 8 pages) used to navigate to
+home on plain click. It now opens a styled editorial popup — the "behind
+the project" essay with the personal journey, "Why alldeputations.com?",
+"Built independently", a signature block (Vivek Vishal — Section Officer
+(Toll), Ministry of Road Transport & Highways; B. Tech CSE NIT Durgapur;
+MBA FM AJNIFM; Central Secretariat Service) and an independent-project
+disclaimer.
+
+Implementation:
+
+- `site-widgets.js`: new `buildAboutProject()` mounted from `init()` next
+  to `buildDisclaimer()`. Reuses the existing `sw-modal` / `sw-sign` /
+  `sw-sign-pic` / `sw-sign-info` classes so the popup is visually a
+  sibling of the disclaimer. Adds `.sw-section` (gradient-dot bullet),
+  `.sw-about-prose` (Lora italic serif — same stylish serif used in the
+  verification legend), `.sw-link` (cyan dashed underline), `.sw-quote`
+  (left-bordered pull-quote in italic Lora) and `.sw-about-disclaimer`
+  (amber caution block).
+- Click handler: intercepts plain left-click on `.nav-brand` only. Cmd /
+  Ctrl / Shift / Alt + click and middle / right-click still hit the
+  existing `href="/index.html"` so "Open in new tab" still works.
+- Close: `Esc`, the X button, and a backdrop click — same trio as the
+  disclaimer popup.
+- Focus moves into the dialog (close button) when it opens.
+- All 8 HTML pages bumped `site-widgets.js?v=26` → `?v=27`.
+- `verify_about_modal.py`: 11-check Playwright smoke. PASS on a fresh
+  local server (modal mounts, click opens, both section headings + all
+  five signature fields + disclaimer copy render, Lora italic applies to
+  prose + pull-quote, X / Esc / backdrop each close, no unexpected
+  console errors).
 
 ### Changed — Upcoming Projects restored to a carousel + keyboard nav
 The page had drifted back to a 2-column bento grid; the four card-layout
