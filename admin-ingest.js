@@ -435,7 +435,7 @@ Return ONLY a JSON array — no prose, no markdown fences. Each object uses EXAC
 - organisation_type: EXACTLY one of — Ministry; Department; Attached and Subordinate Offices; Constitutional Bodies; Statutory Bodies; Autonomous Bodies; Central Public Sector Enterprises (CPSEs).
 - level, req_level1: Pay Matrix level as a string — digits with an optional A suffix where the matrix says so (e.g. "12", "13A"). No other text.
 - eligibility_tiers: array of {"level","min_years"} (both number-strings) = the feeder grades the post is open to. Include the analogous tier (the post's own level, "min_years":"0") when "analogous posts" is mentioned, plus each lower grade with its required years. Also still fill req_level1/req_level2 + min_years_experience/min_years_experience2 with the first two tiers. Example for a Level-11 post open to "(i) analogous; (ii) L10+3y; (iii) L8+5y": [{"level":"11","min_years":"0"},{"level":"10","min_years":"3"},{"level":"8","min_years":"5"}]
-- notification_date, last_date_to_apply: ISO yyyy-mm-dd. If a deadline is "within N days of the notification/advertisement", compute last_date_to_apply = notification_date + N days.
+- notification_date, last_date_to_apply: ISO yyyy-mm-dd. If a deadline is "within N days of the notification/advertisement", compute last_date_to_apply = notification_date + N days. CRITICAL: notification_date must be the date the notification/circular was PUBLISHED (typically the Employment News issue date or the date printed on the circular). last_date_to_apply is the deadline for RECEIVING applications. These are usually 30-90 days apart and must be ordered: notification_date < last_date_to_apply. A row with notification_date AFTER last_date_to_apply will be REJECTED at ingest — re-check the source PDF before submitting. If the source PDF only shows ONE date and the text says "applications due within N days of publication", then publication = that one date and N days later = last_date_to_apply.
 - official_notification_link: official sources ONLY — the DIRECT ".pdf" link or the specific circular/notification page that opens this vacancy. NEVER a generic homepage, a careers/"current vacancies" listing, or a third-party aggregator. If unsure a link is real, leave it empty. Never invent a URL.
 - detailed_eligibility: COPY VERBATIM the complete eligibility / qualification conditions block exactly as printed in the source for THIS post (feeder grades & pay levels, essential and desirable qualifications, experience, age limit). Do NOT paraphrase, summarise, or reorder. "" if the ad states none.
 - additional_details: any other important info about THIS post not captured by the other fields (special instructions, relaxations/concessions, reservations, post breakup, contact details, remarks/notes/conditions). Copy the relevant text; do NOT duplicate eligibility text. "" if nothing extra.
@@ -464,7 +464,7 @@ Output ONLY a JSON array. Each object must use EXACTLY these keys (use "" when u
 
 Rules:
 - official_notification_link must be the ACTUAL notification document (direct ".pdf" preferred), or the specific circular page — NEVER a generic homepage / listing / aggregator. Leave empty if not found. Never invent a URL.
-- Dates ISO yyyy-mm-dd; if "within N days of the notification", compute last_date_to_apply = notification_date + N days.
+- Dates ISO yyyy-mm-dd; if "within N days of the notification", compute last_date_to_apply = notification_date + N days. CRITICAL: notification_date is when the circular was ISSUED/PUBLISHED, last_date_to_apply is the deadline for RECEIVING applications. They must be ordered: notification_date < last_date_to_apply. A row with the dates swapped (notification_date AFTER last_date_to_apply) will be REJECTED at ingest — re-check the circular before submitting. If only one date is given, that is the publication date and the deadline is the day the application window closes (NOT the publication date).
 - "level"/"req_level1" = Pay Matrix level as a string — digits with an optional A suffix where the matrix says so (e.g. "12", "13A"). No other text.
 - "eligibility_tiers" = feeder grades as [{"level","min_years"}] (NUMBER strings). Include the analogous tier (post's own level, "0" years) plus each lower grade with its required years; e.g. [{"level":"11","min_years":"0"},{"level":"10","min_years":"3"},{"level":"8","min_years":"5"}]. Also still fill req_level1/2 + min_years_experience/2 from the first two tiers.
 - ministry = standard GoI name WITHOUT the "Ministry of"/"Department of" prefix.
@@ -490,9 +490,49 @@ function fileToBase64(file) {
   });
 }
 
+// Server-side validation for pasted/extracted rows. Mirrors validateAndFixDates
+// in supabase/functions/extract/index.ts — keep these in sync. Three invariants:
+//   1. notification_date parses as ISO yyyy-mm-dd
+//   2. notification_date <= today  (a notification can't be in the future)
+//   3. notification_date <  last_date_to_apply  (notify precedes close)
+// If 3 fails but a swap satisfies all three, swap. Otherwise flag the row
+// (low confidence + extra in raw_extraction) so it reaches Review instead of
+// silently shipping a bad date. Returns { nd, ld, confidence, fixNote }.
+function validateAndFixDates(it, now = new Date()) {
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const parse = (s) => {
+    const t = String(s || '').trim();
+    const m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+  const toIso = (d) => d.toISOString().slice(0, 10);
+  const nd = parse(it.notification_date);
+  const ld = parse(it.last_date_to_apply);
+  if (!nd && !ld) return { nd: it.notification_date || '', ld: it.last_date_to_apply || '', confidence: it.confidence || 'medium', fixNote: '' };
+  if (!nd || !ld) return { nd: it.notification_date || '', ld: it.last_date_to_apply || '', confidence: 'low', fixNote: 'missing-date' };
+  // Natural order ok?
+  if (nd < ld && nd <= today) return { nd: toIso(nd), ld: toIso(ld), confidence: it.confidence || 'medium', fixNote: '' };
+  // Swap attempt — only if both dates are in the past and ordering becomes valid.
+  if (ld < nd && ld <= today) {
+    return { nd: toIso(ld), ld: toIso(nd), confidence: it.confidence || 'medium', fixNote: 'auto-swapped-nd-ld' };
+  }
+  // Future-date attempt (LD in the past, ND in the future → swap fixes ordering but ND is still future)
+  if (nd > today && ld <= today && ld < nd) {
+    return { nd: toIso(ld), ld: toIso(nd), confidence: 'medium', fixNote: 'auto-swapped-future-nd' };
+  }
+  // Both invariants fail; can't fix. Flag for human review.
+  return { nd: it.notification_date || '', ld: it.last_date_to_apply || '', confidence: 'low', fixNote: 'date-mismatch-needs-review' };
+}
+
 function mapPasted(it, jobId, label, year, i, sourceFileUrl) {
   const lvl = levelTok(it.level || it.req_level1 || '');   // keeps "13A"
   const mc = minCode(it.ministry);
+  const dv = validateAndFixDates(it);
+  // Bake any date fix back into the row so downstream sees the swapped values.
+  it.notification_date = dv.nd;
+  it.last_date_to_apply = dv.ld;
   return {
     vacancy_id: `${mc}-${year}-L${lvl || 'X'}-${String(i + 1).padStart(3, '0')}`,
     ministry: it.ministry || '', min_code: mc, department: it.department || '', organisation: it.organisation || '',
@@ -504,15 +544,15 @@ function mapPasted(it, jobId, label, year, i, sourceFileUrl) {
     // store tiers with TOKEN levels ("13A") — ranks (13.5) would mangle on re-parse
     eligibility_tiers: tiersFor(it).map((t) => ({ level: t.label || String(t.level), min_years: t.min_years })),
     no_of_posts: String(it.no_of_posts || ''), deputation_period_years: String(it.deputation_period_years || ''),
-    deputation_type: it.deputation_type || '', notification_date: it.notification_date || '', last_date_to_apply: it.last_date_to_apply || '',
+    deputation_type: it.deputation_type || '', notification_date: dv.nd, last_date_to_apply: dv.ld,
     official_notification_link: it.official_notification_link || '', application_form_link: it.application_form_link || '',
     source_website: it.source_website || '', essential_qualification: it.essential_qualification || '',
     additional_details: it.additional_details || '',
     eligible_service: it.eligible_service || '', mode_of_application: it.mode_of_application || '',
     functional_area: it.functional_area || '', tags_keywords: it.tags_keywords || '',
-    status: 'draft', confidence: (it.confidence || 'medium'), source_type: 'employment_news',
+    status: 'draft', confidence: dv.confidence, source_type: 'employment_news',
     source_category: label || 'Pasted import', source_file_url: sourceFileUrl || '',
-    ingest_job_id: jobId, raw_extraction: it,
+    ingest_job_id: jobId, raw_extraction: it, date_fix_note: dv.fixNote,
   };
 }
 

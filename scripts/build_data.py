@@ -98,6 +98,52 @@ def parse_date(value: Any) -> str:
         return text
 
 
+def _parse_iso(text: str) -> date | None:
+    """Strict ISO yyyy-mm-dd parser — used by the date invariant check.
+    LLM-extracted rows in Supabase are already normalised to ISO by the
+    extract Edge Function, so this is the right shape to validate against.
+    `parse_date` above accepts fuzzy inputs from the legacy Google Sheet path."""
+    s = safe_str(text)
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", s):
+        return None
+    try:
+        return datetime.strptime(s, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def _to_iso(d: date) -> str:
+    return d.isoformat()
+
+
+def validate_and_fix_row_dates(notification_date_iso: str, last_date_iso: str, now: date | None = None) -> tuple[str, str, bool]:
+    """Apply the two date invariants the public dashboard relies on:
+
+      1. notification_date <= today        (a notification can't be in the future)
+      2. notification_date <  last_date_to_apply (notify strictly precedes close)
+
+    Mirrors `validateAndFixDates` in admin-ingest.js and
+    supabase/functions/extract/index.ts — keep these three helpers in sync.
+
+    Returns (nd, ld, swapped_or_cleared). If both invariants are unfixable the
+    returned nd is "" and the row will display "—" for notification date (the
+    dashboard already handles missing dates gracefully), but ld is kept so the
+    "days left" countdown still works.
+    """
+    nd = _parse_iso(notification_date_iso)
+    ld = _parse_iso(last_date_iso)
+    if (not nd and not ld) or (not nd) or (not ld):
+        return notification_date_iso, last_date_iso, False
+    today = now or date.today()
+    if nd <= ld and nd <= today:
+        return notification_date_iso, last_date_iso, False
+    if ld <= nd and ld <= today:
+        return _to_iso(ld), _to_iso(nd), True
+    if nd > today and ld <= today and ld < nd:
+        return _to_iso(ld), _to_iso(nd), True
+    return "", last_date_iso, True
+
+
 def to_display_date(value: str) -> str:
     if not value:
         return ""
@@ -437,8 +483,17 @@ def coerce_admin_verified(raw: Any) -> bool:
     return s not in {"false", "0", "no", "f"}
 
 
-def transform_rows(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
+def transform_rows(rows: list[dict[str, str]]) -> tuple[list[dict[str, Any]], int]:
+    """Transform sheet / Supabase rows into the bundled-JSON shape.
+
+    Returns (vacancies, date_fixes_count). The second tuple element is the
+    number of rows whose Notification_Date/Last_Date_To_Apply were repaired
+    by `validate_and_fix_row_dates` — surfaced in the cron log so a regression
+    in the upstream extractor shows up the next morning instead of waiting
+    for a user to spot a future ND on the dashboard."""
+
     transformed: list[dict[str, Any]] = []
+    date_fixes = 0
 
     for row in rows:
         approval_status = normalize_whitespace(row.get("DRAFT / APPROVED", ""))
@@ -451,6 +506,18 @@ def transform_rows(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
 
         notification_date_iso = parse_date(row.get("Notification_Date", ""))
         last_date_iso = parse_date(row.get("Last_Date_To_Apply", ""))
+        # Enforce the ND/LD invariants the dashboard relies on. The cron reads
+        # directly from Supabase, so any future ND already in the DB (e.g. an
+        # LLM-extraction bug that slipped past ingest) would re-bake here on
+        # every rebuild. Fixing at the JSON stage means NIC users served from
+        # data/vacancies.json never see a future notification date.
+        notification_date_iso, last_date_iso, was_fixed = validate_and_fix_row_dates(
+            notification_date_iso, last_date_iso
+        )
+        if was_fixed:
+            vid = safe_str(row.get("Vacancy_ID", "?"))
+            print(f"  date-fix: cleared/swapped ND/LD on {vid} → ND={notification_date_iso!r} LD={last_date_iso!r}")
+            date_fixes += 1
         days_left = compute_days_left(last_date_iso)
         status = infer_status(row.get("Status", ""), days_left)
         location_label = build_location_label(row.get("Location_City", ""), row.get("Location_State", ""))
@@ -696,7 +763,7 @@ def main() -> None:
     if source_used.startswith("Google Sheet"):
         validate_required_columns(rows)
 
-    vacancies = transform_rows(rows)
+    vacancies, date_fixes = transform_rows(rows)
     assert_no_credentials(vacancies)
     filters = build_filters(vacancies)
     stats = build_stats(vacancies)
@@ -714,6 +781,7 @@ def main() -> None:
     OUTPUT_FEED.write_text(build_feed(vacancies), encoding="utf-8")
 
     print(f"Built {len(vacancies)} approved vacancies from {source_used}.")
+    print(f"Date fixes applied: {date_fixes} (ND/LD swap or ND cleared — see lines above)")
     print(f"Wrote: {OUTPUT_VACANCIES}")
     print(f"Wrote: {OUTPUT_FILTERS}")
     print(f"Wrote: {OUTPUT_STATS}")

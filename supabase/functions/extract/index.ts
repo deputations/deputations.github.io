@@ -111,10 +111,17 @@ const BASE_RULES = `
 Return ONE row per (post × location/bench × pay level). If an advertisement
 lists a post available at several benches/cities or several levels, expand it
 into multiple rows — never collapse them.
-Dates MUST be ISO format yyyy-mm-dd. If only a closing date is given, fill
-last_date_to_apply. If the ad says applications are due "within N days" / "N days
-from the date of this notification/advertisement", COMPUTE last_date_to_apply by
+Dates MUST be ISO format yyyy-mm-dd. notification_date is when the
+notification/circular was PUBLISHED (Employment News issue date or the
+date printed on the circular). last_date_to_apply is the deadline for
+RECEIVING applications. They MUST be ordered: notification_date
+strictly precedes last_date_to_apply (typically 30-90 days apart).
+If the ad says applications are due "within N days" / "N days from the
+date of this notification/advertisement", COMPUTE last_date_to_apply by
 adding N days to notification_date and return the computed ISO date.
+Rows with notification_date >= last_date_to_apply are auto-swapped
+server-side; rows that still fail validation after the swap are
+flagged for human review.
 "level" and "req_level1" are the Pay Matrix level as a string — digits with an
 optional A suffix where the matrix says so (e.g. "12", "13A"). No other text.
 "eligibility_tiers" is the list of feeder grades the post is open to. A deputation
@@ -313,6 +320,60 @@ function keysOf(row: any): { prefix: string; matchKey: string; emptyKey: string;
   const prefix = `${org}|${post}|${city}`;
   return { prefix, matchKey: `${prefix}|${lvl}`, emptyKey: `${prefix}|`, dedupKey: `${prefix}|${lvl}|${date}` };
 }
+// ---------------------------------------------------------------------------
+// Date sanity. The LLM extraction occasionally returns notification_date and
+// last_date_to_apply swapped (the day from LD leaks into ND; the month comes
+// from the source category) — surfaced on 2026-08-23 when ~50 rows rendered
+// future "Notification Dates" on the public dashboard.
+//
+// Two invariants hold for every live vacancy:
+//   1. notification_date <= today (a notification can't be in the future)
+//   2. notification_date <  last_date_to_apply (notify strictly precedes close)
+//
+// If both dates parse to ISO and one of these fails, we try a swap
+// (ND/LD might genuinely have been inverted by the LLM). If the swap
+// doesn't satisfy both, we clear both and surface a flag so the row
+// goes to Review as "needs human eyes" instead of silently shipping.
+// ---------------------------------------------------------------------------
+function parseIsoDate(s: unknown): Date | null {
+  const t = String(s ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return null;
+  const d = new Date(t + "T00:00:00Z");
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+function toIsoDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+function validateAndFixDates(
+  it: { notification_date?: string; last_date_to_apply?: string },
+  now: Date = new Date(),
+): { ok: boolean; reason?: string; flagged?: boolean } {
+  const nd = parseIsoDate(it.notification_date);
+  const ld = parseIsoDate(it.last_date_to_apply);
+  // Either missing — can't validate. Leave alone.
+  if (!nd && !ld) return { ok: true };
+  if (!nd || !ld) return { ok: true }; // partial data; let Review handle
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  // Try the natural order first.
+  if (nd <= ld && nd <= today) return { ok: true };
+  // Try swap (LLM inverted ND/LD).
+  if (ld <= nd && ld <= today) {
+    it.notification_date = toIsoDate(ld);
+    it.last_date_to_apply = toIsoDate(nd);
+    return { ok: true, reason: "swapped" };
+  }
+  // Try swap when only the "ND > today" invariant fails (close date still ok).
+  if (nd > today && ld <= today && ld < nd) {
+    it.notification_date = toIsoDate(ld);
+    it.last_date_to_apply = toIsoDate(nd);
+    return { ok: true, reason: "swapped-future-nd" };
+  }
+  // Both invariants fail and swap doesn't help. Flag for human review.
+  // Don't mutate — let the row reach Review with a low confidence and a clear
+  // "date-mismatch" flag the admin can correct from the source PDF.
+  return { ok: false, flagged: true };
+}
+
 // Levels are compatible when equal, or when either side is blank (unknown).
 const lvlCompat = (a: unknown, b: unknown) => {
   const x = normLevel(a), y = normLevel(b); return !x || !y || x === y;
@@ -669,6 +730,16 @@ Deno.serve(async (req) => {
       const min_code = minCodeFromMinistry(it.ministry || "");
       const level = levelTok(it.level || it.req_level1 || "");   // keeps "13A"
       const seq = String(i + 1).padStart(3, "0");
+      // See helper above (lines ~324–375): the LLM occasionally inverts the
+      // two dates. Mutate `it` in place so the cleaned values land in the row,
+      // then propagate any "flagged" verdict onto confidence so the row sorts
+      // to the top of Review instead of silently shipping a future ND.
+      const dateCheck = validateAndFixDates(it);
+      const dateConfidence: string = dateCheck.flagged
+        ? "low"
+        : dateCheck.ok
+          ? (it.confidence || "medium")
+          : "low";
       return {
         vacancy_id: `${min_code}-${year}-L${level || "X"}-${seq}`,
         ministry: it.ministry || "",
@@ -701,7 +772,7 @@ Deno.serve(async (req) => {
         mode_of_application: it.mode_of_application || "",
         tags_keywords: it.tags_keywords || "",
         status: "draft",
-        confidence: it.confidence || "medium",
+        confidence: dateConfidence,
         source_type: job.source_type,
         source_category: job.source_label || "",
         source_file_url: job.source_file_url || job.source_url || "",
