@@ -94,6 +94,35 @@ manual-add path already produces correct ISO dates (their test row
 ND=2026-08-23, LD=2026-09-23 stored verbatim and displayed correctly).
 The bug only existed in the JSON-via-extract path, not the form path.
 
+### Fixed — root cause of the Notification-Date-future bug, defended at three layers
+The `f660495` data fix above patched the 50 most-visible broken rows in
+`data/vacancies.json`, but the same bug kept re-introducing itself on every
+cron rebuild because no layer rejected the bad shape. The architectural fix
+prevents that recurrence by enforcing two date invariants at every ingress:
+
+1. `notification_date <= today` (a notification can't be in the future)
+2. `notification_date < last_date_to_apply` (notify strictly precedes close)
+
+`validateAndFixDates` / `validate_and_fix_row_dates` now exists in three
+places (each with a cross-reference comment so the three stay in sync):
+
+- **`supabase/functions/extract/index.ts`** — runs on every row the Edge
+  Function builds. Tries a swap when both invariants fail; falls back to
+  `confidence: low` so the row reaches Review instead of silently shipping.
+- **`admin-ingest.js`** — same helper for the Paste-an-AI-chat path; the
+  `EN_PROMPT` and `NOTIF_PROMPT` strings were also strengthened with the
+  invariant in plain English plus a "will be REJECTED at ingest" warning.
+- **`scripts/build_data.py`** — runs on every cron rebuild so the bundled
+  `data/vacancies.json` cannot republish a future ND even if Supabase
+  already holds one. `transform_rows` now returns `(vacancies, fixes_count)`
+  and the count is logged on every cron run.
+
+As a side-effect of running the strengthened Python helper against the
+live `data/vacancies.json`: 149 rows were repaired (mostly the same
+day/month swap as above, plus 7 rows where the LLM extracted a future
+notification date with no close date at all — those had `Notification_Date`
+cleared). The next cron rebuild will keep the file clean.
+
 ### Changed — KPI cards reordered; Ministries now counts ACTIVE vacancies only
 Two changes to the home-page KPI grid in `app.js`:
 

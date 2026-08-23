@@ -132,9 +132,16 @@ def validate_and_fix_row_dates(notification_date_iso: str, last_date_iso: str, n
     """
     nd = _parse_iso(notification_date_iso)
     ld = _parse_iso(last_date_iso)
+    today = now or date.today()
+    # (a) Either missing — can't validate ordering. BUT a future ND on its own
+    # is still a wrong display ("08 Dec 2026" can't be a notification date
+    # today), so if ND is in the future and LD is absent we clear ND and let
+    # the row fall through to Review. LD is preserved so the countdown keeps
+    # working once the admin fills it in.
+    if nd and nd > today and not ld:
+        return "", last_date_iso, True
     if (not nd and not ld) or (not nd) or (not ld):
         return notification_date_iso, last_date_iso, False
-    today = now or date.today()
     if nd <= ld and nd <= today:
         return notification_date_iso, last_date_iso, False
     if ld <= nd and ld <= today:
