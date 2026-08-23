@@ -45,6 +45,32 @@ def main() -> int:
         if is_open_before:
             fails.append("modal should be closed initially")
 
+        # 1b. Typewriter — bd starts at pending (spans at opacity 0 before
+        # anyone opens the modal). Wrapping must have happened at init.
+        bd_state_pre = page.evaluate(
+            "document.querySelector('.sw-modal.sw-about .bd').getAttribute('data-typing')"
+        )
+        print(f"bd data-typing before open: {bd_state_pre}")
+        if bd_state_pre != "pending":
+            fails.append(f"bd should be data-typing='pending' before open; got {bd_state_pre!r}")
+
+        wrap_count = page.evaluate(
+            "document.querySelectorAll('.sw-modal.sw-about .sw-type-w').length"
+        )
+        print(f"wrapped word spans: {wrap_count}")
+        if wrap_count < 50:
+            fails.append(f"expected 50+ wrapped word spans; got {wrap_count}")
+
+        # 1c. Spans carry a --w ordinal and --word-ms is the pacing constant.
+        first_w = page.evaluate("""
+            () => {
+              const s = document.querySelector('.sw-modal.sw-about .sw-type-w');
+              return s ? s.style.getPropertyValue('--w') : null;
+            }
+        """)
+        if not first_w or not first_w.lstrip("-").isdigit():
+            fails.append(f"first wrapped span missing --w ordinal; got {first_w!r}")
+
         # 2. Click on .nav-brand opens the modal.
         page.click(".nav-brand")
         page.wait_for_timeout(250)
@@ -54,6 +80,16 @@ def main() -> int:
         print(f"modal open after click: {is_open_after}")
         if not is_open_after:
             fails.append("click on .nav-brand did not open modal")
+
+        # 2b. Typewriter — bd should flip to "run" after a double-rAF flush.
+        # Wait long enough for both rAFs to fire (one frame each).
+        page.wait_for_timeout(80)
+        bd_state_open = page.evaluate(
+            "document.querySelector('.sw-modal.sw-about .bd').getAttribute('data-typing')"
+        )
+        print(f"bd data-typing after open: {bd_state_open}")
+        if bd_state_open != "run":
+            fails.append(f"bd should be data-typing='run' after open; got {bd_state_open!r}")
 
         # 3. Header + section headings + signature + disclaimer present.
         title = page.text_content(".sw-modal.sw-about h3") or ""
@@ -131,9 +167,34 @@ def main() -> int:
         if page.evaluate("document.querySelector('.sw-modal.sw-about').classList.contains('open')"):
             fails.append("X button did not close modal")
 
+        # 9b. Typewriter — bd should reset to "pending" so the next open
+        # re-runs the reveal from word 0.
+        bd_state_closed = page.evaluate(
+            "document.querySelector('.sw-modal.sw-about .bd').getAttribute('data-typing')"
+        )
+        print(f"bd data-typing after close: {bd_state_closed}")
+        if bd_state_closed != "pending":
+            fails.append(f"bd should reset to 'pending' on close; got {bd_state_closed!r}")
+
         # 10. Re-open, then close with Esc.
         page.click(".nav-brand")
-        page.wait_for_timeout(200)
+        # Playwright's click action internally does hover + scroll-and-stabilize
+        # waits that can push the actual mouseup past 500ms. Wait until the
+        # bd state actually transitions to "run" via the open() rAFs, rather
+        # than guessing a timeout.
+        try:
+            page.wait_for_function(
+                "document.querySelector('.sw-modal.sw-about .bd').getAttribute('data-typing') === 'run'",
+                timeout=3000,
+            )
+        except Exception:
+            pass
+        bd_state_reopen = page.evaluate(
+            "document.querySelector('.sw-modal.sw-about .bd').getAttribute('data-typing')"
+        )
+        print(f"bd data-typing on re-open: {bd_state_reopen}")
+        if bd_state_reopen != "run":
+            fails.append(f"bd should re-flip to 'run' on re-open; got {bd_state_reopen!r}")
         page.keyboard.press("Escape")
         page.wait_for_timeout(200)
         if page.evaluate("document.querySelector('.sw-modal.sw-about').classList.contains('open')"):

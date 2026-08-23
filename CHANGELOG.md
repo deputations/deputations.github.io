@@ -1,6 +1,6 @@
 # CHANGELOG — version history
 
-**Current version: `7.4.5` (2026-08-23).** The `VERSION` file at the repo root
+**Current version: `7.4.6` (2026-08-23).** The `VERSION` file at the repo root
 is the single source of truth; this file is its history.
 
 ```
@@ -25,6 +25,59 @@ counter_convention:
 ---
 
 ## [Unreleased]
+
+### Changed — about-modal prose now types in at reader speed instead of appearing all at once
+The popup from 7.4.5 used to render the whole essay at once when the
+logo was clicked. Owner asked for it to type in word by word at reading
+pace (mirrors the #manpower typewriter on defex, which settled on 260
+ms/word after three rounds of owner retuning in 7.3.7 → 7.3.8 → 7.3.10
+→ 7.3.11).
+
+Implementation:
+
+- `site-widgets.js`: new `wrapWordsForTypewriter()` mounted from inside
+  `buildAboutProject()`. At init, walks every text node inside
+  `.sw-about-prose` and tags it with a
+  `<span class="sw-type-w" style="--w:N">` carrying its global ordinal.
+  562 words wrapped. Section headings (`.sw-section`), signature
+  (`.sw-sign`), and disclaimer (`.sw-about-disclaimer`) are outside the
+  wrap target so they stay plain — they should be navigable instantly.
+  Inline links (`.sw-link`) are also excluded from wrapping so the
+  styled anchor reads as a single block.
+- `open()` now double-rAFs a `data-typing="run"` flip so the
+  `[data-typing='run'] .sw-type-w` rule engages past the layout step
+  (single rAF in a backgrounded tab parks the rule indefinitely and the
+  essay sits at opacity 0 forever — caught and documented in defex
+  7.3.9). `close()` resets `data-typing="pending"` so the next open()
+  re-runs the reveal from word 0.
+- new CSS rules: `[data-typing='pending'] .sw-type-w { opacity:0 }`,
+  `[data-typing='run'] { --word-ms: 260ms }` (driven off the new
+  module-level `TYPE_PACE_MS` const shared with JS — single source of
+  truth), and `[data-typing='run'] .sw-type-w { opacity:1; transition:
+  opacity .2s linear; transition-delay: calc(var(--w,0) *
+  var(--word-ms)) }`. `prefers-reduced-motion: reduce` collapses every
+  span to opacity:1 with no transition (text reads as plain paragraphs,
+  no animation, no DOM mutation cost).
+- All 8 HTML pages: `site-widgets.js?v=27` → `?v=28`.
+- `verify_about_modal.py`: extended with 5 typewriter-specific checks
+  (bd pre-state pending, 562 spans present, post-open = run, post-close
+  = pending, re-open = run via `wait_for_function` because Playwright's
+  click action internally does hover + scroll-and-stabilize waits that
+  push the actual mouseup past 500 ms). PASS — all 13 checks.
+
+562 words × 260 ms ≈ **2 minutes 26 seconds** end to end at literal
+reading pace. If too slow, the single retune is `TYPE_PACE_MS` at the
+top of `site-widgets.js` — both JS and CSS read from the same constant.
+
+One bug worth pinning: v1 of this change listed both `.sw-about-prose`
+and `.sw-quote` in the wrap targets selector, but the
+`<em class="sw-quote">` is INSIDE a `<p class="sw-about-prose">` on the
+page. The visit logic descended into the quote from both targets and
+collected its text node twice; the second `replaceChild` call found
+`parentNode === null` and threw, so the click listener never attached.
+Caught by a probe that traced `window.__bdSet` / `__wrapReturned` /
+`__aboutAttached` flags; instrumented debug paths were all removed
+before commit. The targets selector now only contains `.sw-about-prose`.
 
 ### Added — top-nav logo now opens a "Behind All Deputations" popup
 The logo (top-left, identical markup on all 8 pages) used to navigate to

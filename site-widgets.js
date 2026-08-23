@@ -100,6 +100,10 @@
   }
 
   /* ---- styles (self-contained, themed) ----------------------------------- */
+  /* Reader-speed typewriter pace shared between CSS and JS. 260 ms ≈ 230 wpm,
+     which is literal reading pace (defex #manpower v7.3.11 — owner retuned
+     from 55 ms → 110 ms → 260 ms across three rounds and settled here). */
+  var TYPE_PACE_MS = 260;
   var CSS = "" +
   ":root{--sw-z:70}" +
   ".sw-counter,.sw-fb{position:fixed;z-index:var(--sw-z);" +
@@ -248,6 +252,17 @@
   ".sw-modal .bd .sw-about-disclaimer p{margin:0}" +
   ".sw-modal .bd .sw-about-disclaimer strong{color:#f5b301;font-weight:700}" +
   "@media(max-width:520px){.sw-modal .bd .sw-about-prose{font-size:.92rem}.sw-modal .bd .sw-quote{font-size:.94rem;padding:10px 14px}}" +
+  /* === about-project typewriter (reader-speed reveal) =====================
+     Each prose word is wrapped in <span class="sw-type-w" style="--w:N">
+     at init time (see buildAboutProject). The bd carries a single
+     data-typing attribute that toggles between "pending" (spans at opacity 0)
+     and "run" (the staggered fade-in). One CSS transition with per-word
+     delay (calc(var(--w) * var(--word-ms))) drives every word off a single
+     class flip — no per-word timers, only opacity transitions. */
+  ".sw-modal.sw-about .bd[data-typing='pending'] .sw-type-w{opacity:0}" +
+  ".sw-modal.sw-about .bd[data-typing='run']{--word-ms:" + TYPE_PACE_MS + "ms}" +
+  ".sw-modal.sw-about .bd[data-typing='run'] .sw-type-w{opacity:1;transition:opacity .2s linear;transition-delay:calc(var(--w,0)*var(--word-ms))}" +
+  "@media(prefers-reduced-motion:reduce){.sw-modal.sw-about .bd[data-typing] .sw-type-w{opacity:1!important;transition:none!important}}" +
   ".sw-modal .cls{position:absolute;top:15px;right:17px;width:38px;height:38px;border-radius:50%;border:1px solid var(--sw-border);" +
     "background:var(--sw-surface2);color:var(--sw-text);cursor:pointer;font-size:1.25rem;line-height:1;display:flex;align-items:center;justify-content:center}" +
   ".sw-modal .cls:hover{border-color:var(--sw-primary);color:var(--sw-primary)}" +
@@ -610,13 +625,91 @@
       "</div>";
     document.body.appendChild(modal);
 
+    /* ---------- word-by-word reader-speed reveal --------------------------
+       The owner asked for the prose to type in at reading pace instead of
+       appearing all at once. We mirror the #manpower typewriter on defex:
+       at init, every word inside .sw-about-prose and the pull-quote is
+       wrapped in <span class="sw-type-w" style="--w:N"> carrying its
+       global ordinal. The bd starts with data-typing="pending" so the
+       spans begin at opacity 0; each open() flips data-typing to "run"
+       after a double-rAF flush (so pending styles resolve before the
+       transition rule engages), and a single CSS transition with
+       per-word delay staggers the fade-in across the whole essay.
+
+       Excluded from wrapping (instant):
+         .sw-link anchors — styled in primary colour, must stay whole.
+         .sw-sign / .sw-about-disclaimer — signature + notice, not body.
+         The .hd heading block + .sw-section headings — outside the targets.
+       prefers-reduced-motion: skip wrapping; text reads as plain paragraphs. */
+    var REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var bd = modal.querySelector(".bd");
+    bd.setAttribute("data-typing", "pending");
+    if (!REDUCED_MOTION) wrapWordsForTypewriter(modal);
+
+    function wrapWordsForTypewriter(root) {
+      // Collect text nodes inside prose paragraphs. The .sw-quote <em> is a
+      // descendant of a .sw-about-prose <p> on the page, so listing both as
+      // targets would visit it twice and try to replaceChild on the same
+      // text node twice — second call finds parentNode === null and throws.
+      var targets = root.querySelectorAll(".sw-about-prose");
+      var collected = [];
+      function visit(node) {
+        if (node.nodeType === 3) { collected.push(node); return; }
+        if (node.nodeType !== 1) return;
+        if (node.matches && node.matches(".sw-link, .sw-sign")) return;
+        var kids = node.childNodes;
+        for (var i = 0; i < kids.length; i++) visit(kids[i]);
+      }
+      for (var i = 0; i < targets.length; i++) visit(targets[i]);
+
+      var idx = 0;
+      for (var j = 0; j < collected.length; j++) {
+        var tn = collected[j];
+        var text = tn.nodeValue;
+        if (!text || !text.trim()) continue;        // whitespace-only nodes stay as-is
+        var tokens = text.split(/(\s+)/);            // keep separators in the split
+        var frag = document.createDocumentFragment();
+        for (var k = 0; k < tokens.length; k++) {
+          var t = tokens[k];
+          if (!t) continue;
+          if (/^\s+$/.test(t)) {
+            frag.appendChild(document.createTextNode(t));
+          } else {
+            var s = document.createElement("span");
+            s.className = "sw-type-w";
+            s.style.setProperty("--w", String(idx));
+            s.textContent = t;
+            frag.appendChild(s);
+            idx++;
+          }
+        }
+        if (frag.childNodes.length) tn.parentNode.replaceChild(frag, tn);
+      }
+    }
+
     function open() {
       modal.classList.add("open");
       // Move focus into the dialog so Esc + Tab start somewhere sensible.
       var btn = modal.querySelector(".cls");
       if (btn) btn.focus();
+      if (REDUCED_MOTION) return;
+      // Double-rAF flushes the pending→run style change past the layout step
+      // before the transition rule engages, so the staggered fade actually
+      // plays (a single rAF in a backgrounded tab parks the rule indefinitely
+      // and the essay would sit at opacity 0).
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          bd.setAttribute("data-typing", "run");
+        });
+      });
     }
-    function close() { modal.classList.remove("open"); }
+    function close() {
+      modal.classList.remove("open");
+      // Reset to pending so the next open() re-runs the reveal from word 0
+      // (the display:none from removing .open hides the modal instantly, so
+      // setting pending here is about state hygiene, not visible fade-out).
+      if (!REDUCED_MOTION) bd.setAttribute("data-typing", "pending");
+    }
 
     // Intercept the plain left-click. Right-click, middle-click, ctrl/cmd-click
     // still hit the href so users can open About in a new tab if they want.

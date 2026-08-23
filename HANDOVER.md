@@ -6448,3 +6448,99 @@ focus:          About-project popup on the top-nav logo
   the long-term test suite.** The long-term suite is P3-4 (Playwright +
   pytest, 25 tests). If this check needs to live on, add it to the P3-4
   suite rather than leaving it as a one-off at the repo root.
+
+---
+
+## session shq-2026-08-23-003
+```
+started:        2026-08-23
+ended:          2026-08-23
+model:          claude-opus-4-8
+driver:         solo
+branch:         main
+starting_head:  8b53c3e
+ending_head:    <this commit>
+focus:          reader-speed word-by-word typewriter in the about popup
+```
+
+### inbound context read
+- shq-2026-08-23-002 (the about-modal popup itself).
+- The #manpower typewriter on defex (`defex.js` `typeManpower()`)
+  which settled on 260 ms/word after three rounds of owner retuning
+  (11 ms → 55 ms → 110 ms → 260 ms). I copied that exact number for
+  reader speed on the popup.
+
+### work done
+- `site-widgets.js`:
+  - new `wrapWordsForTypewriter()` mounted from inside `buildAboutProject()`.
+    At init, walks every text node inside `.sw-about-prose` and tags it
+    with a `<span class="sw-type-w" style="--w:N">` carrying its global
+    ordinal. Reuses the existing sw-modal/sw-section/sw-link rules —
+    section headings, signature, and disclaimer are outside the wrap
+    target so they stay plain.
+  - `open()` now double-rAFs a `data-typing="run"` flip so the
+    `[data-typing='run'] .sw-type-w` rule engages past the layout step
+    (single rAF in a backgrounded tab parks the rule indefinitely and
+    the essay sits at opacity 0 forever). `close()` resets
+    `data-typing="pending"` so the next open() re-runs the reveal from
+    word 0.
+  - new CSS rules: `[data-typing='pending'] .sw-type-w { opacity:0 }`,
+    `[data-typing='run'] { --word-ms: 260ms }` (driven off the new
+    module-level `TYPE_PACE_MS` const shared with JS), and
+    `[data-typing='run'] .sw-type-w { opacity:1; transition: opacity .2s
+    linear; transition-delay: calc(var(--w,0) * var(--word-ms)) }`.
+    `prefers-reduced-motion: reduce` collapses every span to opacity:1
+    with no transition (text reads as plain paragraphs).
+- All 8 HTML pages: `site-widgets.js?v=27` → `?v=28`.
+- `verify_about_modal.py`: extended with 5 typewriter-specific checks
+  (bd pre-state pending, 562 spans present, post-open = run, post-close
+  = pending, re-open = run via `wait_for_function` because Playwright's
+  click action internally does hover + scroll-and-stabilize waits that
+  push the actual mouseup past 500 ms).
+
+### decisions
+- **260 ms/word.** Owner said "at the reader speed" — literal reading
+  pace = ~230 wpm. 562 wrapped words × 260 ms ≈ **146 seconds** end to
+  end. If the owner finds that too long, the single retune is `TYPE_PACE_MS`
+  in site-widgets.js — start at 200 ms (≈300 wpm) and step down from
+  there.
+- **Reveal restarts on every open.** State hygiene: `data-typing`
+  toggles pending ↔ run on every open/close. If the owner wants the
+  second open to be instant (paragraphs already revealed), drop the
+  pending reset from `close()`.
+- **`prefers-reduced-motion: reduce` skips wrapping entirely.**
+  Paragraphs render as plain text — no animation, no spans, no DOM
+  mutation. Better than just "show instantly" because users who
+  opted out of motion also don't pay the span wrapping cost.
+- **`.sw-quote` was a duplicate-target footgun.** v1 of this commit
+  listed both `.sw-about-prose` and `.sw-quote` in the wrap targets,
+  but `<em class="sw-quote">` is INSIDE a `<p class="sw-about-prose">`,
+  so the visit logic collected the quote's text node twice. The second
+  `replaceChild` call found `parentNode === null` and threw — listener
+  attachment silently failed and Playwright saw the modal stay closed
+  on click. **The targets list now only contains `.sw-about-prose`**;
+  the quote is already covered as a descendant. Caught by a probe that
+  traced `window.__bdSet` / `__wrapReturned` / `__aboutAttached`
+  flags; instrumented debug paths were all removed before commit.
+
+### handoff state
+- not committed: NONE.
+- not pushed: NONE.
+- working tree: clean.
+
+### gotchas for next session
+- **562 wrapped words × 260 ms = ~2:26 end to end.** That is the
+  literal-reading-pace choice. If the owner finds the pacing too slow,
+  the only number to change is `TYPE_PACE_MS` at the top of the
+  `site-widgets.js` IIFE — both JS (timing) and CSS (`--word-ms`)
+  read from the same constant, so a single edit retunes both.
+- **`requestAnimationFrame` after `.nav-brand` click is not immediate
+  in Playwright tests.** Playwright internally does hover + scroll-
+  and-stabilize before dispatching mouseup, which can push the
+  open() callback past 500 ms. Tests that gate on `data-typing="run"`
+  after a click should use `wait_for_function`, not `wait_for_timeout`.
+- **The `.sw-quote` was never a separate target.** The wrap walker
+  descends from the prose paragraph, so the quote inherits opacity
+  along with the paragraph that contains it. Listing `.sw-quote` in
+  the targets selector causes a duplicate-visit throw (`parentNode`
+  null on the second `replaceChild`).
