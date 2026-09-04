@@ -497,11 +497,13 @@ function loadDataFromJSON() {
             bindEvents();
             updateQuickFiltersBar();
             applyMobileDefaultView();
+            applyUrlParameters();
             renderDashboard();
             openVacancyFromUrl();
             injectJsonLd();
             initLinkPreview();
             setDataUpdated(meta);
+            lucide.createIcons();
 
             console.log('✅ Loaded', rawData.length, 'vacancies');
         })
@@ -2092,6 +2094,32 @@ function isNewVacancy(item) {
   }
   syncCardSortUI();
 }
+function applyUrlParameters() {
+  try {
+    if (!window.location || !window.location.search) return;
+    const params = new URLSearchParams(window.location.search);
+    const rawMyPayLevel = params.get('myPayLevel');
+    if (!rawMyPayLevel) return;
+
+    const trimmed = rawMyPayLevel.trim();
+    if (!/^\d+$/.test(trimmed)) return;
+
+    const levelNum = parseInt(trimmed, 10);
+    if (levelNum < 1 || levelNum > 18) return;
+
+    if (filterMyPayLevel) {
+      const hasOption = Array.from(filterMyPayLevel.options).some(
+        (opt) => opt.value === String(levelNum)
+      );
+      if (hasOption) {
+        filterMyPayLevel.value = String(levelNum);
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ Could not process URL parameters:', err);
+  }
+}
+
     function getFilteredData({ applyKpiFilter = true, applyStatusFilter = true } = {}) {
   const search = searchPost.value.trim().toLowerCase();
   const myPayLevel = filterMyPayLevel.value;
