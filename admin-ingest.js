@@ -552,7 +552,7 @@ function mapPasted(it, jobId, label, year, i, sourceFileUrl) {
     functional_area: it.functional_area || '', tags_keywords: it.tags_keywords || '',
     status: 'draft', confidence: dv.confidence, source_type: 'employment_news',
     source_category: label || 'Pasted import', source_file_url: sourceFileUrl || '',
-    ingest_job_id: jobId, raw_extraction: it, date_fix_note: dv.fixNote,
+    ingest_job_id: jobId, raw_extraction: dv.fixNote ? { ...it, date_fix_note: dv.fixNote } : it,
   };
 }
 
