@@ -684,6 +684,7 @@ async function applyMergeImport(rows) {
       updateRows.push({ target_id: dupTarget.id, kind: 'duplicate', proposed: r, diff, source_type: r.source_type, source_category: r.source_category, source_file_url: r.source_file_url, confidence: r.confidence, ingest_job_id: r.ingest_job_id });
       continue;
     }
+    delete r.date_fix_note;
     toInsert.push(r);
   }
 
