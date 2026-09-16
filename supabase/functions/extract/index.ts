@@ -111,10 +111,15 @@ const BASE_RULES = `
 Return ONE row per (post × location/bench × pay level). If an advertisement
 lists a post available at several benches/cities or several levels, expand it
 into multiple rows — never collapse them.
-Dates MUST be ISO format yyyy-mm-dd. notification_date is when the
-notification/circular was PUBLISHED (Employment News issue date or the
-date printed on the circular). last_date_to_apply is the deadline for
-RECEIVING applications. They MUST be ordered: notification_date
+Dates MUST be ISO format yyyy-mm-dd. NEVER return dd-mm-yyyy or
+dd/mm/yyyy — even if the source PDF prints the date that way. The database
+column is text with no format coercion, so a returned '06-10-2026' will be
+misread by the admin date picker as 10 June 2026 instead of 6 October 2026
+(a bug that contaminated ~430 rows before migration 0023 fixed them).
+Convert DD-MM-YYYY to YYYY-MM-DD at extraction time. notification_date is
+when the notification/circular was PUBLISHED (Employment News issue date
+or the date printed on the circular). last_date_to_apply is the deadline
+for RECEIVING applications. They MUST be ordered: notification_date
 strictly precedes last_date_to_apply (typically 30-90 days apart).
 If the ad says applications are due "within N days" / "N days from the
 date of this notification/advertisement", COMPUTE last_date_to_apply by
@@ -337,9 +342,24 @@ function keysOf(row: any): { prefix: string; matchKey: string; emptyKey: string;
 // ---------------------------------------------------------------------------
 function parseIsoDate(s: unknown): Date | null {
   const t = String(s ?? "").trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return null;
-  const d = new Date(t + "T00:00:00Z");
-  return Number.isNaN(d.getTime()) ? null : d;
+  // Accept strict ISO first ('2026-10-06'). Also accept DD-MM-YYYY and
+  // DD/MM/YYYY for legacy DD-first Indian Government notifications (e.g.
+  // '06-10-2026' printed on the circular but '2026-10-06' is the intent).
+  // Two occurrences of this pattern landed ~430 approved rows in Supabase
+  // with day/month swapped before the JSON was repaired by f660495; the
+  // validateAndFixDates gate below cannot detect a swap if the parser
+  // returns null on these inputs.
+  let m: RegExpMatchArray | null;
+  if ((m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  if ((m = t.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/))) {
+    const day = +m[1], mo = +m[2], yr = m[3].length === 2 ? 2000 + +m[3] : +m[3];
+    const d = new Date(Date.UTC(yr, mo - 1, day));
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  return null;
 }
 function toIsoDate(d: Date): string {
   return d.toISOString().slice(0, 10);

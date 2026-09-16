@@ -464,7 +464,18 @@ Output ONLY a JSON array. Each object must use EXACTLY these keys (use "" when u
 
 Rules:
 - official_notification_link must be the ACTUAL notification document (direct ".pdf" preferred), or the specific circular page — NEVER a generic homepage / listing / aggregator. Leave empty if not found. Never invent a URL.
-- Dates ISO yyyy-mm-dd; if "within N days of the notification", compute last_date_to_apply = notification_date + N days. CRITICAL: notification_date is when the circular was ISSUED/PUBLISHED, last_date_to_apply is the deadline for RECEIVING applications. They must be ordered: notification_date < last_date_to_apply. A row with the dates swapped (notification_date AFTER last_date_to_apply) will be REJECTED at ingest — re-check the circular before submitting. If only one date is given, that is the publication date and the deadline is the day the application window closes (NOT the publication date).
+- Dates ISO yyyy-mm-dd. NEVER return dd-mm-yyyy or dd/mm/yyyy — the DB
+column is text with no format coercion, so '06-10-2026' would be stored
+as-is and the admin date picker reads it as 10 Jun, not 6 Oct (this bug
+contaminated ~430 rows). Convert to YYYY-MM-DD before submitting.
+If "within N days of the notification", compute last_date_to_apply =
+notification_date + N days. CRITICAL: notification_date is when the circular
+was ISSUED/PUBLISHED, last_date_to_apply is the deadline for RECEIVING
+applications. They must be ordered: notification_date < last_date_to_apply.
+A row with the dates swapped (notification_date AFTER last_date_to_apply)
+will be REJECTED at ingest — re-check the circular before submitting.
+If only one date is given, that is the publication date and the deadline is
+the day the application window closes (NOT the publication date).
 - "level"/"req_level1" = Pay Matrix level as a string — digits with an optional A suffix where the matrix says so (e.g. "12", "13A"). No other text.
 - "eligibility_tiers" = feeder grades as [{"level","min_years"}] (NUMBER strings). Include the analogous tier (post's own level, "0" years) plus each lower grade with its required years; e.g. [{"level":"11","min_years":"0"},{"level":"10","min_years":"3"},{"level":"8","min_years":"5"}]. Also still fill req_level1/2 + min_years_experience/2 from the first two tiers.
 - ministry = standard GoI name WITHOUT the "Ministry of"/"Department of" prefix.
@@ -502,10 +513,20 @@ function validateAndFixDates(it, now = new Date()) {
   const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const parse = (s) => {
     const t = String(s || '').trim();
-    const m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!m) return null;
-    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
-    return Number.isNaN(d.getTime()) ? null : d;
+    // Accept strict ISO ('2026-10-06') first. Also accept DD-MM-YYYY and
+    // DD/MM/YYYY (Indian Government notification convention — day-first).
+    // Without this, '06-10-2026' returns null, the guard below short-circuits
+    // on 'either missing', and the swap is never detected.
+    let m;
+    if ((m = t.match(/^(\d{4})-(\d{2})-(\d{2})/))) {
+      const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    if ((m = t.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/))) {
+      const d = new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    return null;
   };
   const toIso = (d) => d.toISOString().slice(0, 10);
   const nd = parse(it.notification_date);
