@@ -503,7 +503,11 @@ function loadDataFromJSON() {
             injectJsonLd();
             initLinkPreview();
             setDataUpdated(meta);
-            lucide.createIcons();
+            // lucide is not loaded on this page (all icons are inline SVG sprites).
+            // Guard to prevent ReferenceError from breaking the render pipeline.
+            if (typeof lucide === 'function') {
+                try { lucide.createIcons(); } catch (_) {}
+            }
 
             console.log('✅ Loaded', rawData.length, 'vacancies');
         })
