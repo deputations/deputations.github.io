@@ -16,6 +16,7 @@
       headers: { 'apikey': key, 'Accept': 'application/json' }
     })
     .then(function (r) {
+      console.log('[site-widgets] site_config fetch status:', r.status);
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     })
