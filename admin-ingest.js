@@ -1097,6 +1097,7 @@ function wireApp() {
   // Projects CMS (V² upcoming-projects) wiring
   if ($('projRefresh')) $('projRefresh').onclick = loadProjectsAdmin;
   if ($('projAddBtn')) $('projAddBtn').onclick = () => openProjectForm(null);
+  if ($('projPageToggle')) setupProjPageToggle();
   if ($('pf_save')) $('pf_save').onclick = saveProject;
   if ($('pf_cancel')) $('pf_cancel').onclick = () => $('projForm').classList.add('hidden');
 
@@ -2985,6 +2986,60 @@ async function loadProjectsAdmin() {
 async function refreshProjectCount() {
   const n = await countOf('upcoming_projects');
   if ($('projCount')) $('projCount').textContent = n ? ` (${n})` : '';
+}
+
+/* --------------------------------------------------------------------------
+   Page visibility toggle (enables / disables the public Upcoming Projects page
+   across every page of the site via Supabase site_config).
+   -------------------------------------------------------------------------- */
+const PROJ_PAGE_KEY = 'projects_page_enabled';
+
+function setupProjPageToggle() {
+  const btn = $('projPageToggle');
+  if (!btn) return;
+  btn.onclick = async () => {
+    try {
+      const next = !(await readProjPageEnabled());
+      const r = await api('/rest/v1/rpc/set_site_config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_key: 'projects_page_enabled', p_value: next })
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      localStorage.setItem(PROJ_PAGE_KEY, String(next));
+      syncToggleBtn(next);
+      toast(next ? 'Page re-enabled — link restored on all pages' : 'Page disabled — link hidden on all pages');
+      if (typeof applyProjectsToggle === 'function') applyProjectsToggle();
+    } catch (e) {
+      toast('Failed to toggle: ' + e.message);
+    }
+  };
+  /* read the live state from Supabase on init */
+  readProjPageEnabled().then(function (v) {
+    localStorage.setItem(PROJ_PAGE_KEY, String(v));
+    syncToggleBtn(v);
+  });
+}
+
+function readProjPageEnabled() {
+  return api('/rest/v1/rpc/get_site_config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_key: 'projects_page_enabled' })
+  })
+  .then(function (r) { return r.ok ? r.json() : true; })
+  .catch(function () { return true; });
+}
+
+function syncToggleBtn(enabled) {
+  const btn = $('projPageToggle');
+  if (!btn) return;
+  if (typeof enabled === 'undefined') {
+    enabled = localStorage.getItem(PROJ_PAGE_KEY) !== 'false';
+  }
+  btn.textContent = enabled ? 'Page: ON' : 'Page: OFF';
+  /* keep always-visible styling regardless of state */
+  btn.className = 'primary';
 }
 
 function renderProjectsAdmin(rows) {

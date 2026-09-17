@@ -94,8 +94,9 @@
       <div class="up-turnout-bar" aria-hidden="true"><i></i></div>
     </section>
 
+    <div id="upContent">
     <!-- ============ PROJECT FEED (rendered by JS) ============ -->
-    <section class="up-album" aria-roledescription="carousel" aria-label="Upcoming projects">
+    <section class="up-album" id="upAlbum" aria-roledescription="carousel" aria-label="Upcoming projects">
       <div class="up-feed" id="upFeed">
         <div class="up-skeleton" aria-hidden="true"></div>
         <div class="up-skeleton" aria-hidden="true"></div>
@@ -120,6 +121,11 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
       </a>
     </section>
+    </div>
+    <div id="upDisabledNotice" hidden style="display:none;text-align:center;padding:80px 20px;max-width:600px;margin:0 auto">
+      <p style="font-size:18px;font-weight:600">This page is temporarily unavailable.</p>
+      <p style="color:var(--muted);margin-top:8px">Check back soon — we're working on something new.</p>
+    </div>
 
     <!-- polite live region for vote / suggestion announcements -->
     <div class="up-sr" aria-live="polite"></div>
