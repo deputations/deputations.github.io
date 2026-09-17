@@ -4,29 +4,25 @@
 (function () {
   'use strict';
 
-  /* Read the projects-page flag from Supabase.
+  /* Read the projects-page flag from Supabase via direct table SELECT
+     (the public_read RLS policy allows anon access).
      Falls back to true if the call fails so the page is visible by default. */
   window.applyProjectsToggle = function () {
     var url = window.SUPABASE_URL;
     var key = window.SUPABASE_ANON_KEY;
     if (!url || !key) return;
 
-    fetch(url + '/rest/v1/rpc/get_site_config', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': key,
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify({ p_key: 'projects_page_enabled' })
+    fetch(url + '/rest/v1/site_config?key=eq.projects_page_enabled&select=value', {
+      headers: { 'apikey': key, 'Accept': 'application/json' }
     })
     .then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     })
-    .then(function (val) {
-      /* RPC returns { enabled: true/false } */
-      var isEnabled = (val && typeof val.enabled === 'boolean') ? val.enabled : true;
+    .then(function (rows) {
+      /* table stores value as jsonb string "true"/"false" */
+      var raw = (rows && rows.length && rows[0].value !== undefined) ? rows[0].value : 'true';
+      var isEnabled = String(raw).toLowerCase() === 'true';
       /* Gate 1 — nav link on every page */
       var navLink = document.querySelector('a[href="/upcoming-projects.html"]');
       if (navLink) {

@@ -3000,10 +3000,11 @@ function setupProjPageToggle() {
   btn.onclick = async () => {
     try {
       const next = !(await readProjPageEnabled());
-      const r = await api('/rest/v1/rpc/set_site_config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ p_key: 'projects_page_enabled', p_value: next })
+      /* write directly to the table (admin auth token is in api() headers) */
+      const r = await api('/rest/v1/site_config?key=eq.projects_page_enabled', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ value: String(next) })
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       localStorage.setItem(PROJ_PAGE_KEY, String(next));
@@ -3022,13 +3023,13 @@ function setupProjPageToggle() {
 }
 
 function readProjPageEnabled() {
-  return api('/rest/v1/rpc/get_site_config', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ p_key: 'projects_page_enabled' })
-  })
-  .then(function (r) { return r.ok ? r.json() : true; })
-  .catch(function () { return true; });
+  return api('/rest/v1/site_config?key=eq.projects_page_enabled&select=value')
+    .then(function (r) { return r.ok ? r.json() : []; })
+    .then(function (rows) {
+      var raw = (rows && rows.length) ? rows[0].value : 'true';
+      return String(raw).toLowerCase() === 'true';
+    })
+    .catch(function () { return true; });
 }
 
 function syncToggleBtn(enabled) {
