@@ -4,12 +4,10 @@
 (function () {
   'use strict';
 
-  /* Read the projects-page flag from Supabase via direct table SELECT
-     (the public_read RLS policy allows anon access).
-     Falls back to true if the call fails so the page is visible by default. */
   window.applyProjectsToggle = function () {
     var url = window.SUPABASE_URL;
     var key = window.SUPABASE_ANON_KEY;
+    console.log('[site-widgets] applyProjectsToggle called, url=' + url + ', key=' + (key ? 'present' : 'MISSING'));
     if (!url || !key) return;
 
     fetch(url + '/rest/v1/site_config?key=eq.projects_page_enabled&select=value', {
