@@ -8,6 +8,19 @@ Thumbs.db
 # Editor / IDE
 .idea/
 .vscode/
+
+# Large local scratch files
+.tmp.driveupload/
+.tmp-navcheck*/
+.venv-smoke/
+_verify/
+scripts/
+workers/
+*.py
+snapshot_album.py
+debug_keys*.py
+probe_*.py
+verify_*.py
 *.swp
 
 # Supabase CLI scratch
