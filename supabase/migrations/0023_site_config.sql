@@ -38,6 +38,7 @@ drop policy if exists site_config_admin on public.site_config;
 create policy site_config_admin on public.site_config
   for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
+drop policy if exists site_config_public_read on public.site_config;
 create policy site_config_public_read on public.site_config
   for select to anon using (true);
 
