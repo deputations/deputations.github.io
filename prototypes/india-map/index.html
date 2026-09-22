@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AllDeputations — India Job Map (Prototype)</title>
+  <meta name="description" content="Local prototype — India job map with state/district drill-down. Sample data only." />
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+  <!-- PHOSPHOR ICONS (lightweight, no framework dependency) -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <!-- HEADER -->
+  <header class="ad-header">
+    <div class="ad-logo">
+      <span class="ad-logo-icon">&#9670;</span>
+      <span class="ad-logo-text">AllDeputations</span>
+    </div>
+    <div class="ad-header-actions">
+      <button class="ad-btn-outline" id="btn-login" title="Login (prototype — unavailable)">Login</button>
+      <button class="ad-icon-btn" id="btn-menu" title="Menu (prototype)" aria-label="Menu">
+        <i class="ph ph-list"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN APPLICATION -->
+  <main class="ad-app" id="app">
+    <!-- LEFT CONTROLS -->
+    <nav class="ad-left-controls" aria-label="Map controls">
+      <button class="ad-btn-ad control-btn" id="btn-filter" aria-expanded="false" aria-controls="filter-drawer">
+        <i class="ph ph-funnel"></i> Filter
+      </button>
+
+      <div class="view-selector" role="group" aria-label="View mode">
+        <button class="view-btn active" data-view="map" aria-pressed="true">
+          <i class="ph ph-map-trifold"></i> Map View
+        </button>
+        <button class="view-btn" data-view="functional" aria-pressed="false" disabled title="Prototype — coming soon">
+          <i class="ph ph-tree-structure"></i> Functional View
+        </button>
+        <button class="view-btn" data-view="industrial" aria-pressed="false" disabled title="Prototype — coming soon">
+          <i class="ph ph-factory"></i> Industrial View
+        </button>
+      </div>
+    </nav>
+
+    <!-- MAP AREA -->
+    <section class="ad-map-area" aria-label="India map">
+      <div class="ad-map-container" id="map-container">
+        <svg id="india-map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"
+             preserveAspectRatio="xMidYMid meet" role="img" aria-label="India map showing job counts by state">
+          <!-- SVG populated by JS -->
+        </svg>
+        <!-- Tooltip -->
+        <div class="ad-tooltip" id="tooltip" role="tooltip" aria-hidden="true">
+          <span class="ad-tooltip-name" id="tooltip-name"></span>
+          <span class="ad-tooltip-count" id="tooltip-count"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUMMARY CARD (top-right) -->
+    <aside class="ad-summary-card" id="summary-card" aria-live="polite">
+      <div class="ad-summary-header">
+        <span class="ad-summary-title" id="summary-title">All India Jobs</span>
+        <i class="ph ph-caret-down ad-summary-chevron"></i>
+      </div>
+      <div class="ad-summary-count" id="summary-count">—</div>
+      <div class="ad-applied-filters" id="applied-filters" hidden>
+        <div class="ad-applied-header">
+          <span>Applied Filters</span>
+          <button class="ad-clear-all" id="btn-clear-all">Clear All</button>
+        </div>
+        <div class="ad-filter-chips" id="filter-chips"></div>
+      </div>
+    </aside>
+
+    <!-- RIGHT RAIL (exchanges) -->
+    <nav class="ad-right-rail" aria-label="Job exchange selector">
+      <!-- Exchanges injected by JS -->
+    </nav>
+
+    <!-- BOTTOM CONTROLS -->
+    <div class="ad-bottom-controls">
+      <div class="ad-zoom-controls" role="group" aria-label="Zoom">
+        <button class="ad-icon-btn zoom-btn" id="btn-zoom-out" aria-label="Zoom out">
+          <i class="ph ph-minus"></i>
+        </button>
+        <button class="ad-icon-btn zoom-btn" id="btn-zoom-in" aria-label="Zoom in">
+          <i class="ph ph-plus"></i>
+        </button>
+        <button class="ad-icon-btn zoom-btn" id="btn-zoom-reset" aria-label="Reset zoom" title="Reset zoom">
+          <i class="ph ph-corners-out"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- BACK NAVIGATION (shown in drill-down views) -->
+    <button class="ad-back-btn" id="btn-back" hidden>
+      <i class="ph ph-arrow-left"></i> India Map
+    </button>
+
+    <!-- RESULTS PANEL (shown after district click) -->
+    <section class="ad-results-panel" id="results-panel" hidden aria-label="Job listings">
+      <div class="ad-results-header">
+        <h2 class="ad-results-title" id="results-title">Jobs</h2>
+        <button class="ad-icon-btn" id="btn-close-results" aria-label="Close results">
+          <i class="ph ph-x"></i>
+        </button>
+      </div>
+      <div class="ad-results-breadcrumb" id="results-breadcrumb"></div>
+      <div class="ad-results-list" id="results-list"></div>
+    </section>
+
+    <!-- PROTOTYPE BADGE -->
+    <div class="ad-prototype-badge" title="This is a local-only prototype with mock data">
+      <i class="ph ph-flask"></i> Prototype
+    </div>
+  </main>
+
+  <!-- FILTER DRAWER -->
+  <div class="ad-drawer-overlay" id="filter-overlay" hidden></div>
+  <aside class="ad-filter-drawer" id="filter-drawer" hidden role="dialog" aria-modal="true" aria-label="Filters">
+    <div class="ad-filter-header">
+      <h3>Filters</h3>
+      <p class="ad-filter-sub">Refine your results</p>
+      <button class="ad-icon-btn" id="btn-close-filter" aria-label="Close filter drawer">
+        <i class="ph ph-x"></i>
+      </button>
+    </div>
+    <div class="ad-filter-body" id="filter-body">
+      <!-- Populated by JS -->
+    </div>
+  </aside>
+
+  <!-- SCRIPTS (ES modules) -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
