@@ -385,6 +385,8 @@ html, body {
   flex-wrap: wrap;
   gap: 6px;
   padding: 0 16px 12px;
+  position: relative;
+  z-index: 200;
 }
 
 .ad-filter-chip {

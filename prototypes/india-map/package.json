@@ -1,0 +1,19 @@
+{
+  "name": "india-map-prototype-tests",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node tests/run-all.js",
+    "test:rerender": "node tests/01-rerender-cleanup.test.js",
+    "test:filter": "node tests/02-filter-sync.test.js",
+    "test:history": "node tests/03-history.test.js",
+    "test:async": "node tests/04-async-geometry.test.js",
+    "test:zoom": "node tests/05-zoom.test.js",
+    "test:distinct": "node tests/06-distinct-ids.test.js",
+    "test:geo": "node tests/07-geography.test.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}

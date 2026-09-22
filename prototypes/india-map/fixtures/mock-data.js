@@ -70,6 +70,8 @@ export const POPULATED_LISTINGS = [
     category: "private", function: "Sales & Business Development", qualification: "12th Pass", experience: "0-1 years",
     jobType: "Full-time", jobTime: "Day Shift", jobShift: "On-site",
     posts: 1, closingDate: "2026-10-05", active: true },
+
+  // --- Delhi (2) ---
   { id: nextId(), title: "Deputation Officer – Central Secretariat", state: "DL", district: "New Delhi", city: "New Delhi",
     category: "govt", function: "Executive & Leadership", qualification: "Post Graduate", experience: "5-10 years",
     jobType: "Full-time", jobTime: "Day Shift", jobShift: "On-site",
@@ -80,7 +82,7 @@ export const POPULATED_LISTINGS = [
     posts: 1, closingDate: "2026-10-10", active: true },
 
   // --- Karnataka (1) ---
-  { id: nextId(), title: "Product Manager – Bengaluru", state: "KA", district: "Bangalore Urban", city: "Bengaluru",
+  { id: nextId(), title: "Product Manager – Bengaluru", state: "KA", district: "Bengaluru Urban", city: "Bengaluru",
     category: "private", function: "Executive & Leadership", qualification: "Post Graduate", experience: "5-10 years",
     jobType: "Full-time", jobTime: "Flexible", jobShift: "Hybrid",
     posts: 1, closingDate: "2026-11-30", active: true },
@@ -131,10 +133,33 @@ export const POPULATED_LISTINGS = [
   { id: nextId(), title: "Tea Board Officer – Guwahati", state: "AS", district: "Kamrup", city: "Guwahati",
     category: "govt", function: "Executive & Leadership", qualification: "Graduate", experience: "3-5 years",
     jobType: "Full-time", jobTime: "Day Shift", jobShift: "On-site",
-    posts: 1, closingDate: "2026-10-28", active: true },
+    posts: 1, closingDate: "2026-10-28", active: true }
+];
 
-  // --- Zero-result state (a state with no listings: e.g. Mizoram) ---
-  // No listings for MZ
+// Edge-case fixtures for completeness testing
+
+// Multi-state listing: appears in two states but counts once nationally
+export const MULTI_STATE_LISTINGS = [
+  { id: nextId(), title: "Cross-State Coordinator – MH & GJ", state: "MH,GJ", district: "Pune", city: "Pune",
+    category: "govt", function: "Executive & Leadership", qualification: "Graduate", experience: "3-5 years",
+    jobType: "Full-time", jobTime: "Day Shift", jobShift: "On-site",
+    posts: 1, closingDate: "2026-12-01", active: true }
+];
+
+// Nationwide listing: state="All India"
+export const NATIONWIDE_LISTINGS = [
+  { id: nextId(), title: "National Program Director", state: "All India", district: null, city: "Remote",
+    category: "govt", function: "Executive & Leadership", qualification: "Post Graduate", experience: "10+ years",
+    jobType: "Full-time", jobTime: "Flexible", jobShift: "Remote",
+    posts: 1, closingDate: "2026-12-31", active: true }
+];
+
+// Unknown state listing: no state
+export const UNKNOWN_LISTINGS = [
+  { id: nextId(), title: "Remote Consultant – Location TBD", state: null, district: null, city: "Remote",
+    category: "private", function: "Operations & Supply Chain", qualification: "Graduate", experience: "1-3 years",
+    jobType: "Part-time", jobTime: "Flexible", jobShift: "Remote",
+    posts: 1, closingDate: "2026-11-30", active: true }
 ];
 
 // Zero-result state for testing

@@ -3,7 +3,7 @@
 
 import { init as initProvider, setFilter, clearFilters, getFilters, getData,
          getListingsForState, getListingsForDistrict } from './map-provider.js';
-import { STATE_ABBR, ABBR_TO_NAME, STATE_LIST } from './state-geo.js';
+import { STATE_ABBR, ABBR_TO_NAME, STATE_LIST, DISTRICT_ALIASES } from './state-geo.js';
 import { EXCHANGES, FILTERS } from '../fixtures/mock-data.js';
 
 // ====== DOM REFERENCES ======
@@ -38,10 +38,14 @@ let selectedState = null;
 let selectedDistrict = null;
 let geoData = null;
 let currentProjection = null;
+let currentGeneration = 0;
+
+// Zoom state (incremental)
+let zoomLevel = 1.0;
+const ZOOM_MIN = 0.5, ZOOM_MAX = 8.0, ZOOM_STEP = 1.3;
 
 // ====== PROJECTION ======
-// Equirectangular projection — fits features to the SVG viewBox (1000×800)
-// viewBox is "0 0 1000 800"
+// Equirectangular projection fitting features to SVG viewBox "0 0 1000 800"
 
 function computeProjection(features) {
   let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
@@ -55,9 +59,11 @@ function computeProjection(features) {
       if (lat > maxLat) maxLat = lat;
     });
   });
+
   if (!isFinite(minLon)) {
-    minLon = 68; minLon2 = 97; minLat = 6; maxLat = 36; // India bounds fallback
+    minLon = 68.0; maxLon = 97.0; minLat = 6.0; maxLat = 36.0;
   }
+
   const lonRange = (maxLon - minLon) || 1;
   const latRange = (maxLat - minLat) || 1;
   const mapW = 1000, mapH = 800;
@@ -137,9 +143,22 @@ function centroid(geom) {
 }
 
 // ====== RENDERING ======
+let _shapeId = 0;
+function nextShapeId() { return `shape-${++_shapeId}`; }
+
+function clearMap() {
+  while (mapSvg.firstChild) mapSvg.removeChild(mapSvg.firstChild);
+  _shapeId = 0;
+}
+
 function renderNationalMap(data) {
+  clearMap();
+
   computeProjection(geoData.features);
-  const g = createSvgGroup('map-group');
+  applyZoomTransform();
+
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.id = 'map-group';
   mapSvg.appendChild(g);
 
   geoData.features.forEach(feat => {
@@ -152,6 +171,7 @@ function renderNationalMap(data) {
 
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', `${d} Z`);
+    path.setAttribute('id', nextShapeId());
     path.setAttribute('class', 'ad-state');
     path.setAttribute('data-abbr', abbr);
     path.setAttribute('data-name', name);
@@ -159,12 +179,13 @@ function renderNationalMap(data) {
     path.setAttribute('tabindex', '0');
     path.setAttribute('aria-label', `${name}: ${data.stateCounts[abbr] || 0} jobs`);
 
-    if ((data.stateCounts[abbr] || 0) === 0) path.classList.add('zero');
+    const count = data.stateCounts[abbr] || 0;
+    if (count === 0) path.classList.add('zero');
 
-    path.addEventListener('mouseenter', e => showTooltip(e, name, data.stateCounts[abbr] || 0));
+    path.addEventListener('mouseenter', e => showTooltip(e, name, count));
     path.addEventListener('mousemove', moveTooltip);
     path.addEventListener('mouseleave', hideTooltip);
-    path.addEventListener('focus', e => showTooltip(e, name, data.stateCounts[abbr] || 0));
+    path.addEventListener('focus', e => showTooltip(e, name, count));
     path.addEventListener('blur', hideTooltip);
     path.addEventListener('click', () => drillToState(abbr, name));
     path.addEventListener('keydown', e => {
@@ -173,23 +194,24 @@ function renderNationalMap(data) {
 
     g.appendChild(path);
 
-    // Labels
     const [clon, clat] = centroid(feat.geometry);
     const [cx, cy] = project(clon, clat);
 
     const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     label.setAttribute('x', cx);
-    label.setAttribute('y', cy - 3);
+    label.setAttribute('y', cy - 5);
     label.setAttribute('class', 'ad-state-label');
     label.textContent = abbr;
     g.appendChild(label);
 
-    const countEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    countEl.setAttribute('x', cx);
-    countEl.setAttribute('y', cy + 7);
-    countEl.setAttribute('class', 'ad-state-count');
-    countEl.textContent = data.stateCounts[abbr] || 0;
-    g.appendChild(countEl);
+    if (count > 0) {
+      const countEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      countEl.setAttribute('x', cx);
+      countEl.setAttribute('y', cy + 9);
+      countEl.setAttribute('class', 'ad-state-count');
+      countEl.textContent = count;
+      g.appendChild(countEl);
+    }
   });
 
   updateSummary('All India Jobs', data.nationalCount);
@@ -200,36 +222,51 @@ function renderStateMap(stateAbbr, stateName, data) {
 }
 
 async function loadDistrictGeometry(stateAbbr, stateName, data) {
+  const myGeneration = ++currentGeneration;
+  clearMap();
+
+  // Show loading
+  mapSvg.innerHTML = '';
+
   const districtFile = `districts/${stateAbbr}.geojson`;
 
   try {
+    await new Promise(resolve => setTimeout(resolve, 50));
     const resp = await fetch(districtFile);
     if (!resp.ok) throw new Error(`District geometry not available for ${stateName}`);
     const distData = await resp.json();
+
+    if (myGeneration !== currentGeneration) return; // Stale — discard
     renderDistrictMap(distData, stateAbbr, stateName, data);
   } catch (err) {
-    console.warn('District geometry unavailable, showing state listing:', err.message);
+    if (myGeneration !== currentGeneration) return;
+    console.warn('District geometry unavailable:', err.message);
     showStateListView(stateAbbr, stateName, data);
   }
 }
 
 function renderDistrictMap(distData, stateAbbr, stateName, data) {
-  clearMap();
-  const g = createSvgGroup('map-group');
+  computeProjection(distData.features);
+  applyZoomTransform();
+
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.id = 'map-group';
   mapSvg.appendChild(g);
 
-  computeProjection(distData.features);
-
   distData.features.forEach(feat => {
-    const distName = feat.properties.district;
-    if (!distName) return; // skip fallback features without names
-    const count = data.districtCounts[`${stateAbbr}::${distName}`] || 0;
+    const rawName = feat.properties.district;
+    if (!rawName) return;
+
+    // Use the GeoJSON name directly for matching; aliases handled in map-provider
+    const distName = rawName;
+    const count = data.districtCounts[`${stateAbbr}::${rawName}`] || 0;
 
     const d = projectCoords(feat.geometry);
     if (!d) return;
 
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', d);
+    path.setAttribute('id', nextShapeId());
     path.setAttribute('class', 'ad-state');
     path.setAttribute('data-district', distName);
     path.setAttribute('data-state', stateAbbr);
@@ -252,10 +289,12 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
     g.appendChild(path);
   });
 
-  // District labels using centroid from properties or computed
+  // District labels and count badges
   distData.features.forEach(feat => {
-    const distName = feat.properties.district;
-    if (!distName) return;
+    const rawName = feat.properties.district;
+    if (!rawName) return;
+    const count = data.districtCounts[`${stateAbbr}::${rawName}`] || 0;
+
     let cLon = feat.properties.centroid_lon;
     let cLat = feat.properties.centroid_lat;
     if (cLon === undefined) {
@@ -265,11 +304,21 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
 
     const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     label.setAttribute('x', px);
-    label.setAttribute('y', py);
+    label.setAttribute('y', py - 3);
     label.setAttribute('class', 'ad-state-label');
-    label.textContent = distName.length > 14 ? distName.slice(0, 14) + '…' : distName;
+    label.textContent = rawName.length > 14 ? rawName.slice(0, 14) + '…' : rawName;
     label.style.fontSize = '7px';
     g.appendChild(label);
+
+    if (count > 0) {
+      const countEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      countEl.setAttribute('x', px);
+      countEl.setAttribute('y', py + 6);
+      countEl.setAttribute('class', 'ad-state-count');
+      countEl.textContent = count;
+      countEl.style.fontSize = '6px';
+      g.appendChild(countEl);
+    }
   });
 
   updateSummary(`${stateName.toUpperCase()} JOBS`, data.stateCounts[stateAbbr] || 0);
@@ -279,8 +328,7 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
 
 function showStateListView(stateAbbr, stateName, data) {
   clearMap();
-  mapSvg.innerHTML = `<text x="500" y="400" text-anchor="middle" fill="#8b92a5" font-size="16">
-    District geometry not yet available for ${stateName}. Showing listings below.</text>`;
+  mapSvg.innerHTML = '';
 
   btnBack.hidden = false;
   view = 'state';
@@ -299,14 +347,9 @@ function drillToState(abbr, name) {
   view = 'state';
 
   const data = getData();
-
-  // Highlight selected state on the map
-  document.querySelectorAll('.ad-state').forEach(p => p.classList.remove('drill-highlight'));
-  const stateEl = document.querySelector(`.ad-state[data-abbr="${abbr}"]`);
-  if (stateEl) stateEl.classList.add('drill-highlight');
-
-  updateMap('state', abbr, name, data);
+  renderStateMap(abbr, name, data);
   updateAppliedFilters();
+  syncExchangeRail(data);
   history.pushState({ view: 'state', state: abbr }, '', `?state=${abbr}`);
 }
 
@@ -330,6 +373,7 @@ function drillToDistrict(stateAbbr, districtName) {
   if (selected) selected.classList.add('active');
 
   updateAppliedFilters();
+  syncExchangeRail(data);
   history.pushState(
     { view: 'district', state: stateAbbr, district: districtName },
     '', `?state=${stateAbbr}&district=${encodeURIComponent(districtName)}`
@@ -341,8 +385,9 @@ function goBack() {
     selectedDistrict = null;
     view = 'state';
     closeResults();
-    updateMap('state', selectedState, ABBR_TO_NAME[selectedState], getData());
+    renderStateMap(selectedState, ABBR_TO_NAME[selectedState], getData());
     updateAppliedFilters();
+    syncExchangeRail(getData());
     history.pushState({ view: 'state', state: selectedState }, '', `?state=${selectedState}`);
   } else if (view === 'state') {
     goNational();
@@ -355,8 +400,9 @@ function goNational() {
   view = 'national';
   closeResults();
   btnBack.hidden = true;
-  updateMap('national');
+  renderNationalMap(getData());
   updateAppliedFilters();
+  syncExchangeRail(getData());
   history.pushState({ view: 'national' }, '', window.location.pathname);
 }
 
@@ -366,17 +412,6 @@ function updateMap(mode, stateAbbr, stateName, data) {
   } else if (mode === 'state') {
     renderStateMap(stateAbbr, stateName, data);
   }
-}
-
-// ====== MAP HELPERS ======
-function clearMap() {
-  while (mapSvg.firstChild) mapSvg.removeChild(mapSvg.firstChild);
-}
-
-function createSvgGroup(id) {
-  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  if (id) g.id = id;
-  return g;
 }
 
 // ====== TOOLTIP ======
@@ -419,7 +454,6 @@ function updateAppliedFilters() {
   const filters = getFilters();
   const chips = [];
 
-  // Geography chips
   if (view === 'state' && selectedState) {
     chips.push({ label: ABBR_TO_NAME[selectedState] || selectedState, type: 'state' });
   }
@@ -427,8 +461,8 @@ function updateAppliedFilters() {
     chips.push({ label: selectedDistrict, type: 'district' });
   }
 
-  // Filter chips — only show non-default values
-  const defaultVals = { exchange: 'all', qualification: 'Any', experience: 'Any', jobType: 'Any', jobTime: 'Any', jobShift: 'Any' };
+  const defaultVals = { exchange: 'all', qualification: 'Any', experience: 'Any',
+                         jobType: 'Any', jobTime: 'Any', jobShift: 'Any' };
   Object.entries(filters).forEach(([key, val]) => {
     if (val !== defaultVals[key]) {
       chips.push({ label: val, type: key });
@@ -437,12 +471,23 @@ function updateAppliedFilters() {
 
   if (chips.length === 0) {
     appliedFilters.hidden = true;
+    filterChips.innerHTML = '';
   } else {
     appliedFilters.hidden = false;
     filterChips.innerHTML = chips.map(c =>
       `<span class="ad-filter-chip">${c.label}<button data-chip="${c.type}" aria-label="Remove ${c.label}">×</button></span>`
     ).join('');
   }
+}
+
+function syncExchangeRail(data) {
+  const filters = getFilters();
+  const activeExchange = filters.exchange || 'all';
+  rightRail.querySelectorAll('.exchange-btn').forEach(btn => {
+    const isActive = btn.dataset.exchange === activeExchange;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
 }
 
 // ====== RESULTS PANEL ======
@@ -521,12 +566,24 @@ function buildFilterDrawer() {
 
 function refreshAfterFilter() {
   const data = getData();
-  if (view === 'national') {
+
+  if (view === 'district' && selectedDistrict) {
+    showResults({
+      title: `${selectedDistrict} Jobs`,
+      breadcrumb: [
+        `<a href="#" data-nav="national">India</a> <span>›</span> `,
+        `<a href="#" data-nav="state">${ABBR_TO_NAME[selectedState] || selectedState}</a> <span>›</span> ${selectedDistrict}`
+      ],
+      listings: getListingsForDistrict(selectedState, selectedDistrict)
+    });
+  } else if (view === 'national') {
     renderNationalMap(data);
   } else if (view === 'state' && selectedState) {
     renderStateMap(selectedState, ABBR_TO_NAME[selectedState], data);
   }
+
   updateAppliedFilters();
+  syncExchangeRail(data);
 }
 
 function openFilterDrawer() {
@@ -563,40 +620,46 @@ function buildExchangeRail() {
   rightRail.querySelectorAll('.exchange-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       setFilter('exchange', btn.dataset.exchange);
-      rightRail.querySelectorAll('.exchange-btn').forEach(b => {
-        b.classList.remove('active');
-        b.setAttribute('aria-pressed', 'false');
-      });
-      btn.classList.add('active');
-      btn.setAttribute('aria-pressed', 'true');
       refreshAfterFilter();
     });
   });
 }
 
-// ====== ZOOM ======
-function setZoom(newLevel) {
+// ====== ZOOM (incremental) ======
+function applyZoomTransform() {
   const mapGroup = document.getElementById('map-group');
-  if (!mapGroup) return;
-  const clamped = Math.max(0.5, Math.min(8, newLevel));
-  mapGroup.setAttribute('transform', `translate(500,400) scale(${clamped}) translate(-500,-400)`);
+  if (mapGroup) {
+    const t = `translate(500,400) scale(${zoomLevel}) translate(-500,-400)`;
+    mapGroup.setAttribute('transform', t);
+  }
+}
+
+function setZoom(newLevel) {
+  zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newLevel));
+  applyZoomTransform();
 }
 
 // ====== EVENT WIRING ======
 function wireEvents() {
-  // Filter drawer
   btnFilter.addEventListener('click', openFilterDrawer);
   btnCloseFilter.addEventListener('click', closeFilterDrawer);
   filterOverlay.addEventListener('click', closeFilterDrawer);
 
-  // Clear all
   btnClearAll.addEventListener('click', () => {
     clearFilters();
     buildFilterDrawer();
-    refreshAfterFilter();
+    zoomLevel = 1.0;
+    const mapGroup = document.getElementById('map-group');
+    if (mapGroup) mapGroup.removeAttribute('transform');
+
+    // If we're in a state/district view, Clear All should also reset navigation
+    if (view !== 'national') {
+      goNational();
+    } else {
+      refreshAfterFilter();
+    }
   });
 
-  // Filter chips
   filterChips.addEventListener('click', e => {
     const btn = e.target.closest('button[data-chip]');
     if (!btn) return;
@@ -616,23 +679,67 @@ function wireEvents() {
       if (sel) sel.value = 'Any';
       refreshAfterFilter();
     }
-  });
+  }, true); // capture phase so it works even when drawer overlay is on top
 
-  // Back button
   btnBack.addEventListener('click', goBack);
-
-  // Close results
   btnCloseResults.addEventListener('click', closeResults);
 
-  // Zoom controls
-  btnZoomIn.addEventListener('click', () => setZoom(2.0));
-  btnZoomOut.addEventListener('click', () => setZoom(0.8));
-  btnZoomReset.addEventListener('click', () => {
-    const mapGroup = document.getElementById('map-group');
-    if (mapGroup) mapGroup.removeAttribute('transform');
+  btnZoomIn.addEventListener('click', () => setZoom(zoomLevel * ZOOM_STEP));
+  btnZoomOut.addEventListener('click', () => setZoom(zoomLevel / ZOOM_STEP));
+  btnZoomReset.addEventListener('click', () => { zoomLevel = 1.0; applyZoomTransform(); });
+
+  let isDragging = false;
+  let dragStart = { x: 0, y: 0 };
+
+  mapSvg.addEventListener('mousedown', e => {
+    isDragging = true;
+    dragStart = { x: e.clientX, y: e.clientY };
+    mapSvg.style.cursor = 'grabbing';
+    e.preventDefault();
   });
 
-  // Keyboard: Escape closes drawers
+  window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+  });
+
+  window.addEventListener('mouseup', e => {
+    if (!isDragging) return;
+    isDragging = false;
+    mapSvg.style.cursor = '';
+    const container = document.getElementById('map-container');
+    if (container) {
+      const dx = (e.clientX - dragStart.x) / zoomLevel;
+      const dy = (e.clientY - dragStart.y) / zoomLevel;
+      const cur = container.dataset.pan || '0,0';
+      const [px, py] = cur.split(',').map(Number);
+      container.dataset.pan = `${px + dx},${py + dy}`;
+      container.style.transform = `translate(${px + dx}px, ${py + dy}px)`;
+    }
+  });
+
+  let touchStart = null;
+  mapSvg.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+      touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  }, { passive: true });
+
+  mapSvg.addEventListener('touchmove', e => {
+    if (!touchStart || e.touches.length !== 1) return;
+    const dx = (e.touches[0].clientX - touchStart.x) / zoomLevel;
+    const dy = (e.touches[0].clientY - touchStart.y) / zoomLevel;
+    const container = document.getElementById('map-container');
+    if (container) {
+      const cur = container.dataset.pan || '0,0';
+      const [px, py] = cur.split(',').map(Number);
+      container.dataset.pan = `${px + dx},${py + dy}`;
+      container.style.transform = `translate(${px + dx}px, ${py + dy}px)`;
+      touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  }, { passive: true });
+
+  mapSvg.addEventListener('touchend', () => { touchStart = null; });
+
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       if (!filterDrawer.hidden && filterDrawer.classList.contains('open')) closeFilterDrawer();
@@ -640,23 +747,53 @@ function wireEvents() {
     }
   });
 
-  // Browser back/forward
   window.addEventListener('popstate', e => {
-    if (e.state && e.state.view) {
-      if (e.state.view === 'national') goNational();
-      else if (e.state.view === 'state') {
-        selectedState = e.state.state;
-        selectedDistrict = null;
-        view = 'state';
-        closeResults();
-        updateMap('state', selectedState, ABBR_TO_NAME[selectedState], getData());
-        updateAppliedFilters();
-        btnBack.hidden = false;
-      }
+    const state = e.state;
+    if (!state || !state.view) return;
+
+    if (state.view === 'national') {
+      selectedState = null;
+      selectedDistrict = null;
+      view = 'national';
+      closeResults();
+      btnBack.hidden = true;
+      renderNationalMap(getData());
+      updateAppliedFilters();
+      syncExchangeRail(getData());
+    } else if (state.view === 'state') {
+      selectedState = state.state;
+      selectedDistrict = null;
+      view = 'state';
+      closeResults();
+      renderStateMap(selectedState, ABBR_TO_NAME[selectedState], getData());
+      updateAppliedFilters();
+      syncExchangeRail(getData());
+      btnBack.hidden = false;
+    } else if (state.view === 'district') {
+      selectedState = state.state;
+      selectedDistrict = state.district;
+      view = 'district';
+      closeResults();
+      renderStateMap(selectedState, ABBR_TO_NAME[selectedState], getData());
+      setTimeout(() => {
+        showResults({
+          title: `${state.district} Jobs`,
+          breadcrumb: [
+            `<a href="#" data-nav="national">India</a> <span>›</span> `,
+            `<a href="#" data-nav="state">${ABBR_TO_NAME[state.state] || state.state}</a> <span>›</span> ${state.district}`
+          ],
+          listings: getListingsForDistrict(state.state, state.district)
+        });
+        document.querySelectorAll('.ad-state[data-district]').forEach(p => p.classList.remove('active'));
+        const sel = document.querySelector(`.ad-state[data-district="${CSS.escape(state.district)}"]`);
+        if (sel) sel.classList.add('active');
+      }, 100);
+      updateAppliedFilters();
+      syncExchangeRail(getData());
+      btnBack.hidden = false;
     }
   });
 
-  // Login / Menu buttons (prototype — unavailable)
   document.getElementById('btn-login').addEventListener('click', () => {
     alert('Login is unavailable in this local prototype.');
   });
@@ -665,8 +802,54 @@ function wireEvents() {
   });
 }
 
+// ====== URL RESTORATION ON STARTUP ======
+function restoreFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const state = params.get('state');
+  const district = params.get('district');
+
+  if (state && (STATE_ABBR[state] || ABBR_TO_NAME[state])) {
+    const abbr = STATE_ABBR[state] || state;
+    selectedState = abbr;
+    if (district) {
+      selectedDistrict = decodeURIComponent(district);
+      view = 'district';
+      btnBack.hidden = false;
+      const data = getData();
+      renderStateMap(abbr, ABBR_TO_NAME[abbr], data);
+      setTimeout(() => {
+        showResults({
+          title: `${selectedDistrict} Jobs`,
+          breadcrumb: [
+            `<a href="#" data-nav="national">India</a> <span>›</span> `,
+            `<a href="#" data-nav="state">${ABBR_TO_NAME[abbr] || abbr}</a> <span>›</span> ${selectedDistrict}`
+          ],
+          listings: getListingsForDistrict(abbr, selectedDistrict)
+        });
+        const sel = document.querySelector(`.ad-state[data-district="${CSS.escape(selectedDistrict)}"]`);
+        if (sel) sel.classList.add('active');
+      }, 100);
+      updateAppliedFilters();
+      syncExchangeRail(data);
+      history.replaceState({ view: 'district', state: abbr, district: selectedDistrict }, '', window.location.href);
+    } else {
+      view = 'state';
+      btnBack.hidden = false;
+      renderStateMap(abbr, ABBR_TO_NAME[abbr], getData());
+      updateAppliedFilters();
+      syncExchangeRail(getData());
+      history.replaceState({ view: 'state', state: abbr }, '', window.location.href);
+    }
+    return true;
+  }
+  return false;
+}
+
 // ====== START ======
 async function start() {
+  const params = new URLSearchParams(window.location.search);
+  const scenario = params.get('scenario') === 'empty' ? 'empty' : 'populated';
+
   try {
     const resp = await fetch('geo/india-states.geojson');
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -678,11 +861,15 @@ async function start() {
     return;
   }
 
-  initProvider('populated');
+  initProvider(scenario);
   buildFilterDrawer();
   buildExchangeRail();
-  updateMap('national');
-  history.replaceState({ view: 'national' }, '', window.location.pathname);
+
+  const restored = restoreFromURL();
+  if (!restored) {
+    renderNationalMap(getData());
+    history.replaceState({ view: 'national' }, '', window.location.pathname);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

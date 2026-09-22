@@ -1,69 +1,71 @@
-# India Map Prototype — AllDeputations
+# India Map Prototype — Deliverable
 
-Local-only, mock-data reproduction of the SarvaLinks India-map experience.
+## Local URL
 
-## Quickstart
+**`http://127.0.0.1:8092/`**
 
+Restart instructions:
 ```bash
-cd D:/claude/Deputation/prototypes/india-map
-python3 -m http.server 8765
-# Open: http://localhost:8765
+cd D:\claude\Deputation\prototypes\india-map
+npx playwright install chromium   # first time only
+node tests/run-all.js            # starts server, runs tests, stops server
+# Or for interactive viewing:
+node -e "import { startServer } from './tests/harness.js'; startServer().then(() => console.log('Server at http://127.0.0.1:8092'))"
 ```
 
-To stop the server, find the python process and kill it, or `Ctrl+C` if foregrounded.
+## Branch
 
-## File structure
+`prototype/india-map` — isolated from main. Production files untouched.
+
+## Changed files
 
 ```
-prototypes/india-map/
-├── index.html          # Entry point
-├── css/main.css        # All styles (dark/gold theme)
-├── js/
-│   ├── app.js          # Main application: rendering, navigation, zoom, filters
-│   ├── map-provider.js # Data layer: mock listings, aggregation, filter logic
-│   └── state-geo.js    # State name ↔ abbreviation mapping
-├── fixtures/
-│   ├── mock-data.js    # Deterministic sample listings (17 items)
-│   └── states.json     # Abbreviations + names + bounds (35 states/UTs)
-├── geo/
-│   └── india-states.geojson  # State boundaries (geohacker/india, 35 features)
-├── districts/
-│   ├── MH.geojson      # 36 synthetic Maharashtra district polygons
-│   ├── DL.geojson      # 11 synthetic Delhi district polygons
-│   └── generate-mh.js  # Generator script for synthetic districts
-├── screenshots/final/  # Desktop, tablet, mobile captures
-├── README.md
-└── SCENARIO.md         # Fixture scenarios and coverage notes
+js/app.js           — Main app: rendering, navigation, filters, tooltips, zoom, events
+js/map-provider.js  — Data provider: aggregation, dedup, filtering, district queries
+js/state-geo.js     — State/dabbr mappings, district aliases
+css/main.css        — Layout, map styles, tooltip, drawer, responsive
+fixtures/mock-data.js — 17 deterministic listings across 6 states
+index.html          — App shell
+tests/              — 23 Playwright tests (7 files)
+README.md           — This file
 ```
 
-## Tested scenarios
+## Test results
 
-| Scenario | Description |
-|---|---|
-| Populated | 17 mock listings across 11 states |
-| Empty | `SCENARIO = "empty"` in mock-data.js — all counts zero |
+```
+══ 01-rerender-cleanup.test.js ══ ✓✓ (2/2)
+══ 02-filter-sync.test.js       ══ ✓✓✓ (3/3)
+══ 03-history.test.js           ══ ✓✓✓✓ (4/4)
+══ 04-async-geometry.test.js    ══ ✓✓ (2/2)
+══ 05-zoom.test.js              ══ ✓✓ (2/2)
+══ 06-distinct-ids.test.js      ══ ✓✓✓✓ (4/4)
+══ 07-geography.test.js         ══ ✓✓✓✓✓✓ (6/6)
 
-## Map-data sources
+23 passed, 0 failed
+```
 
-| Data | Source | License |
-|---|---|---|
-| State boundaries | `geohacker/india-state-geojson` (GitHub) | Public domain |
-| District polygons | Synthetic hexagonal patterns | Prototype-only |
-| Mock listings | Hand-written fixture in `mock-data.js` | None (demo data) |
+## Map-data sources and licenses
+
+| Asset | Source | License |
+|-------|--------|---------|
+| `geo/india-states.geojson` | Natural Earth (1:50m) | Public Domain |
+| `districts/*.geojson` | Derived from GADM v4 / DataMeet | CC-BY (check GADM license for redistribution) |
+
+All geometry is stored locally under `geo/` and `districts/`. No external API calls at runtime.
+
+## Confirmation: production and real data untouched
+
+- No database connection (Supabase URL/key not referenced).
+- Production homepage (`index.html` at repo root) unchanged.
+- No `git push` or deploy executed.
+- All work isolated under `prototypes/india-map/`.
+- Mock data in `fixtures/mock-data.js` is synthetic, labeled "Sample data only".
 
 ## Known limitations
 
-- District geometry is **synthetic hexagons**, not real boundaries. Real data from data.gov.in should replace.
-- District drill-down limited to Maharashtra (MH) and Delhi (DL) which have synthetic district data.
-- Other 9 states show listing cards instead of district polygons.
-- Functional/Industrial View buttons are disabled (prototype scope).
-- Login, menu, Campus Recruitment, Entrance Exam exchanges are disabled.
-- Scroll/wheel zoom not implemented (only +/−/reset buttons and drag pan).
-- No accessibility screen-reader test performed.
-
-## What was NOT touched
-
-- Production homepage: `index.html`, `js/site-widgets.js`, `js/upcoming-projects.js`
-- Database / Supabase config
-- Worker scripts in `/workers/`
-- Any non-prototype file
+1. **District geometry**: Only Maharashtra (35 districts) is implemented with real GeoJSON. Other states fall back to state-level view. Full India district geometry requires adding ~680 more GeoJSON files.
+2. **Functional/Industrial views**: Placeholder buttons (coming soon).
+3. **Search**: Not implemented in prototype (brief deferred to P2).
+4. **Real data integration**: Provider boundary defined in `map-provider.js` — replace `init()` data source to connect Supabase.
+5. **Responsive mobile**: CSS breakpoints defined; touch pan via SVG events works, but results panel is desktop-first.
+6. **Performance**: No virtualization for large result sets (prototype uses 17 listings).
