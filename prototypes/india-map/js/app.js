@@ -478,7 +478,9 @@ function clearMap() {
 }
 
 function createSvgGroup(id) {
-  return document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  if (id) g.id = id;
+  return g;
 }
 
 // ====== TOOLTIP ======
