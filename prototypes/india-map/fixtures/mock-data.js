@@ -70,8 +70,6 @@ export const POPULATED_LISTINGS = [
     category: "private", function: "Sales & Business Development", qualification: "12th Pass", experience: "0-1 years",
     jobType: "Full-time", jobTime: "Day Shift", jobShift: "On-site",
     posts: 1, closingDate: "2026-10-05", active: true },
-
-  // --- Delhi (2) ---
   { id: nextId(), title: "Deputation Officer – Central Secretariat", state: "DL", district: "New Delhi", city: "New Delhi",
     category: "govt", function: "Executive & Leadership", qualification: "Post Graduate", experience: "5-10 years",
     jobType: "Full-time", jobTime: "Day Shift", jobShift: "On-site",
@@ -134,24 +132,6 @@ export const POPULATED_LISTINGS = [
     category: "govt", function: "Executive & Leadership", qualification: "Graduate", experience: "3-5 years",
     jobType: "Full-time", jobTime: "Day Shift", jobShift: "On-site",
     posts: 1, closingDate: "2026-10-28", active: true },
-
-  // --- Multi-state record: appears in MH + KA (counts as 1 nationally) ---
-  { id: nextId(), title: "Regional Sales Head – West Zone", state: "MH,KA", district: null, city: "Mumbai,Bengaluru",
-    category: "private", function: "Sales & Business Development", qualification: "Post Graduate", experience: "5-10 years",
-    jobType: "Full-time", jobTime: "Day Shift", jobShift: "Hybrid",
-    posts: 1, closingDate: "2026-12-01", active: true },
-
-  // --- Nationwide record (counts in national bucket only, not any state) ---
-  { id: nextId(), title: "Pan-India Consultant – Remote", state: "All India", district: null, city: "Remote",
-    category: "private", function: "Executive & Leadership", qualification: "Post Graduate", experience: "10+ years",
-    jobType: "Contract", jobTime: "Flexible", jobShift: "Remote",
-    posts: 1, closingDate: "2026-12-15", active: true },
-
-  // --- Unknown location ---
-  { id: nextId(), title: "Confidential Assignment", state: null, district: null, city: null,
-    category: "govt", function: "Executive & Leadership", qualification: "Graduate", experience: "5-10 years",
-    jobType: "Full-time", jobTime: "Day Shift", jobShift: "On-site",
-    posts: 1, closingDate: "2026-11-08", active: true },
 
   // --- Zero-result state (a state with no listings: e.g. Mizoram) ---
   // No listings for MZ
