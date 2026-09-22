@@ -1,8 +1,8 @@
 // js/app.js — AllDeputations India Map Prototype
-// Main application: rendering, navigation, zoom, filters, tooltips
+// Main application: rendering, navigation, filters, tooltips
 
 import { init as initProvider, setFilter, clearFilters, getFilters, getData,
-         getListingsForState, getListingsForDistrict, getFunctionCounts } from './map-provider.js';
+         getListingsForState, getListingsForDistrict } from './map-provider.js';
 import { STATE_ABBR, ABBR_TO_NAME, STATE_LIST } from './state-geo.js';
 import { EXCHANGES, FILTERS } from '../fixtures/mock-data.js';
 
@@ -32,53 +32,20 @@ const filterBody = document.getElementById('filter-body');
 const btnCloseFilter = document.getElementById('btn-close-filter');
 const rightRail = document.querySelector('.ad-right-rail');
 
-// ====== NAVIGATION STATE ======
-let view = 'national';     // 'national' | 'state' | 'district'
-let selectedState = null;  // state abbreviation
+// ====== STATE ======
+let view = 'national';
+let selectedState = null;
 let selectedDistrict = null;
-let zoomLevel = 1;
-let panX = 0, panY = 0;
-let isDragging = false;
-let dragStart = { x: 0, y: 0 };
 let geoData = null;
-let statePaths = {};       // abbr -> SVG path element
-
-// ====== INITIALIZATION ======
-async function start() {
-  // Load geometry
-  try {
-    const resp = await fetch('geo/india-states.geojson');
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    geoData = await resp.json();
-  } catch (err) {
-    console.error('Failed to load geometry:', err);
-    mapSvg.innerHTML = `<text x="500" y="500" text-anchor="middle" fill="#f5a721" font-size="16">
-      Error loading map geometry: ${err.message}</text>`;
-    return;
-  }
-
-  // Init data provider
-  initProvider('populated');
-
-  // Build static UI
-  buildFilterDrawer();
-  buildExchangeRail();
-  updateMap('national');
-
-  // History state
-  history.replaceState({ view: 'national' }, '', window.location.pathname);
-}
+let currentProjection = null;
 
 // ====== PROJECTION ======
-// Simple equirectangular projection fitting GeoJSON bounds to SVG viewBox
-let projBounds = null;
+// Equirectangular projection — fits features to the SVG viewBox (1000×800)
+// viewBox is "0 0 1000 800"
 
-function computeProjection() {
-  if (!geoData) return;
-
+function computeProjection(features) {
   let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
-
-  geoData.features.forEach(f => {
+  features.forEach(f => {
     if (!f.geometry) return;
     const coords = flattenCoords(f.geometry);
     coords.forEach(([lon, lat]) => {
@@ -88,43 +55,44 @@ function computeProjection() {
       if (lat > maxLat) maxLat = lat;
     });
   });
+  if (!isFinite(minLon)) {
+    minLon = 68; minLon2 = 97; minLat = 6; maxLat = 36; // India bounds fallback
+  }
+  const lonRange = (maxLon - minLon) || 1;
+  const latRange = (maxLat - minLat) || 1;
+  const mapW = 1000, mapH = 800;
+  const scale = Math.min(mapW / (lonRange * 1.04), mapH / (latRange * 1.04));
+  const offsetX = (mapW - lonRange * scale) / 2;
+  const offsetY = (mapH + latRange * scale) / 2;
+  currentProjection = { minLon, maxLon, minLat, maxLat, scale, offsetX, offsetY };
+}
 
-  const padding = 0.08;
-  const lonRange = maxLon - minLon || 1;
-  const latRange = maxLat - minLat || 1;
-
-  // Fit in 900x900 within 1000x1000 viewBox, centered
-  const mapW = 900, mapH = 900;
-  const scale = Math.min(mapW / lonRange, mapH / latRange);
-  const cx = 500, cy = 500;
-  const offsetX = cx - (lonRange * scale) / 2;
-  const offsetY = cy + (latRange * scale) / 2; // SVG y is inverted
-
-  projBounds = { minLon, maxLon, minLat, maxLat, scale, offsetX, offsetY };
+function project(lon, lat) {
+  if (!currentProjection) return [500, 400];
+  const p = currentProjection;
+  return [
+    (lon - p.minLon) * p.scale + p.offsetX,
+    p.offsetY - (lat - p.minLat) * p.scale
+  ];
 }
 
 function flattenCoords(geom) {
   const result = [];
   if (geom.type === 'Polygon') {
-    const valid = geom.coordinates.filter(r => hasRealExtent(r));
-    valid.forEach(ring => ring.forEach(c => result.push(c)));
+    geom.coordinates.filter(hasRealExtent).forEach(ring => ring.forEach(c => result.push(c)));
   } else if (geom.type === 'MultiPolygon') {
     geom.coordinates.forEach(poly => {
-      const valid = poly.filter(r => hasRealExtent(r));
-      valid.forEach(ring => ring.forEach(c => result.push(c)));
+      poly.filter(hasRealExtent).forEach(ring => ring.forEach(c => result.push(c)));
     });
   }
   return result;
 }
 
 function getValidRings(geom) {
-  if (geom.type === 'Polygon') {
-    return geom.coordinates.filter(r => hasRealExtent(r));
-  } else if (geom.type === 'MultiPolygon') {
+  if (geom.type === 'Polygon') return geom.coordinates.filter(hasRealExtent);
+  if (geom.type === 'MultiPolygon') {
     const rings = [];
-    geom.coordinates.forEach(poly => {
-      poly.forEach(r => { if (hasRealExtent(r)) rings.push(r); });
-    });
+    geom.coordinates.forEach(poly => poly.forEach(r => { if (hasRealExtent(r)) rings.push(r); }));
     return rings;
   }
   return [];
@@ -132,16 +100,16 @@ function getValidRings(geom) {
 
 function projectCoords(geom) {
   if (!geom) return '';
-  const rings = getValidRings(geom);
-  if (rings.length === 0) return '';
-  return rings.map(ring => projectRing(ring)).join(' ');
+  return getValidRings(geom).map(projectRing).join(' ');
 }
 
-function project(lon, lat) {
-  if (!projBounds) return [0, 0];
-  const x = (lon - projBounds.minLon) * projBounds.scale + projBounds.offsetX;
-  const y = projBounds.offsetY - (lat - projBounds.minLat) * projBounds.scale;
-  return [x, y];
+function projectRing(ring) {
+  const pts = ring.map(([lon, lat]) => {
+    const [x, y] = project(lon, lat);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  if (pts.length < 2) return `M ${pts[0] || '0,0'}`;
+  return `M ${pts[0]} L ${pts.slice(1).join(' L ')}`;
 }
 
 function ringExtent(ring) {
@@ -160,17 +128,9 @@ function hasRealExtent(ring) {
   return ext.rangeLon > 0.01 && ext.rangeLat > 0.01;
 }
 
-function projectRing(ring) {
-  const pts = ring.map(([lon, lat]) => {
-    const [x, y] = project(lon, lat);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  if (pts.length < 2) return `M ${pts[0] || '0,0'}`;
-  return `M ${pts[0]} L ${pts.slice(1).join(' L ')}`;
-}
-
 function centroid(geom) {
   const pts = flattenCoords(geom);
+  if (pts.length === 0) return [0, 0];
   let sumLon = 0, sumLat = 0;
   pts.forEach(([lon, lat]) => { sumLon += lon; sumLat += lat; });
   return [sumLon / pts.length, sumLat / pts.length];
@@ -178,17 +138,18 @@ function centroid(geom) {
 
 // ====== RENDERING ======
 function renderNationalMap(data) {
-  computeProjection();
+  computeProjection(geoData.features);
   const g = createSvgGroup('map-group');
   mapSvg.appendChild(g);
 
-  // State paths
   geoData.features.forEach(feat => {
     const name = feat.properties.NAME_1;
     const abbr = STATE_ABBR[name] || null;
     if (!abbr) return;
 
     const d = projectCoords(feat.geometry);
+    if (!d) return;
+
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', `${d} Z`);
     path.setAttribute('class', 'ad-state');
@@ -198,25 +159,19 @@ function renderNationalMap(data) {
     path.setAttribute('tabindex', '0');
     path.setAttribute('aria-label', `${name}: ${data.stateCounts[abbr] || 0} jobs`);
 
-    const count = data.stateCounts[abbr] || 0;
-    if (count === 0) path.classList.add('zero');
+    if ((data.stateCounts[abbr] || 0) === 0) path.classList.add('zero');
 
-    // Interactions
-    path.addEventListener('mouseenter', e => showTooltip(e, name, count));
+    path.addEventListener('mouseenter', e => showTooltip(e, name, data.stateCounts[abbr] || 0));
     path.addEventListener('mousemove', moveTooltip);
     path.addEventListener('mouseleave', hideTooltip);
-    path.addEventListener('focus', e => showTooltip(e, name, count));
+    path.addEventListener('focus', e => showTooltip(e, name, data.stateCounts[abbr] || 0));
     path.addEventListener('blur', hideTooltip);
     path.addEventListener('click', () => drillToState(abbr, name));
     path.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        drillToState(abbr, name);
-      }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drillToState(abbr, name); }
     });
 
     g.appendChild(path);
-    statePaths[abbr] = path;
 
     // Labels
     const [clon, clat] = centroid(feat.geometry);
@@ -224,16 +179,16 @@ function renderNationalMap(data) {
 
     const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     label.setAttribute('x', cx);
-    label.setAttribute('y', cy - 4);
+    label.setAttribute('y', cy - 3);
     label.setAttribute('class', 'ad-state-label');
     label.textContent = abbr;
     g.appendChild(label);
 
     const countEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     countEl.setAttribute('x', cx);
-    countEl.setAttribute('y', cy + 8);
+    countEl.setAttribute('y', cy + 7);
     countEl.setAttribute('class', 'ad-state-count');
-    countEl.textContent = count;
+    countEl.textContent = data.stateCounts[abbr] || 0;
     g.appendChild(countEl);
   });
 
@@ -241,7 +196,6 @@ function renderNationalMap(data) {
 }
 
 function renderStateMap(stateAbbr, stateName, data) {
-  // For district view, we need district geometry. We'll load it on demand.
   loadDistrictGeometry(stateAbbr, stateName, data);
 }
 
@@ -251,11 +205,9 @@ async function loadDistrictGeometry(stateAbbr, stateName, data) {
   try {
     const resp = await fetch(districtFile);
     if (!resp.ok) throw new Error(`District geometry not available for ${stateName}`);
-
     const distData = await resp.json();
     renderDistrictMap(distData, stateAbbr, stateName, data);
   } catch (err) {
-    // Fallback: show state detail view with listing cards
     console.warn('District geometry unavailable, showing state listing:', err.message);
     showStateListView(stateAbbr, stateName, data);
   }
@@ -263,67 +215,18 @@ async function loadDistrictGeometry(stateAbbr, stateName, data) {
 
 function renderDistrictMap(distData, stateAbbr, stateName, data) {
   clearMap();
-
   const g = createSvgGroup('map-group');
   mapSvg.appendChild(g);
 
-  // Compute projection for district data
-  let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
-  distData.features.forEach(f => {
-    if (!f.geometry) return;
-    const coords = flattenCoords(f.geometry);
-    coords.forEach(([lon, lat]) => {
-      if (lon < minLon) minLon = lon;
-      if (lon > maxLon) maxLon = lon;
-      if (lat < minLat) minLat = lat;
-      if (lat > maxLat) maxLat = lat;
-    });
-  });
-
-  const lonRange = maxLon - minLon || 1;
-  const latRange = maxLat - minLat || 1;
-  const scale = Math.min(900 / lonRange, 900 / latRange);
-  const cx = 500, cy = 500;
-  const offsetX = cx - (lonRange * scale) / 2;
-  const offsetY = cy + (latRange * scale) / 2;
-
-  // Store for district click
-  const districtProjection = { minLon, maxLon, minLat, maxLat, scale, offsetX, offsetY };
-
-  const projPt = (lon, lat) => [
-    (lon - minLon) * scale + offsetX,
-    offsetY - (lat - minLat) * scale
-  ];
-
-  function projRing(ring) {
-    const pts = ring.map(([lon, lat]) => {
-      const [x, y] = projPt(lon, lat);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    });
-    if (pts.length < 2) return `M ${pts[0] || '0,0'}`;
-    return `M ${pts[0]} L ${pts.slice(1).join(' L ')}`;
-  }
-
-  statePaths = {};
+  computeProjection(distData.features);
 
   distData.features.forEach(feat => {
-    const distName = feat.properties.district || feat.properties.NAME_2 || feat.properties.name || 'Unknown';
+    const distName = feat.properties.district;
+    if (!distName) return; // skip fallback features without names
     const count = data.districtCounts[`${stateAbbr}::${distName}`] || 0;
 
-    let d = '';
-    if (feat.geometry.type === 'Polygon') {
-      d += `${projRing(feat.geometry.coordinates[0])} Z`;
-      for (let i = 1; i < feat.geometry.coordinates.length; i++) {
-        d += ` M ${projRing(feat.geometry.coordinates[i])} Z`;
-      }
-    } else if (feat.geometry.type === 'MultiPolygon') {
-      feat.geometry.coordinates.forEach(poly => {
-        d += ` M ${projRing(poly[0])} Z`;
-        for (let i = 1; i < poly.length; i++) {
-          d += ` M ${projRing(poly[i])} Z`;
-        }
-      });
-    }
+    const d = projectCoords(feat.geometry);
+    if (!d) return;
 
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', d);
@@ -341,36 +244,30 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
     path.addEventListener('mouseleave', hideTooltip);
     path.addEventListener('focus', e => showTooltip(e, `${distName}, ${stateName}`, count));
     path.addEventListener('blur', hideTooltip);
-    path.addEventListener('click', () => drillToDistrict(stateAbbr, distName, data));
+    path.addEventListener('click', () => drillToDistrict(stateAbbr, distName));
     path.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        drillToDistrict(stateAbbr, distName, data);
-      }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drillToDistrict(stateAbbr, distName); }
     });
 
     g.appendChild(path);
   });
 
-  // District labels (centroids)
+  // District labels using centroid from properties or computed
   distData.features.forEach(feat => {
-    const distName = feat.properties.district || feat.properties.NAME_2 || feat.properties.name || 'Unknown';
-    let cLon, cLat;
-    if (feat.properties.centroid_lon !== undefined) {
-      cLon = feat.properties.centroid_lon;
-      cLat = feat.properties.centroid_lat;
-    } else {
-      const pts = flattenCoords(feat.geometry);
-      cLon = pts.reduce((s, p) => s + p[0], 0) / pts.length;
-      cLat = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+    const distName = feat.properties.district;
+    if (!distName) return;
+    let cLon = feat.properties.centroid_lon;
+    let cLat = feat.properties.centroid_lat;
+    if (cLon === undefined) {
+      [cLon, cLat] = centroid(feat.geometry);
     }
-    const [cx, cy] = projPt(cLon, cLat);
+    const [px, py] = project(cLon, cLat);
 
     const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    label.setAttribute('x', cx);
-    label.setAttribute('y', cy);
+    label.setAttribute('x', px);
+    label.setAttribute('y', py);
     label.setAttribute('class', 'ad-state-label');
-    label.textContent = distName.length > 12 ? distName.slice(0, 12) + '…' : distName;
+    label.textContent = distName.length > 14 ? distName.slice(0, 14) + '…' : distName;
     label.style.fontSize = '7px';
     g.appendChild(label);
   });
@@ -380,10 +277,9 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
   view = 'state';
 }
 
-// Fallback when district geometry not available — show listing cards
 function showStateListView(stateAbbr, stateName, data) {
   clearMap();
-  mapSvg.innerHTML = `<text x="500" y="500" text-anchor="middle" fill="#8b92a5" font-size="14">
+  mapSvg.innerHTML = `<text x="500" y="400" text-anchor="middle" fill="#8b92a5" font-size="16">
     District geometry not yet available for ${stateName}. Showing listings below.</text>`;
 
   btnBack.hidden = false;
@@ -403,16 +299,22 @@ function drillToState(abbr, name) {
   view = 'state';
 
   const data = getData();
-  updateMap('state', abbr, name, data);
 
-  // Update applied filters
+  // Highlight selected state on the map
+  document.querySelectorAll('.ad-state').forEach(p => p.classList.remove('drill-highlight'));
+  const stateEl = document.querySelector(`.ad-state[data-abbr="${abbr}"]`);
+  if (stateEl) stateEl.classList.add('drill-highlight');
+
+  updateMap('state', abbr, name, data);
   updateAppliedFilters();
   history.pushState({ view: 'state', state: abbr }, '', `?state=${abbr}`);
 }
 
-function drillToDistrict(stateAbbr, districtName, data) {
+function drillToDistrict(stateAbbr, districtName) {
   selectedDistrict = districtName;
   view = 'district';
+
+  const data = getData();
 
   showResults({
     title: `${districtName} Jobs`,
@@ -423,7 +325,6 @@ function drillToDistrict(stateAbbr, districtName, data) {
     listings: getListingsForDistrict(stateAbbr, districtName)
   });
 
-  // Highlight selected district in map
   document.querySelectorAll('.ad-state[data-district]').forEach(p => p.classList.remove('active'));
   const selected = document.querySelector(`.ad-state[data-district="${CSS.escape(districtName)}"]`);
   if (selected) selected.classList.add('active');
@@ -437,7 +338,6 @@ function drillToDistrict(stateAbbr, districtName, data) {
 
 function goBack() {
   if (view === 'district') {
-    // Go back to state view
     selectedDistrict = null;
     view = 'state';
     closeResults();
@@ -470,11 +370,7 @@ function updateMap(mode, stateAbbr, stateName, data) {
 
 // ====== MAP HELPERS ======
 function clearMap() {
-  // Remove all SVG children except tooltip-related (tooltip is outside SVG)
-  while (mapSvg.firstChild) {
-    mapSvg.removeChild(mapSvg.firstChild);
-  }
-  statePaths = {};
+  while (mapSvg.firstChild) mapSvg.removeChild(mapSvg.firstChild);
 }
 
 function createSvgGroup(id) {
@@ -497,7 +393,6 @@ function moveTooltip(event) {
   let x = event.clientX - rect.left + 12;
   let y = event.clientY - rect.top - 12;
 
-  // Keep within viewport
   const ttRect = tooltip.getBoundingClientRect();
   if (x + ttRect.width > window.innerWidth - 10) x = x - ttRect.width - 24;
   if (y + ttRect.height > window.innerHeight - 10) y = y - ttRect.height - 24;
@@ -532,9 +427,10 @@ function updateAppliedFilters() {
     chips.push({ label: selectedDistrict, type: 'district' });
   }
 
-  // Filter chips
+  // Filter chips — only show non-default values
+  const defaultVals = { exchange: 'all', qualification: 'Any', experience: 'Any', jobType: 'Any', jobTime: 'Any', jobShift: 'Any' };
   Object.entries(filters).forEach(([key, val]) => {
-    if (val && val !== 'all' && val !== 'Any') {
+    if (val !== defaultVals[key]) {
       chips.push({ label: val, type: key });
     }
   });
@@ -577,13 +473,11 @@ function showResults({ title, breadcrumb, listings: items }) {
 
   resultsPanel.hidden = false;
 
-  // Wire breadcrumb links
   resultsBreadcrumb.querySelectorAll('[data-nav]').forEach(link => {
     link.addEventListener('click', e => {
       e.preventDefault();
-      const nav = link.dataset.nav;
-      if (nav === 'national') goNational();
-      else if (nav === 'state') goBack();
+      if (link.dataset.nav === 'national') goNational();
+      else if (link.dataset.nav === 'state') goBack();
     });
     link.style.color = 'var(--ad-accent)';
     link.style.cursor = 'pointer';
@@ -617,12 +511,9 @@ function buildFilterDrawer() {
     </div>
   `).join('');
 
-  // Wire change events
   filterBody.querySelectorAll('.filter-select').forEach(sel => {
     sel.addEventListener('change', () => {
-      const key = sel.dataset.filterKey;
-      const val = sel.value;
-      setFilter(key, val);
+      setFilter(sel.dataset.filterKey, sel.value);
       refreshAfterFilter();
     });
   });
@@ -631,9 +522,9 @@ function buildFilterDrawer() {
 function refreshAfterFilter() {
   const data = getData();
   if (view === 'national') {
-    updateMap('national');
+    renderNationalMap(data);
   } else if (view === 'state' && selectedState) {
-    updateMap('state', selectedState, ABBR_TO_NAME[selectedState], data);
+    renderStateMap(selectedState, ABBR_TO_NAME[selectedState], data);
   }
   updateAppliedFilters();
 }
@@ -641,11 +532,8 @@ function refreshAfterFilter() {
 function openFilterDrawer() {
   filterDrawer.hidden = false;
   filterOverlay.hidden = false;
-  requestAnimationFrame(() => {
-    filterDrawer.classList.add('open');
-  });
+  requestAnimationFrame(() => filterDrawer.classList.add('open'));
   btnFilter.setAttribute('aria-expanded', 'true');
-  // Sync selects
   const filters = getFilters();
   Object.entries(filters).forEach(([key, val]) => {
     const sel = document.getElementById(`filter-${key}`);
@@ -674,9 +562,7 @@ function buildExchangeRail() {
 
   rightRail.querySelectorAll('.exchange-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const exId = btn.dataset.exchange;
-      setFilter('exchange', exId);
-      // Update active state
+      setFilter('exchange', btn.dataset.exchange);
       rightRail.querySelectorAll('.exchange-btn').forEach(b => {
         b.classList.remove('active');
         b.setAttribute('aria-pressed', 'false');
@@ -690,15 +576,10 @@ function buildExchangeRail() {
 
 // ====== ZOOM ======
 function setZoom(newLevel) {
-  zoomLevel = Math.max(0.8, Math.min(6, newLevel));
-  applyZoom();
-}
-
-function applyZoom() {
   const mapGroup = document.getElementById('map-group');
-  if (mapGroup) {
-    mapGroup.setAttribute('transform', `translate(${panX}, ${panY}) scale(${zoomLevel})`);
-  }
+  if (!mapGroup) return;
+  const clamped = Math.max(0.5, Math.min(8, newLevel));
+  mapGroup.setAttribute('transform', `translate(500,400) scale(${clamped}) translate(-500,-400)`);
 }
 
 // ====== EVENT WIRING ======
@@ -711,7 +592,7 @@ function wireEvents() {
   // Clear all
   btnClearAll.addEventListener('click', () => {
     clearFilters();
-    buildFilterDrawer(); // reset selects
+    buildFilterDrawer();
     refreshAfterFilter();
   });
 
@@ -724,6 +605,11 @@ function wireEvents() {
       goNational();
     } else if (chipType === 'district') {
       goBack();
+    } else if (chipType === 'exchange') {
+      setFilter('exchange', 'all');
+      const sel = document.getElementById('filter-exchange');
+      if (sel) sel.value = 'all';
+      refreshAfterFilter();
     } else {
       setFilter(chipType, 'Any');
       const sel = document.getElementById(`filter-${chipType}`);
@@ -739,38 +625,18 @@ function wireEvents() {
   btnCloseResults.addEventListener('click', closeResults);
 
   // Zoom controls
-  btnZoomIn.addEventListener('click', () => setZoom(zoomLevel * 1.3));
-  btnZoomOut.addEventListener('click', () => setZoom(zoomLevel / 1.3));
-  btnZoomReset.addEventListener('click', () => { zoomLevel = 1; panX = 0; panY = 0; applyZoom(); });
-
-  // Map drag (pan)
-  mapSvg.addEventListener('mousedown', e => {
-    isDragging = true;
-    dragStart = { x: e.clientX - panX, y: e.clientY - panY };
-    mapSvg.style.cursor = 'grabbing';
-  });
-
-  window.addEventListener('mousemove', e => {
-    if (!isDragging) return;
-    panX = e.clientX - dragStart.x;
-    panY = e.clientY - dragStart.y;
-    applyZoom();
-  });
-
-  window.addEventListener('mouseup', () => {
-    isDragging = false;
-    mapSvg.style.cursor = '';
+  btnZoomIn.addEventListener('click', () => setZoom(2.0));
+  btnZoomOut.addEventListener('click', () => setZoom(0.8));
+  btnZoomReset.addEventListener('click', () => {
+    const mapGroup = document.getElementById('map-group');
+    if (mapGroup) mapGroup.removeAttribute('transform');
   });
 
   // Keyboard: Escape closes drawers
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      if (!filterDrawer.hidden && filterDrawer.classList.contains('open')) {
-        closeFilterDrawer();
-      }
-      if (!resultsPanel.hidden) {
-        closeResults();
-      }
+      if (!filterDrawer.hidden && filterDrawer.classList.contains('open')) closeFilterDrawer();
+      if (!resultsPanel.hidden) closeResults();
     }
   });
 
@@ -790,23 +656,40 @@ function wireEvents() {
     }
   });
 
-  // Login button (prototype — unavailable)
+  // Login / Menu buttons (prototype — unavailable)
   document.getElementById('btn-login').addEventListener('click', () => {
     alert('Login is unavailable in this local prototype.');
   });
-
-  // Menu button (prototype — unavailable)
   document.getElementById('btn-menu').addEventListener('click', () => {
     alert('Menu is unavailable in this local prototype.');
   });
 }
 
 // ====== START ======
+async function start() {
+  try {
+    const resp = await fetch('geo/india-states.geojson');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    geoData = await resp.json();
+  } catch (err) {
+    console.error('Failed to load geometry:', err);
+    mapSvg.innerHTML = `<text x="500" y="400" text-anchor="middle" fill="#f5a721" font-size="16">
+      Error loading map geometry: ${err.message}</text>`;
+    return;
+  }
+
+  initProvider('populated');
+  buildFilterDrawer();
+  buildExchangeRail();
+  updateMap('national');
+  history.replaceState({ view: 'national' }, '', window.location.pathname);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   wireEvents();
   start().catch(err => {
     console.error('Prototype startup failed:', err);
-    mapSvg.innerHTML = `<text x="500" y="500" text-anchor="middle" fill="#f5a721" font-size="16">
+    mapSvg.innerHTML = `<text x="500" y="400" text-anchor="middle" fill="#f5a721" font-size="16">
       Failed to start: ${err.message}</text>`;
   });
 });
