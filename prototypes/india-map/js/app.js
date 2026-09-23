@@ -710,56 +710,52 @@ function wireEvents() {
 
   btnZoomIn.addEventListener('click', () => setZoom(zoomLevel * ZOOM_STEP));
   btnZoomOut.addEventListener('click', () => setZoom(zoomLevel / ZOOM_STEP));
-  btnZoomReset.addEventListener('click', () => { zoomLevel = 1.0; applyZoomTransform(); });
+  btnZoomReset.addEventListener('click', () => { zoomLevel = 1.0; panX = 0; panY = 0; applyZoomTransform(); applyPan(); });
 
   let isDragging = false;
   let dragStart = { x: 0, y: 0 };
+  let panX = 0, panY = 0;
+
+  function applyPan() {
+    const container = document.getElementById('map-container');
+    if (container) {
+      container.dataset.pan = `${panX},${panY}`;
+      container.style.transform = `translate(${panX}px, ${panY}px)`;
+    }
+  }
 
   mapSvg.addEventListener('mousedown', e => {
     isDragging = true;
-    dragStart = { x: e.clientX, y: e.clientY };
+    dragStart = { x: e.clientX - panX, y: e.clientY - panY };
     mapSvg.style.cursor = 'grabbing';
     e.preventDefault();
   });
 
   window.addEventListener('mousemove', e => {
     if (!isDragging) return;
+    panX = e.clientX - dragStart.x;
+    panY = e.clientY - dragStart.y;
+    applyPan();
   });
 
-  window.addEventListener('mouseup', e => {
+  window.addEventListener('mouseup', () => {
     if (!isDragging) return;
     isDragging = false;
     mapSvg.style.cursor = '';
-    const container = document.getElementById('map-container');
-    if (container) {
-      const dx = (e.clientX - dragStart.x) / zoomLevel;
-      const dy = (e.clientY - dragStart.y) / zoomLevel;
-      const cur = container.dataset.pan || '0,0';
-      const [px, py] = cur.split(',').map(Number);
-      container.dataset.pan = `${px + dx},${py + dy}`;
-      container.style.transform = `translate(${px + dx}px, ${py + dy}px)`;
-    }
   });
 
   let touchStart = null;
   mapSvg.addEventListener('touchstart', e => {
     if (e.touches.length === 1) {
-      touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      touchStart = { x: e.touches[0].clientX - panX, y: e.touches[0].clientY - panY };
     }
   }, { passive: true });
 
   mapSvg.addEventListener('touchmove', e => {
     if (!touchStart || e.touches.length !== 1) return;
-    const dx = (e.touches[0].clientX - touchStart.x) / zoomLevel;
-    const dy = (e.touches[0].clientY - touchStart.y) / zoomLevel;
-    const container = document.getElementById('map-container');
-    if (container) {
-      const cur = container.dataset.pan || '0,0';
-      const [px, py] = cur.split(',').map(Number);
-      container.dataset.pan = `${px + dx},${py + dy}`;
-      container.style.transform = `translate(${px + dx}px, ${py + dy}px)`;
-      touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    }
+    panX = e.touches[0].clientX - touchStart.x;
+    panY = e.touches[0].clientY - touchStart.y;
+    applyPan();
   }, { passive: true });
 
   mapSvg.addEventListener('touchend', () => { touchStart = null; });
