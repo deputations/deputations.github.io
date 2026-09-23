@@ -41,6 +41,20 @@ export async function test_karnataka_district_coverage() {
   }
 }
 
+export async function test_mumbai_alias_aggregates_both_fixtures() {
+  const { page, context } = await setup();
+  try {
+    await page.locator('[data-abbr="MH"]').click();
+    await delay(300);
+    // The GeoJSON "Mumbai" feature renders with fixture name "Mumbai City".
+    // Its aria-label should aggregate both Mumbai City (1) + Mumbai Suburban (1) = 2
+    const ariaLabel = await page.locator('[data-district="Mumbai City"]').getAttribute('aria-label');
+    assert.includes(ariaLabel, ': 2 jobs', `Mumbai polygon aggregates both fixtures (got "${ariaLabel}")`);
+  } finally {
+    await teardown(context);
+  }
+}
+
 export async function test_delhi_has_districts() {
   const { page, context } = await setup();
   try {
@@ -93,7 +107,8 @@ const tests = [
   test_delhi_has_districts,
   test_geojson_assets_exist,
   test_ka_has_30_districts,
-  test_multi_state_listings_counted_once_nationally
+  test_multi_state_listings_counted_once_nationally,
+  test_mumbai_alias_aggregates_both_fixtures
 ];
 
 if (import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}`) {

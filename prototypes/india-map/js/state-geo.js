@@ -89,17 +89,26 @@ export const CANONICAL_TO_FIXTURES = {
   }
 };
 
-// Alias from fixture name to GeoJSON name
-export const DISTRICT_ALIASES = {};
+// Alias from GeoJSON district name → fixture district name(s)
+// When the GeoJSON feature uses a historic or combined name, map it to the
+// current fixture names so render counts and drill-down clicks stay in sync.
+export const DISTRICT_GEOJSON_TO_FIXTURE = {};
 for (const [stateAbbr, m] of Object.entries(GEOJSON_TO_CANONICAL)) {
-  DISTRICT_ALIASES[stateAbbr] = {};
+  DISTRICT_GEOJSON_TO_FIXTURE[stateAbbr] = {};
   for (const [geoName, canonical] of Object.entries(m)) {
-    for (const fixtureName of (CANONICAL_TO_FIXTURES[stateAbbr]?.[canonical] || [canonical])) {
-      // We render geometry with its GeoJSON name, but when querying
-      // fixture counts we use the GeoJSON name (canonical)
-      DISTRICT_ALIASES[stateAbbr][geoName] = canonical;
+    const fixtures = CANONICAL_TO_FIXTURES[stateAbbr]?.[canonical] || [canonical];
+    DISTRICT_GEOJSON_TO_FIXTURE[stateAbbr][geoName] = fixtures;
+  }
+}
+
+// Reverse: fixture district name → GeoJSON district name
+export function fixtureDistrictToGeoJSON(stateAbbr, fixtureName) {
+  const reverse = {};
+  for (const [geoName, canonical] of Object.entries(GEOJSON_TO_CANONICAL[stateAbbr] || {})) {
+    const fixtures = CANONICAL_TO_FIXTURES[stateAbbr]?.[canonical] || [canonical];
+    for (const fn of fixtures) {
+      reverse[fn] = geoName;
     }
   }
-  // Also: the fixture-side alias: when looking up "Mumbai City" fixture count
-  // we need to know the GeoJSON name.  So we expose a reverse-lookup table.
+  return reverse[fixtureName] || fixtureName;
 }

@@ -3,6 +3,7 @@
 
 import { POPULATED_LISTINGS, SCENARIO, EXCHANGES, FILTERS, ZERO_STATE,
          NATIONWIDE_LISTINGS, UNKNOWN_LISTINGS, MULTI_STATE_LISTINGS } from '../fixtures/mock-data.js';
+import { fixtureDistrictToGeoJSON } from './state-geo.js';
 
 // ====== STATE ======
 let currentFilters = {
@@ -151,11 +152,19 @@ export function getListingsForState(stateAbbr) {
 
 export function getListingsForDistrict(stateAbbr, districtName) {
   const data = getData();
+  // Resolve the GeoJSON name for this district; if the GeoJSON combines
+  // multiple fixture names (e.g. MH "Mumbai" = "Mumbai City" + "Mumbai Suburban"),
+  // aggregate results from all fixture districts that map to the same GeoJSON feature.
+  const geoName = fixtureDistrictToGeoJSON(stateAbbr, districtName);
+  const expandedNames = new Set([districtName, geoName]);
+
   return data.filteredListings.filter(l => {
     if (!l.state || l.state === 'All India') return false;
     const states = l.state.split(',').map(s => s.trim());
     if (!states.includes(stateAbbr)) return false;
-    return l.district === districtName;
+    if (!l.district) return false;
+    // Match if the listing's district is the requested one OR maps to the same GeoJSON
+    return expandedNames.has(l.district) || fixtureDistrictToGeoJSON(stateAbbr, l.district) === geoName;
   });
 }
 

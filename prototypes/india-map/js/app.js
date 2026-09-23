@@ -3,7 +3,7 @@
 
 import { init as initProvider, setFilter, clearFilters, getFilters, getData,
          getListingsForState, getListingsForDistrict } from './map-provider.js';
-import { STATE_ABBR, ABBR_TO_NAME, STATE_LIST, DISTRICT_ALIASES } from './state-geo.js';
+import { STATE_ABBR, ABBR_TO_NAME, STATE_LIST, DISTRICT_GEOJSON_TO_FIXTURE, fixtureDistrictToGeoJSON } from './state-geo.js';
 import { EXCHANGES, FILTERS } from '../fixtures/mock-data.js';
 
 // ====== DOM REFERENCES ======
@@ -254,12 +254,18 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
   mapSvg.appendChild(g);
 
   distData.features.forEach(feat => {
-    const rawName = feat.properties.district;
-    if (!rawName) return;
+    const geoName = feat.properties.district;
+    if (!geoName) return;
 
-    // Use the GeoJSON name directly for matching; aliases handled in map-provider
-    const distName = rawName;
-    const count = data.districtCounts[`${stateAbbr}::${rawName}`] || 0;
+    const fixtureNames = DISTRICT_GEOJSON_TO_FIXTURE[stateAbbr]?.[geoName] || [geoName];
+    const fixtureName = Array.isArray(fixtureNames) ? fixtureNames[0] : fixtureNames;
+
+    // Sum counts from all fixture names that map to this GeoJSON feature
+    let count = 0;
+    const names = Array.isArray(fixtureNames) ? fixtureNames : [fixtureNames];
+    for (const fn of names) {
+      count += data.districtCounts[`${stateAbbr}::${fn}`] || 0;
+    }
 
     const d = projectCoords(feat.geometry);
     if (!d) return;
@@ -268,22 +274,22 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
     path.setAttribute('d', d);
     path.setAttribute('id', nextShapeId());
     path.setAttribute('class', 'ad-state');
-    path.setAttribute('data-district', distName);
+    path.setAttribute('data-district', fixtureName);
     path.setAttribute('data-state', stateAbbr);
     path.setAttribute('role', 'button');
     path.setAttribute('tabindex', '0');
-    path.setAttribute('aria-label', `${distName}, ${stateName}: ${count} jobs`);
+    path.setAttribute('aria-label', `${fixtureName}, ${stateName}: ${count} jobs`);
 
     if (count === 0) path.classList.add('zero');
 
-    path.addEventListener('mouseenter', e => showTooltip(e, `${distName}, ${stateName}`, count));
+    path.addEventListener('mouseenter', e => showTooltip(e, `${fixtureName}, ${stateName}`, count));
     path.addEventListener('mousemove', moveTooltip);
     path.addEventListener('mouseleave', hideTooltip);
-    path.addEventListener('focus', e => showTooltip(e, `${distName}, ${stateName}`, count));
+    path.addEventListener('focus', e => showTooltip(e, `${fixtureName}, ${stateName}`, count));
     path.addEventListener('blur', hideTooltip);
-    path.addEventListener('click', () => drillToDistrict(stateAbbr, distName));
+    path.addEventListener('click', () => drillToDistrict(stateAbbr, fixtureName));
     path.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drillToDistrict(stateAbbr, distName); }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drillToDistrict(stateAbbr, fixtureName); }
     });
 
     g.appendChild(path);
@@ -291,9 +297,17 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
 
   // District labels and count badges
   distData.features.forEach(feat => {
-    const rawName = feat.properties.district;
-    if (!rawName) return;
-    const count = data.districtCounts[`${stateAbbr}::${rawName}`] || 0;
+    const geoName = feat.properties.district;
+    if (!geoName) return;
+
+    const fixtureNames = DISTRICT_GEOJSON_TO_FIXTURE[stateAbbr]?.[geoName] || [geoName];
+    const fixtureName = Array.isArray(fixtureNames) ? fixtureNames[0] : fixtureNames;
+
+    let count = 0;
+    const names = Array.isArray(fixtureNames) ? fixtureNames : [fixtureNames];
+    for (const fn of names) {
+      count += data.districtCounts[`${stateAbbr}::${fn}`] || 0;
+    }
 
     let cLon = feat.properties.centroid_lon;
     let cLat = feat.properties.centroid_lat;
@@ -302,21 +316,27 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
     }
     const [px, py] = project(cLon, cLat);
 
+    // District name and count rendered side-by-side on the same baseline
+    const labelText = fixtureName.length > 14 ? fixtureName.slice(0, 14) + '…' : fixtureName;
     const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    label.setAttribute('x', px);
-    label.setAttribute('y', py - 3);
+    label.setAttribute('x', count > 0 ? px - 4 : px);
+    label.setAttribute('y', py);
+    label.setAttribute('text-anchor', count > 0 ? 'end' : 'middle');
     label.setAttribute('class', 'ad-state-label');
-    label.textContent = rawName.length > 14 ? rawName.slice(0, 14) + '…' : rawName;
+    label.textContent = labelText;
     label.style.fontSize = '7px';
     g.appendChild(label);
 
     if (count > 0) {
       const countEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      countEl.setAttribute('x', px);
-      countEl.setAttribute('y', py + 6);
+      countEl.setAttribute('x', px + 4);
+      countEl.setAttribute('y', py);
+      countEl.setAttribute('text-anchor', 'start');
       countEl.setAttribute('class', 'ad-state-count');
       countEl.textContent = count;
-      countEl.style.fontSize = '6px';
+      countEl.style.fontSize = '7px';
+      countEl.style.fill = '#f5a721';
+      countEl.style.fontWeight = '600';
       g.appendChild(countEl);
     }
   });
