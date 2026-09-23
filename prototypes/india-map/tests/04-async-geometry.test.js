@@ -5,9 +5,24 @@ import { startServer, newContext, probe, assert, delay } from './harness.js';
 
 let server;
 
-async function setup() {
+async function setup(opts = {}) {
   if (!server) server = await startServer();
   const { context, page } = await newContext();
+  // Override fetch in-page to delay district geometry requests.
+  // This avoids Playwright route-priority issues with the harness abort handler.
+  if (opts.slowDistricts) {
+    await page.addInitScript(() => {
+      const origFetch = window.fetch;
+      window.fetch = function (url, ...args) {
+        if (typeof url === 'string' && url.includes('/districts/MH.geojson')) {
+          return new Promise((resolve) => {
+            setTimeout(() => resolve(origFetch(url, ...args)), 800);
+          });
+        }
+        return origFetch(url, ...args);
+      };
+    });
+  }
   await page.goto('http://127.0.0.1:8092/');
   await page.waitForFunction(() => document.getElementById('india-map').children.length > 0, null, { timeout: 5000 });
   return { page, context };
@@ -18,14 +33,13 @@ async function teardown(ctx) {
 }
 
 export async function test_stale_district_geometry_does_not_overwrite() {
-  const { page, context } = await setup();
+  const { page, context } = await setup({ slowDistricts: true });
   try {
     await page.locator('[data-abbr="MH"]').click();
-    await delay(50);
-
-    // Immediately click Back before geometry finishes
+    // Immediately click Back before the 800ms geometry fetch resolves
+    await delay(100);
     await page.locator('#btn-back').click({ force: true });
-    await delay(500);
+    await delay(1500);
 
     const title = await probe.summaryTitle(page);
     assert.equal(title, 'ALL INDIA JOBS', 'Stale geometry cannot overwrite national view');

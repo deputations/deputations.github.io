@@ -221,7 +221,7 @@ function renderStateMap(stateAbbr, stateName, data) {
   loadDistrictGeometry(stateAbbr, stateName, data);
 }
 
-async function loadDistrictGeometry(stateAbbr, stateName, data) {
+  async function loadDistrictGeometry(stateAbbr, stateName, data) {
   const myGeneration = ++currentGeneration;
   clearMap();
 
@@ -381,6 +381,7 @@ function drillToDistrict(stateAbbr, districtName) {
 }
 
 function goBack() {
+  ++currentGeneration; // invalidate any in-flight geometry
   if (view === 'district') {
     selectedDistrict = null;
     view = 'state';
@@ -395,6 +396,7 @@ function goBack() {
 }
 
 function goNational() {
+  ++currentGeneration; // invalidate any in-flight geometry
   selectedState = null;
   selectedDistrict = null;
   view = 'national';
@@ -627,6 +629,11 @@ function buildExchangeRail() {
 
 // ====== ZOOM (incremental) ======
 function applyZoomTransform() {
+  if (zoomLevel === 1.0) {
+    const mapGroup = document.getElementById('map-group');
+    if (mapGroup) mapGroup.removeAttribute('transform');
+    return;
+  }
   const mapGroup = document.getElementById('map-group');
   if (mapGroup) {
     const t = `translate(500,400) scale(${zoomLevel}) translate(-500,-400)`;
@@ -649,10 +656,7 @@ function wireEvents() {
     clearFilters();
     buildFilterDrawer();
     zoomLevel = 1.0;
-    const mapGroup = document.getElementById('map-group');
-    if (mapGroup) mapGroup.removeAttribute('transform');
 
-    // If we're in a state/district view, Clear All should also reset navigation
     if (view !== 'national') {
       goNational();
     } else {
