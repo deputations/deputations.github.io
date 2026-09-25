@@ -514,6 +514,8 @@ function syncExchangeRail(data) {
 }
 
 // ====== RESULTS PANEL ======
+let sheetCloseTimer = null;
+
 function showResults({ title, breadcrumb, listings: items }) {
   resultsTitle.textContent = title;
   resultsBreadcrumb.innerHTML = breadcrumb.join('');
@@ -541,10 +543,13 @@ function showResults({ title, breadcrumb, listings: items }) {
 
   resultsPanel.hidden = false;
   sheetOverlay.hidden = false;
-  // next frame so transition runs
+  clearTimeout(sheetCloseTimer);
+
   requestAnimationFrame(() => {
-    resultsPanel.classList.add('open');
-    sheetOverlay.classList.add('open');
+    requestAnimationFrame(() => {
+      resultsPanel.classList.add('open');
+      sheetOverlay.classList.add('open');
+    });
   });
 
   resultsBreadcrumb.querySelectorAll('[data-nav]').forEach(link => {
@@ -562,8 +567,8 @@ function showResults({ title, breadcrumb, listings: items }) {
 function closeResults() {
   resultsPanel.classList.remove('open');
   sheetOverlay.classList.remove('open');
-  resultsList.innerHTML = '';
-  setTimeout(() => {
+  clearTimeout(sheetCloseTimer);
+  sheetCloseTimer = setTimeout(() => {
     resultsPanel.hidden = true;
     sheetOverlay.hidden = true;
   }, 320);

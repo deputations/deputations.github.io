@@ -550,12 +550,12 @@ html, body {
   overflow: hidden;
   backdrop-filter: blur(20px);
   transition: transform 320ms cubic-bezier(0.32, 0.72, 0.34, 1.02);
-  visibility: hidden;
+  pointer-events: none;
 }
 
 .ad-results-sheet.open {
   transform: translateX(-50%) translateY(0);
-  visibility: visible;
+  pointer-events: auto;
 }
 
 .ad-sheet-handle {
