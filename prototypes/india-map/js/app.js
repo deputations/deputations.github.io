@@ -41,8 +41,10 @@ let geoData = null;
 let currentProjection = null;
 let currentGeneration = 0;
 
-// Zoom state (incremental)
+// Zoom state (incremental, animated)
 let zoomLevel = 1.0;
+let targetZoomLevel = 1.0;
+let zoomAnimFrame = null;
 const ZOOM_MIN = 0.5, ZOOM_MAX = 8.0, ZOOM_STEP = 1.3;
 
 // ====== PROJECTION ======
@@ -162,7 +164,7 @@ function renderNationalMap(data) {
   g.id = 'map-group';
   mapSvg.appendChild(g);
 
-  geoData.features.forEach(feat => {
+  geoData.features.forEach((feat, idx) => {
     const name = feat.properties.NAME_1;
     const abbr = STATE_ABBR[name] || null;
     if (!abbr) return;
@@ -211,6 +213,8 @@ function renderNationalMap(data) {
       countEl.setAttribute('y', cy + 9);
       countEl.setAttribute('class', 'ad-state-count');
       countEl.textContent = count;
+      // Staggered pop-in: 30ms per shape, capped at 600ms
+      countEl.style.animationDelay = `${Math.min(idx * 30, 600)}ms`;
       g.appendChild(countEl);
     }
   });
@@ -254,7 +258,7 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
   g.id = 'map-group';
   mapSvg.appendChild(g);
 
-  distData.features.forEach(feat => {
+  distData.features.forEach((feat, idx) => {
     const geoName = feat.properties.district;
     if (!geoName) return;
 
@@ -296,8 +300,8 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
     g.appendChild(path);
   });
 
-  // District labels and count badges
-  distData.features.forEach(feat => {
+  // District labels and count badges (staggered)
+  distData.features.forEach((feat, idx) => {
     const geoName = feat.properties.district;
     if (!geoName) return;
 
@@ -338,6 +342,8 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
       countEl.style.fontSize = '7px';
       countEl.style.fill = '#f5a721';
       countEl.style.fontWeight = '600';
+      // Staggered pop-in: 25ms per district, capped at 500ms
+      countEl.style.animationDelay = `${Math.min(idx * 25, 500)}ms`;
       g.appendChild(countEl);
     }
   });
@@ -497,8 +503,8 @@ function updateAppliedFilters() {
     filterChips.innerHTML = '';
   } else {
     appliedFilters.hidden = false;
-    filterChips.innerHTML = chips.map(c =>
-      `<span class="ad-filter-chip">${c.label}<button data-chip="${c.type}" aria-label="Remove ${c.label}">×</button></span>`
+    filterChips.innerHTML = chips.map((c, i) =>
+      `<span class="ad-filter-chip" style="animation-delay:${i * 60}ms">${c.label}<button data-chip="${c.type}" aria-label="Remove ${c.label}">×</button></span>`
     ).join('');
   }
 }
@@ -664,23 +670,35 @@ function buildExchangeRail() {
   });
 }
 
-// ====== ZOOM (incremental) ======
-function applyZoomTransform() {
-  if (zoomLevel === 1.0) {
-    const mapGroup = document.getElementById('map-group');
-    if (mapGroup) mapGroup.removeAttribute('transform');
+// ====== ZOOM (incremental, animated) ======
+function applyZoomTransform(level = zoomLevel) {
+  const mapGroup = document.getElementById('map-group');
+  if (!mapGroup) return;
+  if (level === 1.0) {
+    mapGroup.removeAttribute('transform');
     return;
   }
-  const mapGroup = document.getElementById('map-group');
-  if (mapGroup) {
-    const t = `translate(500,400) scale(${zoomLevel}) translate(-500,-400)`;
-    mapGroup.setAttribute('transform', t);
+  const t = `translate(500,400) scale(${level}) translate(-500,-400)`;
+  mapGroup.setAttribute('transform', t);
+}
+
+function animateZoom() {
+  const diff = targetZoomLevel - zoomLevel;
+  if (Math.abs(diff) < 0.001) {
+    zoomLevel = targetZoomLevel;
+    applyZoomTransform(zoomLevel);
+    zoomAnimFrame = null;
+    return;
   }
+  zoomLevel += diff * 0.4; // smooth ease-out, converges in ~12 frames (~200ms)
+  applyZoomTransform(zoomLevel);
+  zoomAnimFrame = requestAnimationFrame(animateZoom);
 }
 
 function setZoom(newLevel) {
-  zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newLevel));
-  applyZoomTransform();
+  targetZoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newLevel));
+  if (zoomAnimFrame) cancelAnimationFrame(zoomAnimFrame);
+  zoomAnimFrame = requestAnimationFrame(animateZoom);
 }
 
 // ====== EVENT WIRING ======
@@ -692,7 +710,7 @@ function wireEvents() {
   btnClearAll.addEventListener('click', () => {
     clearFilters();
     buildFilterDrawer();
-    zoomLevel = 1.0;
+    setZoom(1.0);
 
     if (view !== 'national') {
       goNational();
@@ -727,7 +745,11 @@ function wireEvents() {
 
   btnZoomIn.addEventListener('click', () => setZoom(zoomLevel * ZOOM_STEP));
   btnZoomOut.addEventListener('click', () => setZoom(zoomLevel / ZOOM_STEP));
-  btnZoomReset.addEventListener('click', () => { zoomLevel = 1.0; panX = 0; panY = 0; applyZoomTransform(); applyPan(); });
+  btnZoomReset.addEventListener('click', () => {
+    setZoom(1.0);
+    panX = 0; panY = 0;
+    applyPan();
+  });
 
   let isDragging = false;
   let dragStart = { x: 0, y: 0 };

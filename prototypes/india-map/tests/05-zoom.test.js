@@ -48,10 +48,10 @@ export async function test_zoom_is_incremental() {
     assert.truthy(scale3 < scale2, `Zoom out decreases scale (${scale3} < ${scale2})`);
 
     await page.locator('#btn-zoom-reset').click();
-    await delay(100);
+    await delay(400);
     const t4 = await probe.transforms(page);
     const scale4 = parseScale(t4[0]);
-    assert.equal(scale4, 1.0, 'Reset returns to scale 1');
+    assert.truthy(Math.abs(scale4 - 1.0) < 0.002, `Reset converges to 1.0 (got ${scale4})`);
   } finally {
     await teardown(context);
   }
