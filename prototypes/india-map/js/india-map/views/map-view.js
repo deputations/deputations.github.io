@@ -15,15 +15,68 @@ let selectedDistrictName = null;
 let generation = 0;
 let currentView = 'map';
 
-// Projection bounds (India lat/lon extent with padding)
-const GEO_BOUNDS = { minLon: 68.1, maxLon: 97.5, minLat: 6.7, maxLat: 37.1 };
-const VB_W = 1000, VB_H = 800;
-const VB_PAD = 40;
+// Dynamic projection computed from actual GeoJSON bounds
+let currentProjection = null;
+
+function computeProjection(features) {
+  let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
+  features.forEach(f => {
+    if (!f.geometry) return;
+    const coords = flattenCoords(f.geometry);
+    coords.forEach(([lon, lat]) => {
+      if (lon < minLon) minLon = lon;
+      if (lon > maxLon) maxLon = lon;
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+    });
+  });
+  if (!isFinite(minLon)) { minLon = 68; maxLon = 97; minLat = 6; maxLat = 36; }
+  const lonRange = (maxLon - minLon) || 1;
+  const latRange = (maxLat - minLat) || 1;
+  const scale = Math.min(1000 / (lonRange * 1.04), 800 / (latRange * 1.04));
+  const offsetX = (1000 - lonRange * scale) / 2;
+  const offsetY = (800 + latRange * scale) / 2;
+  currentProjection = { minLon, maxLon, minLat, maxLat, scale, offsetX, offsetY };
+}
 
 function project(lon, lat) {
-  const x = ((lon - GEO_BOUNDS.minLon) / (GEO_BOUNDS.maxLon - GEO_BOUNDS.minLon)) * (VB_W - VB_PAD * 2) + VB_PAD;
-  const y = ((GEO_BOUNDS.maxLat - lat) / (GEO_BOUNDS.maxLat - GEO_BOUNDS.minLat)) * (VB_H - VB_PAD * 2) + VB_PAD;
-  return [x, y];
+  if (!currentProjection) return [500, 400];
+  const p = currentProjection;
+  return [(lon - p.minLon) * p.scale + p.offsetX, p.offsetY - (lat - p.minLat) * p.scale];
+}
+
+function flattenCoords(geom) {
+  const result = [];
+  if (geom.type === 'Polygon') {
+    geom.coordinates.filter(hasRealExtent).forEach(ring => ring.forEach(c => result.push(c)));
+  } else if (geom.type === 'MultiPolygon') {
+    geom.coordinates.forEach(poly => {
+      poly.filter(hasRealExtent).forEach(ring => ring.forEach(c => result.push(c)));
+    });
+  }
+  return result;
+}
+
+function hasRealExtent(ring) { return ring.length > 3 && ring.some(([x,y]) => Math.abs(x) > 0.01 || Math.abs(y) > 0.01); }
+
+function getValidRings(geom) {
+  if (geom.type === 'Polygon') return geom.coordinates.filter(hasRealExtent);
+  if (geom.type === 'MultiPolygon') {
+    const rings = [];
+    geom.coordinates.forEach(poly => poly.forEach(r => { if (hasRealExtent(r)) rings.push(r); }));
+    return rings;
+  }
+  return [];
+}
+
+function projectRing(ring) {
+  const pts = ring.map(([lon, lat]) => project(lon, lat));
+  if (pts.length < 2) return `M ${pts[0]?.map(n => n.toFixed(1)).join(',') || '0,0'}`;
+  return `M ${pts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' L ')}`;
+}
+
+function projectCoords(geom) {
+  return getValidRings(geom).map(projectRing).join(' ');
 }
 
 // State code → name mapping (from census data)
@@ -73,6 +126,7 @@ async function loadGeometry() {
       districtsGeo = await districtsResp.json();
     }
 
+    computeProjection(statesGeo.features);
     renderNationalMap();
     checkEmptyState();
   } catch (err) {
