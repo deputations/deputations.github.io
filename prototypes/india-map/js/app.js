@@ -8,6 +8,7 @@ import { EXCHANGES, FILTERS } from '../fixtures/mock-data.js';
 
 // ====== DOM REFERENCES ======
 const mapSvg = document.getElementById('india-map');
+const mapContainer = document.getElementById('map-container');
 const tooltip = document.getElementById('tooltip');
 const tooltipName = document.getElementById('tooltip-name');
 const tooltipCount = document.getElementById('tooltip-count');
@@ -353,17 +354,36 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
   view = 'state';
 }
 
-function showStateListView(stateAbbr, stateName, data) {
+function showStateListView(stateAbbr, stateName, data, reason = 'District geometry not available') {
   clearMap();
   mapSvg.innerHTML = '';
+
+  // Show "approximate geometry" banner in map area
+  mapContainer.insertAdjacentHTML('afterbegin', `
+    <div class="ad-geometry-notice" role="alert">
+      <i class="ph-fill ph-warning-circle"></i>
+      ${reason} — showing district list instead.
+      <button onclick="this.parentElement.remove()" aria-label="Dismiss">&times;</button>
+    </div>
+  `);
 
   btnBack.hidden = false;
   view = 'state';
 
+  // Build district breakdown list from data
+  const districtEntries = Object.entries(data.districtCounts)
+    .filter(([k]) => k.startsWith(`${stateAbbr}::`))
+    .map(([k, count]) => {
+      const dName = k.split('::')[1];
+      return { name: dName, count };
+    })
+    .sort((a, b) => b.count - a.count);
+
   showResults({
     title: `${stateName} Jobs`,
     breadcrumb: [`<a href="#" data-nav="national">India</a> <span>›</span> ${stateName}`],
-    listings: getListingsForState(stateAbbr)
+    listings: getListingsForState(stateAbbr),
+    districtBreakdown: districtEntries
   });
 }
 
@@ -408,18 +428,7 @@ function drillToDistrict(stateAbbr, districtName) {
 }
 
 function goBack() {
-  ++currentGeneration; // invalidate any in-flight geometry
-  if (view === 'district') {
-    selectedDistrict = null;
-    view = 'state';
-    closeResults();
-    renderStateMap(selectedState, ABBR_TO_NAME[selectedState], getData());
-    updateAppliedFilters();
-    syncExchangeRail(getData());
-    history.pushState({ view: 'state', state: selectedState }, '', `?state=${selectedState}`);
-  } else if (view === 'state') {
-    goNational();
-  }
+  history.back();
 }
 
 function goNational() {
@@ -522,15 +531,31 @@ function syncExchangeRail(data) {
 // ====== RESULTS PANEL ======
 let sheetCloseTimer = null;
 
-function showResults({ title, breadcrumb, listings: items }) {
+function showResults({ title, breadcrumb, listings: items, districtBreakdown = null }) {
   resultsTitle.textContent = title;
   resultsBreadcrumb.innerHTML = breadcrumb.join('');
 
+  let cardsHTML = '';
+
+  // District breakdown list (shown above result cards when available)
+  if (districtBreakdown && districtBreakdown.length > 0) {
+    const districtList = districtBreakdown.map(({ name, count }) => `
+      <button class="ad-district-item" data-district="${name}" data-state="${selectedState || ''}"
+              aria-label="View ${count} listings in ${name}">
+        <span class="ad-district-name">${name}</span>
+        <span class="ad-district-count">${count}</span>
+      </button>
+    `).join('');
+    cardsHTML += `<div class="ad-district-list">${districtList}</div>`;
+  }
+
   if (items.length === 0) {
-    resultsList.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ad-text-muted)">
-      No listings found matching your criteria.</div>`;
+    if (!districtBreakdown || districtBreakdown.length === 0) {
+      cardsHTML += `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ad-text-muted)">
+        No listings found matching your criteria.</div>`;
+    }
   } else {
-    resultsList.innerHTML = items.map(item => `
+    cardsHTML += items.map(item => `
       <article class="ad-result-card" tabindex="0" aria-label="${item.title}">
         <div class="ad-result-title">${item.title}</div>
         <div class="ad-result-meta">
@@ -546,6 +571,21 @@ function showResults({ title, breadcrumb, listings: items }) {
       </article>
     `).join('');
   }
+
+  resultsList.innerHTML = cardsHTML;
+
+  // Wire up district-item clicks
+  resultsList.querySelectorAll('.ad-district-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dName = btn.dataset.district;
+      const sAbbr = btn.dataset.state;
+      drillToDistrict(sAbbr, dName);
+    });
+  });
+
+  // Clear geometry notice if present
+  const notice = mapContainer.querySelector('.ad-geometry-notice');
+  if (notice) notice.remove();
 
   resultsPanel.hidden = false;
   sheetOverlay.hidden = false;
