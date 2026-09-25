@@ -25,6 +25,7 @@ const resultsPanel = document.getElementById('results-panel');
 const resultsTitle = document.getElementById('results-title');
 const resultsBreadcrumb = document.getElementById('results-breadcrumb');
 const resultsList = document.getElementById('results-list');
+const sheetOverlay = document.getElementById('sheet-overlay');
 const btnCloseResults = document.getElementById('btn-close-results');
 const filterOverlay = document.getElementById('filter-overlay');
 const filterDrawer = document.getElementById('filter-drawer');
@@ -539,6 +540,12 @@ function showResults({ title, breadcrumb, listings: items }) {
   }
 
   resultsPanel.hidden = false;
+  sheetOverlay.hidden = false;
+  // next frame so transition runs
+  requestAnimationFrame(() => {
+    resultsPanel.classList.add('open');
+    sheetOverlay.classList.add('open');
+  });
 
   resultsBreadcrumb.querySelectorAll('[data-nav]').forEach(link => {
     link.addEventListener('click', e => {
@@ -553,8 +560,13 @@ function showResults({ title, breadcrumb, listings: items }) {
 }
 
 function closeResults() {
-  resultsPanel.hidden = true;
+  resultsPanel.classList.remove('open');
+  sheetOverlay.classList.remove('open');
   resultsList.innerHTML = '';
+  setTimeout(() => {
+    resultsPanel.hidden = true;
+    sheetOverlay.hidden = true;
+  }, 320);
 }
 
 // ====== FILTER DRAWER ======
@@ -763,9 +775,11 @@ function wireEvents() {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       if (!filterDrawer.hidden && filterDrawer.classList.contains('open')) closeFilterDrawer();
-      if (!resultsPanel.hidden) closeResults();
+      if (!resultsPanel.hidden || resultsPanel.classList.contains('open')) closeResults();
     }
   });
+
+  sheetOverlay.addEventListener('click', () => closeResults());
 
   window.addEventListener('popstate', e => {
     const state = e.state;

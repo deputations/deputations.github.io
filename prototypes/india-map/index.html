@@ -102,9 +102,11 @@
       <i class="ph ph-arrow-left"></i> India Map
     </button>
 
-    <!-- RESULTS PANEL (shown after district click) -->
-    <section class="ad-results-panel" id="results-panel" hidden aria-label="Job listings">
-      <div class="ad-results-header">
+    <!-- RESULTS BOTTOM SHEET (shown after district click) -->
+    <div class="ad-sheet-overlay" id="sheet-overlay" hidden aria-hidden="true"></div>
+    <section class="ad-results-sheet" id="results-panel" hidden aria-label="Job listings" role="dialog" aria-modal="true">
+      <div class="ad-sheet-handle" aria-hidden="true"><span></span><span></span></div>
+      <div class="ad-sheet-header">
         <h2 class="ad-results-title" id="results-title">Jobs</h2>
         <button class="ad-icon-btn" id="btn-close-results" aria-label="Close results">
           <i class="ph ph-x"></i>
