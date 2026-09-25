@@ -122,7 +122,7 @@ function renderNationalMap() {
     // Label
     const centroid = getCentroid(feature.geometry);
     if (centroid && abbr.length <= 3) {
-      const text = createText(centroid.x, centroid.y, abbr, 'ad-state-label');
+      const text = createText(centroid.x, centroid.y, name || abbr, 'ad-state-label');
       labelsLayer.appendChild(text);
     }
   });
