@@ -19,7 +19,7 @@ const MIME = {
 
 const server = http.createServer((req, res) => {
   let url = req.url.split('?')[0];
-  if (url === '/') url = '/india-map.html';
+  if (url === '/') url = '/index.html';
   const fp = path.join(ROOT, url);
   if (!fp.startsWith(ROOT)) {
     res.statusCode = 403;
