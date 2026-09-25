@@ -15,6 +15,17 @@ let selectedDistrictName = null;
 let generation = 0;
 let currentView = 'map';
 
+// Projection bounds (India lat/lon extent with padding)
+const GEO_BOUNDS = { minLon: 68.1, maxLon: 97.5, minLat: 6.7, maxLat: 37.1 };
+const VB_W = 1000, VB_H = 800;
+const VB_PAD = 40;
+
+function project(lon, lat) {
+  const x = ((lon - GEO_BOUNDS.minLon) / (GEO_BOUNDS.maxLon - GEO_BOUNDS.minLon)) * (VB_W - VB_PAD * 2) + VB_PAD;
+  const y = ((GEO_BOUNDS.maxLat - lat) / (GEO_BOUNDS.maxLat - GEO_BOUNDS.minLat)) * (VB_H - VB_PAD * 2) + VB_PAD;
+  return [x, y];
+}
+
 // State code → name mapping (from census data)
 const CODE_TO_NAME = { '01': 'J&K', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat', '25': 'Daman and Diu', '26': 'Dadra and Nagar Haveli', '27': 'Maharashtra', '28': 'Andhra Pradesh', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman and Nicobar', '36': 'Telangana', '37': 'Andhra Pradesh (New)' };
 
@@ -581,26 +592,29 @@ function countDistrictListings(stateAbbr, fixtureNames) {
 }
 
 function polygonToPath(coords) {
-  return 'M ' + coords.map(c => `${c[0]},${c[1]}`).join(' L ') + ' Z';
+  return 'M ' + coords.map(c => { const p = project(c[0], c[1]); return `${p[0]},${p[1]}`; }).join(' L ') + ' Z';
 }
 
 function multiPolygonToPath(coords) {
-  return coords.map(poly => 'M ' + poly[0].map(c => `${c[0]},${c[1]}`).join(' L ') + ' Z').join(' ');
+  return coords.map(poly => 'M ' + poly[0].map(c => { const p = project(c[0], c[1]); return `${p[0]},${p[1]}`; }).join(' L ') + ' Z').join(' ');
 }
 
 function getCentroid(geometry) {
   const coords = geometry.type === 'MultiPolygon'
     ? geometry.coordinates.flat().flat()
     : geometry.coordinates[0];
-  return { x: avg(coords, 0), y: avg(coords, 1) };
+  return { x: avgProjected(coords, 0), y: avgProjected(coords, 1) };
 }
 
 function getPolygonCentroid(rings) {
   const coords = Array.isArray(rings[0]?.[0]) ? rings[0] : rings;
-  return { x: avg(coords, 0), y: avg(coords, 1) };
+  return { x: avgProjected(coords, 0), y: avgProjected(coords, 1) };
 }
 
-function avg(arr, idx) { return arr.reduce((s, c) => s + c[idx], 0) / Math.max(arr.length, 1); }
+function avgProjected(arr, idx) {
+  const proj = arr.map(c => project(c[0], c[1]));
+  return proj.reduce((s, p) => s + p[idx], 0) / Math.max(proj.length, 1);
+}
 
 function esc(str) {
   const d = document.createElement('div');
