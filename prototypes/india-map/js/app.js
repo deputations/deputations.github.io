@@ -259,7 +259,7 @@ function renderStateMap(stateAbbr, stateName, data) {
 // ====== DELHI IMAGE-MAP (colored district photos) ======
 
 // Delhi district hotspot definitions (image-relative % boxes matching the
-// colored overview `img/delhi/Delhi coloured.jpg`).
+// colored overview `img/delhi/delhi-coloured.jpg`).
 // Each entry: { name, left, top, width, height, image } where values are
 // percentages of the rendered image dimensions.
 const DELHI_DISTRICTS = [
@@ -306,7 +306,7 @@ function renderDelhiImageMap(stateAbbr, stateName, data, initialDistrict = null)
   const mapArea = mapContainer.querySelector('.ad-map-area') || mapContainer;
   mapArea.innerHTML = `
     <div class="ad-delhi-map-wrap">
-      <img src="img/delhi/Delhi coloured.jpg" alt="Delhi district map" class="ad-delhi-map-img" draggable="false">
+      <img src="img/delhi/delhi-coloured.jpg" alt="Delhi district map" class="ad-delhi-map-img" draggable="false">
       <div class="ad-delhi-hotspots">${hotspots}</div>
     </div>
   `;
