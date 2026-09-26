@@ -263,17 +263,18 @@ function renderStateMap(stateAbbr, stateName, data) {
 // Each entry: { name, left, top, width, height, image } where values are
 // percentages of the rendered image dimensions.
 const DELHI_DISTRICTS = [
-  { name: 'North',            left: 44, top: 4,  width: 28, height: 22, image: 'd7-north.png' },
-  { name: 'North West',       left: 26, top: 16, width: 22, height: 24, image: 'd8-north_west.png' },
-  { name: 'West',             left: 26, top: 38, width: 22, height: 22, image: 'd5-west.png' },
-  { name: 'South West',       left: 14, top: 58, width: 30, height: 24, image: 'd3-south_west.png' },
-  { name: 'North East',       left: 72, top: 10, width: 16, height: 18, image: 'd10-north_east.png' },
-  { name: 'Shahdara',         left: 74, top: 26, width: 14, height: 16, image: 'd9-shahadara.png' },
-  { name: 'East',             left: 76, top: 44, width: 18, height: 22, image: 'd6-east.png' },
-  { name: 'Central',          left: 58, top: 28, width: 16, height: 16, image: 'd11-central.png' },
-  { name: 'New Delhi',        left: 42, top: 50, width: 22, height: 26, image: 'd2-new_delhi.png' },
-  { name: 'South East',       left: 70, top: 62, width: 20, height: 24, image: 'd04-south_east.jpg' },
-  { name: 'South',            left: 38, top: 76, width: 24, height: 20, image: 'd1-south.png' }
+  // Calibrated against 1472×1344 image; tight boxes matching district shapes
+  { name: 'North',            left: 42, top: 2,  width: 24, height: 20, image: 'd7-north.png' },
+  { name: 'North West',       left: 28, top: 16, width: 20, height: 22, image: 'd8-north_west.png' },
+  { name: 'West',             left: 26, top: 38, width: 20, height: 20, image: 'd5-west.png' },
+  { name: 'South West',       left: 16, top: 60, width: 26, height: 22, image: 'd3-south_west.png' },
+  { name: 'North East',       left: 72, top: 8,  width: 14, height: 16, image: 'd10-north_east.png' },
+  { name: 'Shahdara',         left: 74, top: 24, width: 12, height: 14, image: 'd9-shahadara.png' },
+  { name: 'East',             left: 76, top: 42, width: 16, height: 20, image: 'd6-east.png' },
+  { name: 'Central',          left: 62, top: 28, width: 14, height: 14, image: 'd11-central.png' },
+  { name: 'New Delhi',        left: 44, top: 52, width: 20, height: 24, image: 'd2-new_delhi.png' },
+  { name: 'South East',       left: 72, top: 62, width: 18, height: 22, image: 'd04-south_east.jpg' },
+  { name: 'South',            left: 40, top: 78, width: 22, height: 18, image: 'd1-south.png' }
 ];
 
 function renderDelhiImageMap(stateAbbr, stateName, data, initialDistrict = null) {
