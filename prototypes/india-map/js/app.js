@@ -567,7 +567,26 @@ function drillToDistrict(stateAbbr, districtName) {
 }
 
 function goBack() {
-  history.back();
+  // Level-based navigation (not history-based) so it works on direct links
+  if (view === 'district') {
+    goBackToState();
+  } else if (view === 'state') {
+    goNational();
+  }
+}
+
+function goBackToState() {
+  if (!selectedState) { goNational(); return; }
+  const data = getData();
+  view = 'state';
+  selectedDistrict = null;
+  closeResults();
+  renderStateMap(selectedState, ABBR_TO_NAME[selectedState] || selectedState, data);
+  updateSummary(`${(ABBR_TO_NAME[selectedState] || selectedState).toUpperCase()} JOBS`, data.stateCounts[selectedState] || 0);
+  updateAppliedFilters();
+  syncExchangeRail(data);
+  history.pushState({ view: 'state', state: selectedState }, '', `?state=${selectedState}`);
+  btnBack.hidden = false;
 }
 
 function goNational() {
@@ -600,7 +619,7 @@ function goNational() {
 
   const data = getData();
   renderNationalMap(data);
-  updateSummary('ALL INDIA JOBS', data.totalCount);
+  updateSummary('ALL INDIA JOBS', data.nationalCount);
   updateAppliedFilters();
   syncExchangeRail(data);
   history.pushState({ view: 'national' }, '', window.location.pathname);
