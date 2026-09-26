@@ -14,6 +14,7 @@ const tooltipName = document.getElementById('tooltip-name');
 const tooltipCount = document.getElementById('tooltip-count');
 const summaryTitle = document.getElementById('summary-title');
 const summaryCount = document.getElementById('summary-count');
+const summaryCard = document.getElementById('summary-card');
 const appliedFilters = document.getElementById('applied-filters');
 const filterChips = document.getElementById('filter-chips');
 const btnClearAll = document.getElementById('btn-clear-all');
@@ -650,6 +651,141 @@ function syncExchangeRail(data) {
   });
 }
 
+// ====== CARD-GRID VIEWS (Functional / Industrial) ======
+const cardView = document.getElementById('card-view');
+const cardViewTitle = document.getElementById('card-view-title');
+const cardViewSubtitle = document.getElementById('card-view-subtitle');
+const cardGrid = document.getElementById('card-grid');
+const cardListings = document.getElementById('card-listings');
+const listingCards = document.getElementById('listing-cards');
+const btnCardBack = document.getElementById('btn-card-back');
+
+function showCardView(viewType) {
+  view = viewType; // 'functional' or 'industrial'
+
+  // Hide map-related elements, show card view
+  mapContainer.hidden = true;
+  summaryCard.hidden = true;
+  rightRail.hidden = true;
+  cardView.hidden = false;
+  btnBack.hidden = true;
+
+  const data = getData();
+  const listings = getListingsForState(null); // all filtered listings
+
+  if (viewType === 'functional') {
+    cardViewTitle.textContent = 'Functional Categories';
+    cardViewSubtitle.textContent = 'Browse listings by functional area';
+  } else {
+    cardViewTitle.textContent = 'Qualification Groups';
+    cardViewSubtitle.textContent = 'Browse listings by qualification';
+  }
+
+  // Group listings
+  const groupKey = viewType === 'functional' ? 'function' : 'qualificationGroup';
+  const groups = {};
+  for (const l of listings) {
+    const key = l[groupKey] || 'Other';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(l);
+  }
+
+  // Render category cards
+  const categoryIcons = {
+    'Executive & Leadership': 'ph-crown',
+    'Information Technology (IT)': 'ph-desktop',
+    'Marketing & Communications': 'ph-megaphone',
+    'Operations & Supply Chain': 'ph-gear',
+    'Sales & Business Development': 'ph-currency-inr',
+    'Administrative': 'ph-clipboard-text',
+    'Technical': 'ph-wrench',
+    'Defence': 'ph-shield',
+    'Police': 'ph-shield-check',
+    'Vigilance': 'ph-eye',
+    'Education': 'ph-graduation-cap',
+    'Healthcare': 'ph-heartbeat',
+    'Finance': 'ph-currency-circle-dollar',
+    'Engineering': 'ph-fan',
+    'Teaching': 'ph-chalkboard-teacher',
+    'Legal': 'ph-scales',
+    'General': 'ph-users'
+  };
+
+  cardGrid.innerHTML = Object.entries(groups).sort((a, b) => b[1].length - a[1].length)
+    .map(([name, items]) => {
+      const icon = categoryIcons[name] || 'ph-folder';
+      return `<button class="ad-category-card" data-category="${name}" data-group="${groupKey}">
+        <i class="ph ${icon} ad-category-icon"></i>
+        <span class="ad-category-name">${name}</span>
+        <span class="ad-category-count">${items.length}</span>
+      </button>`;
+    }).join('');
+
+  // Wire card clicks
+  cardGrid.querySelectorAll('.ad-category-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const catName = card.dataset.category;
+      showCardCategoryListings(viewType, catName, groupKey, groups[catName] || []);
+    });
+  });
+
+  // Show grid, hide listings
+  cardGrid.hidden = false;
+  cardListings.hidden = true;
+  cardViewTitle.hidden = false;
+  cardViewSubtitle.hidden = false;
+
+  history.pushState({ view: viewType }, '', `?view=${viewType}`);
+}
+
+function showCardCategoryListings(viewType, category, groupKey, items) {
+  cardGrid.hidden = true;
+  cardListings.hidden = false;
+  cardViewTitle.hidden = false;
+  cardViewSubtitle.hidden = false;
+
+  const groupLabel = viewType === 'functional' ? 'Functional Area' : 'Qualification';
+  cardViewTitle.textContent = category;
+  cardViewSubtitle.textContent = `${items.length} listings · ${groupLabel}`;
+
+  listingCards.innerHTML = items.map(item => `
+    <div class="ad-listing-card" tabindex="0" role="article" aria-label="${item.title}">
+      <div class="ad-listing-header">
+        <h3 class="ad-listing-title">${item.title}</h3>
+        <span class="ad-listing-state">${item.state} · ${item.district}</span>
+      </div>
+      <div class="ad-listing-meta">
+        <span class="ad-listing-badge ad-badge-${item.category}">${item.category}</span>
+        <span class="ad-listing-qual">${item.qualification}</span>
+        <span class="ad-listing-exp">${item.experience}</span>
+      </div>
+      <div class="ad-listing-footer">
+        <span class="ad-listing-date">Closes: ${item.closingDate}</span>
+        <span class="ad-listing-posts">${item.posts} post${item.posts > 1 ? 's' : ''}</span>
+      </div>
+    </div>
+  `).join('');
+
+  btnCardBack.onclick = () => showCardView(viewType);
+
+  history.pushState({ view: viewType, category }, '', `?view=${viewType}&category=${encodeURIComponent(category)}`);
+}
+
+function showMapView() {
+  view = 'national';
+  mapContainer.hidden = false;
+  if (typeof summaryCard !== 'undefined' && summaryCard) summaryCard.hidden = false;
+  rightRail.hidden = false;
+  cardView.hidden = true;
+  btnBack.hidden = true;
+  selectedState = null;
+  selectedDistrict = null;
+  closeResults();
+  renderNationalMap(getData());
+  updateAppliedFilters();
+  syncExchangeRail(getData());
+}
+
 // ====== RESULTS PANEL ======
 let sheetCloseTimer = null;
 
@@ -904,6 +1040,23 @@ function wireEvents() {
 
   btnBack.addEventListener('click', goBack);
   btnCloseResults.addEventListener('click', closeResults);
+
+  // Wire view-toggle buttons (Map / Functional / Industrial)
+  document.querySelectorAll('.view-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const viewType = btn.dataset.view;
+      document.querySelectorAll('.view-btn').forEach(b => {
+        const active = b.dataset.view === viewType;
+        b.classList.toggle('active', active);
+        b.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      if (viewType === 'map') {
+        showMapView();
+      } else {
+        showCardView(viewType);
+      }
+    });
+  });
 
   btnZoomIn.addEventListener('click', () => setZoom(zoomLevel * ZOOM_STEP));
   btnZoomOut.addEventListener('click', () => setZoom(zoomLevel / ZOOM_STEP));

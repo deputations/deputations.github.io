@@ -21,13 +21,16 @@ node -e "import { startServer } from './tests/harness.js'; startServer().then(()
 
 ```
 js/app.js           — Main app: rendering, navigation, filters, tooltips, zoom, events
+js/app.js           — Card-grid views (Functional/Industrial) with grouping by function and qualification
 js/map-provider.js  — Data provider: aggregation, dedup, filtering, district queries
-js/state-geo.js     — State/dabbr mappings, district aliases
-css/main.css        — Layout, map styles, tooltip, drawer, responsive
-fixtures/mock-data.js — 17 deterministic listings across 6 states
-index.html          — App shell
-tests/              — 23 Playwright tests (7 files)
+js/state-geo.js     — State/abbr mappings, district aliases
+css/main.css        — Layout, map styles, tooltip, drawer, card-grid views, responsive
+fixtures/mock-data.js — 21 deterministic listings across 7 states with function/qualification fields
+index.html          — App shell + card-view container
+tests/              — 25 Playwright tests (7 files)
 README.md           — This file
+SCENARIO.md         — Populated/empty scenario notes
+GEOGRAPHY.md        — Geometry provenance manifest
 ```
 
 ## Test results
@@ -39,9 +42,9 @@ README.md           — This file
 ══ 04-async-geometry.test.js    ══ ✓✓ (2/2)
 ══ 05-zoom.test.js              ══ ✓✓ (2/2)
 ══ 06-distinct-ids.test.js      ══ ✓✓✓✓ (4/4)
-══ 07-geography.test.js         ══ ✓✓✓✓✓✓ (6/6)
+══ 07-geography.test.js         ══ ✓✓✓✓✓✓✓✓ (8/8)
 
-23 passed, 0 failed
+25 passed, 0 failed
 ```
 
 ## Map-data sources and licenses

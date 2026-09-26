@@ -33,7 +33,7 @@ All counts display 0; drill-down shows empty-state messaging.
 |---|---|
 | All India map with 35 states/UTs | Done |
 | State hover tooltip | Done |
-| State drill-down to districts | Partial — MH and DL only (synthetic geometry) |
+| State drill-down to districts | Done for MH (35) and DL (11 via image-map) |
 | District drill-down to results | Done for MH and DL |
 | Filter drawer (5 filters) | Done |
 | Exchange selector (right rail) | Done (4 active, 3 disabled) |
@@ -41,8 +41,9 @@ All counts display 0; drill-down shows empty-state messaging.
 | Browser Back/Forward | Done (history.pushState) |
 | Mobile responsive layout | Done |
 | Keyboard navigation | Partial (Tab + Enter on states) |
-| Functional/Industrial views | Disabled (prototype scope) |
-| Real district boundaries | Not yet — synthetic hexagons used |
+| Functional view (card grid) | Done — groups by `function` field |
+| Industrial view (card grid) | Done — groups by `qualificationGroup` field |
+| Real district boundaries | Partial — MH and DL implemented |
 | All 36 state/UT labels | 35 rendered (J&K+Ladakh merged in source data) |
 | Wheel/scroll zoom | Not implemented |
 | Accessible state list fallback | Not implemented |

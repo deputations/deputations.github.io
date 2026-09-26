@@ -37,10 +37,10 @@
         <button class="view-btn active" data-view="map" aria-pressed="true">
           <i class="ph ph-map-trifold"></i> Map View
         </button>
-        <button class="view-btn" data-view="functional" aria-pressed="false" disabled title="Prototype — coming soon">
+        <button class="view-btn" data-view="functional" aria-pressed="false">
           <i class="ph ph-tree-structure"></i> Functional View
         </button>
-        <button class="view-btn" data-view="industrial" aria-pressed="false" disabled title="Prototype — coming soon">
+        <button class="view-btn" data-view="industrial" aria-pressed="false">
           <i class="ph ph-factory"></i> Industrial View
         </button>
       </div>
@@ -57,6 +57,21 @@
         <div class="ad-tooltip" id="tooltip" role="tooltip" aria-hidden="true">
           <span class="ad-tooltip-name" id="tooltip-name"></span>
           <span class="ad-tooltip-count" id="tooltip-count"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARD GRID VIEWS (Functional / Industrial) -->
+    <section class="ad-card-view" id="card-view" hidden aria-label="Category listings">
+      <div class="ad-card-view-inner">
+        <div class="ad-card-header">
+          <h2 id="card-view-title">Functional Categories</h2>
+          <p id="card-view-subtitle">Browse listings by functional area</p>
+        </div>
+        <div class="ad-card-grid" id="card-grid"></div>
+        <div class="ad-card-listings" id="card-listings" hidden>
+          <button class="ad-card-back-btn" id="btn-card-back">← Back to categories</button>
+          <div class="ad-listing-cards" id="listing-cards"></div>
         </div>
       </div>
     </section>
