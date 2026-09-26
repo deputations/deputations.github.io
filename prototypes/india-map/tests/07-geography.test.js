@@ -60,8 +60,37 @@ export async function test_delhi_has_districts() {
   try {
     await page.locator('[data-abbr="DL"]').click();
     await delay(300);
-    const count = await probe.districtShapeCount(page);
-    assert.equal(count, 11, `DL has 11 district shapes (got ${count})`);
+    // Delhi uses the colored image-map approach with hotspot buttons
+    const hotspotCount = await page.locator('.ad-delhi-hotspot').count();
+    assert.equal(hotspotCount, 11, `DL has 11 district hotspots (got ${hotspotCount})`);
+  } finally {
+    await teardown(context);
+  }
+}
+
+export async function test_delhi_district_drill_shows_image() {
+  const { page, context } = await setup();
+  try {
+    await page.locator('[data-abbr="DL"]').click();
+    await delay(500);
+    // Use evaluate to dispatch click, avoiding header interception
+    await page.evaluate(() => {
+      const btn = document.querySelector('.ad-delhi-hotspot[data-district="South"]');
+      if (btn) btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    });
+    await delay(1000);
+    // Verify the district image and results via evaluate (avoid locator timeout)
+    const result = await page.evaluate(() => {
+      const img = document.querySelector('.ad-delhi-district-img');
+      const title = document.getElementById('results-title');
+      return {
+        imgSrc: img ? img.src : null,
+        title: title ? title.textContent : null
+      };
+    });
+    assert.truthy(result.imgSrc, 'District image rendered, got: ' + JSON.stringify(result.imgSrc));
+    assert.includes(result.imgSrc, 'd1-south.png', 'District individual image shown');
+    assert.includes(result.title, 'South', 'Results title is South district');
   } finally {
     await teardown(context);
   }
@@ -105,6 +134,7 @@ const tests = [
   test_maharashtra_district_count,
   test_karnataka_district_coverage,
   test_delhi_has_districts,
+  test_delhi_district_drill_shows_image,
   test_geojson_assets_exist,
   test_ka_has_30_districts,
   test_multi_state_listings_counted_once_nationally,

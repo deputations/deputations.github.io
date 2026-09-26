@@ -770,6 +770,110 @@ html, body {
   font-size: 12px;
 }
 
+/* --- DELHI IMAGE MAP (colored district photo approach) --- */
+.ad-delhi-map-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  margin: 32px auto;
+  user-select: none;
+  z-index: 2;
+}
+
+.ad-delhi-map-img,
+.ad-delhi-district-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--ad-radius);
+  box-shadow: var(--ad-shadow);
+  pointer-events: none;
+}
+
+.ad-delhi-hotspot {
+  position: absolute;
+  z-index: 3;
+  background: rgba(245, 167, 33, 0.06);
+  border: 2px solid transparent;
+  border-radius: var(--ad-radius-sm);
+  cursor: pointer;
+  transition: all var(--ad-transition);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  padding: 4px;
+}
+
+.ad-delhi-hotspot:hover {
+  background: rgba(245, 167, 33, 0.18);
+  border-color: var(--ad-accent);
+}
+
+.ad-delhi-hotspot.active {
+  background: rgba(245, 167, 33, 0.30);
+  border-color: var(--ad-accent-bright);
+  box-shadow: 0 0 0 4px rgba(245, 167, 33, 0.25);
+}
+
+.ad-delhi-hotspot:focus {
+  outline: 2px solid var(--ad-accent-bright);
+  outline-offset: 2px;
+}
+
+.ad-delhi-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #181d26;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+  text-shadow: 0 0 4px #fff, 0 0 2px #fff;
+}
+
+.ad-delhi-count {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f5a721;
+  pointer-events: none;
+  margin-top: 2px;
+}
+
+.ad-delhi-hotspot:hover .ad-delhi-label,
+.ad-delhi-hotspot:focus .ad-delhi-label,
+.ad-delhi-hotspot.active .ad-delhi-label {
+  color: #181d26;
+}
+
+.ad-delhi-district-view {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  margin: 24px auto;
+}
+
+.ad-delhi-back-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(34, 40, 54, 0.92);
+  color: var(--ad-accent);
+  border: 1px solid var(--ad-accent);
+  border-radius: var(--ad-radius-sm);
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background var(--ad-transition);
+}
+
+.ad-delhi-back-btn:hover {
+  background: var(--ad-accent);
+  color: #181d26;
+}
+
+/* --- FILTER DRAWER --- */
 /* --- FILTER DRAWER --- */
 .ad-drawer-overlay {
   position: fixed;
