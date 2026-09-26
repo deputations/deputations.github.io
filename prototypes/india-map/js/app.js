@@ -40,6 +40,7 @@ let view = 'national';
 let selectedState = null;
 let selectedDistrict = null;
 let geoData = null;
+let stateDistrictMap = null;  // stateAbbr → [{ name, geojsonName }] from GeoJSON
 let currentProjection = null;
 let currentGeneration = 0;
 
@@ -147,6 +148,37 @@ function centroid(geom) {
   return [sumLon / pts.length, sumLat / pts.length];
 }
 
+// Build stateAbbr → [{name, geojsonName}] from the all-districts GeoJSON.
+// Cached so tooltips never trigger geometry fetches.
+function buildStateDistrictMap(distData) {
+  stateDistrictMap = {};
+  if (!distData || !distData.features) return;
+  distData.features.forEach(f => {
+    const stNm = f.properties.st_nm;
+    const abbr = STATE_ABBR[stNm];
+    if (!abbr) return;
+    const dName = f.properties.district;
+    if (!dName) return;
+    if (!stateDistrictMap[abbr]) stateDistrictMap[abbr] = [];
+    stateDistrictMap[abbr].push({ name: dName, geojsonName: dName });
+  });
+}
+
+// Get district names for a state (from precomputed map or GeoJSON fallback)
+function getDistrictList(stateAbbr) {
+  if (stateDistrictMap && stateDistrictMap[stateAbbr]) {
+    return stateDistrictMap[stateAbbr].map(d => d.name);
+  }
+  // Fallback: extract from states GeoJSON (has NAME_1 only, no districts)
+  if (!geoData) return [];
+  const stateName = ABBR_TO_NAME[stateAbbr];
+  if (!stateName) return [];
+  const feat = geoData.features.find(f => f.properties.NAME_1 === stateName);
+  if (!feat) return [];
+  const districts = feat.properties.districts || [];
+  return districts.map(d => d.NAME_2).filter(Boolean);
+}
+
 // ====== RENDERING ======
 let _shapeId = 0;
 function nextShapeId() { return `shape-${++_shapeId}`; }
@@ -187,10 +219,10 @@ function renderNationalMap(data) {
     const count = data.stateCounts[abbr] || 0;
     if (count === 0) path.classList.add('zero');
 
-    path.addEventListener('mouseenter', e => showTooltip(e, name, count));
+    path.addEventListener('mouseenter', e => showTooltip(e, name, count, abbr, data));
     path.addEventListener('mousemove', moveTooltip);
     path.addEventListener('mouseleave', hideTooltip);
-    path.addEventListener('focus', e => showTooltip(e, name, count));
+    path.addEventListener('focus', e => showTooltip(e, name, count, abbr, data));
     path.addEventListener('blur', hideTooltip);
     path.addEventListener('click', () => drillToState(abbr, name));
     path.addEventListener('keydown', e => {
@@ -427,10 +459,10 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
 
     if (count === 0) path.classList.add('zero');
 
-    path.addEventListener('mouseenter', e => showTooltip(e, `${fixtureName}, ${stateName}`, count));
+    path.addEventListener('mouseenter', e => showTooltip(e, `${fixtureName}, ${stateName}`, count, null, null));
     path.addEventListener('mousemove', moveTooltip);
     path.addEventListener('mouseleave', hideTooltip);
-    path.addEventListener('focus', e => showTooltip(e, `${fixtureName}, ${stateName}`, count));
+    path.addEventListener('focus', e => showTooltip(e, `${fixtureName}, ${stateName}`, count, null, null));
     path.addEventListener('blur', hideTooltip);
     path.addEventListener('click', () => drillToDistrict(stateAbbr, fixtureName));
     path.addEventListener('keydown', e => {
@@ -634,14 +666,23 @@ function updateMap(mode, stateAbbr, stateName, data) {
 }
 
 // ====== TOOLTIP ======
-function showTooltip(event, name, count) {
+function showTooltip(event, name, count, abbr, data) {
   tooltipName.textContent = name;
-  tooltipCount.textContent = count;
+  if (count === 0 && abbr && stateDistrictMap && stateDistrictMap[abbr]) {
+    // Show district count preview for zero-count states
+    const districts = stateDistrictMap[abbr].map(d => d.name);
+    tooltipCount.innerHTML = districts.length > 0
+      ? `${districts.length} districts (no jobs)`
+      : '0 jobs';
+  } else {
+    tooltipCount.textContent = count;
+  }
   tooltip.classList.add('visible');
   tooltip.setAttribute('aria-hidden', 'false');
   moveTooltip(event);
 }
 
+// ====== TOOLTIP MOVEMENT ======
 function moveTooltip(event) {
   const rect = mapSvg.getBoundingClientRect();
   let x = event.clientX - rect.left + 12;
@@ -1303,21 +1344,30 @@ async function start() {
     const resp = await fetch('geo/india-states.geojson');
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     geoData = await resp.json();
-  } catch (err) {
-    console.error('Failed to load geometry:', err);
-    mapSvg.innerHTML = `<text x="500" y="400" text-anchor="middle" fill="#f5a721" font-size="16">
-      Error loading map geometry: ${err.message}</text>`;
-    return;
-  }
 
-  initProvider(scenario);
-  buildFilterDrawer();
-  buildExchangeRail();
+    // Load district GeoJSON for zero-count tooltip previews
+    try {
+      const dResp = await fetch('geo/india-districts-all.geojson');
+      if (dResp.ok) {
+        const distData = await dResp.json();
+        buildStateDistrictMap(distData);
+      }
+    } catch { /* districts optional */ }
+
+    initProvider(scenario);
+    buildFilterDrawer();
+    buildExchangeRail();
 
   const restored = restoreFromURL();
   if (!restored) {
     renderNationalMap(getData());
     history.replaceState({ view: 'national' }, '', window.location.pathname);
+  }
+  } catch (err) {
+    console.error('Failed to load geometry:', err);
+    mapSvg.innerHTML = `<text x="500" y="400" text-anchor="middle" fill="#f5a721" font-size="16">
+      Error loading map geometry: ${err.message}</text>`;
+    return;
   }
 }
 
