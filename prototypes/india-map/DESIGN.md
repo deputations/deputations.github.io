@@ -193,7 +193,6 @@ URL changes use `history.pushState`. Refresh / direct link restores the correct 
 - No search (v2)
 - No pagination
 - No WebGL / three.js (CSS + canvas particles only)
-- No Delhi district drill-down (geometry is approximate)
 - No bookmarking / save
 
 ---
