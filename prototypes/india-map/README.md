@@ -64,11 +64,22 @@ All geometry is stored locally under `geo/` and `districts/`. No external API ca
 - All work isolated under `prototypes/india-map/`.
 - Mock data in `fixtures/mock-data.js` is synthetic, labeled "Sample data only".
 
+## Verification checklist
+
+| Check | Result |
+|-------|--------|
+| Filter + zoom — results update without rerender | ✓ (test 01-rerender-cleanup + 05-zoom) |
+| popstate/Back/Forward — district restored | ✓ (test 03-history) |
+| Stale district geometry does not overwrite newer nav | ✓ (test 04-async-geometry) |
+| Empty scenario navigable | ✓ (test 06-distinct-ids) |
+| Distinct IDs — nationwide/unknown not double-counted | ✓ (test 06-distinct-ids) |
+| Delhi image-map with district hotspots | ✓ (test 07-geography) |
+| DL district drill shows individual image | ✓ (test 07-geography) |
+| Functional view card grid | ✓ (manual + committed) |
+| Industrial view card grid | ✓ (manual + committed) |
+
 ## Known limitations
 
-1. **District geometry**: Only Maharashtra (35 districts) is implemented with real GeoJSON. Other states fall back to state-level view. Full India district geometry requires adding ~680 more GeoJSON files.
-2. **Functional/Industrial views**: Placeholder buttons (coming soon).
-3. **Search**: Not implemented in prototype (brief deferred to P2).
-4. **Real data integration**: Provider boundary defined in `map-provider.js` — replace `init()` data source to connect Supabase.
-5. **Responsive mobile**: CSS breakpoints defined; touch pan via SVG events works, but results panel is desktop-first.
-6. **Performance**: No virtualization for large result sets (prototype uses 17 listings).
+1. **District geometry**: Maharashtra (35 districts), Delhi (11 via image-map) implemented. Full India district geometry requires adding ~670 more GeoJSON files.
+2. **Wheel/scroll zoom**: Not implemented (button controls only).
+3. **Accessible state list fallback**: Not implemented — keyboard tab navigation works via SVG elements.

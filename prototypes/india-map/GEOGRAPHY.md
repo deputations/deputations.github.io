@@ -24,7 +24,7 @@ Delhi district boundaries in the source asset are **approximate rectangles** (th
 | All states (national view) | **Approximate** — usable for state-level browsing and counts | Simplified from Census 2011 |
 | Maharashtra (district view) | **Approximate** — district-level geometry present | Mumbai City + Mumbai Suburban are aggregated into one "Mumbai" polygon |
 | Karnataka (district view) | **Approximate** — district-level geometry present | Names updated to Bengaluru Urban |
-| Delhi (district view) | **Not available** — centroid-only | See above; no district drill-down |
+| Delhi (district view) | **Approximate** — colored district photo map with clickable hotspots | 11 districts shown via `img/delhi/Delhi coloured.jpg`; individual district images used for drill-down. Not a geographic boundary source. |
 
 ## Reuse and attribution
 
