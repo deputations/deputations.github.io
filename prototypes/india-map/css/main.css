@@ -771,6 +771,7 @@ html, body {
 }
 
 /* --- DELHI IMAGE MAP (colored district photo approach) --- */
+/* --- DELHI IMAGE MAP (colored district photo approach) --- */
 .ad-delhi-map-wrap {
   position: relative;
   width: 100%;
@@ -787,67 +788,69 @@ html, body {
 .ad-delhi-district-img {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
   border-radius: var(--ad-radius);
   box-shadow: var(--ad-shadow);
   pointer-events: none;
+}
+
+/* Dual-image crossfade for hover preview: when hovering a hotspot, the
+   district image fades in over the overview. */
+.ad-delhi-map-wrap {
+  position: relative;
+}
+
+.ad-delhi-map-img {
+  position: relative;
+  z-index: 1;
+  transition: opacity 400ms ease;
+}
+
+.ad-delhi-preview-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  border-radius: var(--ad-radius);
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+
+.ad-delhi-preview-img.visible {
+  opacity: 1;
 }
 
 .ad-delhi-hotspot {
   position: absolute;
   z-index: 3;
-  background: rgba(245, 167, 33, 0.06);
+  background: transparent;
   border: 2px solid transparent;
   border-radius: var(--ad-radius-sm);
   cursor: pointer;
-  transition: all var(--ad-transition);
+  transition: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: transparent;
   padding: 4px;
 }
 
-/* Zero-listing hotspots: visible-but-soft so the user can see "this district
-   has no jobs" without thinking the page is broken. */
+/* Zero-listing hotspots: cursor still clickable (for preview), no visible box */
 .ad-delhi-hotspot[data-zero="true"] {
-  background: rgba(255, 255, 255, 0.04);
-  cursor: default;
-}
-.ad-delhi-hotspot[data-zero="true"] .ad-delhi-label {
-  color: rgba(255, 255, 255, 0.55);
-  text-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
-}
-.ad-delhi-hotspot[data-zero="true"] .ad-delhi-count {
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.ad-delhi-hotspot:hover {
-  background: rgba(245, 167, 33, 0.18);
-  border-color: var(--ad-accent);
+  cursor: pointer;
 }
 
 .ad-delhi-hotspot.active {
-  background: rgba(245, 167, 33, 0.30);
   border-color: var(--ad-accent-bright);
-  box-shadow: 0 0 0 4px rgba(245, 167, 33, 0.25);
 }
 
 .ad-delhi-hotspot:focus {
   outline: 2px solid var(--ad-accent-bright);
   outline-offset: 2px;
-}
-
-.ad-delhi-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #181d26;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  pointer-events: none;
-  text-shadow: 0 0 4px #fff, 0 0 2px #fff;
 }
 
 .ad-delhi-count {
@@ -856,12 +859,6 @@ html, body {
   color: #f5a721;
   pointer-events: none;
   margin-top: 2px;
-}
-
-.ad-delhi-hotspot:hover .ad-delhi-label,
-.ad-delhi-hotspot:focus .ad-delhi-label,
-.ad-delhi-hotspot.active .ad-delhi-label {
-  color: #181d26;
 }
 
 .ad-delhi-district-view {

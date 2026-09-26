@@ -292,13 +292,13 @@ function renderDelhiImageMap(stateAbbr, stateName, data, initialDistrict = null)
     const entry = districtEntries.find(e => e.name === d.name);
     const count = entry ? entry.count : 0;
     const zeroAttr = count === 0 ? ' data-zero="true"' : '';
+    const countDisplay = count > 0 ? `<span class="ad-delhi-count">${count}</span>` : '';
     return `<button class="ad-delhi-hotspot"${zeroAttr}
       style="left:${d.left}%;top:${d.top}%;width:${d.width}%;height:${d.height}%"
       data-district="${d.name}"
       data-image="${d.image}"
       aria-label="${d.name}: ${count} listings">
-      <span class="ad-delhi-label">${d.name}</span>
-      <span class="ad-delhi-count">${count}</span>
+      ${countDisplay}
     </button>`;
   }).join('');
 
@@ -307,6 +307,7 @@ function renderDelhiImageMap(stateAbbr, stateName, data, initialDistrict = null)
   mapArea.innerHTML = `
     <div class="ad-delhi-map-wrap">
       <img src="img/delhi/delhi-coloured.jpg" alt="Delhi district map" class="ad-delhi-map-img" draggable="false">
+      <img src="" alt="District preview" class="ad-delhi-preview-img" draggable="false" aria-hidden="true">
       <div class="ad-delhi-hotspots">${hotspots}</div>
     </div>
   `;
@@ -315,6 +316,19 @@ function renderDelhiImageMap(stateAbbr, stateName, data, initialDistrict = null)
   hotspotsContainer.querySelectorAll('.ad-delhi-hotspot').forEach(btn => {
     btn.addEventListener('click', () => {
       showDelhiDistrict(stateAbbr, btn.dataset.district, btn.dataset.image, data);
+    });
+    btn.addEventListener('mouseenter', () => {
+      const previewImg = mapArea.querySelector('.ad-delhi-preview-img');
+      if (previewImg) {
+        previewImg.src = `img/delhi/${btn.dataset.image}`;
+        previewImg.classList.add('visible');
+      }
+    });
+    btn.addEventListener('mouseleave', () => {
+      const previewImg = mapArea.querySelector('.ad-delhi-preview-img');
+      if (previewImg) {
+        previewImg.classList.remove('visible');
+      }
     });
   });
 
