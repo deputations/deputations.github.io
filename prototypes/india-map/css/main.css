@@ -1074,7 +1074,7 @@ html, body {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.5);
-  z-index: 150;
+  z-index: 55;
 }
 
 .ad-filter-drawer {
@@ -1086,7 +1086,7 @@ html, body {
   background: var(--ad-surface);
   border-right: 1px solid var(--ad-border);
   box-shadow: 4px 0 24px rgba(0,0,0,0.5);
-  z-index: 160;
+  z-index: 200;
   display: flex;
   flex-direction: column;
   transform: translateX(-100%);
@@ -1125,6 +1125,30 @@ html, body {
 
 .filter-group {
   margin-bottom: 20px;
+}
+
+.filter-footer {
+  padding: 16px 0 0;
+  border-top: 1px solid var(--ad-border);
+  margin-top: 8px;
+}
+
+.ad-clear-all-btn {
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--ad-surface-2);
+  border: 1px solid var(--ad-border);
+  border-radius: var(--ad-radius-sm);
+  color: var(--ad-text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--ad-transition);
+}
+
+.ad-clear-all-btn:hover {
+  border-color: var(--ad-accent);
+  color: var(--ad-accent);
 }
 
 .filter-group-label {

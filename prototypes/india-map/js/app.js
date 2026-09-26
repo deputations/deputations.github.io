@@ -913,7 +913,22 @@ function buildFilterDrawer() {
         ${f.options.map(o => `<option value="${o}">${o}</option>`).join('')}
       </select>
     </div>
-  `).join('');
+  `).join('') + `
+    <div class="filter-footer">
+      <button class="ad-clear-all-btn" id="btn-clear-all-drawer">Clear All Filters</button>
+    </div>
+  `;
+
+  // Clear All inside drawer
+  const clearBtn = filterBody.querySelector('#btn-clear-all-drawer');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      clearFilters();
+      refreshAfterFilter();
+      updateAppliedFilters();
+      closeFilterDrawer();
+    });
+  }
 
   filterBody.querySelectorAll('.filter-select').forEach(sel => {
     sel.addEventListener('change', () => {
