@@ -42,7 +42,7 @@ export async function test_stale_district_geometry_does_not_overwrite() {
     await delay(1500);
 
     const title = await probe.summaryTitle(page);
-    assert.equal(title, 'ALL INDIA JOBS', 'Stale geometry cannot overwrite national view');
+    assert.equal(title, 'ALL INDIA DEPUTATIONS', 'Stale geometry cannot overwrite national view');
 
     const chips = await probe.chips(page);
     assert.notIncludes(chips, 'Maharashtra', 'No Maharashtra chip after stale geometry');
@@ -59,8 +59,13 @@ export async function test_filter_after_state_selection_updates_results() {
     await page.locator('[data-district="Pune"]').click();
     await delay(200);
 
-    await page.locator('.exchange-btn[data-exchange="govt"]').click();
+    // Open filter drawer and set category to "govt"
+    await page.locator('#btn-filter').click({ force: true });
+    await delay(100);
+    await page.locator('#filter-category').selectOption('govt');
     await delay(200);
+    await page.keyboard.press('Escape');
+    await delay(100);
 
     const cards = await probe.cardTitles(page);
     assert.equal(cards.length, 1, `Pune govt filter: 1 card (got ${cards.length})`);

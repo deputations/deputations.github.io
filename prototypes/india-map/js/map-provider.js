@@ -7,7 +7,7 @@ import { fixtureDistrictToGeoJSON } from './state-geo.js';
 
 // ====== STATE ======
 let currentFilters = {
-  exchange: 'all',
+  category: 'Any',
   qualification: 'Any',
   experience: 'Any',
   jobType: 'Any',
@@ -38,7 +38,7 @@ export function setFilter(key, value) {
 
 export function clearFilters() {
   currentFilters = {
-    exchange: 'all',
+    category: 'Any',
     qualification: 'Any',
     experience: 'Any',
     jobType: 'Any',
@@ -63,9 +63,9 @@ export function getData() {
     return true;
   });
 
-  // 2. Apply exchange filter
-  if (currentFilters.exchange !== 'all') {
-    active = active.filter(l => l.category === currentFilters.exchange);
+  // 2. Apply category filter (replaces old "exchange" filter)
+  if (currentFilters.category !== 'Any') {
+    active = active.filter(l => l.category === currentFilters.category);
   }
 
   // 3. Apply other filters (intersection)

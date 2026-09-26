@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AllDeputations — India Job Map (Prototype)</title>
-  <meta name="description" content="Local prototype — India job map with state/district drill-down. Sample data only." />
+  <title>AllDeputations — India Deputation Map (Prototype)</title>
+  <meta name="description" content="Local prototype — India deputation map with state/district drill-down. Sample data only." />
   <link rel="stylesheet" href="css/main.css" />
 </head>
 <body>
@@ -50,7 +50,7 @@
     <section class="ad-map-area" aria-label="India map">
       <div class="ad-map-container" id="map-container">
         <svg id="india-map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800"
-             preserveAspectRatio="xMidYMid meet" role="img" aria-label="India map showing job counts by state">
+             preserveAspectRatio="xMidYMid meet" role="img" aria-label="India map showing deputation counts by state">
           <!-- SVG populated by JS -->
         </svg>
         <!-- Tooltip -->
@@ -79,7 +79,7 @@
     <!-- SUMMARY CARD (top-right) -->
     <aside class="ad-summary-card" id="summary-card" aria-live="polite">
       <div class="ad-summary-header">
-        <span class="ad-summary-title" id="summary-title">All India Jobs</span>
+        <span class="ad-summary-title" id="summary-title">All India Deputations</span>
         <i class="ph ph-caret-down ad-summary-chevron"></i>
       </div>
       <div class="ad-summary-count" id="summary-count">—</div>
@@ -92,10 +92,7 @@
       </div>
     </aside>
 
-    <!-- RIGHT RAIL (exchanges) -->
-    <nav class="ad-right-rail" aria-label="Job exchange selector">
-      <!-- Exchanges injected by JS -->
-    </nav>
+    <!-- RIGHT RAIL removed — exchange selector was job-centric -->
 
     <!-- BOTTOM CONTROLS -->
     <div class="ad-bottom-controls">
@@ -119,10 +116,10 @@
 
     <!-- RESULTS BOTTOM SHEET (shown after district click) -->
     <div class="ad-sheet-overlay" id="sheet-overlay" hidden aria-hidden="true"></div>
-    <section class="ad-results-sheet" id="results-panel" hidden aria-label="Job listings" role="dialog" aria-modal="true">
+    <section class="ad-results-sheet" id="results-panel" hidden aria-label="Deputation listings" role="dialog" aria-modal="true">
       <div class="ad-sheet-handle" aria-hidden="true"><span></span><span></span></div>
       <div class="ad-sheet-header">
-        <h2 class="ad-results-title" id="results-title">Jobs</h2>
+        <h2 class="ad-results-title" id="results-title">Deputations</h2>
         <button class="ad-icon-btn" id="btn-close-results" aria-label="Close results">
           <i class="ph ph-x"></i>
         </button>

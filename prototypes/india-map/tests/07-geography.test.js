@@ -49,7 +49,7 @@ export async function test_mumbai_alias_aggregates_both_fixtures() {
     // The GeoJSON "Mumbai" feature renders with fixture name "Mumbai City".
     // Its aria-label should aggregate both Mumbai City (1) + Mumbai Suburban (1) = 2
     const ariaLabel = await page.locator('[data-district="Mumbai City"]').getAttribute('aria-label');
-    assert.includes(ariaLabel, ': 2 jobs', `Mumbai polygon aggregates both fixtures (got "${ariaLabel}")`);
+    assert.includes(ariaLabel, ': 2 deputations', `Mumbai polygon aggregates both fixtures (got "${ariaLabel}")`);
   } finally {
     await teardown(context);
   }

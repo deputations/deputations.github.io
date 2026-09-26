@@ -33,7 +33,7 @@ let filterOverlay = document.getElementById('filter-overlay');
 let filterDrawer = document.getElementById('filter-drawer');
 let filterBody = document.getElementById('filter-body');
 let btnCloseFilter = document.getElementById('btn-close-filter');
-let rightRail = document.querySelector('.ad-right-rail');
+let rightRail = null; // removed from UI — reference kept for compatibility
 
 // ====== STATE ======
 let view = 'national';
@@ -214,7 +214,7 @@ function renderNationalMap(data) {
     path.setAttribute('data-name', name);
     path.setAttribute('role', 'button');
     path.setAttribute('tabindex', '0');
-    path.setAttribute('aria-label', `${name}: ${data.stateCounts[abbr] || 0} jobs`);
+    path.setAttribute('aria-label', `${name}: ${data.stateCounts[abbr] || 0} deputations`);
 
     const count = data.stateCounts[abbr] || 0;
     if (count === 0) path.classList.add('zero');
@@ -253,7 +253,7 @@ function renderNationalMap(data) {
     }
   });
 
-  updateSummary('All India Jobs', data.nationalCount);
+  updateSummary('All India Deputations', data.nationalCount);
 }
 
 function renderStateMap(stateAbbr, stateName, data) {
@@ -374,7 +374,7 @@ function renderDelhiImageMap(stateAbbr, stateName, data, initialDistrict = null)
   }
 
   showResults({
-    title: `${stateName} Jobs`,
+    title: `${stateName} Deputations`,
     breadcrumb: [`<a href="#" data-nav="national">India</a> <span>›</span> ${stateName}`],
     listings: getListingsForState(stateAbbr)
   });
@@ -404,7 +404,7 @@ function showDelhiDistrict(stateAbbr, districtName, imageFile, data, skipPush = 
   if (activeHotspot) activeHotspot.classList.add('active');
 
   showResults({
-    title: `${districtName} Jobs`,
+    title: `${districtName} Deputations`,
     breadcrumb: [
       `<a href="#" data-nav="national">India</a> <span>›</span> `,
       `<a href="#" data-nav="state">Delhi</a> <span>›</span> ${districtName}`
@@ -455,7 +455,7 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
     path.setAttribute('data-state', stateAbbr);
     path.setAttribute('role', 'button');
     path.setAttribute('tabindex', '0');
-    path.setAttribute('aria-label', `${fixtureName}, ${stateName}: ${count} jobs`);
+    path.setAttribute('aria-label', `${fixtureName}, ${stateName}: ${count} deputations`);
 
     if (count === 0) path.classList.add('zero');
 
@@ -520,7 +520,7 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
     }
   });
 
-  updateSummary(`${stateName.toUpperCase()} JOBS`, data.stateCounts[stateAbbr] || 0);
+  updateSummary(`${stateName.toUpperCase()} DEPUTATIONS`, data.stateCounts[stateAbbr] || 0);
   btnBack.hidden = false;
   view = 'state';
 }
@@ -551,7 +551,7 @@ function showStateListView(stateAbbr, stateName, data, reason = 'District geomet
     .sort((a, b) => b.count - a.count);
 
   showResults({
-    title: `${stateName} Jobs`,
+    title: `${stateName} Deputations`,
     breadcrumb: [`<a href="#" data-nav="national">India</a> <span>›</span> ${stateName}`],
     listings: getListingsForState(stateAbbr),
     districtBreakdown: districtEntries
@@ -578,7 +578,7 @@ function drillToDistrict(stateAbbr, districtName) {
   const data = getData();
 
   showResults({
-    title: `${districtName} Jobs`,
+    title: `${districtName} Deputations`,
     breadcrumb: [
       `<a href="#" data-nav="national">India</a> <span>›</span> `,
       `<a href="#" data-nav="state">${ABBR_TO_NAME[stateAbbr] || stateAbbr}</a> <span>›</span> ${districtName}`
@@ -614,7 +614,7 @@ function goBackToState() {
   selectedDistrict = null;
   closeResults();
   renderStateMap(selectedState, ABBR_TO_NAME[selectedState] || selectedState, data);
-  updateSummary(`${(ABBR_TO_NAME[selectedState] || selectedState).toUpperCase()} JOBS`, data.stateCounts[selectedState] || 0);
+  updateSummary(`${(ABBR_TO_NAME[selectedState] || selectedState).toUpperCase()} DEPUTATIONS`, data.stateCounts[selectedState] || 0);
   updateAppliedFilters();
   syncExchangeRail(data);
   history.pushState({ view: 'state', state: selectedState }, '', `?state=${selectedState}`);
@@ -651,7 +651,7 @@ function goNational() {
 
   const data = getData();
   renderNationalMap(data);
-  updateSummary('ALL INDIA JOBS', data.nationalCount);
+  updateSummary('ALL INDIA DEPUTATIONS', data.nationalCount);
   updateAppliedFilters();
   syncExchangeRail(data);
   history.pushState({ view: 'national' }, '', window.location.pathname);
@@ -672,8 +672,8 @@ function showTooltip(event, name, count, abbr, data) {
     // Show district count preview for zero-count states
     const districts = stateDistrictMap[abbr].map(d => d.name);
     tooltipCount.innerHTML = districts.length > 0
-      ? `${districts.length} districts (no jobs)`
-      : '0 jobs';
+      ? `${districts.length} districts (no deputations)`
+      : '0 deputations';
   } else {
     tooltipCount.textContent = count;
   }
@@ -721,13 +721,18 @@ function updateAppliedFilters() {
     chips.push({ label: selectedDistrict, type: 'district' });
   }
 
-  const defaultVals = { exchange: 'all', qualification: 'Any', experience: 'Any',
+  const defaultVals = { category: 'Any', qualification: 'Any', experience: 'Any',
                          jobType: 'Any', jobTime: 'Any', jobShift: 'Any' };
-  Object.entries(filters).forEach(([key, val]) => {
-    if (val !== defaultVals[key]) {
-      chips.push({ label: val, type: key });
-    }
-  });
+  const filterDefs = {
+    category: { Any:'All Deputations', govt:'Government', private:'Private', internship:'Internship', manpower:'Manpower' },
+    jobType: { Any:'Any', 'Full-time':'Full-time', 'Part-time':'Part-time', 'Contract':'Contract', 'Temporary':'Temporary' },
+    jobShift: { Any:'Any', 'On-site':'On-site', 'Remote':'Remote', 'Hybrid':'Hybrid' },
+    jobTime: { Any:'Any', 'Day Shift':'Day Shift', 'Night Shift':'Night Shift', 'Flexible':'Flexible' }
+  };
+  const displayChip = (c) => {
+    const map = filterDefs[c.type] || {};
+    return map[c.label] || c.label;
+  };
 
   if (chips.length === 0) {
     appliedFilters.hidden = true;
@@ -735,19 +740,13 @@ function updateAppliedFilters() {
   } else {
     appliedFilters.hidden = false;
     filterChips.innerHTML = chips.map((c, i) =>
-      `<span class="ad-filter-chip" style="animation-delay:${i * 60}ms">${c.label}<button data-chip="${c.type}" aria-label="Remove ${c.label}">×</button></span>`
+      `<span class="ad-filter-chip" style="animation-delay:${i * 60}ms">${displayChip(c)}<button data-chip="${c.type}" aria-label="Remove ${displayChip(c)}">×</button></span>`
     ).join('');
   }
 }
 
 function syncExchangeRail(data) {
-  const filters = getFilters();
-  const activeExchange = filters.exchange || 'all';
-  rightRail.querySelectorAll('.exchange-btn').forEach(btn => {
-    const isActive = btn.dataset.exchange === activeExchange;
-    btn.classList.toggle('active', isActive);
-    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-  });
+  // Exchange rail removed — no-op.
 }
 
 // ====== CARD-GRID VIEWS (Functional / Industrial) ======
@@ -765,7 +764,7 @@ function showCardView(viewType) {
   // Hide map-related elements, show card view
   mapContainer.hidden = true;
   summaryCard.hidden = true;
-  rightRail.hidden = true;
+  if (rightRail) rightRail.hidden = true;
   cardView.hidden = false;
   btnBack.hidden = true;
 
@@ -874,7 +873,7 @@ function showMapView() {
   view = 'national';
   mapContainer.hidden = false;
   if (typeof summaryCard !== 'undefined' && summaryCard) summaryCard.hidden = false;
-  rightRail.hidden = false;
+  if (rightRail) rightRail.hidden = false;
   cardView.hidden = true;
   btnBack.hidden = true;
   selectedState = null;
@@ -979,12 +978,17 @@ function closeResults() {
 
 // ====== FILTER DRAWER ======
 function buildFilterDrawer() {
+  // Build "category" options — values match listing.category
+  const categoryValues = ['Any', 'govt', 'private', 'internship', 'manpower'];
+  const categoryLabels = { 'Any':'All Deputations','govt':'Government','private':'Private',
+    'internship':'Internship','manpower':'Manpower' };
   const filters = [
+    { key: 'category', label: 'DEPUTATION TYPE', icon: 'ph-briefcase', options: categoryValues,
+      displayLabels: categoryLabels },
     { key: 'qualification', label: 'MINIMUM QUALIFICATION', icon: 'ph-graduation-cap', options: FILTERS.qualification },
     { key: 'experience', label: 'EXPERIENCE RANGE', icon: 'ph-clock', options: FILTERS.experience },
-    { key: 'jobType', label: 'JOB TYPE', icon: 'ph-briefcase', options: FILTERS.jobType },
-    { key: 'jobTime', label: 'JOB TIME', icon: 'ph-sun', options: FILTERS.jobTime },
-    { key: 'jobShift', label: 'JOB SHIFT', icon: 'ph-gear', options: FILTERS.jobShift }
+    { key: 'jobType', label: 'EMPLOYMENT TYPE', icon: 'ph-sun', options: FILTERS.jobType },
+    { key: 'jobShift', label: 'WORK MODE', icon: 'ph-gear', options: FILTERS.jobShift }
   ];
 
   filterBody.innerHTML = filters.map(f => `
@@ -993,7 +997,10 @@ function buildFilterDrawer() {
         <i class="ph ${f.icon}"></i> ${f.label}
       </label>
       <select class="filter-select" id="filter-${f.key}" data-filter-key="${f.key}">
-        ${f.options.map(o => `<option value="${o}">${o}</option>`).join('')}
+        ${f.options.map(o => {
+          const label = (f.displayLabels && f.displayLabels[o]) ? f.displayLabels[o] : o;
+          return `<option value="${o}">${label}</option>`;
+        }).join('')}
       </select>
     </div>
   `).join('') + `
@@ -1026,7 +1033,7 @@ function refreshAfterFilter() {
 
   if (view === 'district' && selectedDistrict) {
     showResults({
-      title: `${selectedDistrict} Jobs`,
+      title: `${selectedDistrict} Deputations`,
       breadcrumb: [
         `<a href="#" data-nav="national">India</a> <span>›</span> `,
         `<a href="#" data-nav="state">${ABBR_TO_NAME[selectedState] || selectedState}</a> <span>›</span> ${selectedDistrict}`
@@ -1062,24 +1069,9 @@ function closeFilterDrawer() {
   setTimeout(() => { if (!filterDrawer.classList.contains('open')) filterDrawer.hidden = true; }, 250);
 }
 
-// ====== EXCHANGE RAIL ======
+// ====== EXCHANGE RAIL (removed) ======
 function buildExchangeRail() {
-  rightRail.innerHTML = EXCHANGES.map(ex => `
-    <button class="exchange-btn ${ex.id === 'all' ? 'active' : ''}"
-            data-exchange="${ex.id}"
-            ${!ex.available ? 'disabled title="Prototype — not yet implemented"' : ''}
-            aria-pressed="${ex.id === 'all'}">
-      <i class="ph ph-${ex.icon}" style="font-size:16px;display:block"></i>
-      ${ex.label}
-    </button>
-  `).join('');
-
-  rightRail.querySelectorAll('.exchange-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      setFilter('exchange', btn.dataset.exchange);
-      refreshAfterFilter();
-    });
-  });
+  // Exchange rail removed — was job-centric; filtering is via the filter drawer only.
 }
 
 // ====== ZOOM (incremental, animated) ======
@@ -1139,10 +1131,10 @@ function wireEvents() {
       goNational();
     } else if (chipType === 'district') {
       goBack();
-    } else if (chipType === 'exchange') {
-      setFilter('exchange', 'all');
-      const sel = document.getElementById('filter-exchange');
-      if (sel) sel.value = 'all';
+    } else if (chipType === 'category') {
+      setFilter('category', 'Any');
+      const sel = document.getElementById('filter-category');
+      if (sel) sel.value = 'Any';
       refreshAfterFilter();
     } else {
       setFilter(chipType, 'Any');
@@ -1267,7 +1259,7 @@ function wireEvents() {
       renderStateMap(selectedState, ABBR_TO_NAME[selectedState], getData());
       setTimeout(() => {
         showResults({
-          title: `${state.district} Jobs`,
+          title: `${state.district} Deputations`,
           breadcrumb: [
             `<a href="#" data-nav="national">India</a> <span>›</span> `,
             `<a href="#" data-nav="state">${ABBR_TO_NAME[state.state] || state.state}</a> <span>›</span> ${state.district}`
@@ -1309,7 +1301,7 @@ function restoreFromURL() {
       renderStateMap(abbr, ABBR_TO_NAME[abbr], data);
       setTimeout(() => {
         showResults({
-          title: `${selectedDistrict} Jobs`,
+          title: `${selectedDistrict} Deputations`,
           breadcrumb: [
             `<a href="#" data-nav="national">India</a> <span>›</span> `,
             `<a href="#" data-nav="state">${ABBR_TO_NAME[abbr] || abbr}</a> <span>›</span> ${selectedDistrict}`

@@ -32,8 +32,8 @@ export async function test_zero_count_shows_district_preview() {
 
     assert.equal(tooltip.name, 'Goa', `Tooltip name (expected "Goa", got "${tooltip.name}")`);
     assert.isTrue(
-      tooltip.count.includes('district') || tooltip.count === '0 jobs',
-      `Zero-count tooltip should mention districts or show 0 jobs (got "${tooltip.count}")`
+      tooltip.count.includes('district') || tooltip.count === '0 deputations',
+      `Zero-count tooltip should mention districts or show 0 deputations (got "${tooltip.count}")`
     );
   } finally {
     await teardown(context);
@@ -105,9 +105,9 @@ export async function test_empty_scenario_tooltip() {
     }));
 
     assert.equal(tooltip.name, 'Maharashtra', `Empty-scenario tooltip name`);
-    // Empty scenario has 0 jobs everywhere
+    // Empty scenario has 0 deputations everywhere
     assert.truthy(
-      tooltip.count.includes('district') || tooltip.count === '0 jobs',
+      tooltip.count.includes('district') || tooltip.count === '0 deputations',
       `Empty-scenario zero-count tooltip (got "${tooltip.count}")`
     );
   } finally {

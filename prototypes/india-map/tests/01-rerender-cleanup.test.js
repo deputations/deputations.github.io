@@ -27,32 +27,35 @@ export async function test_repeated_filtering_no_duplicate_layers() {
     assert.equal(s0, 36, `Initial state shapes (expected 36, got ${s0})`);
     assert.equal(idSet0, 36, `Initial unique IDs (expected 36, got ${idSet0})`);
 
-    await page.locator('.exchange-btn[data-exchange="govt"]').click();
+    // Apply a filter via the drawer (exchange rail removed)
+    await page.locator('#filter-jobType').selectOption('Full-time');
     await delay(100);
     const g1 = await probe.mapGroups(page);
     const s1 = await probe.stateShapeCount(page);
     const idSet1 = await probe.uniqueShapeIdCount(page);
-    assert.equal(g1, 1, `After govt: groups (expected 1, got ${g1})`);
-    assert.equal(s1, 36, `After govt: state shapes (expected 36, got ${s1})`);
-    assert.equal(idSet1, 36, `After govt: unique IDs (expected 36, got ${idSet1})`);
+    assert.equal(g1, 1, `After filter: groups (expected 1, got ${g1})`);
+    assert.equal(s1, 36, `After filter: state shapes (expected 36, got ${s1})`);
+    assert.equal(idSet1, 36, `After filter: unique IDs (expected 36, got ${idSet1})`);
 
-    await page.locator('.exchange-btn[data-exchange="private"]').click();
+    // Apply a different filter
+    await page.locator('#filter-jobType').selectOption('Part-time');
     await delay(100);
     const g2 = await probe.mapGroups(page);
     const s2 = await probe.stateShapeCount(page);
     const idSet2 = await probe.uniqueShapeIdCount(page);
-    assert.equal(g2, 1, `After private: groups (expected 1, got ${g2})`);
-    assert.equal(s2, 36, `After private: state shapes (expected 36, got ${s2})`);
-    assert.equal(idSet2, 36, `After private: unique IDs (expected 36, got ${idSet2})`);
+    assert.equal(g2, 1, `After 2nd filter: groups (expected 1, got ${g2})`);
+    assert.equal(s2, 36, `After 2nd filter: state shapes (expected 36, got ${s2})`);
+    assert.equal(idSet2, 36, `After 2nd filter: unique IDs (expected 36, got ${idSet2})`);
 
-    await page.locator('.exchange-btn[data-exchange="all"]').click();
+    // Clear filter
+    await page.locator('#filter-jobType').selectOption('Any');
     await delay(100);
     const g3 = await probe.mapGroups(page);
     const s3 = await probe.stateShapeCount(page);
     const idSet3 = await probe.uniqueShapeIdCount(page);
-    assert.equal(g3, 1, `After all: groups (expected 1, got ${g3})`);
-    assert.equal(s3, 36, `After all: state shapes (expected 36, got ${s3})`);
-    assert.equal(idSet3, 36, `After all: unique IDs (expected 36, got ${idSet3})`);
+    assert.equal(g3, 1, `After clear: groups (expected 1, got ${g3})`);
+    assert.equal(s3, 36, `After clear: state shapes (expected 36, got ${s3})`);
+    assert.equal(idSet3, 36, `After clear: unique IDs (expected 36, got ${idSet3})`);
   } finally {
     await teardown(context);
   }
