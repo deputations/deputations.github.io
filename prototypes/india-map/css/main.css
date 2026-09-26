@@ -778,16 +778,20 @@ html, body {
   margin: 32px auto;
   user-select: none;
   z-index: 2;
+  /* Fix decode race: reserve aspect-ratio space so hotspots position correctly
+     even before the image finishes loading. Source is 1472×1344 (ratio 0.913). */
+  aspect-ratio: 1472 / 1344;
 }
 
 .ad-delhi-map-img,
 .ad-delhi-district-img {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   border-radius: var(--ad-radius);
   box-shadow: var(--ad-shadow);
   pointer-events: none;
+  object-fit: contain;
 }
 
 .ad-delhi-hotspot {
@@ -804,6 +808,20 @@ html, body {
   justify-content: center;
   color: transparent;
   padding: 4px;
+}
+
+/* Zero-listing hotspots: visible-but-soft so the user can see "this district
+   has no jobs" without thinking the page is broken. */
+.ad-delhi-hotspot[data-zero="true"] {
+  background: rgba(255, 255, 255, 0.04);
+  cursor: default;
+}
+.ad-delhi-hotspot[data-zero="true"] .ad-delhi-label {
+  color: rgba(255, 255, 255, 0.55);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+}
+.ad-delhi-hotspot[data-zero="true"] .ad-delhi-count {
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .ad-delhi-hotspot:hover {

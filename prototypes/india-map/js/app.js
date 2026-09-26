@@ -291,7 +291,8 @@ function renderDelhiImageMap(stateAbbr, stateName, data, initialDistrict = null)
   const hotspots = DELHI_DISTRICTS.map(d => {
     const entry = districtEntries.find(e => e.name === d.name);
     const count = entry ? entry.count : 0;
-    return `<button class="ad-delhi-hotspot"
+    const zeroAttr = count === 0 ? ' data-zero="true"' : '';
+    return `<button class="ad-delhi-hotspot"${zeroAttr}
       style="left:${d.left}%;top:${d.top}%;width:${d.width}%;height:${d.height}%"
       data-district="${d.name}"
       data-image="${d.image}"
