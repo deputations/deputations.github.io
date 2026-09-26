@@ -268,7 +268,7 @@ const DELHI_DISTRICTS = [
   { name: 'North West',       left: 28, top: 16, width: 20, height: 22, image: 'd8-north_west.png' },
   { name: 'West',             left: 26, top: 38, width: 20, height: 20, image: 'd5-west.png' },
   { name: 'South West',       left: 16, top: 60, width: 26, height: 22, image: 'd3-south_west.png' },
-  { name: 'North East',       left: 72, top: 4,  width: 16, height: 28, image: 'd10-north_east.png' },
+  { name: 'North East',       left: 68, top: 4,  width: 20, height: 28, image: 'd10-north_east.png' },
   { name: 'Shahdara',         left: 70, top: 24, width: 18, height: 20, image: 'd9-shahadara.png' },
   { name: 'East',             left: 76, top: 42, width: 16, height: 20, image: 'd6-east.png' },
   { name: 'Central',          left: 62, top: 28, width: 14, height: 14, image: 'd11-central.png' },
