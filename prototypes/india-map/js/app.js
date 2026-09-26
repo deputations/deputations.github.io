@@ -6,34 +6,34 @@ import { init as initProvider, setFilter, clearFilters, getFilters, getData,
 import { STATE_ABBR, ABBR_TO_NAME, STATE_LIST, DISTRICT_GEOJSON_TO_FIXTURE, fixtureDistrictToGeoJSON } from './state-geo.js';
 import { EXCHANGES, FILTERS } from '../fixtures/mock-data.js';
 
-// ====== DOM REFERENCES ======
-const mapSvg = document.getElementById('india-map');
-const mapContainer = document.getElementById('map-container');
-const tooltip = document.getElementById('tooltip');
-const tooltipName = document.getElementById('tooltip-name');
-const tooltipCount = document.getElementById('tooltip-count');
-const summaryTitle = document.getElementById('summary-title');
-const summaryCount = document.getElementById('summary-count');
-const summaryCard = document.getElementById('summary-card');
-const appliedFilters = document.getElementById('applied-filters');
-const filterChips = document.getElementById('filter-chips');
-const btnClearAll = document.getElementById('btn-clear-all');
-const btnFilter = document.getElementById('btn-filter');
-const btnBack = document.getElementById('btn-back');
-const btnZoomIn = document.getElementById('btn-zoom-in');
-const btnZoomOut = document.getElementById('btn-zoom-out');
-const btnZoomReset = document.getElementById('btn-zoom-reset');
-const resultsPanel = document.getElementById('results-panel');
-const resultsTitle = document.getElementById('results-title');
-const resultsBreadcrumb = document.getElementById('results-breadcrumb');
-const resultsList = document.getElementById('results-list');
-const sheetOverlay = document.getElementById('sheet-overlay');
-const btnCloseResults = document.getElementById('btn-close-results');
-const filterOverlay = document.getElementById('filter-overlay');
-const filterDrawer = document.getElementById('filter-drawer');
-const filterBody = document.getElementById('filter-body');
-const btnCloseFilter = document.getElementById('btn-close-filter');
-const rightRail = document.querySelector('.ad-right-rail');
+// ====== DOM REFERENCES (let — goNational() rebuilds them after Delhi view) ======
+let mapSvg = document.getElementById('india-map');
+let mapContainer = document.getElementById('map-container');
+let tooltip = document.getElementById('tooltip');
+let tooltipName = document.getElementById('tooltip-name');
+let tooltipCount = document.getElementById('tooltip-count');
+let summaryTitle = document.getElementById('summary-title');
+let summaryCount = document.getElementById('summary-count');
+let summaryCard = document.getElementById('summary-card');
+let appliedFilters = document.getElementById('applied-filters');
+let filterChips = document.getElementById('filter-chips');
+let btnClearAll = document.getElementById('btn-clear-all');
+let btnFilter = document.getElementById('btn-filter');
+let btnBack = document.getElementById('btn-back');
+let btnZoomIn = document.getElementById('btn-zoom-in');
+let btnZoomOut = document.getElementById('btn-zoom-out');
+let btnZoomReset = document.getElementById('btn-zoom-reset');
+let resultsPanel = document.getElementById('results-panel');
+let resultsTitle = document.getElementById('results-title');
+let resultsBreadcrumb = document.getElementById('results-breadcrumb');
+let resultsList = document.getElementById('results-list');
+let sheetOverlay = document.getElementById('sheet-overlay');
+let btnCloseResults = document.getElementById('btn-close-results');
+let filterOverlay = document.getElementById('filter-overlay');
+let filterDrawer = document.getElementById('filter-drawer');
+let filterBody = document.getElementById('filter-body');
+let btnCloseFilter = document.getElementById('btn-close-filter');
+let rightRail = document.querySelector('.ad-right-rail');
 
 // ====== STATE ======
 let view = 'national';
@@ -571,15 +571,38 @@ function goBack() {
 }
 
 function goNational() {
-  ++currentGeneration; // invalidate any in-flight geometry
+  ++currentGeneration;
   selectedState = null;
   selectedDistrict = null;
   view = 'national';
   closeResults();
   btnBack.hidden = true;
-  renderNationalMap(getData());
+
+  const mapArea = document.querySelector('.ad-map-area');
+  if (mapArea) {
+    mapArea.innerHTML = `
+      <div class="ad-map-container" id="map-container">
+        <svg id="india-map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800"
+             preserveAspectRatio="xMidYMid meet" role="img" aria-label="India map showing job counts by state">
+        </svg>
+        <div class="ad-tooltip" id="tooltip" role="tooltip" aria-hidden="true">
+          <span class="ad-tooltip-name" id="tooltip-name"></span>
+          <span class="ad-tooltip-count" id="tooltip-count"></span>
+        </div>
+      </div>
+    `;
+    mapContainer = document.getElementById('map-container');
+  }
+  mapSvg = document.getElementById('india-map');
+  tooltip = document.getElementById('tooltip');
+  tooltipName = document.getElementById('tooltip-name');
+  tooltipCount = document.getElementById('tooltip-count');
+
+  const data = getData();
+  renderNationalMap(data);
+  updateSummary('ALL INDIA JOBS', data.totalCount);
   updateAppliedFilters();
-  syncExchangeRail(getData());
+  syncExchangeRail(data);
   history.pushState({ view: 'national' }, '', window.location.pathname);
 }
 
