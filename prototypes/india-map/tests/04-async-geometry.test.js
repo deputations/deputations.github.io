@@ -65,8 +65,9 @@ export async function test_filter_after_state_selection_updates_results() {
     await delay(500); // wait for panel re-render
 
     const cards = await probe.cardTitles(page);
-    assert.equal(cards.length, 1, `Pune govt filter: 1 card (got ${cards.length})`);
+    assert.equal(cards.length, 2, `Pune govt filter: 2 cards (got ${cards.length})`);
     assert.includes(cards, 'Section Officer – Pune Division', 'Govt listing present');
+    assert.includes(cards, 'Cross-State Coordinator – MH & GJ', 'Multi-state govt listing present');
 
     const distCount = await probe.districtShapeCount(page);
     assert.isAbove(distCount, 0, `Districts still visible (${distCount})`);

@@ -27,9 +27,10 @@ export async function test_govt_filter_in_pune_removes_private() {
     await delay(200);
 
     const cards0 = await probe.cardTitles(page);
-    assert.equal(cards0.length, 2, `Initial Pune cards (expected 2, got ${cards0.length})`);
+    assert.equal(cards0.length, 3, `Initial Pune cards (expected 3, got ${cards0.length})`);
     assert.includes(cards0, 'Section Officer – Pune Division', 'Government listing present');
     assert.includes(cards0, 'Supply Chain Analyst – Pune', 'Private listing present');
+    assert.includes(cards0, 'Cross-State Coordinator – MH & GJ', 'Multi-state listing present');
 
     // Apply category filter via window bridge (module-scoped functions)
     await page.evaluate(() => window.__app.setFilter('category', 'govt'));
@@ -37,7 +38,7 @@ export async function test_govt_filter_in_pune_removes_private() {
     await delay(300);
 
     const cards1 = await probe.cardTitles(page);
-    assert.equal(cards1.length, 1, `After govt filter: cards (expected 1, got ${cards1.length})`);
+    assert.equal(cards1.length, 2, `After govt filter: cards (expected 2, got ${cards1.length})`);
     assert.includes(cards1, 'Section Officer – Pune Division', 'Government listing still present');
   } finally {
     await teardown(context);

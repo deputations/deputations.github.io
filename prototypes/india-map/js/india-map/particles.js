@@ -1,92 +1,94 @@
 // js/india-map/particles.js
-// Particle burst system for cinematic state-drill transitions.
-// Creates 60-80 small particles that emanate from a click point,
-// fade out over 400ms with slight gravity.
+// Particle burst system for cinematic state-click transitions.
+// Vanilla canvas — no animation library. Designed for ~70 particles per click.
 
-const COLORS = [
-  'rgba(34, 211, 238, 0.8)',   // cyan
-  'rgba(34, 211, 238, 0.6)',
-  'rgba(167, 139, 250, 0.7)',  // purple
-  'rgba(165, 243, 252, 0.5)',  // light cyan
-  'rgba(248, 250, 252, 0.6)',  // near-white
-];
+// ====== PUBLIC API ======
 
-export class ParticleSystem {
-  constructor(canvas) {
-    this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
-    this.particles = [];
-    this.running = false;
-    this._resize();
-    window.addEventListener('resize', () => this._resize());
+/**
+ * Initialize the particle canvas overlay.
+ * @param {HTMLCanvasElement} canvas
+ * @param {HTMLElement} container — the parent that sizes the canvas
+ */
+export function initParticles(canvas, container) {
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let raf = null;
+  let running = false;
+
+  function resize() {
+    const rect = container.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
   }
 
-  _resize() {
-    const rect = this.canvas.parentElement.getBoundingClientRect();
-    this.canvas.width = rect.width * devicePixelRatio;
-    this.canvas.height = rect.height * devicePixelRatio;
-    this.canvas.style.width = rect.width + 'px';
-    this.canvas.style.height = rect.height + 'px';
-    this.ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-    this.w = rect.width;
-    this.h = rect.height;
-  }
-
-  burst(x, y, count = 70) {
+  function spawn(x, y, count = 100) {
+    resize();
     for (let i = 0; i < count; i++) {
-      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
-      const speed = 80 + Math.random() * 200;
-      const size = 1.5 + Math.random() * 3;
-      this.particles.push({
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
+      const speed = 2.0 + Math.random() * 4.5;
+      const life = 1.2 + Math.random() * 0.6; // seconds — visible for 1.2–1.8s
+      particles.push({
         x, y,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 40, // slight upward bias
-        size,
-        color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        life: 1,
-        decay: 0.6 + Math.random() * 0.8, // lifespan in seconds
-        gravity: 60 + Math.random() * 40,
+        vy: Math.sin(angle) * speed - 1.8, // stronger upward bias
+        life,
+        maxLife: life,
+        radius: 2.0 + Math.random() * 3.0, // larger dots
+        hue: 185 + Math.random() * 25 // cyan-to-teal
       });
     }
-    if (!this.running) {
-      this.running = true;
-      this._lastTime = performance.now();
-      this._loop();
+    if (!running) {
+      running = true;
+      tick();
     }
   }
 
-  _loop() {
-    const now = performance.now();
-    const dt = Math.min((now - this._lastTime) / 1000, 0.05);
-    this._lastTime = now;
-
-    this.ctx.clearRect(0, 0, this.w, this.h);
-
-    this.particles = this.particles.filter(p => {
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy += p.gravity * dt;
-      p.life -= dt / p.decay;
-
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const dt = 1 / 60;
+    particles = particles.filter(p => {
+      p.life -= dt;
       if (p.life <= 0) return false;
-
-      const alpha = Math.max(0, p.life);
-      this.ctx.globalAlpha = alpha;
-      this.ctx.fillStyle = p.color;
-      this.ctx.beginPath();
-      this.ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
-      this.ctx.fill();
-
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.05; // lighter gravity
+      p.vx *= 0.985;
+      const alpha = Math.max(0, p.life / p.maxLife);
+      const r = p.radius * (0.6 + 0.4 * alpha); // stays chunky through life
+      // Outer glow
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r * 2.2, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${p.hue}, 90%, 65%, ${alpha * 0.15})`;
+      ctx.fill();
+      // Core dot
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${p.hue}, 85%, 72%, ${alpha})`;
+      ctx.fill();
+      // Bright center
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r * 0.4, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${p.hue}, 60%, 90%, ${alpha})`;
+      ctx.fill();
       return true;
     });
 
-    this.ctx.globalAlpha = 1;
-
-    if (this.particles.length > 0) {
-      requestAnimationFrame(() => this._loop());
+    if (particles.length > 0) {
+      raf = requestAnimationFrame(tick);
     } else {
-      this.running = false;
-      this.ctx.clearRect(0, 0, this.w, this.h);
+      running = false;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
   }
+
+  function stop() {
+    if (raf) cancelAnimationFrame(raf);
+    particles = [];
+    running = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  window.addEventListener('resize', () => { if (running) resize(); });
+
+  return { spawn, stop };
 }

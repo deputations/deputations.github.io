@@ -80,8 +80,8 @@ export async function test_district_map_hover_shows_district_name() {
       tooltip.name.includes('Pune'),
       `District tooltip should contain "Pune" (got "${tooltip.name}")`
     );
-    // Pune has 2 listings
-    assert.equal(tooltip.count, '2', `Pune district count (expected 2, got ${tooltip.count})`);
+    // Pune has 3 listings (including multi-state entry)
+    assert.equal(tooltip.count, '3', `Pune district count (expected 3, got ${tooltip.count})`);
   } finally {
     await teardown(context);
   }

@@ -1,10 +1,11 @@
 // js/app.js — AllDeputations India Map Prototype
-// Main application: rendering, navigation, filters, tooltips
+// Main application: rendering, navigation, filters, tooltips, particles
 
 import { init as initProvider, setFilter, clearFilters, getFilters, getData,
          getListingsForState, getListingsForDistrict } from './map-provider.js';
 import { STATE_ABBR, ABBR_TO_NAME, STATE_LIST, DISTRICT_GEOJSON_TO_FIXTURE, fixtureDistrictToGeoJSON } from './state-geo.js';
 import { EXCHANGES, FILTERS } from '../fixtures/mock-data.js';
+import { initParticles } from './india-map/particles.js';
 
 // ====== DOM REFERENCES (let — goNational() rebuilds them after Delhi view) ======
 let mapSvg = document.getElementById('india-map');
@@ -23,6 +24,8 @@ let btnBack = document.getElementById('btn-back');
 let btnZoomIn = document.getElementById('btn-zoom-in');
 let btnZoomOut = document.getElementById('btn-zoom-out');
 let btnZoomReset = document.getElementById('btn-zoom-reset');
+let particleCanvas = document.getElementById('particle-canvas');
+let particles = null;
 let resultsPanel = document.getElementById('results-panel');
 let resultsTitle = document.getElementById('results-title');
 let resultsBreadcrumb = document.getElementById('results-breadcrumb');
@@ -49,6 +52,11 @@ let zoomLevel = 1.0;
 let targetZoomLevel = 1.0;
 let zoomAnimFrame = null;
 const ZOOM_MIN = 0.5, ZOOM_MAX = 8.0, ZOOM_STEP = 1.3;
+
+// Pan state (for fly-to camera)
+let panX = 0, panY = 0;       // current animated offset
+let targetPanX = 0, targetPanY = 0;
+let panAnimFrame = null;
 
 // ====== PROJECTION ======
 // Equirectangular projection fitting features to SVG viewBox "0 0 1000 800"
@@ -426,6 +434,33 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
   computeProjection(distData.features);
   applyZoomTransform();
 
+  // Camera fly-to: fit state bbox in viewport (runs after render completes)
+  // Use 2x rAF to ensure the map-group element is in the DOM
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      try {
+        const g = document.getElementById('map-group');
+        if (!g) return; // map was replaced
+        const feat = geoData?.features?.find(f => STATE_ABBR[f.properties.NAME_1] === stateAbbr);
+        if (feat) {
+          const pts = flattenCoords(feat.geometry).map(([lon, lat]) => project(lon, lat));
+          if (pts.length > 0) {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            pts.forEach(([x, y]) => {
+              if (x < minX) minX = x;
+              if (y < minY) minY = y;
+              if (x > maxX) maxX = x;
+              if (y > maxY) maxY = y;
+            });
+            flyToBounds(minX, minY, maxX, maxY, 0.2);
+          }
+        }
+      } catch (err) {
+        console.error('Fly-to rAF error:', err);
+      }
+    });
+  });
+
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   g.id = 'map-group';
   mapSvg.appendChild(g);
@@ -566,6 +601,7 @@ function drillToState(abbr, name) {
 
   const data = getData();
   renderStateMap(abbr, name, data);
+
   updateAppliedFilters();
   syncExchangeRail(data);
   history.pushState({ view: 'state', state: abbr }, '', `?state=${abbr}`);
@@ -596,30 +632,33 @@ function drillToDistrict(stateAbbr, districtName) {
     { view: 'district', state: stateAbbr, district: districtName },
     '', `?state=${stateAbbr}&district=${encodeURIComponent(districtName)}`
   );
+  btnBack.hidden = false;
 }
 
 function goBack() {
-  // Level-based navigation (not history-based) so it works on direct links
-  if (view === 'district') {
-    goBackToState();
-  } else if (view === 'state') {
-    goNational();
+  try {
+    if (view === 'district' && selectedState) {
+      // District → State
+      const data = getData();
+      view = 'state';
+      selectedDistrict = null;
+      closeResults();
+      renderStateMap(selectedState, ABBR_TO_NAME[selectedState] || selectedState, data);
+      updateSummary(`${(ABBR_TO_NAME[selectedState] || selectedState).toUpperCase()} DEPUTATIONS`, data.stateCounts[selectedState] || 0);
+      updateAppliedFilters();
+      syncExchangeRail(data);
+      history.pushState({ view: 'state', state: selectedState }, '', `?state=${selectedState}`);
+      btnBack.hidden = false;
+    } else if (view === 'state') {
+      // State → National
+      goNational();
+    }
+  } catch (err) {
+    console.error('goBack error:', err);
   }
 }
 
-function goBackToState() {
-  if (!selectedState) { goNational(); return; }
-  const data = getData();
-  view = 'state';
-  selectedDistrict = null;
-  closeResults();
-  renderStateMap(selectedState, ABBR_TO_NAME[selectedState] || selectedState, data);
-  updateSummary(`${(ABBR_TO_NAME[selectedState] || selectedState).toUpperCase()} DEPUTATIONS`, data.stateCounts[selectedState] || 0);
-  updateAppliedFilters();
-  syncExchangeRail(data);
-  history.pushState({ view: 'state', state: selectedState }, '', `?state=${selectedState}`);
-  btnBack.hidden = false;
-}
+// goBackToState is no longer needed — history.back() handles it via popstate
 
 function goNational() {
   ++currentGeneration;
@@ -629,13 +668,18 @@ function goNational() {
   closeResults();
   btnBack.hidden = true;
 
+  // Reset camera
+  panX = 0; panY = 0; targetPanX = 0; targetPanY = 0;
+  setZoom(1.0);
+
   const mapArea = document.querySelector('.ad-map-area');
   if (mapArea) {
     mapArea.innerHTML = `
       <div class="ad-map-container" id="map-container">
         <svg id="india-map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800"
-             preserveAspectRatio="xMidYMid meet" role="img" aria-label="India map showing job counts by state">
+             preserveAspectRatio="xMidYMid meet" role="img" aria-label="India map showing deputation counts by state">
         </svg>
+        <canvas id="particle-canvas" aria-hidden="true"></canvas>
         <div class="ad-tooltip" id="tooltip" role="tooltip" aria-hidden="true">
           <span class="ad-tooltip-name" id="tooltip-name"></span>
           <span class="ad-tooltip-count" id="tooltip-count"></span>
@@ -700,6 +744,15 @@ function moveTooltip(event) {
 function hideTooltip() {
   tooltip.classList.remove('visible');
   tooltip.setAttribute('aria-hidden', 'true');
+}
+
+// ====== PARTICLES ======
+function spawnParticlesAtClick(e) {
+  if (!particles) return;
+  const rect = mapContainer.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  particles.spawn(x, y, 70);
 }
 
 // ====== SUMMARY ======
@@ -1084,11 +1137,17 @@ function buildExchangeRail() {
 function applyZoomTransform(level = zoomLevel) {
   const mapGroup = document.getElementById('map-group');
   if (!mapGroup) return;
-  if (level === 1.0) {
+  if (level === 1.0 && panX === 0 && panY === 0) {
     mapGroup.removeAttribute('transform');
     return;
   }
-  const t = `translate(500,400) scale(${level}) translate(-500,-400)`;
+  // SVG viewBox "0 0 1000 800" mapped to container with preserveAspectRatio="xMidYMid meet".
+  // The SVG center (500, 400) is always at container center.
+  // We scale around (500, 400) then translate by panX,panY in viewport units.
+  // To express this as SVG transform: scale(level) means scale around (0,0).
+  // To scale around (500, 400): translate(-500, -400), scale, translate(500, 400).
+  // Then translate the whole thing by (panX, panY) in SVG units.
+  const t = `translate(${panX}, ${panY}) translate(500, 400) scale(${level}) translate(-500, -400)`;
   mapGroup.setAttribute('transform', t);
 }
 
@@ -1109,6 +1168,121 @@ function setZoom(newLevel) {
   targetZoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newLevel));
   if (zoomAnimFrame) cancelAnimationFrame(zoomAnimFrame);
   zoomAnimFrame = requestAnimationFrame(animateZoom);
+}
+
+// ====== CAMERA FLY-TO ======
+// Smooth pan + zoom to a target SVG coordinate (e.g. state centroid).
+function flyTo(targetSvgX, targetSvgY, targetZoom = 1.8) {
+  targetZoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, targetZoom));
+  targetPanX = targetZoomLevel * (500 - targetSvgX);
+  targetPanY = targetZoomLevel * (400 - targetSvgY);
+
+  if (zoomAnimFrame) cancelAnimationFrame(zoomAnimFrame);
+  if (panAnimFrame) cancelAnimationFrame(panAnimFrame);
+  panAnimFrame = requestAnimationFrame(animatePanZoom);
+}
+
+// Fit a bounding box (in projected SVG coords) to the viewport with padding.
+// The transform `translate(panX, panY) translate(500, 400) scale(z) translate(-500, -400)`
+// means a point P maps to: P' = (panX + z*(Px-500) + 500, panY + z*(Py-400) + 400).
+// We want the bbox center (cx, cy) to land at SVG center (500, 400):
+//   panX = z*(500-cx), panY = z*(400-cy).
+// We want the bbox to fill 1/(1+2*padFrac) of the SVG viewport:
+//   z = min(1000/(bw * (1+2*padFrac)), 800/(bh * (1+2*padFrac)))
+function flyToBounds(minX, minY, maxX, maxY, padFrac = 0.15) {
+  const bw = maxX - minX || 1;
+  const bh = maxY - minY || 1;
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+
+  const fill = 1.0 / (1.0 + 2 * padFrac);
+  const zx = 1000 / (bw * fill);
+  const zy = 800 / (bh * fill);
+  const targetZ = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.min(zx, zy)));
+
+  targetZoomLevel = targetZ;
+  targetPanX = targetZ * (500 - cx);
+  targetPanY = targetZ * (400 - cy);
+
+  if (zoomAnimFrame) cancelAnimationFrame(zoomAnimFrame);
+  if (panAnimFrame) cancelAnimationFrame(panAnimFrame);
+  panAnimFrame = requestAnimationFrame(animatePanZoom);
+}
+
+function animatePanZoom() {
+  const zdiff = targetZoomLevel - zoomLevel;
+  const xdiff = targetPanX - panX;
+  const ydiff = targetPanY - panY;
+
+  if (Math.abs(zdiff) < 0.001 && Math.abs(xdiff) < 0.1 && Math.abs(ydiff) < 0.1) {
+    zoomLevel = targetZoomLevel;
+    panX = targetPanX;
+    panY = targetPanY;
+    applyZoomTransform(zoomLevel);
+    zoomAnimFrame = null;
+    panAnimFrame = null;
+    // Spawn particles AFTER fly-to completes — burst at viewport center
+    if (particles && window.__flyToOrigin) {
+      try {
+        const rect = mapContainer?.getBoundingClientRect();
+        if (rect) {
+          const cx = rect.width / 2;
+          const cy = rect.height / 2;
+          particles.spawn(cx, cy, 80);
+        }
+      } catch (e) { /* ignore if container gone */ }
+      window.__flyToOrigin = null;
+    }
+    return;
+  }
+
+  // Abort if map was replaced (national view)
+  if (!document.getElementById('map-group')) {
+    zoomAnimFrame = null;
+    panAnimFrame = null;
+    return;
+  }
+
+  zoomLevel += zdiff * 0.12;
+  panX += xdiff * 0.12;
+  panY += ydiff * 0.12;
+  applyZoomTransform(zoomLevel);
+  panAnimFrame = requestAnimationFrame(animatePanZoom);
+}
+
+// ====== HUD AUTO-HIDE ======
+let hudTimeout = null;
+
+function showHUD() {
+  document.querySelector('.ad-bottom-controls')?.classList.remove('ad-hud-hidden');
+  document.getElementById('btn-filter')?.classList.remove('ad-hud-hidden');
+  resetHudTimeout();
+}
+
+function hideHUD() {
+  if (view === 'district') return; // keep HUD visible in district results view
+  document.querySelector('.ad-bottom-controls')?.classList.add('ad-hud-hidden');
+  document.getElementById('btn-filter')?.classList.add('ad-hud-hidden');
+}
+
+function resetHudTimeout() {
+  if (hudTimeout) clearTimeout(hudTimeout);
+  hudTimeout = setTimeout(hideHUD, 4000);
+}
+
+function initHudAutoHide() {
+  // Show on mouse-move near bottom 120px of viewport
+  document.addEventListener('mousemove', e => {
+    if (e.clientY > window.innerHeight - 120) showHUD();
+  });
+
+  // Touch devices: always show HUD on touch
+  document.addEventListener('touchstart', () => showHUD(), { passive: true });
+
+  // Back button: both navigates AND shows HUD
+  document.getElementById('btn-back')?.addEventListener('click', showHUD);
+
+  resetHudTimeout();
 }
 
 // ====== EVENT WIRING ======
@@ -1237,32 +1411,14 @@ function wireEvents() {
 
   window.addEventListener('popstate', e => {
     const state = e.state;
-    if (!state || !state.view) return;
 
-    if (state.view === 'national') {
-      selectedState = null;
-      selectedDistrict = null;
-      view = 'national';
-      closeResults();
-      btnBack.hidden = true;
-      renderNationalMap(getData());
-      updateAppliedFilters();
-      syncExchangeRail(getData());
-    } else if (state.view === 'state') {
-      selectedState = state.state;
-      selectedDistrict = null;
-      view = 'state';
-      closeResults();
-      renderStateMap(selectedState, ABBR_TO_NAME[selectedState], getData());
-      updateAppliedFilters();
-      syncExchangeRail(getData());
-      btnBack.hidden = false;
-    } else if (state.view === 'district') {
+    if (state?.view === 'district') {
       selectedState = state.state;
       selectedDistrict = state.district;
       view = 'district';
       closeResults();
-      renderStateMap(selectedState, ABBR_TO_NAME[selectedState], getData());
+      const data = getData();
+      renderStateMap(selectedState, ABBR_TO_NAME[selectedState], data);
       setTimeout(() => {
         showResults({
           title: `${state.district} Deputations`,
@@ -1277,8 +1433,52 @@ function wireEvents() {
         if (sel) sel.classList.add('active');
       }, 100);
       updateAppliedFilters();
-      syncExchangeRail(getData());
+      syncExchangeRail(data);
       btnBack.hidden = false;
+    } else if (state?.view === 'state') {
+      selectedState = state.state;
+      selectedDistrict = null;
+      view = 'state';
+      closeResults();
+      const data = getData();
+      renderStateMap(selectedState, ABBR_TO_NAME[selectedState], data);
+      updateSummary(`${(ABBR_TO_NAME[selectedState] || state.state).toUpperCase()} DEPUTATIONS`, data.stateCounts[state.state] || 0);
+      updateAppliedFilters();
+      syncExchangeRail(data);
+      btnBack.hidden = false;
+    } else {
+      // null state = initial page load = national view
+      if (view === 'national') return; // already there
+      selectedState = null;
+      selectedDistrict = null;
+      view = 'national';
+      closeResults();
+      btnBack.hidden = true;
+      const mapArea = document.querySelector('.ad-map-area');
+      if (mapArea) {
+        mapArea.innerHTML = `
+          <div class="ad-map-container" id="map-container">
+            <svg id="india-map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800"
+                 preserveAspectRatio="xMidYMid meet" role="img" aria-label="India map showing deputation counts by state">
+            </svg>
+            <canvas id="particle-canvas" aria-hidden="true"></canvas>
+            <div class="ad-tooltip" id="tooltip" role="tooltip" aria-hidden="true">
+              <span class="ad-tooltip-name" id="tooltip-name"></span>
+              <span class="ad-tooltip-count" id="tooltip-count"></span>
+            </div>
+          </div>
+        `;
+        mapContainer = document.getElementById('map-container');
+        mapSvg = document.getElementById('india-map');
+        tooltip = document.getElementById('tooltip');
+        tooltipName = document.getElementById('tooltip-name');
+        tooltipCount = document.getElementById('tooltip-count');
+        const data = getData();
+        renderNationalMap(data);
+        updateSummary('ALL INDIA DEPUTATIONS', data.nationalCount);
+        updateAppliedFilters();
+        syncExchangeRail(data);
+      }
     }
   });
 
@@ -1338,6 +1538,11 @@ async function start() {
   const params = new URLSearchParams(window.location.search);
   const scenario = params.get('scenario') === 'empty' ? 'empty' : 'populated';
 
+  // Ensure the initial history entry always has a state object
+  if (!history.state) {
+    history.replaceState({ view: 'national' }, '', window.location.href);
+  }
+
   try {
     const resp = await fetch('geo/india-states.geojson');
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -1355,6 +1560,11 @@ async function start() {
     initProvider(scenario);
     buildFilterDrawer();
     buildExchangeRail();
+
+    // Init particle system
+    if (particleCanvas && mapContainer) {
+      particles = initParticles(particleCanvas, mapContainer);
+    }
 
     // Test bridge — expose filter + render functions on window for headless tests.
     // The change event listener on filter selects works in real browsers but Playwright's
@@ -1384,7 +1594,9 @@ async function start() {
 
 document.addEventListener('DOMContentLoaded', () => {
   wireEvents();
-  start().catch(err => {
+  start().then(() => {
+    initHudAutoHide();
+  }).catch(err => {
     console.error('Prototype startup failed:', err);
     mapSvg.innerHTML = `<text x="500" y="400" text-anchor="middle" fill="#f5a721" font-size="16">
       Failed to start: ${err.message}</text>`;

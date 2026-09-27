@@ -24,8 +24,13 @@ export function init(scenario_ = SCENARIO) {
   if (scenario === 'empty') {
     listings = [];
   } else {
-    // Deep-clone so provider owns its data
-    listings = JSON.parse(JSON.stringify(POPULATED_LISTINGS));
+    // Deep-clone so provider owns its data; include edge-case fixtures
+    listings = [
+      ...JSON.parse(JSON.stringify(POPULATED_LISTINGS)),
+      ...JSON.parse(JSON.stringify(MULTI_STATE_LISTINGS)),
+      ...JSON.parse(JSON.stringify(NATIONWIDE_LISTINGS)),
+      ...JSON.parse(JSON.stringify(UNKNOWN_LISTINGS))
+    ];
   }
   return getData();
 }
