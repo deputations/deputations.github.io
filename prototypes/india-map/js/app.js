@@ -735,8 +735,17 @@ function showTooltip(event, name, count, abbr, data) {
 // ====== TOOLTIP MOVEMENT ======
 function moveTooltip(event) {
   const rect = mapSvg.getBoundingClientRect();
-  let x = event.clientX - rect.left + 12;
-  let y = event.clientY - rect.top - 12;
+  let x, y;
+
+  // Keyboard focus: clientX/clientY are 0, use element position instead
+  if (event.clientX === 0 && event.clientY === 0 && event.target) {
+    const elRect = event.target.getBoundingClientRect();
+    x = elRect.right - rect.left + 8;
+    y = elRect.top - rect.top;
+  } else {
+    x = event.clientX - rect.left + 12;
+    y = event.clientY - rect.top - 12;
+  }
 
   const ttRect = tooltip.getBoundingClientRect();
   if (x + ttRect.width > window.innerWidth - 10) x = x - ttRect.width - 24;
