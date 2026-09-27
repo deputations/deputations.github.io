@@ -20,17 +20,24 @@ node -e "import { startServer } from './tests/harness.js'; startServer().then(()
 ## Changed files
 
 ```
-js/app.js           — Main app: rendering, navigation, filters, tooltips, zoom, events
-js/app.js           — Card-grid views (Functional/Industrial) with grouping by function and qualification
-js/map-provider.js  — Data provider: aggregation, dedup, filtering, district queries
-js/state-geo.js     — State/abbr mappings, district aliases
-css/main.css        — Layout, map styles, tooltip, drawer, card-grid views, responsive
-fixtures/mock-data.js — 21 deterministic listings across 7 states with function/qualification fields
-index.html          — App shell + card-view container
-tests/              — 25 Playwright tests (7 files)
-README.md           — This file
-SCENARIO.md         — Populated/empty scenario notes
-GEOGRAPHY.md        — Geometry provenance manifest
+js/app.js                        — Main app: rendering, navigation, filters, tooltips, zoom, events
+js/india-map/app.js              — SVG map rendering, drill-down, district geometry loading
+js/india-map/views/map-view.js   — National + state map rendering
+js/india-map/views/functional-view.js — Functional category card grid
+js/india-map/views/industrial-view.js  — Qualification group card grid
+js/india-map/views/shared/card-grid.js  — Shared card grid component
+js/india-map/views/shared/listing-table.js — Listing table component
+js/india-map/particles.js        — Particle burst animation system
+js/india-map/hud.js              — Heads-up display controls
+js/map-provider.js               — Data provider: aggregation, dedup, filtering, district queries
+js/state-geo.js                  — State/abbr mappings, district aliases
+css/main.css                     — Layout, map styles, tooltip, drawer, card-grid views, responsive
+fixtures/mock-data.js            — 132 listings across states with function/qualification fields
+index.html                       — App shell + card-view container
+tests/                           — 32 Playwright tests (8 files)
+README.md                        — This file
+SCENARIO.md                      — Populated/empty scenario notes
+GEOGRAPHY.md                     — Geometry provenance manifest
 ```
 
 ## Test results
@@ -43,8 +50,9 @@ GEOGRAPHY.md        — Geometry provenance manifest
 ══ 05-zoom.test.js              ══ ✓✓ (2/2)
 ══ 06-distinct-ids.test.js      ══ ✓✓✓✓ (4/4)
 ══ 07-geography.test.js         ══ ✓✓✓✓✓✓✓✓ (8/8)
+══ 08-tooltip.test.js           ══ ✓✓✓✓ (4/4)
 
-25 passed, 0 failed
+32 passed, 0 failed
 ```
 
 ## Map-data sources and licenses

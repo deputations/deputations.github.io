@@ -452,6 +452,8 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
               if (x > maxX) maxX = x;
               if (y > maxY) maxY = y;
             });
+            // Set particle origin so the burst fires after fly-to completes
+            window.__flyToOrigin = { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 };
             flyToBounds(minX, minY, maxX, maxY, 0.85);
           }
         }
@@ -687,6 +689,10 @@ function goNational() {
       </div>
     `;
     mapContainer = document.getElementById('map-container');
+    particleCanvas = document.getElementById('particle-canvas');
+    if (particleCanvas && mapContainer) {
+      particles = initParticles(particleCanvas, mapContainer);
+    }
   }
   mapSvg = document.getElementById('india-map');
   tooltip = document.getElementById('tooltip');
@@ -946,11 +952,25 @@ function showMapView() {
 // ====== RESULTS PANEL ======
 let sheetCloseTimer = null;
 
-function showResults({ title, breadcrumb, listings: items, districtBreakdown = null }) {
+function showResults({ title, breadcrumb, listings: items, districtBreakdown = null, specialBuckets = null }) {
   resultsTitle.textContent = title;
   resultsBreadcrumb.innerHTML = breadcrumb.join('');
 
   let cardsHTML = '';
+
+  // Nationwide/unknown buckets at top of national view
+  if (specialBuckets && specialBuckets.length > 0) {
+    specialBuckets.forEach(bucket => {
+      if (bucket.items.length === 0) return;
+      const bucketCards = bucket.items.map(item => renderListingCard(item)).join('');
+      cardsHTML += `
+        <div class="ad-special-bucket" data-bucket="${bucket.id}">
+          <h3 class="ad-bucket-title">${bucket.label} <span class="ad-bucket-count">${bucket.items.length}</span></h3>
+          <div class="ad-cards-grid">${bucketCards}</div>
+        </div>
+      `;
+    });
+  }
 
   // District breakdown list (shown above result cards when available)
   if (districtBreakdown && districtBreakdown.length > 0) {
