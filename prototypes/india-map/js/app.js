@@ -287,10 +287,18 @@ function renderStateMap(stateAbbr, stateName, data) {
     if (!resp.ok) throw new Error(`District geometry not available for ${stateName}`);
     const distData = await resp.json();
 
-    if (myGeneration !== currentGeneration) return; // Stale — discard
+    // Guard against stale renders: generation changed OR view is no longer 'state'
+    if (myGeneration !== currentGeneration) return;
+    if (view !== 'state' || selectedState !== stateAbbr) return;
+
+    // Cancel any pending animation before rendering new content
+    if (zoomAnimFrame) { cancelAnimationFrame(zoomAnimFrame); zoomAnimFrame = null; }
+    if (panAnimFrame) { cancelAnimationFrame(panAnimFrame); panAnimFrame = null; }
+
     renderDistrictMap(distData, stateAbbr, stateName, data);
   } catch (err) {
     if (myGeneration !== currentGeneration) return;
+    if (view !== 'state' || selectedState !== stateAbbr) return;
     console.warn('District geometry unavailable:', err.message);
     showStateListView(stateAbbr, stateName, data);
   }
@@ -452,9 +460,8 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
               if (x > maxX) maxX = x;
               if (y > maxY) maxY = y;
             });
-            // Set particle origin so the burst fires after fly-to completes
-            window.__flyToOrigin = { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 };
-            flyToBounds(minX, minY, maxX, maxY, 0.85);
+            // Cinematic zoom-in from small (0.3) to fit bounds
+            flyToBounds(minX, minY, maxX, maxY, 0.85, 0.3);
           }
         }
       } catch (err) {
@@ -596,12 +603,22 @@ function showStateListView(stateAbbr, stateName, data, reason = 'District geomet
 }
 
 // ====== NAVIGATION ======
+let _drillTimeout = null; // cancel stale drill-down setTimeout
+
 function drillToState(abbr, name) {
+  // Cancel any pending drill-down from a previous click
+  if (_drillTimeout) {
+    clearTimeout(_drillTimeout);
+    _drillTimeout = null;
+  }
+
   selectedState = abbr;
   selectedDistrict = null;
   view = 'state';
 
   const data = getData();
+
+  // Instant switch to state view — particles + zoom-in happen in renderDistrictMap
   renderStateMap(abbr, name, data);
 
   updateAppliedFilters();
@@ -610,6 +627,11 @@ function drillToState(abbr, name) {
 }
 
 function drillToDistrict(stateAbbr, districtName) {
+  // Ignore clicks during cinematic zoom (districts not rendered yet)
+  if (view === 'state' && document.querySelectorAll('.ad-state[data-district]').length === 0) {
+    return;
+  }
+
   selectedDistrict = districtName;
   view = 'district';
 
@@ -652,7 +674,11 @@ function goBack() {
       history.pushState({ view: 'state', state: selectedState }, '', `?state=${selectedState}`);
       btnBack.hidden = false;
     } else if (view === 'state') {
-      // State → National
+      // State → National — cancel any pending drill-down
+      if (_drillTimeout) {
+        clearTimeout(_drillTimeout);
+        _drillTimeout = null;
+      }
       goNational();
     }
   } catch (err) {
@@ -664,6 +690,11 @@ function goBack() {
 
 function goNational() {
   ++currentGeneration;
+  // Cancel any pending drill-down from a stale cinematic zoom
+  if (_drillTimeout) {
+    clearTimeout(_drillTimeout);
+    _drillTimeout = null;
+  }
   selectedState = null;
   selectedDistrict = null;
   view = 'national';
@@ -821,141 +852,6 @@ function updateAppliedFilters() {
 
 function syncExchangeRail(data) {
   // Exchange rail removed — no-op.
-}
-
-// ====== CARD-GRID VIEWS (Functional / Industrial) ======
-const cardView = document.getElementById('card-view');
-const cardViewTitle = document.getElementById('card-view-title');
-const cardViewSubtitle = document.getElementById('card-view-subtitle');
-const cardGrid = document.getElementById('card-grid');
-const cardListings = document.getElementById('card-listings');
-const listingCards = document.getElementById('listing-cards');
-const btnCardBack = document.getElementById('btn-card-back');
-
-function showCardView(viewType) {
-  view = viewType; // 'functional' or 'industrial'
-
-  // Hide map-related elements, show card view
-  mapContainer.hidden = true;
-  summaryCard.hidden = true;
-  if (rightRail) rightRail.hidden = true;
-  cardView.hidden = false;
-  btnBack.hidden = true;
-
-  const data = getData();
-  const listings = getListingsForState(null); // all filtered listings
-
-  if (viewType === 'functional') {
-    cardViewTitle.textContent = 'Functional Categories';
-    cardViewSubtitle.textContent = 'Browse listings by functional area';
-  } else {
-    cardViewTitle.textContent = 'Qualification Groups';
-    cardViewSubtitle.textContent = 'Browse listings by qualification';
-  }
-
-  // Group listings
-  const groupKey = viewType === 'functional' ? 'function' : 'qualificationGroup';
-  const groups = {};
-  for (const l of listings) {
-    const key = l[groupKey] || 'Other';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(l);
-  }
-
-  // Render category cards
-  const categoryIcons = {
-    'Executive & Leadership': 'ph-crown',
-    'Information Technology (IT)': 'ph-desktop',
-    'Marketing & Communications': 'ph-megaphone',
-    'Operations & Supply Chain': 'ph-gear',
-    'Sales & Business Development': 'ph-currency-inr',
-    'Administrative': 'ph-clipboard-text',
-    'Technical': 'ph-wrench',
-    'Defence': 'ph-shield',
-    'Police': 'ph-shield-check',
-    'Vigilance': 'ph-eye',
-    'Education': 'ph-graduation-cap',
-    'Healthcare': 'ph-heartbeat',
-    'Finance': 'ph-currency-circle-dollar',
-    'Engineering': 'ph-fan',
-    'Teaching': 'ph-chalkboard-teacher',
-    'Legal': 'ph-scales',
-    'General': 'ph-users'
-  };
-
-  cardGrid.innerHTML = Object.entries(groups).sort((a, b) => b[1].length - a[1].length)
-    .map(([name, items]) => {
-      const icon = categoryIcons[name] || 'ph-folder';
-      return `<button class="ad-category-card" data-category="${name}" data-group="${groupKey}">
-        <i class="ph ${icon} ad-category-icon"></i>
-        <span class="ad-category-name">${name}</span>
-        <span class="ad-category-count">${items.length}</span>
-      </button>`;
-    }).join('');
-
-  // Wire card clicks
-  cardGrid.querySelectorAll('.ad-category-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const catName = card.dataset.category;
-      showCardCategoryListings(viewType, catName, groupKey, groups[catName] || []);
-    });
-  });
-
-  // Show grid, hide listings
-  cardGrid.hidden = false;
-  cardListings.hidden = true;
-  cardViewTitle.hidden = false;
-  cardViewSubtitle.hidden = false;
-
-  history.pushState({ view: viewType }, '', `?view=${viewType}`);
-}
-
-function showCardCategoryListings(viewType, category, groupKey, items) {
-  cardGrid.hidden = true;
-  cardListings.hidden = false;
-  cardViewTitle.hidden = false;
-  cardViewSubtitle.hidden = false;
-
-  const groupLabel = viewType === 'functional' ? 'Functional Area' : 'Qualification';
-  cardViewTitle.textContent = category;
-  cardViewSubtitle.textContent = `${items.length} listings · ${groupLabel}`;
-
-  listingCards.innerHTML = items.map(item => `
-    <div class="ad-listing-card" tabindex="0" role="article" aria-label="${item.title}">
-      <div class="ad-listing-header">
-        <h3 class="ad-listing-title">${item.title}</h3>
-        <span class="ad-listing-state">${item.state} · ${item.district}</span>
-      </div>
-      <div class="ad-listing-meta">
-        <span class="ad-listing-badge ad-badge-${item.category}">${item.category}</span>
-        <span class="ad-listing-qual">${item.qualification}</span>
-        <span class="ad-listing-exp">${item.experience}</span>
-      </div>
-      <div class="ad-listing-footer">
-        <span class="ad-listing-date">Closes: ${item.closingDate}</span>
-        <span class="ad-listing-posts">${item.posts} post${item.posts > 1 ? 's' : ''}</span>
-      </div>
-    </div>
-  `).join('');
-
-  btnCardBack.onclick = () => showCardView(viewType);
-
-  history.pushState({ view: viewType, category }, '', `?view=${viewType}&category=${encodeURIComponent(category)}`);
-}
-
-function showMapView() {
-  view = 'national';
-  mapContainer.hidden = false;
-  if (typeof summaryCard !== 'undefined' && summaryCard) summaryCard.hidden = false;
-  if (rightRail) rightRail.hidden = false;
-  cardView.hidden = true;
-  btnBack.hidden = true;
-  selectedState = null;
-  selectedDistrict = null;
-  closeResults();
-  renderNationalMap(getData());
-  updateAppliedFilters();
-  syncExchangeRail(getData());
 }
 
 // ====== RESULTS PANEL ======
@@ -1220,7 +1116,7 @@ function flyTo(targetSvgX, targetSvgY, targetZoom = 1.8) {
 // We want the bbox to fill `fillFraction` of the viewport (e.g. 0.7 = 70%),
 // leaving (1-fillFraction)/2 on each side as padding.
 // fillFraction = bw * z / 1000  =>  z = (1000 * fillFraction) / bw
-function flyToBounds(minX, minY, maxX, maxY, fillFraction = 0.7) {
+function flyToBounds(minX, minY, maxX, maxY, fillFraction = 0.7, startZoom = null) {
   const bw = maxX - minX || 1;
   const bh = maxY - minY || 1;
   const cx = (minX + maxX) / 2;
@@ -1232,9 +1128,16 @@ function flyToBounds(minX, minY, maxX, maxY, fillFraction = 0.7) {
   const targetZ = Math.max(1.0, Math.min(4.0, Math.min(zx, zy)));
 
   targetZoomLevel = targetZ;
-  // Center the bbox at SVG center
   targetPanX = targetZ * (500 - cx);
   targetPanY = targetZ * (400 - cy);
+
+  // Cinematic zoom-from-small: start at startZoom (or 0.3) and grow
+  if (startZoom !== null) {
+    zoomLevel = startZoom;
+    panX = startZoom * (500 - cx);
+    panY = startZoom * (400 - cy);
+    applyZoomTransform(startZoom);
+  }
 
   if (zoomAnimFrame) cancelAnimationFrame(zoomAnimFrame);
   if (panAnimFrame) cancelAnimationFrame(panAnimFrame);
@@ -1253,18 +1156,6 @@ function animatePanZoom() {
     applyZoomTransform(zoomLevel);
     zoomAnimFrame = null;
     panAnimFrame = null;
-    // Spawn particles AFTER fly-to completes — burst at viewport center
-    if (particles && window.__flyToOrigin) {
-      try {
-        const rect = mapContainer?.getBoundingClientRect();
-        if (rect) {
-          const cx = rect.width / 2;
-          const cy = rect.height / 2;
-          particles.spawn(cx, cy, 80);
-        }
-      } catch (e) { /* ignore if container gone */ }
-      window.__flyToOrigin = null;
-    }
     return;
   }
 
@@ -1275,9 +1166,10 @@ function animatePanZoom() {
     return;
   }
 
-  zoomLevel += zdiff * 0.12;
-  panX += xdiff * 0.12;
-  panY += ydiff * 0.12;
+  // Cinematic easing: slow start, smooth finish (~1.5s for full animation)
+  zoomLevel += zdiff * 0.08;
+  panX += xdiff * 0.08;
+  panY += ydiff * 0.08;
   applyZoomTransform(zoomLevel);
   panAnimFrame = requestAnimationFrame(animatePanZoom);
 }
@@ -1327,12 +1219,7 @@ function wireEvents() {
     clearFilters();
     buildFilterDrawer();
     setZoom(1.0);
-
-    if (view !== 'national') {
-      goNational();
-    } else {
-      refreshAfterFilter();
-    }
+    goNational();
   });
 
   filterChips.addEventListener('click', e => {
@@ -1360,22 +1247,6 @@ function wireEvents() {
   btnCloseResults.addEventListener('click', closeResults);
 
   // Wire view-toggle buttons (Map / Functional / Industrial)
-  document.querySelectorAll('.view-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const viewType = btn.dataset.view;
-      document.querySelectorAll('.view-btn').forEach(b => {
-        const active = b.dataset.view === viewType;
-        b.classList.toggle('active', active);
-        b.setAttribute('aria-pressed', active ? 'true' : 'false');
-      });
-      if (viewType === 'map') {
-        showMapView();
-      } else {
-        showCardView(viewType);
-      }
-    });
-  });
-
   btnZoomIn.addEventListener('click', () => setZoom(zoomLevel * ZOOM_STEP));
   btnZoomOut.addEventListener('click', () => setZoom(zoomLevel / ZOOM_STEP));
   btnZoomReset.addEventListener('click', () => {
@@ -1514,12 +1385,6 @@ function wireEvents() {
     }
   });
 
-  document.getElementById('btn-login').addEventListener('click', () => {
-    alert('Login is unavailable in this local prototype.');
-  });
-  document.getElementById('btn-menu').addEventListener('click', () => {
-    alert('Menu is unavailable in this local prototype.');
-  });
 }
 
 // ====== URL RESTORATION ON STARTUP ======
@@ -1537,6 +1402,7 @@ function restoreFromURL() {
       btnBack.hidden = false;
       const data = getData();
       renderStateMap(abbr, ABBR_TO_NAME[abbr], data);
+      updateSummary(`${ABBR_TO_NAME[abbr]?.toUpperCase() || abbr} DEPUTATIONS`, data.stateCounts[abbr] || 0);
       setTimeout(() => {
         showResults({
           title: `${selectedDistrict} Deputations`,
@@ -1556,6 +1422,7 @@ function restoreFromURL() {
       view = 'state';
       btnBack.hidden = false;
       renderStateMap(abbr, ABBR_TO_NAME[abbr], getData());
+      updateSummary(`${(ABBR_TO_NAME[abbr] || abbr).toUpperCase()} DEPUTATIONS`, getData().stateCounts[abbr] || 0);
       updateAppliedFilters();
       syncExchangeRail(getData());
       history.replaceState({ view: 'state', state: abbr }, '', window.location.href);

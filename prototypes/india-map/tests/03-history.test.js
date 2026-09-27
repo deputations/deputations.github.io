@@ -56,7 +56,7 @@ export async function test_deep_link_restores_district_on_reload() {
   const { page, context } = await setup();
   try {
     await page.locator('[data-abbr="MH"]').click();
-    await delay(200);
+    await delay(800); // cinematic zoom-out
     await page.locator('[data-district="Pune"]').click();
     await delay(200);
 
@@ -83,13 +83,13 @@ export async function test_deep_link_national_no_extra_history() {
   const { page, context } = await setup();
   try {
     await page.locator('[data-abbr="MH"]').click();
-    await delay(200);
+    await delay(800); // cinematic zoom-out
 
     let url = await probe.url(page);
     assert.matches(url, /state=MH$/, 'State URL correct');
 
     await page.locator('#btn-back').click();
-    await delay(200);
+    await delay(600); // wait for back animation
 
     const natUrl = await probe.url(page);
     assert.equal(natUrl, 'http://127.0.0.1:8092/', 'National URL has no query');

@@ -66,7 +66,7 @@ export async function test_clear_all_synchronizes_everything() {
 
     // Now test Clear All from within a state
     await page.locator('[data-abbr="MH"]').click();
-    await delay(300);
+    await delay(800); // wait for cinematic zoom-out + state render
     const title = await probe.summaryTitle(page);
     assert.includes(title, 'MAHARASHTRA', 'In MH state view');
 

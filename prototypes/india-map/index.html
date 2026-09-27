@@ -9,6 +9,10 @@
 </head>
 <body>
   <!-- PHOSPHOR ICONS (lightweight, no framework dependency) -->
+  <script>
+    // Fallback: if Phosphor fails to load (e.g. headless CI), window.PhosphorIcons still exists
+    window.PhosphorIcons = window.PhosphorIcons || { createIcon: () => document.createElement('span'), icons: {} };
+  </script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
   <!-- HEADER -->
@@ -16,12 +20,6 @@
     <div class="ad-logo">
       <span class="ad-logo-icon">&#9670;</span>
       <span class="ad-logo-text">AllDeputations</span>
-    </div>
-    <div class="ad-header-actions">
-      <button class="ad-btn-outline" id="btn-login" title="Login (prototype — unavailable)">Login</button>
-      <button class="ad-icon-btn" id="btn-menu" title="Menu (prototype)" aria-label="Menu">
-        <i class="ph ph-list"></i>
-      </button>
     </div>
   </header>
 
@@ -32,18 +30,6 @@
       <button class="ad-btn-ad control-btn" id="btn-filter" aria-expanded="false" aria-controls="filter-drawer">
         <i class="ph ph-funnel"></i> Filter
       </button>
-
-      <div class="view-selector" role="group" aria-label="View mode">
-        <button class="view-btn active" data-view="map" aria-pressed="true">
-          <i class="ph ph-map-trifold"></i> Map View
-        </button>
-        <button class="view-btn" data-view="functional" aria-pressed="false">
-          <i class="ph ph-tree-structure"></i> Functional View
-        </button>
-        <button class="view-btn" data-view="industrial" aria-pressed="false">
-          <i class="ph ph-factory"></i> Industrial View
-        </button>
-      </div>
     </nav>
 
     <!-- MAP AREA -->
@@ -58,21 +44,6 @@
         <div class="ad-tooltip" id="tooltip" role="tooltip" aria-hidden="true">
           <span class="ad-tooltip-name" id="tooltip-name"></span>
           <span class="ad-tooltip-count" id="tooltip-count"></span>
-        </div>
-      </div>
-    </section>
-
-    <!-- CARD GRID VIEWS (Functional / Industrial) -->
-    <section class="ad-card-view" id="card-view" hidden aria-label="Category listings">
-      <div class="ad-card-view-inner">
-        <div class="ad-card-header">
-          <h2 id="card-view-title">Functional Categories</h2>
-          <p id="card-view-subtitle">Browse listings by functional area</p>
-        </div>
-        <div class="ad-card-grid" id="card-grid"></div>
-        <div class="ad-card-listings" id="card-listings" hidden>
-          <button class="ad-card-back-btn" id="btn-card-back">← Back to categories</button>
-          <div class="ad-listing-cards" id="listing-cards"></div>
         </div>
       </div>
     </section>

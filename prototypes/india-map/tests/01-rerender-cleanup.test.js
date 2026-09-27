@@ -65,7 +65,7 @@ export async function test_navigation_back_to_national_no_duplicate() {
   const { page, context } = await setup();
   try {
     await page.locator('[data-abbr="MH"]').click();
-    await delay(300);
+    await delay(800); // wait for cinematic zoom-out + state render
     let g = await probe.mapGroups(page);
     let s = await probe.stateShapeCount(page);
     let d = await probe.districtShapeCount(page);
@@ -74,7 +74,7 @@ export async function test_navigation_back_to_national_no_duplicate() {
     assert.equal(d > 0, true, `State view: districts present (got ${d})`);
 
     await page.locator('[data-district="Pune"]').click();
-    await delay(200);
+    await delay(300);
     g = await probe.mapGroups(page);
     assert.equal(g, 1, `District view: groups (expected 1, got ${g})`);
 
