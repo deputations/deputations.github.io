@@ -1,8 +1,8 @@
 // js/india-map/views/map-view.js
 // Map view — SVG rendering, state/district drill-down, cinematic transitions.
 
-import { getData, getListingsForDistrict, getFilters } from '../../map-provider.js';
-import { GEOJSON_TO_CANONICAL, CANONICAL_TO_FIXTURES } from '../../state-geo.js';
+import { getData, getListingsForDistrict, getFilters } from '../map-provider.js';
+import { GEOJSON_TO_CANONICAL, CANONICAL_TO_FIXTURES } from '../state-geo.js';
 import { ParticleSystem } from '../particles.js';
 
 let mapContainer, particleCanvas, particles;
@@ -24,6 +24,7 @@ function computeProjection(features) {
     if (!f.geometry) return;
     const coords = flattenCoords(f.geometry);
     coords.forEach(([lon, lat]) => {
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) return;
       if (lon < minLon) minLon = lon;
       if (lon > maxLon) maxLon = lon;
       if (lat < minLat) minLat = lat;
@@ -40,7 +41,7 @@ function computeProjection(features) {
 }
 
 function project(lon, lat) {
-  if (!currentProjection) return [500, 400];
+  if (!currentProjection || !Number.isFinite(lon) || !Number.isFinite(lat)) return [0, 0];
   const p = currentProjection;
   return [(lon - p.minLon) * p.scale + p.offsetX, p.offsetY - (lat - p.minLat) * p.scale];
 }
@@ -71,8 +72,10 @@ function getValidRings(geom) {
 
 function projectRing(ring) {
   const pts = ring.map(([lon, lat]) => project(lon, lat));
-  if (pts.length < 2) return `M ${pts[0]?.map(n => n.toFixed(1)).join(',') || '0,0'}`;
-  return `M ${pts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' L ')}`;
+  // Filter out any points that project to NaN/Infinity
+  const valid = pts.filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+  if (valid.length < 2) return '';
+  return `M ${valid.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' L ')} Z`;
 }
 
 function projectCoords(geom) {
@@ -646,11 +649,17 @@ function countDistrictListings(stateAbbr, fixtureNames) {
 }
 
 function polygonToPath(coords) {
-  return 'M ' + coords.map(c => { const p = project(c[0], c[1]); return `${p[0]},${p[1]}`; }).join(' L ') + ' Z';
+  const pts = coords.map(c => project(c[0], c[1])).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+  if (pts.length < 2) return '';
+  return 'M ' + pts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' L ') + ' Z';
 }
 
 function multiPolygonToPath(coords) {
-  return coords.map(poly => 'M ' + poly[0].map(c => { const p = project(c[0], c[1]); return `${p[0]},${p[1]}`; }).join(' L ') + ' Z').join(' ');
+  return coords.map(poly => {
+    const pts = poly[0].map(c => project(c[0], c[1])).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+    if (pts.length < 2) return '';
+    return 'M ' + pts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' L ') + ' Z';
+  }).join(' ');
 }
 
 function getCentroid(geometry) {

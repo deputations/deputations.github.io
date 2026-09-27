@@ -61,11 +61,9 @@ html, body {
   min-width: 100vw;
 }
 
-/* ===== PAGE ENTRANCE (page load stagger) ===== */
-/* Map SVG fades in with subtle scale-up; HUD slides up from bottom;
-   summary card fades in from top-right. The .ad-page--entered class
-   is added by JS on DOMContentLoaded (or immediately if scripts are
-   blocked). */
+/* ===== PAGE ENTRANCE ===== */
+/* Map SVG fades in with subtle scale-up on load.
+   .ad-page--entered is added by JS on DOMContentLoaded. */
 #india-map-svg {
   opacity: 0;
   transform: scale(0.95);
@@ -77,9 +75,9 @@ html, body {
   transform: scale(1);
 }
 
-/* ===== AURORA BACKGROUND (subtle drifting gradient mesh) ===== */
-/* Canvas-based aurora drifts slowly across the map background,
-   adds depth without distracting from the map shapes. */
+/* ===== AURORA BACKGROUND ===== */
+/* Slow-drifting gradient mesh canvas behind the map.
+   Adds depth without distracting from state shapes. */
 .ad-aurora {
   position: absolute;
   inset: 0;
@@ -229,6 +227,7 @@ html, body {
 }
 
 /* ===== HUD BAR ===== */
+.lg-on .ad-hud,
 .ad-hud {
   position: fixed;
   bottom: 0;
@@ -366,6 +365,7 @@ html, body {
 }
 
 /* ===== SUMMARY CARD (top-right glass) ===== */
+.lg-on .ad-summary,
 .ad-summary {
   position: fixed;
   top: 72px;
@@ -446,6 +446,7 @@ html, body {
 }
 
 /* ===== BOTTOM SHEET (results) ===== */
+.lg-on .ad-sheet-overlay,
 .ad-sheet-overlay {
   position: fixed;
   inset: 0;
@@ -461,6 +462,7 @@ html, body {
   pointer-events: auto;
 }
 
+.lg-on .ad-sheet,
 .ad-sheet {
   position: fixed;
   bottom: 0;
@@ -659,6 +661,7 @@ html, body {
 }
 
 /* ===== FILTER DRAWER ===== */
+.lg-on .ad-filter-drawer,
 .ad-filter-drawer {
   position: fixed;
   top: 0;
@@ -855,7 +858,7 @@ html, body {
   color: var(--danger-color);
 }
 
-/* ===== BACK BUTTON ===== */
+.lg-on .ad-back-btn,
 .ad-back-btn {
   position: fixed;
   top: 72px;

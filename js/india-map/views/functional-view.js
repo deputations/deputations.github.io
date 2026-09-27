@@ -1,7 +1,7 @@
 // js/india-map/views/functional-view.js
 // Functional view — card grid organized by job function category.
 
-import { getData } from '../../map-provider.js';
+import { getData } from '../map-provider.js';
 import { renderCardGrid } from './shared/card-grid.js';
 
 export function initFunctionalView(containerId, gridId) {

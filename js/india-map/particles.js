@@ -26,15 +26,15 @@ export function initParticles(canvas, container) {
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
       const speed = 2.0 + Math.random() * 4.5;
-      const life = 1.2 + Math.random() * 0.6; // seconds — visible for 1.2–1.8s
+      const life = 1.2 + Math.random() * 0.6;
       particles.push({
         x, y,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 1.8, // stronger upward bias
+        vy: Math.sin(angle) * speed - 1.8,
         life,
         maxLife: life,
-        radius: 2.0 + Math.random() * 3.0, // larger dots
-        hue: 38 + Math.random() * 15 // gold-to-amber (matches brand accent #f5a721)
+        radius: 2.0 + Math.random() * 3.0,
+        hue: 38 + Math.random() * 15
       });
     }
     if (!running) {
@@ -51,21 +51,18 @@ export function initParticles(canvas, container) {
       if (p.life <= 0) return false;
       p.x += p.vx;
       p.y += p.vy;
-      p.vy += 0.05; // lighter gravity
+      p.vy += 0.05;
       p.vx *= 0.985;
       const alpha = Math.max(0, p.life / p.maxLife);
-      const r = p.radius * (0.6 + 0.4 * alpha); // stays chunky through life
-      // Outer glow
+      const r = p.radius * (0.6 + 0.4 * alpha);
       ctx.beginPath();
       ctx.arc(p.x, p.y, r * 2.2, 0, Math.PI * 2);
       ctx.fillStyle = `hsla(${p.hue}, 90%, 65%, ${alpha * 0.15})`;
       ctx.fill();
-      // Core dot
       ctx.beginPath();
       ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
       ctx.fillStyle = `hsla(${p.hue}, 85%, 72%, ${alpha})`;
       ctx.fill();
-      // Bright center
       ctx.beginPath();
       ctx.arc(p.x, p.y, r * 0.4, 0, Math.PI * 2);
       ctx.fillStyle = `hsla(${p.hue}, 60%, 90%, ${alpha})`;
@@ -91,4 +88,18 @@ export function initParticles(canvas, container) {
   window.addEventListener('resize', () => { if (running) resize(); });
 
   return { spawn, stop };
+}
+
+// ParticleSystem class — wraps initParticles for map-view.js
+// Usage: const ps = new ParticleSystem(canvas); ps.burst(x, y, count);
+export class ParticleSystem {
+  constructor(canvas) {
+    const container = canvas.parentElement;
+    const api = initParticles(canvas, container);
+    this.spawn = api.spawn;
+    this.stop = api.stop;
+  }
+  burst(x, y, count = 70) {
+    this.spawn(x, y, count);
+  }
 }

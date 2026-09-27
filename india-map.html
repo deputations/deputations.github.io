@@ -13,7 +13,7 @@
   <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
 
-  <!-- og/twitter (shared head — every share shows the site card) -->
+  <!-- og/twitter -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Deputations">
   <meta property="og:title" content="Deputations — India Map">
@@ -27,22 +27,102 @@
   <meta name="twitter:description" content="Explore government job vacancies across India — interactive map with state and district level drill-down.">
   <meta name="twitter:image" content="https://alldeputations.com/assets/brand/og-home.png?v=2">
 
-  <!-- fonts (same stack as production: Sora + Plus Jakarta Sans + Lora for empty states) -->
+  <!-- production font stack (+ Lora for empty states) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@600;700;800&family=Lora:ital,wght@1,400;1,500&display=swap" rel="stylesheet" />
 
-  <!-- liquid-glass CSS (5-layer optical glass for all glass surfaces on this page) -->
+  <!-- production navbar CSS -->
+  <link rel="stylesheet" href="/navbar.css?v=7">
+
+  <!-- liquid-glass optical glass -->
   <link rel="stylesheet" href="/liquid-glass.css?v=2" />
 
   <!-- page CSS -->
-  <link rel="stylesheet" href="css/india-map/main.css" />
+  <link rel="stylesheet" href="css/india-map/main.css?v=9" />
 </head>
 <body class="filters-collapsed">
-  <!-- production navbar (same as all other pages) -->
-  <link rel="stylesheet" href="/navbar.css?v=7">
-  <div class="ad-page" id="app">
-    <nav class="top-nav" aria-label="Primary site navigation">
+
+<!-- ===== OVERLAYS (outside ad-page so fixed positioning is never overridden by flex) ===== -->
+<button class="ad-back-btn" id="btn-back" hidden aria-label="Back to India map">
+  <i class="ph ph-arrow-left"></i> India Map
+</button>
+
+<aside class="ad-summary lg-surface" id="summary-card" aria-live="polite">
+  <div class="ad-summary-title" id="summary-title">All India</div>
+  <div class="ad-summary-count" id="summary-count">—</div>
+  <div class="ad-summary-label" id="summary-label">active vacancies</div>
+</aside>
+
+<div class="ad-hud visible lg-surface" id="hud">
+  <div class="ad-view-toggle" role="group" aria-label="View mode">
+    <button class="ad-view-btn active" data-view="map" aria-pressed="true">
+      <i class="ph ph-map-trifold"></i> <span class="btn-label">Map</span>
+    </button>
+    <button class="ad-view-btn" data-view="functional" aria-pressed="false">
+      <i class="ph ph-tree-structure"></i> <span class="btn-label">Functional</span>
+    </button>
+    <button class="ad-view-btn" data-view="education" aria-pressed="false">
+      <i class="ph ph-graduation-cap"></i> <span class="btn-label">Education</span>
+    </button>
+  </div>
+
+  <div class="ad-hud-sep"></div>
+
+  <button class="ad-hud-filter-btn" id="btn-filter" aria-label="Open filters">
+    <i class="ph ph-funnel"></i> Filter
+  </button>
+
+  <div class="ad-hud-sep"></div>
+
+  <div class="ad-hud-zoom" role="group" aria-label="Zoom">
+    <button class="ad-hud-zoom-btn" id="btn-zoom-out" aria-label="Zoom out">
+      <i class="ph ph-minus"></i>
+    </button>
+    <button class="ad-hud-zoom-btn" id="btn-zoom-in" aria-label="Zoom in">
+      <i class="ph ph-plus"></i>
+    </button>
+    <button class="ad-hud-zoom-btn" id="btn-zoom-reset" aria-label="Reset zoom">
+      <i class="ph ph-corners-out"></i>
+    </button>
+  </div>
+</div>
+
+<div class="ad-filter-active-bar" id="active-filters-bar" hidden></div>
+
+<div class="ad-sheet-overlay" id="sheet-overlay"></div>
+
+<section class="ad-sheet lg-surface" id="results-sheet" aria-label="Job listings" hidden>
+  <div class="ad-sheet-header">
+    <div class="ad-sheet-title-group">
+      <h2 class="ad-sheet-title" id="sheet-title">Jobs</h2>
+      <div class="ad-sheet-breadcrumb" id="sheet-breadcrumb"></div>
+    </div>
+    <button class="ad-sheet-close" id="btn-sheet-close" aria-label="Close results">
+      <i class="ph ph-x"></i>
+    </button>
+  </div>
+  <div class="ad-sheet-body" id="sheet-body"></div>
+</section>
+
+<div class="ad-filter-drawer lg-surface" id="filter-drawer" role="dialog" aria-modal="true" aria-label="Filters">
+  <div class="ad-filter-header">
+    <h3>Filters</h3>
+    <button class="ad-filter-close" id="btn-close-filter" aria-label="Close filters">
+      <i class="ph ph-x"></i>
+    </button>
+  </div>
+  <div class="ad-filter-body" id="filter-body"></div>
+  <div class="ad-filter-actions">
+    <button class="ad-btn-ghost" id="btn-clear-filters">Clear All</button>
+    <button class="ad-btn-primary" id="btn-apply-filters">Apply</button>
+  </div>
+</div>
+
+<!-- ===== MAIN PAGE (navbar + map stage only) ===== -->
+<div class="ad-page" id="app">
+  <!-- production navbar (identical to all other pages) -->
+  <nav class="top-nav" aria-label="Primary site navigation">
       <a class="nav-brand" href="/index.html" aria-label="About this project" title="About this project">
         <img class="nav-brand-mark nav-brand-v2" src="/assets/brand/v2-logo.png" alt="V² — V Square" width="32" height="32" decoding="async">
       </a>
@@ -132,7 +212,7 @@
       </div>
     </div>
 
-    <!-- ACTIVE FILTER CHIPS (between HUD and bottom) -->
+    <!-- ACTIVE FILTER CHIPS -->
     <div class="ad-filter-active-bar" id="active-filters-bar" hidden></div>
 
     <!-- BOTTOM SHEET OVERLAY -->

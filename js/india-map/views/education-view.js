@@ -1,7 +1,7 @@
 // js/india-map/views/education-view.js
 // Education view — card grid organized by qualification group.
 
-import { getData } from '../../map-provider.js';
+import { getData } from '../map-provider.js';
 import { renderCardGrid } from './shared/card-grid.js';
 
 export function initEducationView(containerId, gridId) {

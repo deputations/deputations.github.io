@@ -305,7 +305,6 @@ function initAurora() {
     if (w === 0 || h === 0) return;
     ctx.clearRect(0, 0, w, h);
 
-    // Three soft blobs that drift independently
     const blobs = [
       { x: w * 0.3 + Math.sin(t * 0.0004) * w * 0.15, y: h * 0.25 + Math.cos(t * 0.0003) * h * 0.1, r: w * 0.35, color: [34, 211, 238] },
       { x: w * 0.7 + Math.cos(t * 0.0005) * w * 0.12, y: h * 0.6 + Math.sin(t * 0.0004) * h * 0.15, r: w * 0.3, color: [167, 139, 250] },
@@ -331,7 +330,6 @@ function initAurora() {
   if (!isMobile) {
     raf = requestAnimationFrame(draw);
   } else {
-    // Mobile: draw once, no loop
     t = 1000;
     draw();
   }
