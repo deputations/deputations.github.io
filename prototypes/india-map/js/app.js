@@ -340,6 +340,7 @@ function renderDelhiImageMap(stateAbbr, stateName, data, initialDistrict = null)
   mapSvg.innerHTML = '';
   btnBack.hidden = false;
   view = 'state';
+  closeResults(); // ensure no stale panel from previous view
 
   const districtEntries = DELHI_DISTRICTS.map(d => ({
     name: d.name,
@@ -975,10 +976,10 @@ function closeResults() {
   resultsPanel.classList.remove('open');
   sheetOverlay.classList.remove('open');
   clearTimeout(sheetCloseTimer);
-  sheetCloseTimer = setTimeout(() => {
-    resultsPanel.hidden = true;
-    sheetOverlay.hidden = true;
-  }, 320);
+  // Hide immediately so subsequent renders don't see stale panel
+  resultsPanel.hidden = true;
+  sheetOverlay.hidden = true;
+  sheetCloseTimer = null;
 }
 
 // ====== FILTER DRAWER ======
