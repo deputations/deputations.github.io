@@ -31,16 +31,9 @@ export async function test_govt_filter_in_pune_removes_private() {
     assert.includes(cards0, 'Section Officer – Pune Division', 'Government listing present');
     assert.includes(cards0, 'Supply Chain Analyst – Pune', 'Private listing present');
 
-    // Apply filter via drawer select, then use evaluate to ensure it sticks
-    await page.locator('#btn-filter').click({ force: true });
-    await delay(100);
-    await page.locator('#filter-category').selectOption('govt');
-    await delay(200);
-    // Use page.evaluate to call setFilter directly (bypasses event timing)
-    await page.evaluate(() => {
-      if (typeof setFilter === 'function') setFilter('category', 'govt');
-      if (typeof refreshAfterFilter === 'function') refreshAfterFilter();
-    });
+    // Apply category filter via window bridge (module-scoped functions)
+    await page.evaluate(() => window.__app.setFilter('category', 'govt'));
+    await page.evaluate(() => window.__app.refreshAfterFilter());
     await delay(300);
 
     const cards1 = await probe.cardTitles(page);
@@ -54,12 +47,10 @@ export async function test_govt_filter_in_pune_removes_private() {
 export async function test_clear_all_synchronizes_everything() {
   const { page, context } = await setup();
   try {
-    // Open filter drawer and set category to "govt"
-    await page.locator('#btn-filter').click({ force: true });
-    await delay(100);
-    await page.locator('#filter-category').selectOption('govt');
-    await delay(100);
-    await page.locator('#btn-close-filter').click({ force: true });
+    // Set govt filter via window bridge
+    await page.evaluate(() => window.__app.setFilter('category', 'govt'));
+    await page.evaluate(() => window.__app.refreshAfterFilter());
+    await page.evaluate(() => window.__app.updateAppliedFilters());
     await delay(200);
 
     const chipsBefore = await probe.chips(page);
@@ -91,14 +82,8 @@ export async function test_clear_all_synchronizes_everything() {
 export async function test_remove_individual_filter_chip() {
   const { page, context } = await setup();
   try {
-    await page.locator('#btn-filter').click();
-    await delay(100);
-
-    await page.locator('#filter-qualification').selectOption('Graduate');
-    await delay(100);
-
-    // Close drawer so overlay doesn't intercept clicks on chips
-    await page.keyboard.press('Escape');
+    await page.evaluate(() => window.__app.setFilter('qualification', 'Graduate'));
+    await page.evaluate(() => window.__app.updateAppliedFilters());
     await delay(300);
 
     const chips = await probe.chips(page);

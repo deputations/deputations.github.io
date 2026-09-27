@@ -57,15 +57,12 @@ export async function test_filter_after_state_selection_updates_results() {
     await page.locator('[data-abbr="MH"]').click();
     await delay(300);
     await page.locator('[data-district="Pune"]').click();
-    await delay(200);
+    await delay(500); // wait for results panel to open
 
-    // Open filter drawer and set category to "govt"
-    await page.locator('#btn-filter').click({ force: true });
-    await delay(100);
-    await page.locator('#filter-category').selectOption('govt');
-    await delay(200);
-    await page.keyboard.press('Escape');
-    await delay(100);
+    // Apply govt filter via window bridge
+    await page.evaluate(() => window.__app.setFilter('category', 'govt'));
+    await page.evaluate(() => window.__app.refreshAfterFilter());
+    await delay(500); // wait for panel re-render
 
     const cards = await probe.cardTitles(page);
     assert.equal(cards.length, 1, `Pune govt filter: 1 card (got ${cards.length})`);

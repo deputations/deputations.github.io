@@ -82,7 +82,7 @@ export async function test_navigation_back_to_national_no_duplicate() {
     await page.locator('#btn-close-results').click();
     await delay(200);
     await page.locator('#btn-back').click();
-    await delay(200);
+    await delay(600); // wait for async district geometry load
     g = await probe.mapGroups(page);
     assert.equal(g, 1, `Back to state: groups (expected 1, got ${g})`);
 

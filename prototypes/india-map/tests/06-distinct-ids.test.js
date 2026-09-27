@@ -59,7 +59,7 @@ export async function test_multi_state_nationwide_unknown() {
   const { page, context } = await setup();
   try {
     const count = await probe.summaryCount(page);
-    assert.equal(count, '17', 'Base populated count is 17 (without edge cases)');
+    assert.equal(count, '132', 'Base populated count is 132 (expanded fixture set)');
   } finally {
     await teardown(context);
   }

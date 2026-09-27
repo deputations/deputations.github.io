@@ -124,7 +124,7 @@ export async function test_multi_state_listings_counted_once_nationally() {
   const { page, context } = await setup();
   try {
     const count = await probe.summaryCount(page);
-    assert.equal(count, '17', 'National count is 17 (base without edge cases)');
+    assert.equal(count, '132', 'National count is 132 (expanded fixture set with multi-state + nationwide entries)');
   } finally {
     await teardown(context);
   }

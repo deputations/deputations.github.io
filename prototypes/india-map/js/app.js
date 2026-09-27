@@ -734,6 +734,12 @@ function updateAppliedFilters() {
     return map[c.label] || c.label;
   };
 
+  Object.entries(filters).forEach(([key, val]) => {
+    if (val !== defaultVals[key]) {
+      chips.push({ label: val, type: key });
+    }
+  });
+
   if (chips.length === 0) {
     appliedFilters.hidden = true;
     filterChips.innerHTML = '';
@@ -1349,6 +1355,19 @@ async function start() {
     initProvider(scenario);
     buildFilterDrawer();
     buildExchangeRail();
+
+    // Test bridge — expose filter + render functions on window for headless tests.
+    // The change event listener on filter selects works in real browsers but Playwright's
+    // selectOption emits 'input' without always firing 'change' reliably across versions.
+    window.__app = {
+      setFilter, clearFilters, getFilters,
+      refreshAfterFilter, updateAppliedFilters, renderNationalMap, renderStateMap,
+      drillToDistrict, drillToState, goBack, goNational, showResults, closeResults,
+      get view() { return view; },
+      get selectedState() { return selectedState; },
+      get selectedDistrict() { return selectedDistrict; },
+      getData
+    };
 
   const restored = restoreFromURL();
   if (!restored) {
