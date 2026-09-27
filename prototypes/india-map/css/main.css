@@ -281,20 +281,21 @@ html, body {
 
 .ad-state-label {
   fill: #ffffff;
-  font-size: 9px;
+  font-size: 14px;
   font-family: var(--font-sans);
-  font-weight: 500;
+  font-weight: 600;
   pointer-events: none;
   text-anchor: middle;
   dominant-baseline: central;
-  opacity: 0.85;
+  opacity: 0.9;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
 .ad-state-count {
   fill: var(--ad-accent);
-  font-size: 8px;
+  font-size: 12px;
   font-family: var(--font-sans);
-  font-weight: 600;
+  font-weight: 700;
   pointer-events: none;
   text-anchor: middle;
   opacity: 0;

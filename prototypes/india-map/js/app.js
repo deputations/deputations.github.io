@@ -295,6 +295,16 @@ function renderStateMap(stateAbbr, stateName, data) {
     if (zoomAnimFrame) { cancelAnimationFrame(zoomAnimFrame); zoomAnimFrame = null; }
     if (panAnimFrame) { cancelAnimationFrame(panAnimFrame); panAnimFrame = null; }
 
+    // Spawn particles at viewport center for the zoom-in effect
+    if (particles) {
+      try {
+        const rect = mapContainer?.getBoundingClientRect();
+        if (rect) {
+          particles.spawn(rect.width / 2, rect.height / 2, 100);
+        }
+      } catch (e) { /* ignore */ }
+    }
+
     renderDistrictMap(distData, stateAbbr, stateName, data);
   } catch (err) {
     if (myGeneration !== currentGeneration) return;
@@ -545,7 +555,7 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
     label.setAttribute('text-anchor', count > 0 ? 'end' : 'middle');
     label.setAttribute('class', 'ad-state-label');
     label.textContent = labelText;
-    label.style.fontSize = '7px';
+    label.style.fontSize = '11px';
     g.appendChild(label);
 
     if (count > 0) {
@@ -555,9 +565,9 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
       countEl.setAttribute('text-anchor', 'start');
       countEl.setAttribute('class', 'ad-state-count');
       countEl.textContent = count;
-      countEl.style.fontSize = '7px';
+      countEl.style.fontSize = '10px';
       countEl.style.fill = '#f5a721';
-      countEl.style.fontWeight = '600';
+      countEl.style.fontWeight = '700';
       // Staggered pop-in: 25ms per district, capped at 500ms
       countEl.style.animationDelay = `${Math.min(idx * 25, 500)}ms`;
       g.appendChild(countEl);
@@ -615,10 +625,21 @@ function drillToState(abbr, name) {
   selectedState = abbr;
   selectedDistrict = null;
   view = 'state';
+  closeResults(); // close any open results panel from previous view
 
   const data = getData();
 
-  // Instant switch to state view — particles + zoom-in happen in renderDistrictMap
+  // Spawn particles immediately at viewport center
+  if (particles) {
+    try {
+      const rect = mapContainer?.getBoundingClientRect();
+      if (rect) {
+        particles.spawn(rect.width / 2, rect.height / 2, 100);
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  // Instant switch to state view — zoom-in animation in renderDistrictMap
   renderStateMap(abbr, name, data);
 
   updateAppliedFilters();
