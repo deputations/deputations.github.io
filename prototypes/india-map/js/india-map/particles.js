@@ -34,7 +34,7 @@ export function initParticles(canvas, container) {
         life,
         maxLife: life,
         radius: 2.0 + Math.random() * 3.0, // larger dots
-        hue: 185 + Math.random() * 25 // cyan-to-teal
+        hue: 38 + Math.random() * 15 // gold-to-amber (matches brand accent #f5a721)
       });
     }
     if (!running) {

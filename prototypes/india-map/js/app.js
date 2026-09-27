@@ -1183,24 +1183,27 @@ function flyTo(targetSvgX, targetSvgY, targetZoom = 1.8) {
 }
 
 // Fit a bounding box (in projected SVG coords) to the viewport with padding.
-// The transform `translate(panX, panY) translate(500, 400) scale(z) translate(-500, -400)`
-// means a point P maps to: P' = (panX + z*(Px-500) + 500, panY + z*(Py-400) + 400).
-// We want the bbox center (cx, cy) to land at SVG center (500, 400):
-//   panX = z*(500-cx), panY = z*(400-cy).
-// We want the bbox to fill 1/(1+2*padFrac) of the SVG viewport:
-//   z = min(1000/(bw * (1+2*padFrac)), 800/(bh * (1+2*padFrac)))
-function flyToBounds(minX, minY, maxX, maxY, padFrac = 0.15) {
+// Transform: translate(panX, panY) translate(500, 400) scale(z) translate(-500, -400)
+// A point P maps to: P' = (panX + z*(Px-500) + 500, panY + z*(Py-400) + 400)
+// For the bbox center (cx, cy) to land at SVG center (500, 400):
+//   panX = 500 - z*cx + 500*(z-1) = 500*(2-z) - z*(cx-500)...
+//   Simpler: panX + z*(cx-500) + 500 = 500  =>  panX = z*(500-cx)
+//   Same for panY = z*(400-cy)
+// Fill fraction: bbox occupies fill of viewport in each axis, z = 1000/(bw/fill)
+function flyToBounds(minX, minY, maxX, maxY, padFrac = 0.25) {
   const bw = maxX - minX || 1;
   const bh = maxY - minY || 1;
   const cx = (minX + maxX) / 2;
   const cy = (minY + maxY) / 2;
 
+  // State should fill 1/(1+2*padFrac) of viewport
   const fill = 1.0 / (1.0 + 2 * padFrac);
   const zx = 1000 / (bw * fill);
   const zy = 800 / (bh * fill);
-  const targetZ = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.min(zx, zy)));
+  const targetZ = Math.max(1.0, Math.min(4.0, Math.min(zx, zy)));
 
   targetZoomLevel = targetZ;
+  // Center the bbox in the viewport
   targetPanX = targetZ * (500 - cx);
   targetPanY = targetZ * (400 - cy);
 
