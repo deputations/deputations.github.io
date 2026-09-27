@@ -341,6 +341,8 @@ function renderDelhiImageMap(stateAbbr, stateName, data, initialDistrict = null)
   btnBack.hidden = false;
   view = 'state';
   closeResults(); // ensure no stale panel from previous view
+  closeResults(); // ensure no stale panel from previous view
+  closeResults(); // ensure no stale panel from previous view
 
   const districtEntries = DELHI_DISTRICTS.map(d => ({
     name: d.name,
@@ -399,12 +401,6 @@ function renderDelhiImageMap(stateAbbr, stateName, data, initialDistrict = null)
       return;
     }
   }
-
-  showResults({
-    title: `${stateName} Deputations`,
-    breadcrumb: [`<a href="#" data-nav="national">India</a> <span>›</span> ${stateName}`],
-    listings: getListingsForState(stateAbbr)
-  });
 
   updateAppliedFilters();
   syncExchangeRail(data);
@@ -1049,6 +1045,8 @@ function refreshAfterFilter() {
   } else if (view === 'national') {
     renderNationalMap(data);
   } else if (view === 'state' && selectedState) {
+    // Reset district selection so we show the state overview, not a stale district panel
+    selectedDistrict = null;
     renderStateMap(selectedState, ABBR_TO_NAME[selectedState], data);
   }
 
