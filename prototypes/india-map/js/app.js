@@ -452,7 +452,7 @@ function renderDistrictMap(distData, stateAbbr, stateName, data) {
               if (x > maxX) maxX = x;
               if (y > maxY) maxY = y;
             });
-            flyToBounds(minX, minY, maxX, maxY, 0.2);
+            flyToBounds(minX, minY, maxX, maxY, 0.85);
           }
         }
       } catch (err) {
@@ -1186,24 +1186,24 @@ function flyTo(targetSvgX, targetSvgY, targetZoom = 1.8) {
 // Transform: translate(panX, panY) translate(500, 400) scale(z) translate(-500, -400)
 // A point P maps to: P' = (panX + z*(Px-500) + 500, panY + z*(Py-400) + 400)
 // For the bbox center (cx, cy) to land at SVG center (500, 400):
-//   panX = 500 - z*cx + 500*(z-1) = 500*(2-z) - z*(cx-500)...
-//   Simpler: panX + z*(cx-500) + 500 = 500  =>  panX = z*(500-cx)
-//   Same for panY = z*(400-cy)
-// Fill fraction: bbox occupies fill of viewport in each axis, z = 1000/(bw/fill)
-function flyToBounds(minX, minY, maxX, maxY, padFrac = 0.25) {
+//   panX = z*(500-cx), panY = z*(400-cy)
+//
+// We want the bbox to fill `fillFraction` of the viewport (e.g. 0.7 = 70%),
+// leaving (1-fillFraction)/2 on each side as padding.
+// fillFraction = bw * z / 1000  =>  z = (1000 * fillFraction) / bw
+function flyToBounds(minX, minY, maxX, maxY, fillFraction = 0.7) {
   const bw = maxX - minX || 1;
   const bh = maxY - minY || 1;
   const cx = (minX + maxX) / 2;
   const cy = (minY + maxY) / 2;
 
-  // State should fill 1/(1+2*padFrac) of viewport
-  const fill = 1.0 / (1.0 + 2 * padFrac);
-  const zx = 1000 / (bw * fill);
-  const zy = 800 / (bh * fill);
+  // Compute zoom to fit bbox in fillFraction of viewport
+  const zx = (1000 * fillFraction) / bw;
+  const zy = (800 * fillFraction) / bh;
   const targetZ = Math.max(1.0, Math.min(4.0, Math.min(zx, zy)));
 
   targetZoomLevel = targetZ;
-  // Center the bbox in the viewport
+  // Center the bbox at SVG center
   targetPanX = targetZ * (500 - cx);
   targetPanY = targetZ * (400 - cy);
 
