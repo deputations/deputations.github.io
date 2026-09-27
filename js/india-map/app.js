@@ -1,7 +1,8 @@
-// js/india-map/app.js — Bootstrap + view router + filter drawer + URL handling
+// js/india-map/app.js — Bootstrap + data loading + view router + filter drawer
 // Entry point: india-map.html loads this module.
 
-import { init as initProvider, setFilter, clearFilters as resetAllFilters, getFilters, getData } from './map-provider.js';
+import { init as initProvider, setFilter, clearFilters as resetAllFilters, getFilters } from './map-provider.js';
+import { loadMapData, cacheMapData, loadStateListings, loadDistrictListings } from './map-data-loader.js';
 import { initMapView, refreshMapData, restoreFromURL as restoreMapFromURL, wireBackButton, zoomIn, zoomOut, zoomReset } from './views/map-view.js';
 import { initFunctionalView } from './views/functional-view.js';
 import { initEducationView } from './views/education-view.js';
@@ -26,7 +27,22 @@ async function start() {
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view') || 'map';
 
-  initProvider('populated');
+  // Load data (Supabase RPC → JSON fallback)
+  let mapData;
+  try {
+    mapData = await loadMapData();
+  } catch (err) {
+    console.error('Failed to load map data:', err);
+    mapData = {
+      nationalCount: 0, nationwideCount: 0, multiStateCount: 0, unknownCount: 0,
+      stateCounts: {}, districtCounts: {}, statewideListings: {}, districtListings: {},
+      filteredListings: [], totalListings: 0, _source: 'error',
+    };
+  }
+  cacheMapData(mapData);
+
+  // Initialise provider with loaded data
+  initProvider('populated', mapData);
 
   // Initialize map view (sets up SVG + back button)
   await initMapView({

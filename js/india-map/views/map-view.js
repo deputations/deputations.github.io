@@ -333,9 +333,9 @@ function renderStateMapFromDistricts(abbr, name) {
 }
 
 // ====== DISTRICT CLICK ======
-function onDistrictClick(stateAbbr, districtName, geoName, count, event, pathEl) {
+async function onDistrictClick(stateAbbr, districtName, geoName, count, event, pathEl) {
   if (viewState === 'district' && selectedDistrictName === districtName) {
-    openResultsSheet(stateAbbr, districtName);
+    await openResultsSheet(stateAbbr, districtName);
     return;
   }
 
@@ -352,8 +352,8 @@ function onDistrictClick(stateAbbr, districtName, geoName, count, event, pathEl)
 }
 
 // ====== RESULTS SHEET ======
-function openResultsSheet(stateAbbr, districtName) {
-  const listings = getListingsForDistrict(stateAbbr, districtName);
+async function openResultsSheet(stateAbbr, districtName) {
+  const listings = await getListingsForDistrict(stateAbbr, districtName);
   const sheet = document.getElementById('results-sheet');
   const overlay = document.getElementById('sheet-overlay');
   const title = document.getElementById('sheet-title');

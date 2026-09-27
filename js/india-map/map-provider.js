@@ -19,9 +19,14 @@ let listings = [];
 let scenario = 'populated';
 
 // ====== INIT ======
-export function init(scenario_ = SCENARIO) {
+// If preLoadedData is provided (from map-data-loader.js), use it directly.
+// Otherwise fall back to mock data for development/testing.
+export function init(scenario_ = SCENARIO, preLoadedData = null) {
   scenario = scenario_;
-  if (scenario === 'empty') {
+  if (preLoadedData) {
+    // Use real data from Supabase or JSON
+    listings = preLoadedData.filteredListings || [];
+  } else if (scenario === 'empty') {
     listings = [];
   } else {
     // Deep-clone so provider owns its data; include edge-case fixtures
@@ -96,45 +101,35 @@ export function getData() {
   const nationalCount = active.length;
 
   // 5. Per-state counts from filtered set
-  // Multi-state records count once per state they mention
-  // Nationwide records → nationwideCount; unknown → unknownCount
+  // Uses enriched state_abbr + location_scope fields
   const stateCounts = {};
   const statewideListings = {};
 
   active.forEach(l => {
-    if (l.state === 'All India') return; // handled by nationwideCount
-
-    if (!l.state) {
-      // Unknown state — counted in unknownCount only
-      return;
+    const abbr = l.state_abbr;
+    if (!abbr) return; // nationwide / multi-state handled below
+    if (!stateCounts[abbr]) {
+      stateCounts[abbr] = 0;
+      statewideListings[abbr] = [];
     }
-
-    const states = l.state.split(',').map(s => s.trim());
-    states.forEach(st => {
-      if (!stateCounts[st]) {
-        stateCounts[st] = 0;
-        statewideListings[st] = [];
-      }
-      stateCounts[st]++;
-      statewideListings[st].push(l);
-    });
+    stateCounts[abbr]++;
+    statewideListings[abbr].push(l);
   });
 
-  // 6. District counts per state (using canonical district names)
+  // 6. District counts per state (using enriched district field)
   const districtCounts = {};
   active.forEach(l => {
-    if (!l.state || l.state === 'All India' || !l.district) return;
-    const states = l.state.split(',').map(s => s.trim());
-    states.forEach(st => {
-      const key = `${st}::${l.district}`;
-      if (!districtCounts[key]) districtCounts[key] = 0;
-      districtCounts[key]++;
-    });
+    const abbr = l.state_abbr;
+    const dist = l.district;
+    if (!abbr || !dist) return;
+    const key = `${abbr}::${dist}`;
+    if (!districtCounts[key]) districtCounts[key] = 0;
+    districtCounts[key]++;
   });
 
-  // 7. Special buckets
-  const nationwideCount = active.filter(l => l.state === 'All India').length;
-  const unknownCount = active.filter(l => !l.state).length;
+  // 7. Special buckets (using location_scope)
+  const nationwideCount = active.filter(l => l.location_scope === 'nationwide').length;
+  const multiStateCount = active.filter(l => l.location_scope === 'multi_state').length;
 
   return {
     nationalCount,
@@ -152,23 +147,35 @@ export function getData() {
 // ====== GET FILTERED LISTINGS FOR A REGION ======
 export function getListingsForState(stateAbbr) {
   const data = getData();
-  return data.statewideListings[stateAbbr] || [];
+  return data.statewideListings?.[stateAbbr] || [];
 }
 
-export function getListingsForDistrict(stateAbbr, districtName) {
+export async function getListingsForDistrict(stateAbbr, districtName) {
   const data = getData();
-  // Resolve the GeoJSON name for this district; if the GeoJSON combines
-  // multiple fixture names (e.g. MH "Mumbai" = "Mumbai City" + "Mumbai Suburban"),
-  // aggregate results from all fixture districts that map to the same GeoJSON feature.
+  // 1. Try Supabase RPC first (live data)
+  try {
+    if (window.SUPABASE_AVAILABLE !== false && window.ensureSupabaseAvailable) {
+      const ok = await window.ensureSupabaseAvailable();
+      if (ok && window.supabase?.rpc) {
+        const { data: rows, error } = await window.supabase.rpc('get_map_district_listings', {
+          p_state_abbr: stateAbbr,
+          p_district: districtName,
+        });
+        if (!error && rows && rows.length) return rows;
+      }
+    }
+  } catch {
+    // fall through to local
+  }
+
+  // 2. Local fallback from cached JSON data
   const geoName = fixtureDistrictToGeoJSON(stateAbbr, districtName);
   const expandedNames = new Set([districtName, geoName]);
 
-  return data.filteredListings.filter(l => {
-    if (!l.state || l.state === 'All India') return false;
-    const states = l.state.split(',').map(s => s.trim());
-    if (!states.includes(stateAbbr)) return false;
+  return (data.filteredListings || []).filter(l => {
+    if (l.location_scope === 'nationwide' || l.location_scope === 'multi_state') return false;
+    if (l.state_abbr !== stateAbbr) return false;
     if (!l.district) return false;
-    // Match if the listing's district is the requested one OR maps to the same GeoJSON
     return expandedNames.has(l.district) || fixtureDistrictToGeoJSON(stateAbbr, l.district) === geoName;
   });
 }
