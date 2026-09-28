@@ -1,0 +1,132 @@
+/* css/india-map/animations.css — All animation keyframes */
+
+/* ===== POP-IN (count badges, filter chips) ===== */
+@keyframes ad-pop-in {
+  0%   { transform: scale(0); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes ad-pop-out {
+  0%   { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+/* ===== STAGGER ENTRANCE (district labels, result cards) ===== */
+@keyframes ad-slide-up {
+  0%   { transform: translateY(12px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes ad-slide-down {
+  0%   { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(12px); opacity: 0; }
+}
+
+/* ===== DISTRICT PULSE RING ===== */
+@keyframes ad-pulse-ring {
+  0%   { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* ===== AMBIENT PULSE (empty state map) ===== */
+@keyframes ad-ambient-pulse {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 0.5; }
+}
+
+/* ===== HUD SLIDE ===== */
+@keyframes ad-hud-in {
+  0%   { transform: translateY(100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes ad-hud-out {
+  0%   { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+/* ===== BOTTOM SHEET ===== */
+@keyframes ad-sheet-in {
+  0%   { transform: translateY(100%); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes ad-sheet-out {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(100%); }
+}
+
+/* ===== FILTER DRAWER ===== */
+@keyframes ad-drawer-in {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes ad-drawer-out {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+/* ===== STATE HOVER GLOW ===== */
+@keyframes ad-glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.3)); }
+  50%      { filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.6)); }
+}
+
+/* ===== CARD HOVER LIFT ===== */
+@keyframes ad-card-hover {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-4px); }
+}
+
+/* ===== RIPPLE (clip-path transition helper) ===== */
+@keyframes ad-ripple-in {
+  0%   { clip-path: circle(0% at var(--ripple-x, 50%) var(--ripple-y, 50%)); }
+  100% { clip-path: circle(150% at var(--ripple-x, 50%) var(--ripple-y, 50%)); }
+}
+
+/* ===== UTILITY CLASSES ===== */
+.anim-pop-in {
+  animation: ad-pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.anim-slide-up {
+  animation: ad-slide-up 0.4s ease-out forwards;
+}
+
+.anim-slide-down {
+  animation: ad-slide-down 0.3s ease-in forwards;
+}
+
+.anim-pulse-ring {
+  animation: ad-pulse-ring 0.6s ease-out forwards;
+}
+
+.anim-ambient {
+  animation: ad-ambient-pulse 4s ease-in-out infinite;
+}
+
+.anim-hud-in {
+  animation: ad-hud-in 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+.anim-hud-out {
+  animation: ad-hud-out 0.3s ease-in forwards;
+}
+
+.anim-sheet-in {
+  animation: ad-sheet-in 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+.anim-sheet-out {
+  animation: ad-sheet-out 0.3s ease-in forwards;
+}
+
+.anim-drawer-in {
+  animation: ad-drawer-in 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+.anim-drawer-out {
+  animation: ad-drawer-out 0.25s ease-in forwards;
+}
