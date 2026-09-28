@@ -121,7 +121,7 @@
   function ensureDistrictsLoaded() {
     if (districtsGeo) return Promise.resolve(districtsGeo);
     if (districtsPromise) return districtsPromise;
-    districtsPromise = fetch('prototypes/india-map/geo/india-districts-all.geojson')
+    districtsPromise = fetch('geo/india-districts-all.geojson')
       .then(r => r.ok ? r.json() : null)
       .then(g => { districtsGeo = g; return g; })
       .catch(() => null);
@@ -239,8 +239,6 @@
   async function drillToState(abbr, name) {
     if (viewMode === 'state' && selectedAbbr === abbr) return;
     const gen = ++generation;
-    const dots = window.IndiaMapData?.stateCounts || {};
-    if ((dots[abbr] || 0) === 0) return;
 
     const dGeo = await ensureDistrictsLoaded();
     if (gen !== generation || !dGeo) return;
@@ -521,7 +519,7 @@
 
     // Load geometry
     try {
-      const resp = await fetch('prototypes/india-map/geo/india-states.geojson');
+      const resp = await fetch('geo/india-states.geojson');
       if (resp.ok) window._indiaGeoData = await resp.json();
     } catch (e) { console.error('[map] state geo load failed:', e); }
 
