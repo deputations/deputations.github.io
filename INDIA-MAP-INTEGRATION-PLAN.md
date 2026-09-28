@@ -1,254 +1,389 @@
-# India Map Integration Plan
-> Plan mode output — awaiting user approval before implementation begins.
+# India Map Integration Plan — alldeputations.com
+
+**Status:** Planning (prototype verified working: 798 active vacancies, 36 states, drill-down functional)
+**Target branch:** `main` → deploys to `www.alldeputations.com`
+**Design direction:** World-class, 2026-grade, never-seen-before animation experience
 
 ---
 
-## 1. What We Are Integrating
+## 1. What We're Integrating
 
-The `prototype/india-map` branch has a fully-functional India Map page with:
-- **Map view**: SVG India map with state drill-down → district drill-down → results bottom sheet, plus cinematic transitions (particle burst, camera fly-to, count badge pop-ins)
-- **Functional view**: Card grid grouped by job function (12 categories)
-- **Education view**: Card grid grouped by qualification (15 categories)
-- **HUD**: Auto-hiding bottom bar with view toggle, filters, zoom
-- **Data**: Mock fixtures (20 listings) with `function` and `qualificationGroup` fields
+### Source: `prototypes/india-map/india-map.html`
+- Interactive SVG India map with all 36 states/UTs
+- Real Supabase data pipeline (1000 vacancies loaded, normalised)
+- State drill-down with zoom/pan
+- Filters: Functional, Education, and extensible
+- Particle canvas background
+- 798 active vacancies (live count)
 
-This is a **complete, self-contained page** — `india-map.html` + `js/india-map/` + `css/india-map/` + `geo/*.geojson`.
-
----
-
-## 2. Target Location
-
-The page will live at `https://alldeputations.com/india-map` and will be the **second page** after Home, positioned between Home and Rules in the navbar.
-
-### New files (copied from prototype, lightly adapted):
-| File | Action |
-|------|--------|
-| `india-map.html` | **Copy** from `prototypes/india-map/india-map.html` |
-| `js/india-map/app.js` | **Copy** from `prototypes/india-map/js/india-map/app.js` |
-| `js/india-map/hud.js` | **Copy** |
-| `js/india-map/particles.js` | **Copy** |
-| `js/india-map/views/map-view.js` | **Copy** |
-| `js/india-map/views/functional-view.js` | **Copy** |
-| `js/india-map/views/education-view.js` | **Copy** |
-| `js/india-map/views/shared/card-grid.js` | **Copy** |
-| `js/india-map/views/shared/listing-table.js` | **Copy** |
-| `js/india-map/map-provider.js` | **Copy** (adapts data — see §5) |
-| `js/india-map/state-geo.js` | **Copy** (abbr mappings) |
-| `css/india-map/main.css` | **Copy** + production font/color bridge |
-| `css/india-map/animations.css` | **Copy** |
-| `geo/india-states.geojson` | **Copy** (~138KB) |
-| `geo/india-districts-all.geojson` | **Copy** (~1.2MB) |
-| `geo/india-states-sarvalinks.geojson` | **Copy** (~138KB) |
-| `img/delhi/` | **Copy** (Delhi colored map images) |
-
-### Modified files (minimal, additive changes only):
-| File | Change |
-|------|--------|
-| `index.html` (navbar) | Add one `<li><a href="/india-map">India Map</a></li>` between Home and Rules |
-| `sitemap.xml` | Add `<url><loc>https://alldeputations.com/india-map</loc></url>` |
-| Server config | **None needed** — static site on GitHub Pages; `india-map.html` at repo root is served automatically at `/india-map` |
+### Target: `alldeputations.com` (production `index.html`)
+- Already has `<a href="/india-map">India Map</a>` in the nav (line 156)
+- Liquid glass CSS, Plus Jakarta Sans / Sora / Unbounded fonts
+- Hero wave canvas animation (`hero-wave.js`)
+- Dark theme with `data-theme` attribute
+- Shared `config.js`, `enrich.js`, `app.js` data layer
 
 ---
 
-## 3. Architecture
+## 2. Architecture: One-Page App Transition (No Full Page Load)
 
+**Decision: SPA-style transition from Home → India Map.**
+
+Instead of a hard navigation to a separate page, the India Map becomes the *primary content experience* that replaces the home dashboard when the user clicks "India Map" in the nav. This enables:
+
+- **Seamless transition animations** (home fades/transforms out, map animates in)
+- **Shared state** (theme, filters, Supabase connection)
+- **Breadcrumb navigation** ("← Back to Home" inside the map view)
+- **URL routing** (`/india-map` serves the same page but initialises the map as the primary view)
+
+### URL Strategy
+| URL | Behavior |
+|-----|----------|
+| `/` or `/index.html` | Home dashboard (current) |
+| `/india-map` | Map-only view (new — India map as primary content) |
+| `/india-map?state=DL` | Deep link to Delhi drill-down |
+| `/india-map?state=MH&district=Pune` | Deep link to district view |
+
+### Implementation: Single `index.html` with View Switcher
 ```
-alldeputations.com/
-├── index.html                    # Home (UNTOUCHED)
-├── india-map.html                # NEW — the map page
-├── js/india-map/
-│   ├── app.js                    # Bootstrap + view router
-│   ├── hud.js                    # Auto-hiding bottom HUD bar
-│   ├── particles.js              # Canvas particle burst system
-│   ├── map-provider.js           # Data adapter (mock → real)
-│   ├── state-geo.js              # State code mappings
-│   └── views/
-│       ├── map-view.js           # SVG map + drill-down
-│       ├── functional-view.js    # Card grid by function
-│       ├── education-view.js     # Card grid by qualification
-│       └── shared/
-│           ├── card-grid.js      # Shared card grid component
-│           └── listing-table.js  # Shared listing table
-├── css/india-map/
-│   ├── main.css                  # Layout, glass morphism, responsive
-│   └── animations.css            # Keyframes
-├── geo/                          # GeoJSON files (1.4MB)
-└── img/delhi/                    # Delhi colored map images
+index.html
+├── <div id="home-view">         ... existing home dashboard ...
+└── <div id="map-view" hidden>   ... India map (migrated from prototype) ...
 ```
 
+A lightweight router in `app.js` toggles visibility based on `location.pathname`.
+
 ---
 
-## 4. Data Integration Strategy
+## 3. Design System: World-Class Animation Spec
 
-### Phase 1 — Mock data (immediate launch)
-- The prototype's `map-provider.js` loads `fixtures/mock-data.js` with 20 listings
-- This works standalone and demonstrates the full UX
-- **Data fields** already include `function` and `qualificationGroup` needed by Functional/Education views
+### 3.1 Hero Transition (Home → Map)
 
-### Phase 2 — Production data bridge (next session)
-- Replace `fixtures/mock-data.js` with an adapter that:
-  - Reads from the same source `app.js` uses (the production vacancy feed)
-  - Maps production fields to the map-view schema
-  - Falls back to mock data if the feed is unavailable (graceful degradation)
-- **Critical requirement**: The map must show ZERO state polygons, not a broken page, if data fails to load
+**Concept: "The map materialises from the dashboard."**
 
-### Data flow (Phase 2):
+1. **Phase 1 — Dismiss (0–400ms):** Home content fades + scales down (0.95) with a subtle blur. KPI cards scatter outward with staggered delays. The hero wave canvas dissolves into particles.
+2. **Phase 2 — Morph (400–800ms):** A radial glow expands from center (brand gradient: cyan → purple → pink). The India map SVG paths draw themselves with `stroke-dashoffset` animation — each state traces its outline.
+3. **Phase 3 — Settle (800–1200ms):** Particles coalesce into state boundaries. Count badges pop in with spring physics (overshoot + settle). Nav bar transitions to active "India Map" state with a glowing underline.
+
+### 3.2 Map Animations (Never-Seen-Before)
+
+#### A. Liquid State Fill
+When data loads, each state doesn't just change color — it *fills like liquid pouring in*. Use SVG mask animation with a gradient that flows from south to north (following the monsoon wind direction metaphor). States with higher counts get deeper, more saturated fills.
+
+#### B. Pulse Ripples on Count Change
+When new vacancies arrive (real-time Supabase subscription), affected states emit a concentric ring ripple (like a sonar ping) that fades outward. Multiple simultaneous ripples create a beautiful interference pattern across the map.
+
+#### C. Particle Constellation Background
+Replace the current particle canvas with a **constellation network**: dots connected by faint lines, slowly drifting. When you hover a state, nearby particles accelerate toward it, creating a gravitational lens effect. This ties the background directly to user interaction.
+
+#### D. Hover Micro-interactions
+- State lifts slightly (SVG transform translateY(-2px) + shadow glow)
+- Neighboring states dim to 30% opacity (spotlight effect)
+- A tooltip card slides in with spring physics showing: state name, count, top ministries, closing-soon count
+- The state outline pulses with a subtle glow matching the brand gradient
+
+#### E. Drill-down Zoom (Cinematic)
+When clicking a state:
+1. Other states fade to 15% opacity
+2. The selected state smoothly scales up (GSAP-style ease: `power3.inOut`)
+3. Background particles swirl into a vortex and reform around the zoomed state
+4. District labels fade in with staggered delays
+5. A back button slides in from the left with a " ← Back to India" label
+
+#### F. Scroll-triggered Parallax (Home page)
+On the home page, as the user scrolls down past the hero, the India map *previews* in a small inset window (like a picture-in-picture), subtly animating — showing the map exists and inviting the click.
+
+---
+
+## 4. File Structure
+
 ```
-Production vacancy data (JSON/Supabase)
-    ↓
-js/india-map/map-provider.js (adapter)
-    ↓ getData() / getListingsForDistrict()
-    ↓
-Map view / Functional view / Education view
+D:/claude/Deputation/
+├── index.html                          ← MODIFIED: add #map-view, router
+├── app.js                              ← MODIFIED: add view router, map init
+├── config.js                           ← UNCHANGED (shared)
+├── enrich.js                           ← UNCHANGED (shared)
+├── style.css                           ← MODIFIED: add map-view styles, animations
+├── navbar.css                          ← MODIFIED: active state for India Map
+│
+├── india-map-view.js                   ← NEW: map init, drill-down, filters
+├── india-map-data.js                   ← NEW: migrated from map-data-loader.js
+├── india-map-animations.js             ← NEW: all animation orchestrators
+├── india-map-particles.js              ← NEW: constellation particle system
+│
+├── india-map.html                      ← NEW (or redirect to index.html#map-view)
+│   # This can be a thin wrapper that sets location.pathname
+│   # and lets index.html handle everything
+│
+├── js/india-map/                       ← prototype source (reference only)
+│   ├── map-data-loader.js              ← source of truth for data logic
+│   ├── map-provider.js
+│   ├── views/map-view.js
+│   └── ...
+│
+├── assets/brand/
+│   └── india-map-hero.mp4             ← optional: 2s looping hero background
+│                                        (WebM/AV1, <500KB, muted, autoplay)
+│
+└── prototypes/india-map/               ← prototype archive (keep for reference)
 ```
 
 ---
 
-## 5. Visual Design — World-Class Polish Plan
+## 5. CSS Architecture
 
-The prototype already has strong foundations. Here's what will make it **stand out globally**:
+### New sections in `style.css`:
 
-### 5.1 Cinematic Enhancements (beyond current prototype)
+```css
+/* === India Map View === */
+#map-view { /* full-screen map container */ }
 
-| Feature | Current | Target |
-|---------|---------|--------|
-| State hover | Simple glow | **Magnetic glow** — shadow follows pointer within state bounds, not just fixed drop-shadow |
-| Click transition | Particle burst + viewBox zoom | Add **ripple clip-path** — circular SVG clip expands from click point, not just a viewBox zoom |
-| District drill | Path pulse | **Arc-ring pulse** — concentric rings emanate from click, each with staggered delay |
-| Count badges | Simple pop-in | **Count-up animation** — numbers count from 0 to final value (not just fade in) |
-| Bottom sheet | Slide up | **Elastic overshoot** — spring-like entrance with slight bounce |
-| Background | Static gradient | **Slow-drifting aurora** — subtle color-shifting gradient mesh behind the map |
-| Empty state | Static message | **Pulsing ambient dots** — 3-4 ghost dots float slowly across the map |
+/* State path animations */
+.ad-state {
+  transition: opacity 0.4s, filter 0.4s;
+  cursor: pointer;
+}
+.ad-state.draw-in {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: drawState 1.2s ease-out forwards;
+}
+@keyframes drawState {
+  to { stroke-dashoffset: 0; }
+}
 
-### 5.2 Glass Morphism Consistency
-- The prototype uses basic `backdrop-filter: blur()`. Production uses the **5-layer liquid-glass system**.
-- On the map page, apply `lg-on` class to `<html>` so all glass surfaces (summary card, bottom sheet, filter drawer, HUD) get the same premium treatment.
-- Use `--lg-tint-scale: 1` (BOLD) as chosen by the owner — the map has no content behind it to refract, so the tint just adds depth.
+/* Liquid fill animation */
+.ad-state.liquid-fill::after {
+  /* SVG mask animation for fill effect */
+}
 
-### 5.3 Typography
-- Production: Sora (headings) + Plus Jakarta Sans (body). The prototype already uses these.
-- Add Lora italic for the "No results found" empty state — matches production's emotional tone.
+/* Ripple effect for new vacancies */
+.ad-state .ripple-ring {
+  animation: rippleOut 1.5s ease-out forwards;
+}
+@keyframes rippleOut {
+  0%   { r: 5; opacity: 0.8; }
+  100% { r: 40; opacity: 0; }
+}
 
-### 5.4 Color Bridge
-The prototype CSS already uses production palette tokens:
-- `--primary-color: #22d3ee` (cyan)
-- `--accent-color: #a78bfa` (purple)
-- `--warning-color: #f5a721` (gold for badges)
-- `--bg-main: #02040b` (near-black)
+/* Spotlight hover */
+.ad-state:hover { /* lift + glow */ }
+.ad-state.neighbor-dim { opacity: 0.15; }
 
-**No color changes needed** — the palette is already consistent.
+/* Spring tooltip */
+.map-tooltip {
+  transform: translateY(8px);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 0.2s;
+}
+.map-tooltip.visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+```
 
-### 5.5 Entrance Animation (Page Load)
-1. Map SVG fades in with a subtle scale-up (0.95 → 1.0 over 800ms)
-2. State shapes stagger in from opacity 0, each with 30ms delay
-3. HUD slides up from bottom with 100ms delay
-4. Summary card fades in from top-right with 200ms delay
-
-This is **not currently in the prototype** — it will be the first thing users see when they navigate from Home.
-
-### 5.6 Never-Before-Seen Elements
-
-| Feature | Description |
-|---------|-------------|
-| **Data-aurora background** | Canvas-based slow-moving gradient mesh that shifts hue based on active filter state (e.g., more cyan when filtering "Technical", more purple for "Education") |
-| **Magnetic hover** | State fill gradient tilts based on mouse position within the state — not just a flat hover color |
-| **Sonic click feedback** | On state click, generate a brief 50ms "tick" using Web Audio API oscillator — subtle, non-intrusive, adds tactile feel |
-| **Particle palette shift** | Particles shift color based on vacancy density (gold = hot/30+ jobs, cyan = moderate, muted = few) |
-| **Scroll-to-reveal listings** | Bottom sheet cards use IntersectionObserver for scroll-triggered reveal, not just timeout-based stagger |
-
----
-
-## 6. Responsive Behavior
-
-| Breakpoint | Map | HUD | Bottom Sheet | Cards |
-|-----------|-----|-----|--------------|-------|
-| Desktop (≥1200px) | Full viewport, optimal density | Bottom 52px bar | 45vh | 3-col grid |
-| Tablet (768-1199px) | Scaled map, touch pan | Bottom 48px bar | 55vh | 2-col grid |
-| Mobile (<768px) | Full viewport, gesture pan | Bottom 44px bar | 65vh | 1-col stack |
-| Tiny (<400px) | Full viewport, simplified labels | Compact icons only | 70vh | Full width |
-
-The prototype already has responsive CSS. We will refine and validate on real viewport sizes.
+### New file: `india-map-animations.css` (loaded only on map view)
+- Ripple keyframes
+- Draw-in keyframes
+- Vortex transition keyframes
+- Particle glow effects
 
 ---
 
-## 7. Accessibility
+## 6. JavaScript Architecture
 
-| Requirement | Implementation |
-|-------------|----------------|
-| Keyboard nav | Tab through states/districts, Enter/Space to select |
-| Screen reader | `aria-label` on all interactive elements, `aria-live` on summary count |
-| Focus management | Focus moves to results sheet on drill-down, back to map on close |
-| Skip navigation | Already present in production navbar |
-| High contrast | Tested against WCAG AA — cyan on near-black passes |
-| Reduced motion | `prefers-reduced-motion` disables all animations, shows instant transitions |
+### `app.js` additions:
 
----
+```javascript
+// === View Router ===
+const VIEWS = { HOME: 'home', MAP: 'map' };
+let currentView = VIEWS.HOME;
 
-## 8. Implementation Phases
+function navigateTo(view) {
+  if (view === currentView) return;
+  // Animate out current view
+  animateViewOut(currentView, () => {
+    // Show new view
+    document.getElementById('home-view').hidden = (view !== VIEWS.HOME);
+    document.getElementById('map-view').hidden = (view !== VIEWS.MAP);
+    // Animate in
+    animateViewIn(view);
+    currentView = view;
+    // Update nav
+    updateNavActive(view);
+    // Init map if needed
+    if (view === VIEWS.MAP && !mapInitialised) initIndiaMap();
+  });
+}
 
-### Phase 1 — File Integration & Base Styling (1-2 hours)
-1. Copy all new files to repo root (`india-map.html`, `js/india-map/`, `css/india-map/`, `geo/`, `img/delhi/`)
-2. Update `index.html` navbar: add India Map link between Home and Rules
-3. Verify fonts load correctly (Sora + Plus Jakarta Sans already in production)
-4. Verify glass morphism classes apply correctly
-5. Test page loads standalone at `/india-map`
+// Listen to nav clicks
+document.querySelectorAll('.nav-links a').forEach(link => {
+  link.addEventListener('click', (e) => {
+    const href = link.getAttribute('href');
+    if (href === '/india-map') {
+      e.preventDefault();
+      navigateTo(VIEWS.MAP);
+      history.pushState(null, '', '/india-map');
+    }
+  });
+});
 
-### Phase 2 — Data Bridge (1-2 hours)
-1. Replace `map-provider.js` mock data with production data adapter
-2. Ensure graceful fallback to mock data on load failure
-3. Add `function` and `qualificationGroup` fields to production data schema
-4. Test with real vacancy data
+// Handle browser back/forward
+window.addEventListener('popstate', () => {
+  const isMap = location.pathname === '/india-map';
+  navigateTo(isMap ? VIEWS.MAP : VIEWS.HOME);
+});
+```
 
-### Phase 3 — Cinematic Polish (2-3 hours)
-1. Add page-load entrance animation (stagger states, HUD slide-up)
-2. Implement count-up animation for badges
-3. Add data-aurora background canvas
-4. Add magnetic hover effect on state shapes
-5. Implement elastic bottom sheet entrance
-6. Add sonic click feedback (Web Audio API)
+### `india-map-view.js` (new, ~400 lines):
+- `initIndiaMap()` — bootstraps the map, loads data, starts animations
+- `renderMap(data)` — draws SVG states with draw-in animation
+- `setupInteractions()` — hover, click, zoom, pan
+- `drillDown(stateAbbr)` — zoom into state, show districts
+- `drillDownDistrict(stateAbbr, district)` — show listings
+- `applyMapFilters(filters)` — filter by Functional, Education, etc.
+- `setupRealtime()` — Supabase real-time subscription for new vacancies
 
-### Phase 4 — Testing (1 hour)
-1. Playwright smoke tests for all 3 views
-2. Test drill-down flow: state → district → results → back → back
-3. Test URL restoration on refresh
-4. Test on mobile viewport (375px, 768px)
-5. Test reduced-motion media query
+### `india-map-animations.js` (new, ~200 lines):
+- `animateTransition(from, to)` — orchestrates home→map transition
+- `animateStateDrawIn(paths)` — stroke-dashoffset stagger
+- `animateLiquidFill(statePaths)` — gradient fill animation
+- `spawnRipple(stateAbbr)` — vacancy arrival notification
+- `initParticles(canvas)` — constellation background
 
-### Phase 5 — Deploy (30 min)
-1. Update `sitemap.xml`
-2. Verify route works on production
-3. Test from Home page navigation
-
----
-
-## 9. What This Does NOT Include (v1 Scope)
-
-- No WebGL / three.js on the map page (CSS + canvas only, same as prototype)
-- No search bar (v2)
-- No pagination
-- No user accounts / auth on this page
-- No bookmarking / save
-- No sharing (v2)
-- No real-time updates via Supabase realtime (v2)
-- No admin integration
-
----
-
-## 10. Risks & Mitigations
-
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-| GeoJSON files bloat repo | Medium | Low | 1.4MB is acceptable for a geospatial app; can CDN-host if needed |
-| Mock data accidentally ships | Low | Medium | Replace with adapter in Phase 2 before deploy |
-| Liquid-glass CSS conflicts | Low | Medium | All map-page CSS is namespaced with `ad-` prefix; zero overlap |
-| Mobile performance on low-end devices | Medium | Medium | Add `prefers-reduced-motion` + particle count throttling on mobile |
-| Delhi image-map breaks on production | Low | Low | Fall back to text labels if images don't load |
+### `india-map-data.js` (migrated from `js/india-map/map-data-loader.js`):
+- Keep the same logic — it already works
+- Export as ES module or attach to window
+- Shared with prototype for consistency
 
 ---
 
-## 11. Approval Questions
+## 7. Data Flow
 
-1. **File placement**: Copy prototype files to repo root alongside `index.html`? Or keep in `prototypes/india-map/`?
-2. **Data approach**: Launch with mock data (20 listings) and bridge to production later, or bridge production data first?
-3. **Animation scope**: Implement all 5 "never-before-seen" elements (§5.6) in Phase 3, or stagger across phases?
-4. **Delhi image-map**: Include it (requires `img/delhi/` folder) or skip for v1 (text labels only)?
+```
+Page Load
+  │
+  ├─ config.js loads (Supabase URL, keys)
+  ├─ app.js boots
+  │    ├─ Detects location.pathname
+  │    ├─ If /india-map → navigateTo(MAP)
+  │    └─ If / → show HOME
+  │
+  └─ If MAP view:
+       ├─ india-map-view.js init
+       │    ├─ Load SVG map geometry (inline or fetched)
+       │    ├─ Call india-map-data.js → loadMapData()
+       │    │    ├─ Supabase RPC (get_map_state_counts)
+       │    │    └─ Fallback: vacancies.json
+       │    ├─ Render states with draw-in animation
+       │    ├─ Start particle canvas
+       │    └─ Setup Supabase realtime subscription
+       │
+       └─ User interactions:
+            ├─ Hover → spotlight + tooltip
+            ├─ Click state → zoom + district drill-down
+            ├─ Click district → vacancy listings
+            └─ Filters → re-render with animation
+```
+
+---
+
+## 8. Animation Timing (Home → Map Transition)
+
+| Time | Event | Visual |
+|------|-------|--------|
+| 0ms | User clicks "India Map" | Nav highlight shifts, home content starts fading |
+| 0-300ms | Home dismiss | Dashboard cards scale down + blur out (stagger: 20ms each) |
+| 200ms | Radial glow | Brand gradient expands from center |
+| 400ms | Hero wave dissolves | Wave canvas fades, particles scatter |
+| 500ms | Map SVG enters | Map container fades in, positioned center |
+| 600-1200ms | State draw-in | States trace their outlines (stagger: 30ms per state, 36 × 30ms = 1080ms total) |
+| 1200-1500ms | Count badges pop | Spring animation: overshoot 1.2x → settle |
+| 1500ms | Filters slide in | Bottom filter bar slides up |
+| 1600ms | Ready | User can interact |
+
+---
+
+## 9. Responsive Behavior
+
+| Viewport | Behavior |
+|----------|----------|
+| Desktop (>1024px) | Full map with sidebar tooltip, filters at bottom |
+| Tablet (768-1024px) | Map centered, tooltip as modal overlay, filters collapsible |
+| Mobile (<768px) | Full-screen map, touch-zoom gestures, bottom sheet for filters, simplified tooltip |
+
+---
+
+## 10. Performance Targets
+
+| Metric | Target | Current |
+|--------|--------|---------|
+| First paint (map view) | <800ms | ~500ms (prototype) |
+| State draw-in animation | 60fps | TBD |
+| Hover response | <16ms | TBD |
+| Drill-down zoom | 300ms ease | TBD |
+| Particle count (desktop) | 80-120 | 50 (prototype) |
+| Particle count (mobile) | 30-50 | — |
+
+**Optimization notes:**
+- Use `will-change: transform` on animated states
+- GPU-accelerated transforms only (translate, scale, opacity)
+- `requestAnimationFrame` for particle loop
+- SVG paths pre-computed (no runtime geometry)
+- Lazy-load district data only on drill-down
+
+---
+
+## 11. Implementation Sequence
+
+### Phase 1: Structural (PR 1)
+1. Add `#map-view` div to `index.html`
+2. Add view router to `app.js`
+3. Create thin `india-map.html` redirect
+4. Test: `/india-map` loads the map view
+
+### Phase 2: Data + Rendering (PR 2)
+5. Migrate `map-data-loader.js` → `india-map-data.js`
+6. Create `india-map-view.js` (init, render, interactions)
+7. Add map-specific CSS to `style.css`
+8. Test: map renders with real data, drill-down works
+
+### Phase 3: Animations (PR 3)
+9. Create `india-map-animations.js`
+10. Implement draw-in, liquid fill, ripples
+11. Implement constellation particle system
+12. Test: animations smooth at 60fps
+
+### Phase 4: Polish (PR 4)
+13. Home → Map transition animation
+14. Responsive breakpoints
+15. Deep linking (`?state=DL`)
+16. Accessibility (keyboard nav, ARIA)
+17. Performance audit (Lighthouse)
+
+---
+
+## 12. Key Decisions for User Approval
+
+1. **SPA vs separate page?** → SPA with view switcher (recommended for seamless transitions)
+2. **Keep india-map.html as separate file or redirect?** → Redirect to `/` with `?view=map` (simpler)
+3. **Prototype code migration strategy?** → Copy tested code verbatim, then adapt (don't rewrite)
+4. **Animation library?** → Vanilla CSS + JS (no GSAP dependency to keep it lightweight)
+5. **Map background: particles or video?** → Particles (more interactive, smaller bundle)
+
+---
+
+## 13. Risks & Mitigations
+
+| Risk | Mitigation |
+|------|------------|
+| SVG map geometry too large inline | Fetch lazily, cache in sessionStorage |
+| Animation jank on low-end devices | Detect GPU, reduce particle count, skip draw-in |
+| Supabase RPC still undefined on production | Keep JSON fallback, add Supabase client init check |
+| Mobile touch gestures conflict with page scroll | Pinch-zoom only on map container, prevent default |
+| Deep link state not restored on reload | Store in URL params + sessionStorage |
+
+---
+
+*Plan authored: 2026-09-21 | Prototype verified: 798 vacancies, 36 states, drill-down functional*

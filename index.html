@@ -193,7 +193,9 @@
     </header>
 
     <main class="main-layout" id="main-content">
-      <aside class="filters-sidebar glass-panel" id="filtersSidebar">
+      <!-- Home dashboard view -->
+      <div id="home-view">
+        <aside class="filters-sidebar glass-panel" id="filtersSidebar">
         <div class="filters-header">
           <h2><svg class="icon"><use href="#i-filter"/></svg> Filters</h2>
           <button id="clearFiltersBtn" class="text-btn">Clear All</button>
@@ -446,6 +448,55 @@
 
         <div id="dataContainer" class="data-container view-table"></div>
       </section>
+      </div><!-- /#home-view -->
+
+      <!-- India Map view (hidden by default) -->
+      <div id="map-view" hidden>
+        <div class="map-container" id="mapContainer">
+          <canvas id="particleCanvas" class="map-particles" aria-hidden="true"></canvas>
+          <div class="map-header">
+            <button id="mapBackBtn" class="map-back-btn" aria-label="Back to Home">
+              <svg class="icon"><use href="#i-chevron-down" style="transform:rotate(180deg)"/></svg>
+              <span>Back to Home</span>
+            </button>
+            <div class="map-title">
+              <h2>Explore India</h2>
+              <p class="map-subtitle" id="mapSubtitle">Interactive vacancy map</p>
+            </div>
+            <div class="map-counter glass-panel" id="mapCounter">
+              <span class="map-counter-label">Active Vacancies</span>
+              <span class="map-counter-value" id="mapCounterValue">—</span>
+            </div>
+          </div>
+          <div class="map-svg-wrap" id="mapSvgWrap">
+            <!-- India SVG injected here by india-map-view.js -->
+          </div>
+          <div class="map-tooltip glass-panel" id="mapTooltip" hidden>
+            <div class="map-tooltip-name" id="mapTooltipName"></div>
+            <div class="map-tooltip-count" id="mapTooltipCount"></div>
+            <div class="map-tooltip-meta" id="mapTooltipMeta"></div>
+          </div>
+          <div class="map-controls">
+            <div class="map-filters">
+              <button class="map-filter-btn active" data-filter="all">All</button>
+              <button class="map-filter-btn" data-filter="functional">Functional</button>
+              <button class="map-filter-btn" data-filter="education">Education</button>
+            </div>
+            <div class="map-zoom-controls">
+              <button id="zoomInBtn" class="map-zoom-btn" aria-label="Zoom in">+</button>
+              <button id="zoomOutBtn" class="map-zoom-btn" aria-label="Zoom out">−</button>
+              <button id="zoomResetBtn" class="map-zoom-btn" aria-label="Reset view">⌂</button>
+            </div>
+          </div>
+          <div class="map-drilldown" id="mapDrilldown" hidden>
+            <div class="map-drilldown-header">
+              <h3 id="drilldownTitle"></h3>
+              <button id="drilldownClose" class="map-drilldown-close" aria-label="Close drill-down">×</button>
+            </div>
+            <div class="map-drilldown-content" id="drilldownContent"></div>
+          </div>
+        </div>
+      </div><!-- /#map-view -->
     </main>
   </div>
 
@@ -461,6 +512,10 @@
   <script src="config.js?v=sb4"></script>
   <script src="enrich.js?v=sb15"></script>
   <script src="app.js?v=ms78"></script>
+  <!-- India Map modules (loaded after app.js so window globals are ready) -->
+  <script src="india-map-data.js"></script>
+  <script src="india-map-view.js"></script>
+  <script src="india-map-animations.js" defer></script>
   <!-- vacancy push alerts (review P1-3); no-op unless Push is supported + VAPID configured -->
   <script defer src="push-client.js?v=1"></script>
   <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the stylesheet above to revert) -->

@@ -4044,12 +4044,6 @@ function syncCardSortUI() {
             if (!li) return;
             const vid = li.getAttribute('data-vid');
             if (!vid || typeof openVacancyModal !== 'function') return;
-            // The AI index and the loaded dataset can drift apart (a row pulled
-            // from Supabase after the last JSON dump, say). openVacancyModal()
-            // returns silently for an id it can't resolve, so the row would
-            // just look broken — say so instead of dying quietly.
-            // Note the status line only — showSemanticMessage() would clear the
-            // whole panel, and one stale row shouldn't wipe the other matches.
             if (!getItemById(vid)) {
                 console.warn('[semantic] no loaded vacancy for', vid);
                 if (semanticResultsStatus) {
@@ -4060,5 +4054,48 @@ function syncCardSortUI() {
             }
             openVacancyModal(vid);
         });
+    }
+
+    // ===== India Map View Router =====
+    // SPA-style: toggles #home-view and #map-view based on location.pathname.
+    const homeView = document.getElementById('home-view');
+    const mapView = document.getElementById('map-view');
+    let mapBooted = false;
+
+    function showView(view) {
+        if (!homeView || !mapView) return;
+        if (view === 'map') {
+            homeView.hidden = true;
+            mapView.hidden = false;
+            document.body.classList.add('map-active');
+            if (!mapBooted && typeof initIndiaMap === 'function') {
+                mapBooted = true;
+                initIndiaMap();
+            }
+        } else {
+            homeView.hidden = false;
+            mapView.hidden = true;
+            document.body.classList.remove('map-active');
+        }
+    }
+
+    // Intercept nav clicks for /india-map
+    document.querySelectorAll('.nav-links a[href="/india-map"], .nav-links a[href*="india-map"]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            history.pushState(null, '', '/india-map');
+            showView('map');
+        });
+    });
+
+    // Handle browser back/forward
+    window.addEventListener('popstate', () => {
+        const isMap = location.pathname === '/india-map';
+        showView(isMap ? 'map' : 'home');
+    });
+
+    // On initial load, if path is /india-map show the map
+    if (location.pathname === '/india-map') {
+        showView('map');
     }
 });
