@@ -7229,14 +7229,72 @@ body.map-active .app-container { overflow: hidden; }
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* Map draw-in animation */
-.ad-state, .ad-district {
+/* Map draw-in animation — uses JS-set stroke-dasharray/dashoffset values */
+.ad-state {
   opacity: 0;
-  animation: ad-draw-in 0.6s ease-out forwards;
+  transition: fill 0.25s ease, stroke-width 0.25s ease, filter 0.25s ease;
 }
-@keyframes ad-draw-in {
-  0% { opacity: 0; stroke-dashoffset: 800; }
-  100% { opacity: 1; stroke-dashoffset: 0; }
+.ad-state.drawn {
+  opacity: 1;
+  transition: fill 0.25s ease, stroke-width 0.25s ease, filter 0.25s ease;
+}
+@keyframes ad-draw-state {
+  from { stroke-dashoffset: var(--ad-draw-len, 800); }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* Neighbor dim during hover spotlight */
+.ad-state.neighbor-dim {
+  opacity: 0.15 !important;
+  filter: brightness(0.6);
+  transition: opacity 0.25s ease, filter 0.25s ease;
+}
+.ad-state.drawn.neighbor-dim {
+  opacity: 0.15 !important;
+}
+
+/* Liquid fill — states with data get the gradient */
+.ad-state.liquid-fill {
+  fill: url(#liquid-gradient);
+  stroke: var(--ad-accent-bright);
+  stroke-width: 0.8;
+}
+
+/* Count pop-in stagger */
+.ad-state-count.pop {
+  animation: ad-pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Ripple rings */
+.ad-ripple {
+  fill: none;
+  stroke: var(--ad-accent-bright);
+  stroke-width: 1.2;
+  opacity: 0;
+  animation: ad-ripple-out 2s ease-out forwards;
+}
+@keyframes ad-ripple-out {
+  0%   { r: 8; opacity: 0.7; stroke-width: 2; }
+  100% { r: 60; opacity: 0; stroke-width: 0.3; }
+}
+
+/* Home→Map transition */
+#home-view {
+  transition: opacity 0.4s ease, transform 0.4s ease, filter 0.4s ease;
+}
+#home-view.hiding {
+  opacity: 0;
+  transform: scale(0.96);
+  filter: blur(4px);
+}
+#map-view {
+  opacity: 0;
+  transform: scale(1.02);
+  transition: opacity 0.5s ease 0.2s, transform 0.5s ease 0.2s;
+}
+#map-view.visible {
+  opacity: 1;
+  transform: scale(1);
 }
 
 /* Ladakh / northeastern states often get clipped by the standard projection —

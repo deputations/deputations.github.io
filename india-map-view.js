@@ -140,10 +140,24 @@
     svg.setAttribute('aria-label', 'India map');
 
     const defs = document.createElementNS(ns, 'defs');
+
+    // State hover glow filter
     const filter = document.createElementNS(ns, 'filter');
     filter.setAttribute('id', 'state-glow');
     filter.innerHTML = '<feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>';
     defs.appendChild(filter);
+
+    // Liquid fill gradient (south→north, monsoon metaphor)
+    const lg = document.createElementNS(ns, 'linearGradient');
+    lg.setAttribute('id', 'liquid-gradient');
+    lg.setAttribute('x1', '0'); lg.setAttribute('y1', '1');
+    lg.setAttribute('x2', '0'); lg.setAttribute('y2', '0');
+    lg.innerHTML = `
+      <stop offset="0%" stop-color="#f5a721" stop-opacity="0.85"/>
+      <stop offset="60%" stop-color="#ffb840" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#ffcb6b" stop-opacity="0.3"/>`;
+    defs.appendChild(lg);
+
     svg.appendChild(defs);
 
     const g = document.createElementNS(ns, 'g');
@@ -155,6 +169,23 @@
     svg.appendChild(labels);
 
     return svg;
+  }
+
+  // Draw-in animation: stroke-dashoffset from full length → 0
+  function prepareDrawIn(path) {
+    let total = 0;
+    try { total = path.getTotalLength(); } catch { total = 1500; }
+    if (!isFinite(total) || total <= 0) total = 1500;
+    path.style.strokeDasharray = total;
+    path.style.strokeDashoffset = total;
+    return total;
+  }
+
+  function playDrawIn(path, delay) {
+    path.style.animation = 'none';
+    // force reflow to restart animation
+    void path.getBoundingClientRect();
+    path.style.animation = `ad-draw-state 1.2s ease-out ${delay}ms forwards`;
   }
 
   function clearMap() {
@@ -197,12 +228,29 @@
       path.setAttribute('role', 'button');
       path.setAttribute('aria-label', `${name}: ${count} vacancies`);
 
-      // Staggered draw-in
-      path.style.setProperty('--ad-delay', `${Math.min(idx * 30, 600)}ms`);
+      // Prepare staggered draw-in animation
+      const drawLen = prepareDrawIn(path);
+      path.dataset.drawLen = drawLen;
+      path.dataset.idx = idx;
 
-      path.addEventListener('mouseenter', (e) => showTooltip(e, name, count));
+      // Liquid fill: states with vacancies get the gold gradient
+      if (count > 0) {
+        path.classList.add('liquid-fill');
+        path.style.fill = 'url(#liquid-gradient)';
+      }
+
+      // Hover spotlight (dims neighbours)
+      path.addEventListener('mouseenter', (e) => {
+        showTooltip(e, name, count);
+        document.querySelectorAll('#map-svg .ad-state').forEach(s => {
+          if (s !== path) s.classList.add('neighbor-dim');
+        });
+      });
       path.addEventListener('mousemove', moveTooltip);
-      path.addEventListener('mouseleave', hideTooltip);
+      path.addEventListener('mouseleave', () => {
+        hideTooltip();
+        document.querySelectorAll('#map-svg .ad-state').forEach(s => s.classList.remove('neighbor-dim'));
+      });
       path.addEventListener('click', () => drillToState(abbr, name));
       path.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drillToState(abbr, name); }
@@ -227,9 +275,60 @@
         num.setAttribute('x', cx);
         num.setAttribute('y', cy + 9);
         num.setAttribute('class', 'ad-state-count');
+        num.style.setProperty('--ad-delay', `${900 + idx * 20}ms`);
         num.textContent = count;
         labelsG.appendChild(num);
       }
+    });
+
+    // Trigger draw-in for all paths after the SVG is in the DOM
+    requestAnimationFrame(() => {
+      document.querySelectorAll('#map-svg .ad-state').forEach((p, i) => {
+        const delay = Math.min(i * 30, 600);
+        playDrawIn(p, delay);
+        // Make visible after its draw-in completes
+        const totalDuration = delay + 1200;
+        setTimeout(() => p.classList.add('drawn'), totalDuration);
+      });
+      // Count labels pop in after draw-in
+      document.querySelectorAll('#map-svg .ad-state-count').forEach((el, i) => {
+        el.style.animationDelay = `${900 + i * 20}ms`;
+        el.classList.add('pop');
+      });
+    });
+
+    updateCounter(data);
+    spawnRippleForHighCounts(data);
+  }
+
+  // Concentric ring ripple for states with > 5 vacancies
+  function spawnRippleForHighCounts(data) {
+    if (!data?.stateCounts) return;
+    setTimeout(() => {
+      Object.entries(data.stateCounts).forEach(([abbr, count]) => {
+        if (count >= 5) {
+          const path = document.querySelector(`#map-svg [data-abbr="${abbr}"]`);
+          if (path) spawnRipple(path);
+        }
+      });
+    }, 1800); // after draw-in completes
+  }
+
+  function spawnRipple(targetPath) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const bbox = targetPath.getBBox();
+    const cx = bbox.x + bbox.width / 2;
+    const cy = bbox.y + bbox.height / 2;
+    const parent = targetPath.parentNode;
+    [0, 200, 400].forEach((delay, i) => {
+      const ring = document.createElementNS(ns, 'circle');
+      ring.setAttribute('cx', cx);
+      ring.setAttribute('cy', cy);
+      ring.setAttribute('r', '4');
+      ring.setAttribute('class', 'ad-ripple');
+      ring.style.animationDelay = `${delay}ms`;
+      parent.appendChild(ring);
+      setTimeout(() => ring.remove(), 2500 + delay);
     });
 
     updateCounter(data);
