@@ -851,84 +851,6 @@
   }
 
   // ----- Particles (canvas background) -----
-  function startParticles() {
-    const canvas = document.getElementById('particleCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const isMobile = window.innerWidth < 768;
-    const COUNT = isMobile ? 35 : 90;
-    const CONN_DIST = isMobile ? 80 : 130;
-    let W = canvas.width = window.innerWidth;
-    let H = canvas.height = window.innerHeight;
-
-    let gravity = null;
-    const svg = document.getElementById('map-svg');
-    if (svg) {
-      svg.addEventListener('pointermove', (e) => {
-        const st = e.target.closest('.ad-state');
-        if (st) {
-          const r = st.getBoundingClientRect();
-          gravity = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-        }
-      });
-      svg.addEventListener('pointerleave', () => { gravity = null; });
-    }
-
-    const particles = Array.from({ length: COUNT }, () => ({
-      x: Math.random() * W, y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
-      r: Math.random() * 1.4 + 0.4, baseA: Math.random() * 0.35 + 0.08, a: 0,
-    }));
-
-    function frame() {
-      ctx.clearRect(0, 0, W, H);
-
-      for (let i = 0; i < COUNT; i++) {
-        const pi = particles[i];
-        if (gravity) {
-          const dx = gravity.x - pi.x, dy = gravity.y - pi.y;
-          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          if (dist < 350) {
-            const f = 0.018 * (1 - dist / 350);
-            pi.vx += (dx / dist) * f;
-            pi.vy += (dy / dist) * f;
-          }
-        }
-        pi.vx *= 0.995; pi.vy *= 0.995;
-        const spd = Math.sqrt(pi.vx * pi.vx + pi.vy * pi.vy);
-        if (spd > 1.2) { pi.vx = (pi.vx / spd) * 1.2; pi.vy = (pi.vy / spd) * 1.2; }
-        pi.x += pi.vx; pi.y += pi.vy;
-        if (pi.x < -20) pi.x = W + 20; if (pi.x > W + 20) pi.x = -20;
-        if (pi.y < -20) pi.y = H + 20; if (pi.y > H + 20) pi.y = -20;
-
-        for (let j = i + 1; j < COUNT; j++) {
-          const pj = particles[j];
-          const dx = pi.x - pj.x, dy = pi.y - pj.y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < CONN_DIST) {
-            ctx.beginPath(); ctx.moveTo(pi.x, pi.y); ctx.lineTo(pj.x, pj.y);
-            ctx.strokeStyle = `rgba(245,167,33,${0.12 * (1 - d / CONN_DIST)})`;
-            ctx.lineWidth = 0.5; ctx.stroke();
-          }
-        }
-      }
-
-      const now = Date.now();
-      for (let i = 0; i < COUNT; i++) {
-        const p = particles[i];
-        p.a = p.baseA + Math.sin(now * 0.002 + i) * 0.04;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,184,64,${Math.max(0, p.a)})`; ctx.fill();
-      }
-      requestAnimationFrame(frame);
-    }
-    frame();
-    window.addEventListener('resize', () => {
-      W = canvas.width = window.innerWidth;
-      H = canvas.height = window.innerHeight;
-    });
-  }
-
   // ===== Supabase Realtime: INSERT events trigger state ripples =====
   let realtimeSubscribed = false;
 
@@ -1217,19 +1139,8 @@
     particles = [];
   }
 
-  // Add .ad-gpu class on hover for GPU acceleration (added/removed by JS to avoid
-  // memory pressure from 36+ elements always having will-change).
-  document.addEventListener('mouseenter', (e) => {
-    const state = e.target.closest('.ad-state');
-    const district = e.target.closest('.ad-district');
-    if (state) state.classList.add('ad-gpu');
-    if (district) district.classList.add('ad-gpu');
-  }, true);
-  document.addEventListener('mouseleave', (e) => {
-    const state = e.target.closest('.ad-state');
-    const district = e.target.closest('.ad-district');
-    if (state) state.classList.remove('ad-gpu');
-    if (district) district.classList.remove('ad-gpu');
-  }, true);
+  // ===== GPU acceleration class =====
+  // .ad-gpu is toggled per-element on hover (in renderNational / renderState)
+  // to avoid 36+ elements always carrying will-change.
 
 })();

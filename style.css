@@ -7253,6 +7253,15 @@ body.map-active .app-container { overflow: hidden; }
   opacity: 0.15 !important;
 }
 
+/* GPU-acceleration class — toggled on hover by JS (renderNational / renderState)
+   so only the hovered path allocates a compositor layer. Avoids memory pressure
+   of 36+ paths each carrying will-change at rest. */
+.ad-state.ad-gpu,
+.ad-district.ad-gpu {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
 /* Liquid fill — states with data get the gradient */
 .ad-state.liquid-fill {
   fill: url(#liquid-gradient);
