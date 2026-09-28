@@ -7376,3 +7376,205 @@ body.map-active .app-container { overflow: hidden; }
 /* Results sheet nav breadcrumb */
 .ad-sheet-breadcrumb .sep { margin: 0 4px; color: var(--text-muted); }
 .ad-sheet-breadcrumb .current { color: var(--text-primary); font-weight: 500; }
+
+/* ===== INDIA MAP RESPONSIVE BREAKPOINTS ===== */
+
+/* Tablet: ≤1024px */
+@media (max-width: 1024px) {
+  /* Tooltip becomes a modal overlay (fixed, centered) */
+  .map-tooltip {
+    position: fixed;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) translateY(6px);
+    max-width: 320px;
+    width: calc(100% - 40px);
+    text-align: center;
+  }
+  .map-tooltip.visible {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+
+  /* Filters become horizontally scrollable */
+  .map-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .map-filters::-webkit-scrollbar { display: none; }
+
+  /* Header compacts */
+  .map-header {
+    padding: 10px 16px;
+    gap: 12px;
+  }
+  .map-title h2 { font-size: 16px; }
+  .map-subtitle { font-size: 10px; }
+  .map-counter { padding: 6px 12px; }
+  .map-counter-value { font-size: 18px; }
+
+  /* Slightly smaller zoom buttons */
+  .map-zoom-btn { width: 28px; height: 28px; font-size: 14px; }
+}
+
+/* Mobile: ≤768px */
+@media (max-width: 768px) {
+  /* Map takes full screen */
+  .map-container {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: var(--bg-main);
+    height: 100vh;
+    height: 100dvh;
+  }
+  #mapSvgWrap svg { max-height: none; height: 100%; }
+
+  /* Hide particle canvas on mobile to save GPU */
+  .map-particles { display: none !important; }
+
+  /* Header: smaller title, compact */
+  .map-header {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .map-title h2 { font-size: 14px; }
+  .map-subtitle { display: none; }
+  .map-counter { padding: 5px 10px; }
+  .map-counter-label { font-size: 7px; }
+  .map-counter-value { font-size: 16px; }
+
+  /* Filters collapse to bottom sheet toggle */
+  .map-controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    padding: 10px 12px;
+    background: linear-gradient(to top, var(--bg-main) 70%, transparent);
+    flex-wrap: wrap;
+  }
+  .map-filters {
+    display: none;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: 100%;
+    padding: 8px 0;
+    margin-bottom: 8px;
+    border-top: 1px solid var(--border-color);
+  }
+  .map-filters.open { display: flex; }
+  .map-filters-toggle {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .map-filters-toggle::after {
+    content: '▼';
+    margin-left: auto;
+    font-size: 10px;
+    transition: transform 0.2s;
+  }
+  .map-filters-toggle.open::after { transform: rotate(180deg); }
+
+  /* Larger zoom controls for touch targets */
+  .map-zoom-controls { gap: 6px; }
+  .map-zoom-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    font-size: 18px;
+  }
+
+  /* Tooltip becomes bottom sheet on mobile */
+  .map-tooltip {
+    position: fixed;
+    left: 8px !important;
+    right: 8px !important;
+    top: auto !important;
+    bottom: 16px;
+    transform: translateY(20px);
+    max-width: none;
+    width: auto;
+    z-index: 25;
+    border-radius: 14px;
+    padding: 14px 18px;
+    text-align: left;
+  }
+  .map-tooltip.visible {
+    transform: translateY(0);
+  }
+}
+
+/* Map filters toggle button — hidden on desktop */
+.map-filters-toggle { display: none; }
+
+/* ===== RESPONSIVE: Tablet (≤1024px) ===== */
+@media (max-width: 1024px) {
+  .map-header { padding: 10px 16px; gap: 10px; }
+  .map-title h2 { font-size: 1rem; }
+  .map-counter { padding: 6px 12px; font-size: 0.85rem; }
+  .map-filters { gap: 4px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+  .map-filter-btn { padding: 5px 10px; font-size: 0.75rem; white-space: nowrap; flex-shrink: 0; }
+  .map-tooltip { max-width: 240px; }
+  .map-zoom-btn { width: 36px; height: 36px; }
+}
+
+/* ===== RESPONSIVE: Mobile (≤768px) ===== */
+@media (max-width: 768px) {
+  #particleCanvas { display: none; }
+  .map-header { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+  .map-title h2 { font-size: 0.9rem; }
+  .map-subtitle { font-size: 0.7rem; }
+  .map-counter { font-size: 0.75rem; padding: 4px 10px; }
+  .map-controls { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+  .map-filters-toggle { display: flex !important; }
+  .map-filters {
+    display: none;
+    position: fixed; bottom: 60px; left: 8px; right: 8px;
+    background: var(--ad-surface); border-radius: 12px;
+    padding: 10px; z-index: 100;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+    gap: 8px; justify-content: center; flex-wrap: wrap;
+    border: 1px solid var(--ad-border);
+  }
+  .map-filters.open { display: flex; }
+  .map-zoom-btn { width: 44px; height: 44px; font-size: 1.3rem; }
+  .map-tooltip {
+    position: fixed !important; bottom: 12px !important;
+    left: 8px !important; right: 8px !important; top: auto !important;
+    max-width: none; z-index: 50;
+    transform: translateY(0) !important;
+  }
+  .map-back-btn span { display: none; }
+  .ad-state, .ad-district { cursor: pointer; }
+}
+
+/* Filters toggle button (mobile only) */
+.map-filters-toggle {
+  display: none;
+  align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 8px;
+  border: 1px solid rgba(148,163,184,0.15);
+  background: rgba(15,23,42,0.6); color: #94a3b8;
+  font-size: 0.8rem; cursor: pointer; font-family: inherit;
+  transition: all 0.2s;
+}
+.map-filters-toggle:hover { color: #f8fafc; border-color: rgba(34,211,238,0.3); }
+.map-filters-toggle .arrow { transition: transform 0.2s; font-size: 0.7rem; }
+.map-filters-toggle.open .arrow { transform: rotate(180deg); }

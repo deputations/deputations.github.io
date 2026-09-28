@@ -14,6 +14,21 @@
   let currentProjection = null;
   let zoomAnimFrame = null;
   let generation = 0;
+  let lastFocusedState = null;
+  let announceTimer = null;
+
+  function announce(msg) {
+    const el = document.getElementById('mapAnnounce');
+    if (!el) return;
+    el.textContent = '';
+    if (announceTimer) clearTimeout(announceTimer);
+    // Brief delay so screen readers register the cleared then re-set text
+    announceTimer = setTimeout(() => { el.textContent = msg; }, 50);
+  }
+
+  /* ---- gesture state ---- */
+  let gestureState = null;
+  let panState = null;
 
   const ABBR_TO_CODE = { 'JK':'01','HP':'02','PB':'03','CH':'04','UT':'05','HR':'06','DL':'07','RJ':'08','UP':'09','BR':'10','SK':'11','AR':'12','NL':'13','MN':'14','MZ':'15','TR':'16','ML':'17','AS':'18','WB':'19','JH':'20','OD':'21','CG':'22','MP':'23','GJ':'24','DD':'25','DN':'26','MH':'27','AP':'28','KA':'29','GA':'30','LD':'31','KL':'32','TN':'33','PY':'34','AN':'35','TS':'36','LA':'38' };
 
@@ -117,13 +132,34 @@
     return d.innerHTML;
   }
 
-  // ----- Lazy load districts -----
+  // ----- Lazy load districts (with 24h sessionStorage cache) -----
   function ensureDistrictsLoaded() {
     if (districtsGeo) return Promise.resolve(districtsGeo);
     if (districtsPromise) return districtsPromise;
+
+    // Check sessionStorage cache first (24h TTL)
+    const cacheKey = 'india-districts-geo';
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed._ts && (Date.now() - parsed._ts) < 86400000) {
+          districtsGeo = parsed.data;
+          return Promise.resolve(districtsGeo);
+        }
+      }
+    } catch (e) { /* sessionStorage unavailable — fall through to fetch */ }
+
     districtsPromise = fetch('geo/india-districts-all.geojson')
       .then(r => r.ok ? r.json() : null)
-      .then(g => { districtsGeo = g; return g; })
+      .then(g => {
+        districtsGeo = g;
+        // Cache in sessionStorage (24h TTL)
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify({ _ts: Date.now(), data: g }));
+        } catch (e) { /* quota exceeded — silently ignore */ }
+        return g;
+      })
       .catch(() => null);
     return districtsPromise;
   }
@@ -242,6 +278,7 @@
       // Hover spotlight (dims neighbours)
       path.addEventListener('mouseenter', (e) => {
         showTooltip(e, name, count);
+        path.classList.add('ad-gpu');
         document.querySelectorAll('#map-svg .ad-state').forEach(s => {
           if (s !== path) s.classList.add('neighbor-dim');
         });
@@ -249,13 +286,21 @@
       path.addEventListener('mousemove', moveTooltip);
       path.addEventListener('mouseleave', () => {
         hideTooltip();
+        path.classList.remove('ad-gpu');
         document.querySelectorAll('#map-svg .ad-state').forEach(s => s.classList.remove('neighbor-dim'));
       });
       path.addEventListener('click', () => drillToState(abbr, name));
       path.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drillToState(abbr, name); }
       });
-      g.appendChild(path);
+      path.addEventListener('mouseenter', (e) => {
+        showTooltip(e, name, count);
+        path.classList.add('ad-gpu');
+        announce(`${name}: ${count} vacancy${count !== 1 ? 'ies' : ''}`);
+        document.querySelectorAll('#map-svg .ad-state').forEach(s => {
+          if (s !== path) s.classList.add('neighbor-dim');
+        });
+      });
 
       // Label
       const [clon, clat] = centroid(feat.geometry);
@@ -337,6 +382,7 @@
   // ----- Drill to state -----
   async function drillToState(abbr, name) {
     if (viewMode === 'state' && selectedAbbr === abbr) return;
+    lastFocusedState = abbr;
     const gen = ++generation;
 
     const dGeo = await ensureDistrictsLoaded();
@@ -356,7 +402,8 @@
     selectedAbbr = abbr;
     viewMode = 'state';
     const back = document.getElementById('btn-back');
-    if (back) back.hidden = false;
+    if (back) { back.hidden = false; back.focus(); }
+    announce(`${name}: zoomed in. Explore districts for ${name}.`);
   }
 
   async function cinematicZoom(abbr) {
@@ -436,9 +483,9 @@
       path.style.setProperty('--ad-delay', `${Math.min(idx * 20, 500)}ms`);
 
       path.addEventListener('click', () => onDistrictClick(abbr, geoName));
-      path.addEventListener('mouseenter', (e) => showTooltip(e, geoName, count));
+      path.addEventListener('mouseenter', (e) => { path.classList.add('ad-gpu'); showTooltip(e, geoName, count); });
       path.addEventListener('mousemove', moveTooltip);
-      path.addEventListener('mouseleave', hideTooltip);
+      path.addEventListener('mouseleave', () => { path.classList.remove('ad-gpu'); hideTooltip(); });
       g.appendChild(path);
 
       const [clon, clat] = centroid(feat.geometry);
@@ -594,6 +641,11 @@
       if (back) back.hidden = true;
       selectedAbbr = null;
       viewMode = 'national';
+      // Return focus to the state that was drilled into
+      if (lastFocusedState) {
+        const st = document.querySelector(`#map-svg [data-abbr="${lastFocusedState}"].ad-state`);
+        if (st) { st.focus(); return; }
+      }
     } else if (viewMode === 'district') {
       const m = document.getElementById('modal');
       if (m) m.close?.();
@@ -616,11 +668,29 @@
     wrap.innerHTML = '';
     wrap.appendChild(buildSvg());
 
-    // Load geometry
+    // Load geometry (7-day sessionStorage cache)
+    const stateGeoKey = 'india-states-geo';
+    const stateGeoCacheMaxAge = 7 * 86400000; // 7 days
     try {
-      const resp = await fetch('geo/india-states.geojson');
-      if (resp.ok) window._indiaGeoData = await resp.json();
-    } catch (e) { console.error('[map] state geo load failed:', e); }
+      const cached = sessionStorage.getItem(stateGeoKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed._ts && (Date.now() - parsed._ts) < stateGeoCacheMaxAge) {
+          window._indiaGeoData = parsed.data;
+        }
+      }
+    } catch (e) { /* sessionStorage unavailable */ }
+    if (!window._indiaGeoData) {
+      try {
+        const resp = await fetch('geo/india-states.geojson');
+        if (resp.ok) {
+          window._indiaGeoData = await resp.json();
+          try {
+            sessionStorage.setItem(stateGeoKey, JSON.stringify({ _ts: Date.now(), data: window._indiaGeoData }));
+          } catch (e) { /* quota exceeded */ }
+        }
+      } catch (e) { console.error('[map] state geo load failed:', e); }
+    }
 
     // Load data
     if (window.IndiaMapData && IndiaMapData.load) {
@@ -632,6 +702,9 @@
 
     renderNational(getData());
 
+    // Subscribe to Supabase Realtime for live vacancy inserts
+    setupRealtime();
+
     // Wire controls
     const back = document.getElementById('btn-back');
     if (back) { back.hidden = true; back.addEventListener('click', goBack); }
@@ -642,13 +715,142 @@
     document.getElementById('zoomResetBtn')?.addEventListener('click', zoomReset);
     document.querySelectorAll('.map-filter-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.map-filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.map-filter-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         applyFilter(btn.dataset.filter);
+        announce(`Filter: ${btn.textContent}`);
       });
     });
+
+    // Wire gesture controls
+    const mapSvgEl = document.getElementById('map-svg');
+    if (mapSvgEl) {
+      mapSvgEl.style.touchAction = 'none';
+      mapSvgEl.addEventListener('wheel', onWheelZoom, { passive: false });
+      mapSvgEl.addEventListener('touchstart', onTouchStart, { passive: false });
+      mapSvgEl.addEventListener('touchmove', onTouchMove, { passive: false });
+      mapSvgEl.addEventListener('touchend', onTouchEnd);
+      mapSvgEl.addEventListener('touchcancel', onTouchEnd);
+      mapSvgEl.addEventListener('pointerdown', onPointerDown);
+      mapSvgEl.addEventListener('pointermove', onPointerMove);
+      mapSvgEl.addEventListener('pointerup', onPointerUp);
+      mapSvgEl.addEventListener('pointercancel', onPointerUp);
+    }
+
+    // Filter toggle button (mobile)
+    document.getElementById('mapFiltersToggle')?.addEventListener('click', onFiltersToggle);
   };
 
+  // ----- Wheel zoom (prevent page scroll over map) -----
+  function onWheelZoom(e) {
+    const svg = document.getElementById('map-svg');
+    if (!svg) return;
+    e.preventDefault();
+    const vb = svg.viewBox.baseVal;
+    const factor = e.deltaY < 0 ? 0.9 : 1.1;
+    const newW = Math.min(Math.max(vb.width * factor, 80), 2000);
+    const newH = Math.min(Math.max(vb.height * factor, 64), 1600);
+    const cx = vb.x + vb.width / 2, cy = vb.y + vb.height / 2;
+    vb.x = cx - newW / 2; vb.y = cy - newH / 2;
+    vb.width = newW; vb.height = newH;
+  }
+
+  // ----- Pinch-zoom (two-finger) -----
+  function onTouchStart(e) {
+    if (e.touches.length === 2) {
+      gestureState = {
+        dist: Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        ),
+      };
+      e.preventDefault();
+    } else if (e.touches.length === 1 && !gestureState) {
+      panState = { startX: e.touches[0].clientX, startY: e.touches[0].clientY };
+    }
+  }
+  function onTouchMove(e) {
+    if (e.touches.length === 2 && gestureState) {
+      const newDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const svg = document.getElementById('map-svg');
+      if (!svg) return;
+      const vb = svg.viewBox.baseVal;
+      const scale = gestureState.dist / newDist;
+      const newW = Math.min(Math.max(vb.width * scale, 80), 2000);
+      const newH = Math.min(Math.max(vb.height * scale, 64), 1600);
+      const cx = vb.x + vb.width / 2, cy = vb.y + vb.height / 2;
+      vb.x = cx - newW / 2; vb.y = cy - newH / 2;
+      vb.width = newW; vb.height = newH;
+      gestureState = { dist: newDist };
+      e.preventDefault();
+    } else if (e.touches.length === 1 && panState) {
+      const svg = document.getElementById('map-svg');
+      if (!svg) return;
+      const dx = e.touches[0].clientX - panState.startX;
+      const dy = e.touches[0].clientY - panState.startY;
+      panState.startX = e.touches[0].clientX;
+      panState.startY = e.touches[0].clientY;
+      const vb = svg.viewBox.baseVal;
+      vb.x -= dx * (vb.width / svg.clientWidth);
+      vb.y -= dy * (vb.height / svg.clientHeight);
+      e.preventDefault();
+    }
+  }
+  function onTouchEnd() {
+    gestureState = null;
+    panState = null;
+  }
+
+  // ----- Pointer pan (drag on SVG background / not on a state) -----
+  function onPointerDown(e) {
+    // Only primary pointer, and not on a state path
+    if (e.button !== 0) return;
+    if (e.target.closest('.ad-state') || e.target.closest('.ad-district')) return;
+    const svg = document.getElementById('map-svg');
+    if (!svg) return;
+    svg.setPointerCapture(e.pointerId);
+    panState = { startX: e.clientX, startY: e.clientY };
+  }
+  function onPointerMove(e) {
+    if (!panState) return;
+    const svg = document.getElementById('map-svg');
+    if (!svg) return;
+    const vb = svg.viewBox.baseVal;
+    const dx = e.clientX - panState.startX;
+    const dy = e.clientY - panState.startY;
+    panState.startX = e.clientX;
+    panState.startY = e.clientY;
+    vb.x -= dx * (vb.width / svg.clientWidth);
+    vb.y -= dy * (vb.height / svg.clientHeight);
+  }
+  function onPointerUp(e) {
+    if (panState) {
+      const svg = document.getElementById('map-svg');
+      if (svg && svg.hasPointerCapture(e.pointerId)) {
+        svg.releasePointerCapture(e.pointerId);
+      }
+      panState = null;
+    }
+  }
+
+  // ----- Filter toggle (mobile) -----
+  function onFiltersToggle() {
+    const btn = document.getElementById('mapFiltersToggle');
+    const filters = document.querySelector('.map-filters');
+    if (!btn || !filters) return;
+    const isOpen = filters.classList.toggle('open');
+    btn.classList.toggle('open', isOpen);
+    btn.setAttribute('aria-expanded', String(isOpen));
+  }
+
+  // ----- Particles (canvas background) -----
   function startParticles() {
     const canvas = document.getElementById('particleCanvas');
     if (!canvas) return;
@@ -659,7 +861,6 @@
     let W = canvas.width = window.innerWidth;
     let H = canvas.height = window.innerHeight;
 
-    // Gravitational hover target
     let gravity = null;
     const svg = document.getElementById('map-svg');
     if (svg) {
@@ -727,4 +928,308 @@
       H = canvas.height = window.innerHeight;
     });
   }
+
+  // ===== Supabase Realtime: INSERT events trigger state ripples =====
+  let realtimeSubscribed = false;
+
+  function setupRealtime() {
+    if (realtimeSubscribed) return;
+    if (!window.ensureSupabaseAvailable) {
+      console.info('[map] realtime unavailable: ensureSupabaseAvailable not on window');
+      return;
+    }
+
+    // Only proceed when Supabase is reachable (skipped silently on NIC)
+    try {
+      var probePromise = window.ensureSupabaseAvailable().then(function (available) {
+        if (!available) {
+          console.info('[map] realtime unavailable: Supabase not reachable');
+          return;
+        }
+        startRealtime();
+      });
+    } catch (e) {
+      console.info('[map] realtime unavailable:', e.message);
+    }
+  }
+
+  function startRealtime() {
+    if (realtimeSubscribed) return;
+    if (!window.WebSocket) return;
+
+    var SB_URL = (window.SUPABASE_URL || "").replace(/\/+$/, "");
+    var SB_KEY = window.SUPABASE_ANON_KEY || "";
+    if (!SB_URL) return;
+
+    var SUPABASE_HOST_RE = /(\.supabase\.co$|^api\.alldeputations\.com$)/i;
+    if (!SUPABASE_HOST_RE.test(SB_URL)) return;
+
+    var wsUrl = "wss://" + SB_URL.replace(/^https?:\/\//, "") +
+                "/realtime/v1/websocket?apikey=" + encodeURIComponent(SB_KEY) +
+                "&vsn=1.0.0";
+
+    var ws;
+    try {
+      ws = new WebSocket(wsUrl);
+    } catch (e) {
+      console.info('[map] realtime unavailable:', e.message);
+      return;
+    }
+
+    var refCounter = 1;
+    function send(topic, event, payload) {
+      if (!ws || ws.readyState !== 1) return;
+      ws.send(JSON.stringify({ topic: topic, event: event, payload: payload || {}, ref: String(refCounter++) }));
+    }
+
+    ws.addEventListener("open", function () {
+      send("vacancies", "phx_join", {
+        config: { broadcast: { self: false }, presence: { key: "" }, postgres_changes: [{ event: "INSERT", schema: "public", table: "vacancies" }] },
+        postgres_changes: { event: "INSERT", schema: "public", table: "vacancies" }
+      });
+    });
+
+    ws.addEventListener("message", function (ev) {
+      var m;
+      try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (m && m.event === "postgres_changes" && m.payload && m.payload.eventType === "INSERT") {
+        handleNewVacancy(m.payload.new || {});
+      }
+    });
+
+    ws.addEventListener("error", function () {
+      // Best-effort: polling fallback (realtime-toast.js) covers NIC networks
+    });
+
+    ws.addEventListener("close", function () {
+      // Don't retry — page lifecycle is short, polling covers the gap
+    });
+
+    realtimeSubscribed = true;
+    console.info('[map] realtime subscribed');
+  }
+
+  function handleNewVacancy(row) {
+    // Normalise using the same function the data layer uses
+    var norm = window.IndiaMapData ? IndiaMapData.normaliseVacancy(row) : null;
+    if (!norm) return;
+
+    var abbr = norm.state_abbr;
+    if (!abbr) return;
+
+    // Increment count
+    var sc = window.IndiaMapData ? IndiaMapData.stateCounts : null;
+    if (sc) {
+      sc[abbr] = (sc[abbr] || 0) + 1;
+    }
+
+    // Update the SVG path label
+    var path = document.querySelector('#map-svg [data-abbr="' + abbr + '"].ad-state');
+    if (path) {
+      path.classList.remove('empty-state');
+      path.classList.add('liquid-fill');
+      path.style.fill = 'url(#liquid-gradient)';
+      spawnRipple(path);
+    }
+
+    // Update the count text element (no data-abbr on count — match via label sibling)
+    var countEl = null;
+    var labels = document.querySelectorAll('#map-labels .ad-state-label');
+    for (var i = 0; i < labels.length; i++) {
+      if (labels[i].textContent === abbr) {
+        var next = labels[i].nextElementSibling;
+        if (next && next.classList.contains('ad-state-count')) { countEl = next; break; }
+      }
+    }
+    var newCount = sc ? (sc[abbr] || 0) : 0;
+    if (countEl) {
+      countEl.textContent = newCount;
+      countEl.classList.add('pop');
+    }
+
+    // Update the header counter
+    updateCounterFromStateCounts(sc);
+  }
+
+  function updateCounterFromStateCounts(stateCounts) {
+    var total = 0;
+    if (stateCounts) {
+      Object.values(stateCounts).forEach(function (c) { total += c; });
+    }
+    var el = document.getElementById('mapCounterValue');
+    if (el) el.textContent = total.toLocaleString();
+  }
+
+  // ===== End of realtime additions =====
+
+  // ===== Ambient canvas particles with spatial grid =====
+  const CONN_DIST = 120;
+  const SPEED = 0.35;
+  let particleRaf = null;
+  let particles = [];
+  let particleCanvas = null;
+  let particleCtx = null;
+  let particleMouseX = -9999;
+  let particleMouseY = -9999;
+  let isMapVisible = false;
+
+  function getParticleCount() {
+    const isMobile = window.innerWidth < 768;
+    let count = isMobile ? 25 : 50;
+    const cores = navigator.hardwareConcurrency || 8;
+    if (cores <= 4) count = Math.floor(count / 2);
+    return count;
+  }
+
+  function initParticleCanvas() {
+    particleCanvas = document.getElementById('particleCanvas');
+    if (!particleCanvas) return false;
+    particleCtx = particleCanvas.getContext('2d');
+    return true;
+  }
+
+  function resizeParticleCanvas() {
+    if (!particleCanvas) return;
+    const container = particleCanvas.parentElement;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    particleCanvas.width = rect.width;
+    particleCanvas.height = rect.height;
+  }
+
+  function makeParticle() {
+    const canvas = particleCanvas;
+    return {
+      x: Math.random() * (canvas ? canvas.width : 800),
+      y: Math.random() * (canvas ? canvas.height : 600),
+      vx: (Math.random() - 0.5) * SPEED * 2,
+      vy: (Math.random() - 0.5) * SPEED * 2,
+      r: 1.2 + Math.random() * 1.4,
+      alpha: 0.25 + Math.random() * 0.45,
+    };
+  }
+
+  function resetParticles() {
+    if (!particleCanvas) return;
+    particles = [];
+    for (let i = 0; i < getParticleCount(); i++) {
+      particles.push(makeParticle());
+    }
+  }
+
+  function buildSpatialGrid(pts, cellSize) {
+    const grid = new Map();
+    for (let i = 0; i < pts.length; i++) {
+      const cx = Math.floor(pts[i].x / cellSize);
+      const cy = Math.floor(pts[i].y / cellSize);
+      const key = cx + ',' + cy;
+      if (!grid.has(key)) grid.set(key, []);
+      grid.get(key).push(i);
+    }
+    return grid;
+  }
+
+  function tickParticles() {
+    if (!isMapVisible || !particleCtx || !particleCanvas) return;
+    const w = particleCanvas.width;
+    const h = particleCanvas.height;
+    if (w === 0 || h === 0) { particleRaf = requestAnimationFrame(tickParticles); return; }
+
+    particleCtx.clearRect(0, 0, w, h);
+
+    // Move
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0) p.x = w;
+      if (p.x > w) p.x = 0;
+      if (p.y < 0) p.y = h;
+      if (p.y > h) p.y = 0;
+    }
+
+    // Connections via spatial grid
+    const grid = buildSpatialGrid(particles, CONN_DIST);
+    const drawn = new Set();
+    particleCtx.lineWidth = 0.5;
+
+    for (let i = 0; i < particles.length; i++) {
+      const pi = particles[i];
+      const cx = Math.floor(pi.x / CONN_DIST);
+      const cy = Math.floor(pi.y / CONN_DIST);
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          const cell = grid.get((cx + dx) + ',' + (cy + dy));
+          if (!cell) continue;
+          for (let k = 0; k < cell.length; k++) {
+            const j = cell[k];
+            if (j <= i) continue;
+            const pairKey = i * 10000 + j;
+            if (drawn.has(pairKey)) continue;
+            drawn.add(pairKey);
+            const pj = particles[j];
+            const ddx = pi.x - pj.x;
+            const ddy = pi.y - pj.y;
+            const dist = Math.sqrt(ddx * ddx + ddy * ddy);
+            if (dist < CONN_DIST) {
+              const opacity = (1 - dist / CONN_DIST) * 0.18;
+              particleCtx.strokeStyle = `rgba(245,167,33,${opacity})`;
+              particleCtx.beginPath();
+              particleCtx.moveTo(pi.x, pi.y);
+              particleCtx.lineTo(pj.x, pj.y);
+              particleCtx.stroke();
+            }
+          }
+        }
+      }
+    }
+
+    // Draw particles
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      particleCtx.beginPath();
+      particleCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      particleCtx.fillStyle = `rgba(245,167,33,${p.alpha})`;
+      particleCtx.fill();
+    }
+
+    particleRaf = requestAnimationFrame(tickParticles);
+  }
+
+  function startParticles() {
+    if (particleRaf) return; // already running
+    if (!initParticleCanvas()) return;
+    resizeParticleCanvas();
+    resetParticles();
+    isMapVisible = true;
+    tickParticles();
+  }
+
+  function stopParticles() {
+    isMapVisible = false;
+    if (particleRaf) {
+      cancelAnimationFrame(particleRaf);
+      particleRaf = null;
+    }
+    if (particleCtx && particleCanvas) {
+      particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+    }
+    particles = [];
+  }
+
+  // Add .ad-gpu class on hover for GPU acceleration (added/removed by JS to avoid
+  // memory pressure from 36+ elements always having will-change).
+  document.addEventListener('mouseenter', (e) => {
+    const state = e.target.closest('.ad-state');
+    const district = e.target.closest('.ad-district');
+    if (state) state.classList.add('ad-gpu');
+    if (district) district.classList.add('ad-gpu');
+  }, true);
+  document.addEventListener('mouseleave', (e) => {
+    const state = e.target.closest('.ad-state');
+    const district = e.target.closest('.ad-district');
+    if (state) state.classList.remove('ad-gpu');
+    if (district) district.classList.remove('ad-gpu');
+  }, true);
+
 })();

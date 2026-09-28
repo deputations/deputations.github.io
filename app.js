@@ -4095,6 +4095,8 @@ function syncCardSortUI() {
                 void homeView.offsetHeight;
                 homeView.classList.remove('hiding');
             }, 200);
+            // Stop map particles to free CPU/GPU when view hides
+            if (typeof stopParticles === 'function') stopParticles();
         }
     }
 
