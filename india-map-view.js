@@ -653,49 +653,78 @@
     const canvas = document.getElementById('particleCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const particles = [];
-    for (let i = 0; i < 60; i++) {
-      particles.push({
-        x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
-        r: Math.random() * 1.2 + 0.3, a: Math.random() * 0.3 + 0.05,
+    const isMobile = window.innerWidth < 768;
+    const COUNT = isMobile ? 35 : 90;
+    const CONN_DIST = isMobile ? 80 : 130;
+    let W = canvas.width = window.innerWidth;
+    let H = canvas.height = window.innerHeight;
+
+    // Gravitational hover target
+    let gravity = null;
+    const svg = document.getElementById('map-svg');
+    if (svg) {
+      svg.addEventListener('pointermove', (e) => {
+        const st = e.target.closest('.ad-state');
+        if (st) {
+          const r = st.getBoundingClientRect();
+          gravity = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }
       });
+      svg.addEventListener('pointerleave', () => { gravity = null; });
     }
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // Connections
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
+
+    const particles = Array.from({ length: COUNT }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
+      r: Math.random() * 1.4 + 0.4, baseA: Math.random() * 0.35 + 0.08, a: 0,
+    }));
+
+    function frame() {
+      ctx.clearRect(0, 0, W, H);
+
+      for (let i = 0; i < COUNT; i++) {
+        const pi = particles[i];
+        if (gravity) {
+          const dx = gravity.x - pi.x, dy = gravity.y - pi.y;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          if (dist < 350) {
+            const f = 0.018 * (1 - dist / 350);
+            pi.vx += (dx / dist) * f;
+            pi.vy += (dy / dist) * f;
+          }
+        }
+        pi.vx *= 0.995; pi.vy *= 0.995;
+        const spd = Math.sqrt(pi.vx * pi.vx + pi.vy * pi.vy);
+        if (spd > 1.2) { pi.vx = (pi.vx / spd) * 1.2; pi.vy = (pi.vy / spd) * 1.2; }
+        pi.x += pi.vx; pi.y += pi.vy;
+        if (pi.x < -20) pi.x = W + 20; if (pi.x > W + 20) pi.x = -20;
+        if (pi.y < -20) pi.y = H + 20; if (pi.y > H + 20) pi.y = -20;
+
+        for (let j = i + 1; j < COUNT; j++) {
+          const pj = particles[j];
+          const dx = pi.x - pj.x, dy = pi.y - pj.y;
           const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 110) {
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(34,211,238,${0.07 * (1 - d / 110)})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
+          if (d < CONN_DIST) {
+            ctx.beginPath(); ctx.moveTo(pi.x, pi.y); ctx.lineTo(pj.x, pj.y);
+            ctx.strokeStyle = `rgba(245,167,33,${0.12 * (1 - d / CONN_DIST)})`;
+            ctx.lineWidth = 0.5; ctx.stroke();
           }
         }
       }
-      particles.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(34,211,238,${p.a})`;
-        ctx.fill();
-      });
-      requestAnimationFrame(animate);
+
+      const now = Date.now();
+      for (let i = 0; i < COUNT; i++) {
+        const p = particles[i];
+        p.a = p.baseA + Math.sin(now * 0.002 + i) * 0.04;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,184,64,${Math.max(0, p.a)})`; ctx.fill();
+      }
+      requestAnimationFrame(frame);
     }
-    animate();
+    frame();
     window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
     });
   }
 })();

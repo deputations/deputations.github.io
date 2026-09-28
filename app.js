@@ -4065,17 +4065,36 @@ function syncCardSortUI() {
     function showView(view) {
         if (!homeView || !mapView) return;
         if (view === 'map') {
-            homeView.hidden = true;
-            mapView.hidden = false;
-            document.body.classList.add('map-active');
-            if (!mapBooted && typeof initIndiaMap === 'function') {
-                mapBooted = true;
-                initIndiaMap();
-            }
+            // Phase 1: home dismisses
+            homeView.classList.add('hiding');
+            // Phase 2: after home fades, show map
+            setTimeout(() => {
+                homeView.hidden = true;
+                homeView.classList.remove('hiding');
+                mapView.hidden = false;
+                document.body.classList.add('map-active');
+                // Trigger map entrance next frame
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        mapView.classList.add('visible');
+                    });
+                });
+                if (!mapBooted && typeof initIndiaMap === 'function') {
+                    mapBooted = true;
+                    initIndiaMap();
+                }
+            }, 350);
         } else {
-            homeView.hidden = false;
-            mapView.hidden = true;
-            document.body.classList.remove('map-active');
+            // Reverse: map out, home in
+            mapView.classList.remove('visible');
+            setTimeout(() => {
+                mapView.hidden = true;
+                document.body.classList.remove('map-active');
+                homeView.hidden = false;
+                // Force reflow then animate in
+                void homeView.offsetHeight;
+                homeView.classList.remove('hiding');
+            }, 200);
         }
     }
 
