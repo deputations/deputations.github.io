@@ -10,7 +10,7 @@
 
 // ====== LAZY SUPABASE CLIENT ======
 let supabaseClient = null;
-function getSupabase() {
+async function getSupabase() {
   if (supabaseClient) return supabaseClient;
   if (!window.SUPABASE_READY || !window.SUPABASE_READY()) return null;
   try {
@@ -81,14 +81,55 @@ async function loadFromSupabase() {
 // TitleCase JSON shape used by mock-data.js. Convert each row once at the
 // edge so the rest of the page can stay readable.
 function normaliseVacancy(v) {
+  const postType = (v.deputation_type || '').toLowerCase();
+  const orgType = (v.organisation_type || '').toLowerCase();
+  const status = (v.status || '').toLowerCase();
+  const minExp = parseInt(v.min_years_experience || '0', 10);
+  const level = (v.level_text || '').toLowerCase();
+
+  // Derive category from organisation type
+  let category = 'govt';
+  if (orgType.includes('private') || orgType.includes('psce')) category = 'private';
+  else if (orgType.includes('educational') || orgType.includes('university')) category = 'campus';
+  else if (orgType.includes('intern') || orgType.includes('trainee')) category = 'internship';
+  else if (orgType.includes('contract') || orgType.includes('manpower')) category = 'manpower';
+
+  // Derive qualification from level
+  let qualification = 'Graduate';
+  if (level.includes('level-15') || level.includes('level-17')) qualification = 'Doctorate';
+  else if (level.includes('level-14') || level.includes('level-13')) qualification = 'Post Graduate';
+  else if (level.includes('level-12') || level.includes('level-11') || level.includes('level-10')) qualification = 'Graduate';
+  else if (level.includes('level-8') || level.includes('level-9')) qualification = '12th Pass';
+  else if (level.includes('level-4') || level.includes('level-5') || level.includes('level-6')) qualification = '10th Pass';
+
+  // Derive experience from min years
+  let experience = 'Any';
+  if (minExp >= 10) experience = '5+ years';
+  else if (minExp >= 5) experience = '3-5 years';
+  else if (minExp >= 1) experience = '1-2 years';
+  else if (minExp > 0) experience = 'Fresher';
+
+  // Derive job type from deputation type
+  let jobType = 'Full-time';
+  if (postType.includes('contract') || postType.includes('fixed tenure')) jobType = 'Contract';
+  else if (postType.includes('part')) jobType = 'Part-time';
+  else if (postType.includes('temporary')) jobType = 'Temporary';
+
+  // Derive job shift from post name or mode
+  let jobShift = 'On-site';
+  const postLower = (v.post_name || '').toLowerCase();
+  const mode = (v.mode_of_application || '').toLowerCase();
+  if (postLower.includes('remote') || mode.includes('online')) jobShift = 'Remote';
+  else if (postLower.includes('hybrid') || mode.includes('hybrid')) jobShift = 'Hybrid';
+
   return {
-    id:                 v.id,
+    id:                 v.id || v.Vacancy_ID,
     Vacancy_ID:         v.vacancy_id ?? v.Vacancy_ID,
     Post_Name:          v.post_name ?? v.Post_Name,
+    title:              v.post_name ?? v.Post_Name,
     Ministry:           v.ministry ?? v.Ministry,
     Organisation:       v.organisation ?? v.Organisation,
-    Post_Name:          v.post_name ?? v.Post_Name,
-    title:              v.post_name ?? v.Post_Name,
+    Organisation_Type:  v.organisation_type ?? v.Organisation_Type,
     Location_City:      v.location_city ?? v.Location_City,
     Location_State:     v.location_state ?? v.Location_State,
     state:              v.state_abbr ?? v.state,
@@ -96,19 +137,22 @@ function normaliseVacancy(v) {
     district:           v.district,
     location_scope:     v.location_scope,
     location_label:     v.location_label,
-    level:              v.level,
-    no_of_posts:        v.no_of_posts,
-    closingDate:        v.last_date_to_apply,
-    qualification:      v.qualification,
-    experience:         v.experience,
-    jobType:            v.job_type,
-    jobTime:            v.job_time,
-    jobShift:           v.job_shift,
-    closingDate:        v.last_date_to_apply,
-    Official_Notification_Link: v.official_notification_link,
+    level:              v.level ?? v.level_text,
+    Level_Text:         v.level_text ?? v.Level_Text,
+    No_of_Posts:        v.no_of_posts ?? v.No_of_Posts,
     posts:              v.no_of_posts ? parseInt(v.no_of_posts, 10) || 1 : 1,
-    active:             v.status === 'approved' || v.active !== false,
-    // Keep raw row for any field we didn't explicitly surface
+    closingDate:        v.last_date_to_apply,
+    Last_Date_To_Apply: v.last_date_to_apply ?? v.Last_Date_Apply,
+    qualification,
+    experience,
+    category,
+    jobType,
+    jobTime: 'Day Shift',
+    jobShift,
+    active:             status === 'active' || status === '',
+    Status:             v.status ?? v.Status,
+    Deputation_Type:    v.deputation_type ?? v.Deputation_Type,
+    Official_Notification_Link: v.official_notification_link,
     _raw: v,
   };
 }

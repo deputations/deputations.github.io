@@ -130,10 +130,12 @@ export function getData() {
   // 7. Special buckets (using location_scope)
   const nationwideCount = active.filter(l => l.location_scope === 'nationwide').length;
   const multiStateCount = active.filter(l => l.location_scope === 'multi_state').length;
+  const unknownCount = active.filter(l => !l.state_abbr && l.location_scope === 'district').length;
 
   return {
     nationalCount,
     nationwideCount,
+    multiStateCount,
     unknownCount,
     stateCounts,
     districtCounts,
