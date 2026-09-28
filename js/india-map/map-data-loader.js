@@ -8,6 +8,21 @@
 //             window.ensureSupabaseAvailable, window.SUPABASE_READY,
 //             window.SUPABASE_AVAILABLE, window.supabase (optional)
 
+// ====== STATE NAME → ABBR MAP ======
+const STATE_ABBR_MAP = {
+  'andhra pradesh': 'AP', 'arunachal pradesh': 'AR', 'assam': 'AS', 'bihar': 'BR',
+  'chhattisgarh': 'CG', 'goa': 'GA', 'gujarat': 'GJ', 'haryana': 'HR',
+  'himachal pradesh': 'HP', 'jammu and kashmir': 'JK', 'jharkhand': 'JH',
+  'karnataka': 'KA', 'kerala': 'KL', 'madhya pradesh': 'MP', 'maharashtra': 'MH',
+  'manipur': 'MN', 'meghalaya': 'ML', 'mizoram': 'MZ', 'nagaland': 'NL',
+  'odisha': 'OD', 'punjab': 'PB', 'rajasthan': 'RJ', 'sikkim': 'SK',
+  'tamil nadu': 'TN', 'telangana': 'TG', 'tripura': 'TR', 'uttar pradesh': 'UP',
+  'uttarakhand': 'UK', 'west bengal': 'WB', 'delhi': 'DL', 'ladakh': 'LA',
+  'andaman and nicobar': 'AN', 'chandigarh': 'CH', 'dadra and nagar haveli': 'DN',
+  'daman and diu': 'DD', 'jammu & kashmir': 'JK', 'odissa': 'OD',
+  'pondicherry': 'PY', 'puducherry': 'PY', 'delhi ncr': 'DL',
+};
+
 // ====== LAZY SUPABASE CLIENT ======
 let supabaseClient = null;
 async function getSupabase() {
@@ -132,8 +147,9 @@ function normaliseVacancy(v) {
     Organisation_Type:  v.organisation_type ?? v.Organisation_Type,
     Location_City:      v.location_city ?? v.Location_City,
     Location_State:     v.location_state ?? v.Location_State,
+    // Map state name to state_abbr if not already present
+    state_abbr:         v.state_abbr || STATE_ABBR_MAP[(v.location_state || '').toLowerCase()] || '',
     state:              v.state_abbr ?? v.state,
-    state_abbr:         v.state_abbr,
     district:           v.district,
     location_scope:     v.location_scope,
     location_label:     v.location_label,
@@ -171,7 +187,8 @@ async function loadFromJSON() {
   let nationalCount = 0;
 
   entries.forEach(v => {
-    if (v.location_scope === 'nationwide') {
+    const nv = normaliseVacancy(v);
+    if (nv.location_scope === 'nationwide') {
       nationalCount++;
       return;
     }
@@ -187,9 +204,9 @@ async function loadFromJSON() {
       return;
     }
 
-    // district scope
-    const abbr = v.state_abbr;
-    const dist = v.district;
+    // district scope — use normalised state_abbr, not raw data
+    const abbr = nv.state_abbr;
+    const dist = nv.district;
     if (!abbr) return;
 
     stateCounts[abbr] = (stateCounts[abbr] || 0) + 1;
@@ -206,14 +223,14 @@ async function loadFromJSON() {
 
   return {
     nationalCount,
-    nationwideCount: entries.filter(v => v.location_scope === 'nationwide').length,
-    multiStateCount: entries.filter(v => v.location_scope === 'multi_state').length,
+    nationwideCount: entries.filter(v => normaliseVacancy(v).location_scope === 'nationwide').length,
+    multiStateCount: entries.filter(v => normaliseVacancy(v).location_scope === 'multi_state').length,
     unknownCount: 0,
     stateCounts,
     districtCounts,
     statewideListings,
     districtListings,
-    filteredListings: entries,
+    filteredListings: entries.map(normaliseVacancy),
     totalListings: entries.length,
     _source: 'json',
   };
