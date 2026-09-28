@@ -379,6 +379,57 @@
     updateCounter(data);
   }
 
+  // Vortex burst: spawns a spiral of gold particles from the clicked state's
+  // centroid while the cinematic zoom plays. Particles fade out over 1.5s.
+  function spawnVortex(statePath) {
+    const wrap = document.getElementById('mapSvgWrap');
+    const vortexCanvas = document.createElement('canvas');
+    const rect = wrap.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    vortexCanvas.width = rect.width * dpr;
+    vortexCanvas.height = rect.height * dpr;
+    vortexCanvas.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:30';
+    wrap.appendChild(vortexCanvas);
+    const ctx = vortexCanvas.getContext('2d');
+
+    const bbox = statePath.getBBox();
+    const svg = document.getElementById('map-svg');
+    const vb = svg.viewBox.baseVal;
+    // Convert SVG centroid to screen coords
+    const cxScreen = (bbox.x + bbox.width / 2 - vb.x) / vb.width * rect.width;
+    const cyScreen = (bbox.y + bbox.height / 2 - vb.y) / vb.height * rect.height;
+
+    const particles = Array.from({ length: 30 }, () => ({
+      angle: Math.random() * Math.PI * 2,
+      speed: 0.04 + Math.random() * 0.08,
+      dist: Math.random() * 6,
+      life: 0,
+      maxLife: 60 + Math.random() * 40,
+      r: 1.5 + Math.random() * 2,
+    }));
+
+    const t0 = performance.now();
+    function frame() {
+      const elapsed = performance.now() - t0;
+      const alpha = Math.max(0, 1 - elapsed / 1500);
+      if (alpha === 0) { vortexCanvas.remove(); return; }
+      ctx.clearRect(0, 0, vortexCanvas.width, vortexCanvas.height);
+      for (const p of particles) {
+        p.angle += p.speed;
+        p.dist += 0.6;
+        p.life++;
+        const fade = 1 - p.life / p.maxLife;
+        const x = (cxScreen + Math.cos(p.angle) * p.dist * 8) * dpr;
+        const y = (cyScreen + Math.sin(p.angle) * p.dist * 8) * dpr;
+        ctx.beginPath(); ctx.arc(x, y, p.r * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,184,64,${alpha * fade * 0.9})`; ctx.fill();
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+    setTimeout(() => vortexCanvas.remove(), 2000);
+  }
+
   // ----- Drill to state -----
   async function drillToState(abbr, name) {
     if (viewMode === 'state' && selectedAbbr === abbr) return;
@@ -394,6 +445,9 @@
       sel.style.transition = 'fill 0.2s, stroke 0.2s';
       sel.classList.add('selected');
     }
+
+    // Vortex burst: gold particles spiral out from clicked state during zoom
+    if (sel) spawnVortex(sel);
 
     await cinematicZoom(abbr);
     if (gen !== generation) return;
@@ -701,6 +755,16 @@
     startParticles();
 
     renderNational(getData());
+
+    // Deep-link auto-drill (?state=XX, ?state=XX&district=YY)
+    const urlParams = new URLSearchParams(location.search);
+    const deepState = urlParams.get('state');
+    if (deepState) {
+      const abbr = deepState.toUpperCase();
+      const name = ABBR_TO_NAME[abbr] || deepState;
+      // Wait for draw-in animation to finish, then drill
+      setTimeout(() => drillToState(abbr, name), 1600);
+    }
 
     // Subscribe to Supabase Realtime for live vacancy inserts
     setupRealtime();

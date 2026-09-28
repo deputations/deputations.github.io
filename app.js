@@ -4121,3 +4121,87 @@ function syncCardSortUI() {
         showView('map');
     }
 });
+
+// ===== Map picture-in-picture preview =====
+// Renders a tiny particle preview on the home page card.
+(function initMapPreview() {
+  function startPreview() {
+    const card = document.getElementById('mapPreviewCard');
+    const canvas = document.getElementById('previewCanvas');
+    const countEl = document.getElementById('previewVacancyCount');
+    if (!card || !canvas) return;
+    if (window.innerWidth < 1024) return;
+
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    function resize() {
+      const r = card.getBoundingClientRect();
+      canvas.width = r.width * dpr;
+      canvas.height = r.height * dpr;
+      canvas.style.width = r.width + 'px';
+      canvas.style.height = r.height + 'px';
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Mini particle field
+    const pts = Array.from({ length: 18 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.6,
+      vy: (Math.random() - 0.5) * 0.6,
+      r: 1.2 + Math.random() * 1.3,
+    }));
+
+    function frame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Connections
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < 90 * dpr) {
+            ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y);
+            ctx.strokeStyle = `rgba(245,167,33,${0.2 * (1 - d / (90 * dpr))})`;
+            ctx.lineWidth = 0.6; ctx.stroke();
+          }
+        }
+        pts[i].x += pts[i].vx; pts[i].y += pts[i].vy;
+        if (pts[i].x < 0) pts[i].x = canvas.width; if (pts[i].x > canvas.width) pts[i].x = 0;
+        if (pts[i].y < 0) pts[i].y = canvas.height; if (pts[i].y > canvas.height) pts[i].y = 0;
+        ctx.beginPath(); ctx.arc(pts[i].x, pts[i].y, pts[i].r * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,184,64,0.7)'; ctx.fill();
+      }
+      requestAnimationFrame(frame);
+    }
+    frame();
+
+    // Animate count from 0 to total
+    if (countEl) {
+      const total = parseInt(countEl.textContent) || 798;
+      const duration = 1400;
+      const start = performance.now();
+      function tick(now) {
+        const t = Math.min((now - start) / duration, 1);
+        const e = 1 - Math.pow(1 - t, 3);
+        countEl.textContent = Math.floor(total * e).toLocaleString();
+        if (t < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    // Reveal card after a short delay
+    setTimeout(() => card.classList.add('visible'), 1200);
+
+    // Cleanup when clicking through
+    card.addEventListener('click', () => {
+      card.classList.remove('visible');
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startPreview);
+  } else {
+    setTimeout(startPreview, 100);
+  }
+})();
