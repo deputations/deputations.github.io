@@ -4080,7 +4080,7 @@ function syncCardSortUI() {
     }
 
     // Intercept nav clicks for /india-map
-    document.querySelectorAll('.nav-links a[href="/india-map"], .nav-links a[href*="india-map"]').forEach(link => {
+    document.querySelectorAll('.nav-links a[data-view="map"], .nav-links a[href="/india-map"], .nav-links a[href*="india-map"]').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             history.pushState(null, '', '/india-map');
@@ -4090,12 +4090,13 @@ function syncCardSortUI() {
 
     // Handle browser back/forward
     window.addEventListener('popstate', () => {
-        const isMap = location.pathname === '/india-map';
+        const isMap = location.pathname === '/india-map' || new URLSearchParams(location.search).get('view') === 'map';
         showView(isMap ? 'map' : 'home');
     });
 
-    // On initial load, if path is /india-map show the map
-    if (location.pathname === '/india-map') {
+    // On initial load, show the map if requested
+    const urlParams = new URLSearchParams(location.search);
+    if (location.pathname === '/india-map' || urlParams.get('view') === 'map') {
         showView('map');
     }
 });
