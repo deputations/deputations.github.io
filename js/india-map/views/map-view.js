@@ -620,6 +620,7 @@ function createPath(feature, className, id, count, ariaLabel) {
     : polygonToPath(feature.geometry.coordinates);
   path.setAttribute('d', d);
   path.setAttribute('class', className);
+  if (id) path.setAttribute('id', id);
   path.dataset.count = count;
   path.setAttribute('role', 'button');
   path.setAttribute('aria-label', ariaLabel || '');
