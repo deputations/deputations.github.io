@@ -3,7 +3,7 @@
 */
 
 /* ===== IMPORTS ===== */
-@import url('../india-map/animations.css');
+@import url('../india-map/animations.css?v=2');
 
 /* ===== CSS CUSTOM PROPERTIES (production palette) ===== */
 :root {
@@ -123,48 +123,467 @@ html, body {
   will-change: transform;
 }
 
-/* State shapes */
-.ad-state {
-  fill: rgba(34, 211, 238, 0.06);
-  stroke: rgba(34, 211, 238, 0.2);
-  stroke-width: 0.8;
+/* ===== STAGGERED STATE ENTRANCE ===== */
+/* States fade in one by one, sweeping top-left to bottom-right.
+   Each <path> gets an animation-delay set inline by JS based on its
+   projected centroid position. */
+.ad-state, .ad-district {
+  opacity: 0;
+  animation: ad-state-appear 0.6s ease-out forwards;
   cursor: pointer;
-  transition: fill 0.25s ease, stroke 0.25s ease, filter 0.25s ease;
 }
 
+@keyframes ad-state-appear {
+  0%   { opacity: 0; transform: scale(0.92); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ===== STATE COLORS — gradient palette by vacancy count ===== */
+/* Cool (blue/cyan) = few vacancies → Warm (orange/red) = many vacancies.
+   Custom property --state-fill / --state-stroke set via data-count attribute. */
+.ad-state {
+  fill: var(--state-fill, rgba(34, 211, 238, 0.06));
+  stroke: var(--state-stroke, rgba(34, 211, 238, 0.20));
+  stroke-width: 0.8;
+  transition: fill 0.25s ease, stroke 0.25s ease, filter 0.25s ease, transform 0.25s ease;
+}
+
+/* 0 vacancies */
+.ad-state[data-count="0"] { --state-fill: rgba(34, 211, 238, 0.03); --state-stroke: rgba(34, 211, 238, 0.08); }
+
+/* 1–5 vacancies — light cyan */
+.ad-state[data-count="1"], .ad-state[data-count="2"], .ad-state[data-count="3"],
+.ad-state[data-count="4"], .ad-state[data-count="5"] {
+  --state-fill: rgba(125, 211, 252, 0.10); --state-stroke: rgba(125, 211, 252, 0.25);
+}
+
+/* 6–12 — sky blue */
+.ad-state[data-count="6"], .ad-state[data-count="7"], .ad-state[data-count="8"],
+.ad-state[data-count="9"], .ad-state[data-count="10"], .ad-state[data-count="11"],
+.ad-state[data-count="12"] {
+  --state-fill: rgba(56, 189, 248, 0.13); --state-stroke: rgba(56, 189, 248, 0.30);
+}
+
+/* 13–22 — cyan */
+.ad-state[data-count="13"], .ad-state[data-count="14"], .ad-state[data-count="15"],
+.ad-state[data-count="16"], .ad-state[data-count="17"], .ad-state[data-count="18"],
+.ad-state[data-count="19"], .ad-state[data-count="20"], .ad-state[data-count="21"],
+.ad-state[data-count="22"] {
+  --state-fill: rgba(34, 211, 238, 0.16); --state-stroke: rgba(34, 211, 238, 0.35);
+}
+
+/* 23–35 — teal */
+.ad-state[data-count="23"], .ad-state[data-count="24"], .ad-state[data-count="25"],
+.ad-state[data-count="26"], .ad-state[data-count="27"], .ad-state[data-count="28"],
+.ad-state[data-count="29"], .ad-state[data-count="30"], .ad-state[data-count="31"],
+.ad-state[data-count="32"], .ad-state[data-count="33"], .ad-state[data-count="34"],
+.ad-state[data-count="35"] {
+  --state-fill: rgba(45, 212, 191, 0.18); --state-stroke: rgba(45, 212, 191, 0.38);
+}
+
+/* 36–50 — emerald */
+.ad-state[data-count="36"], .ad-state[data-count="37"], .ad-state[data-count="38"],
+.ad-state[data-count="39"], .ad-state[data-count="40"], .ad-state[data-count="41"],
+.ad-state[data-count="42"], .ad-state[data-count="43"], .ad-state[data-count="44"],
+.ad-state[data-count="45"], .ad-state[data-count="46"], .ad-state[data-count="47"],
+.ad-state[data-count="48"], .ad-state[data-count="49"], .ad-state[data-count="50"] {
+  --state-fill: rgba(52, 211, 153, 0.20); --state-stroke: rgba(52, 211, 153, 0.40);
+}
+
+/* 51–70 — yellow */
+.ad-state[data-count="51"], .ad-state[data-count="52"], .ad-state[data-count="53"],
+.ad-state[data-count="54"], .ad-state[data-count="55"], .ad-state[data-count="56"],
+.ad-state[data-count="57"], .ad-state[data-count="58"], .ad-state[data-count="59"],
+.ad-state[data-count="60"], .ad-state[data-count="61"], .ad-state[data-count="62"],
+.ad-state[data-count="63"], .ad-state[data-count="64"], .ad-state[data-count="65"],
+.ad-state[data-count="66"], .ad-state[data-count="67"], .ad-state[data-count="68"],
+.ad-state[data-count="69"], .ad-state[data-count="70"] {
+  --state-fill: rgba(250, 204, 21, 0.22); --state-stroke: rgba(250, 204, 21, 0.40);
+}
+
+/* 71–100 — amber */
+.ad-state[data-count="71"], .ad-state[data-count="72"], .ad-state[data-count="73"],
+.ad-state[data-count="74"], .ad-state[data-count="75"], .ad-state[data-count="76"],
+.ad-state[data-count="77"], .ad-state[data-count="78"], .ad-state[data-count="79"],
+.ad-state[data-count="80"], .ad-state[data-count="81"], .ad-state[data-count="82"],
+.ad-state[data-count="83"], .ad-state[data-count="84"], .ad-state[data-count="85"],
+.ad-state[data-count="86"], .ad-state[data-count="87"], .ad-state[data-count="88"],
+.ad-state[data-count="89"], .ad-state[data-count="90"], .ad-state[data-count="91"],
+.ad-state[data-count="92"], .ad-state[data-count="93"], .ad-state[data-count="94"],
+.ad-state[data-count="95"], .ad-state[data-count="96"], .ad-state[data-count="97"],
+.ad-state[data-count="98"], .ad-state[data-count="99"], .ad-state[data-count="100"] {
+  --state-fill: rgba(251, 191, 36, 0.24); --state-stroke: rgba(251, 191, 36, 0.45);
+}
+
+/* 101–150 — orange */
+.ad-state[data-count="101"], .ad-state[data-count="102"], .ad-state[data-count="103"],
+.ad-state[data-count="104"], .ad-state[data-count="105"], .ad-state[data-count="106"],
+.ad-state[data-count="107"], .ad-state[data-count="108"], .ad-state[data-count="109"],
+.ad-state[data-count="110"], .ad-state[data-count="111"], .ad-state[data-count="112"],
+.ad-state[data-count="113"], .ad-state[data-count="114"], .ad-state[data-count="115"],
+.ad-state[data-count="116"], .ad-state[data-count="117"], .ad-state[data-count="118"],
+.ad-state[data-count="119"], .ad-state[data-count="120"], .ad-state[data-count="121"],
+.ad-state[data-count="122"], .ad-state[data-count="123"], .ad-state[data-count="124"],
+.ad-state[data-count="125"], .ad-state[data-count="126"], .ad-state[data-count="127"],
+.ad-state[data-count="128"], .ad-state[data-count="129"], .ad-state[data-count="130"],
+.ad-state[data-count="131"], .ad-state[data-count="132"], .ad-state[data-count="133"],
+.ad-state[data-count="134"], .ad-state[data-count="135"], .ad-state[data-count="136"],
+.ad-state[data-count="137"], .ad-state[data-count="138"], .ad-state[data-count="139"],
+.ad-state[data-count="140"], .ad-state[data-count="141"], .ad-state[data-count="142"],
+.ad-state[data-count="143"], .ad-state[data-count="144"], .ad-state[data-count="145"],
+.ad-state[data-count="146"], .ad-state[data-count="147"], .ad-state[data-count="148"],
+.ad-state[data-count="149"], .ad-state[data-count="150"] {
+  --state-fill: rgba(251, 146, 60, 0.26); --state-stroke: rgba(251, 146, 60, 0.48);
+}
+
+/* 151–220 — rose */
+.ad-state[data-count="151"], .ad-state[data-count="152"], .ad-state[data-count="153"],
+.ad-state[data-count="154"], .ad-state[data-count="155"], .ad-state[data-count="156"],
+.ad-state[data-count="157"], .ad-state[data-count="158"], .ad-state[data-count="159"],
+.ad-state[data-count="160"], .ad-state[data-count="161"], .ad-state[data-count="162"],
+.ad-state[data-count="163"], .ad-state[data-count="164"], .ad-state[data-count="165"],
+.ad-state[data-count="166"], .ad-state[data-count="167"], .ad-state[data-count="168"],
+.ad-state[data-count="169"], .ad-state[data-count="170"], .ad-state[data-count="171"],
+.ad-state[data-count="172"], .ad-state[data-count="173"], .ad-state[data-count="174"],
+.ad-state[data-count="175"], .ad-state[data-count="176"], .ad-state[data-count="177"],
+.ad-state[data-count="178"], .ad-state[data-count="179"], .ad-state[data-count="180"],
+.ad-state[data-count="181"], .ad-state[data-count="182"], .ad-state[data-count="183"],
+.ad-state[data-count="184"], .ad-state[data-count="185"], .ad-state[data-count="186"],
+.ad-state[data-count="187"], .ad-state[data-count="188"], .ad-state[data-count="189"],
+.ad-state[data-count="190"], .ad-state[data-count="191"], .ad-state[data-count="192"],
+.ad-state[data-count="193"], .ad-state[data-count="194"], .ad-state[data-count="195"],
+.ad-state[data-count="196"], .ad-state[data-count="197"], .ad-state[data-count="198"],
+.ad-state[data-count="199"], .ad-state[data-count="200"], .ad-state[data-count="201"],
+.ad-state[data-count="202"], .ad-state[data-count="203"], .ad-state[data-count="204"],
+.ad-state[data-count="205"], .ad-state[data-count="206"], .ad-state[data-count="207"],
+.ad-state[data-count="208"], .ad-state[data-count="209"], .ad-state[data-count="210"],
+.ad-state[data-count="211"], .ad-state[data-count="212"], .ad-state[data-count="213"],
+.ad-state[data-count="214"], .ad-state[data-count="215"], .ad-state[data-count="216"],
+.ad-state[data-count="217"], .ad-state[data-count="218"], .ad-state[data-count="219"],
+.ad-state[data-count="220"] {
+  --state-fill: rgba(251, 113, 133, 0.28); --state-stroke: rgba(251, 113, 133, 0.50);
+}
+
+/* 221+ — red */
+.ad-state[data-count="221"], .ad-state[data-count="222"], .ad-state[data-count="223"],
+.ad-state[data-count="224"], .ad-state[data-count="225"], .ad-state[data-count="226"],
+.ad-state[data-count="227"], .ad-state[data-count="228"], .ad-state[data-count="229"],
+.ad-state[data-count="230"], .ad-state[data-count="231"], .ad-state[data-count="232"],
+.ad-state[data-count="233"], .ad-state[data-count="234"], .ad-state[data-count="235"],
+.ad-state[data-count="236"], .ad-state[data-count="237"], .ad-state[data-count="238"],
+.ad-state[data-count="239"], .ad-state[data-count="240"], .ad-state[data-count="241"],
+.ad-state[data-count="242"], .ad-state[data-count="243"], .ad-state[data-count="244"],
+.ad-state[data-count="245"], .ad-state[data-count="246"], .ad-state[data-count="247"],
+.ad-state[data-count="248"], .ad-state[data-count="249"], .ad-state[data-count="250"],
+.ad-state[data-count="251"], .ad-state[data-count="252"], .ad-state[data-count="253"],
+.ad-state[data-count="254"], .ad-state[data-count="255"], .ad-state[data-count="256"],
+.ad-state[data-count="257"], .ad-state[data-count="258"], .ad-state[data-count="259"],
+.ad-state[data-count="260"], .ad-state[data-count="261"], .ad-state[data-count="262"],
+.ad-state[data-count="263"], .ad-state[data-count="264"], .ad-state[data-count="265"],
+.ad-state[data-count="266"], .ad-state[data-count="267"], .ad-state[data-count="268"],
+.ad-state[data-count="269"], .ad-state[data-count="270"], .ad-state[data-count="271"],
+.ad-state[data-count="272"], .ad-state[data-count="273"], .ad-state[data-count="274"],
+.ad-state[data-count="275"], .ad-state[data-count="276"], .ad-state[data-count="277"],
+.ad-state[data-count="278"], .ad-state[data-count="279"], .ad-state[data-count="280"],
+.ad-state[data-count="281"], .ad-state[data-count="282"], .ad-state[data-count="283"],
+.ad-state[data-count="284"], .ad-state[data-count="285"], .ad-state[data-count="286"],
+.ad-state[data-count="287"], .ad-state[data-count="288"], .ad-state[data-count="289"],
+.ad-state[data-count="290"], .ad-state[data-count="291"], .ad-state[data-count="292"],
+.ad-state[data-count="293"], .ad-state[data-count="294"], .ad-state[data-count="295"],
+.ad-state[data-count="296"], .ad-state[data-count="297"], .ad-state[data-count="298"],
+.ad-state[data-count="299"], .ad-state[data-count="300"], .ad-state[data-count="301"],
+.ad-state[data-count="302"], .ad-state[data-count="303"], .ad-state[data-count="304"],
+.ad-state[data-count="305"], .ad-state[data-count="306"], .ad-state[data-count="307"],
+.ad-state[data-count="308"], .ad-state[data-count="309"], .ad-state[data-count="310"],
+.ad-state[data-count="311"], .ad-state[data-count="312"], .ad-state[data-count="313"],
+.ad-state[data-count="314"], .ad-state[data-count="315"], .ad-state[data-count="316"],
+.ad-state[data-count="317"], .ad-state[data-count="318"], .ad-state[data-count="319"],
+.ad-state[data-count="320"], .ad-state[data-count="321"], .ad-state[data-count="322"],
+.ad-state[data-count="323"], .ad-state[data-count="324"], .ad-state[data-count="325"],
+.ad-state[data-count="326"], .ad-state[data-count="327"], .ad-state[data-count="328"],
+.ad-state[data-count="329"], .ad-state[data-count="330"], .ad-state[data-count="331"],
+.ad-state[data-count="332"], .ad-state[data-count="333"], .ad-state[data-count="334"],
+.ad-state[data-count="335"], .ad-state[data-count="336"], .ad-state[data-count="337"],
+.ad-state[data-count="338"], .ad-state[data-count="339"], .ad-state[data-count="340"],
+.ad-state[data-count="341"], .ad-state[data-count="342"], .ad-state[data-count="343"],
+.ad-state[data-count="344"], .ad-state[data-count="345"], .ad-state[data-count="346"],
+.ad-state[data-count="347"], .ad-state[data-count="348"], .ad-state[data-count="349"],
+.ad-state[data-count="350"], .ad-state[data-count="351"], .ad-state[data-count="352"],
+.ad-state[data-count="353"], .ad-state[data-count="354"], .ad-state[data-count="355"],
+.ad-state[data-count="356"], .ad-state[data-count="357"], .ad-state[data-count="358"],
+.ad-state[data-count="359"], .ad-state[data-count="360"], .ad-state[data-count="361"],
+.ad-state[data-count="362"], .ad-state[data-count="363"], .ad-state[data-count="364"],
+.ad-state[data-count="365"], .ad-state[data-count="366"], .ad-state[data-count="367"],
+.ad-state[data-count="368"], .ad-state[data-count="369"], .ad-state[data-count="370"],
+.ad-state[data-count="371"], .ad-state[data-count="372"], .ad-state[data-count="373"],
+.ad-state[data-count="374"], .ad-state[data-count="375"], .ad-state[data-count="376"],
+.ad-state[data-count="377"], .ad-state[data-count="378"], .ad-state[data-count="379"],
+.ad-state[data-count="380"], .ad-state[data-count="381"], .ad-state[data-count="382"],
+.ad-state[data-count="383"], .ad-state[data-count="384"], .ad-state[data-count="385"],
+.ad-state[data-count="386"], .ad-state[data-count="387"], .ad-state[data-count="388"],
+.ad-state[data-count="389"], .ad-state[data-count="390"], .ad-state[data-count="391"],
+.ad-state[data-count="392"], .ad-state[data-count="393"], .ad-state[data-count="394"],
+.ad-state[data-count="395"], .ad-state[data-count="396"], .ad-state[data-count="397"],
+.ad-state[data-count="398"], .ad-state[data-count="399"], .ad-state[data-count="400"],
+.ad-state[data-count="401"], .ad-state[data-count="402"], .ad-state[data-count="403"],
+.ad-state[data-count="404"], .ad-state[data-count="405"], .ad-state[data-count="406"],
+.ad-state[data-count="407"], .ad-state[data-count="408"], .ad-state[data-count="409"],
+.ad-state[data-count="410"], .ad-state[data-count="411"], .ad-state[data-count="412"],
+.ad-state[data-count="413"], .ad-state[data-count="414"], .ad-state[data-count="415"],
+.ad-state[data-count="416"], .ad-state[data-count="417"], .ad-state[data-count="418"],
+.ad-state[data-count="419"], .ad-state[data-count="420"], .ad-state[data-count="421"],
+.ad-state[data-count="422"], .ad-state[data-count="423"], .ad-state[data-count="424"],
+.ad-state[data-count="425"], .ad-state[data-count="426"], .ad-state[data-count="427"],
+.ad-state[data-count="428"], .ad-state[data-count="429"], .ad-state[data-count="430"],
+.ad-state[data-count="431"], .ad-state[data-count="432"], .ad-state[data-count="433"],
+.ad-state[data-count="434"], .ad-state[data-count="435"], .ad-state[data-count="436"],
+.ad-state[data-count="437"], .ad-state[data-count="438"], .ad-state[data-count="439"],
+.ad-state[data-count="440"], .ad-state[data-count="441"], .ad-state[data-count="442"],
+.ad-state[data-count="443"], .ad-state[data-count="444"], .ad-state[data-count="445"],
+.ad-state[data-count="446"], .ad-state[data-count="447"], .ad-state[data-count="448"],
+.ad-state[data-count="449"], .ad-state[data-count="450"], .ad-state[data-count="451"],
+.ad-state[data-count="452"], .ad-state[data-count="453"], .ad-state[data-count="454"],
+.ad-state[data-count="455"], .ad-state[data-count="456"], .ad-state[data-count="457"],
+.ad-state[data-count="458"], .ad-state[data-count="459"], .ad-state[data-count="460"],
+.ad-state[data-count="461"], .ad-state[data-count="462"], .ad-state[data-count="463"],
+.ad-state[data-count="464"], .ad-state[data-count="465"], .ad-state[data-count="466"],
+.ad-state[data-count="467"], .ad-state[data-count="468"], .ad-state[data-count="469"],
+.ad-state[data-count="470"], .ad-state[data-count="471"], .ad-state[data-count="472"],
+.ad-state[data-count="473"], .ad-state[data-count="474"], .ad-state[data-count="475"],
+.ad-state[data-count="476"], .ad-state[data-count="477"], .ad-state[data-count="478"],
+.ad-state[data-count="479"], .ad-state[data-count="480"], .ad-state[data-count="481"],
+.ad-state[data-count="482"], .ad-state[data-count="483"], .ad-state[data-count="484"],
+.ad-state[data-count="485"], .ad-state[data-count="486"], .ad-state[data-count="487"],
+.ad-state[data-count="488"], .ad-state[data-count="489"], .ad-state[data-count="490"],
+.ad-state[data-count="491"], .ad-state[data-count="492"], .ad-state[data-count="493"],
+.ad-state[data-count="494"], .ad-state[data-count="495"], .ad-state[data-count="496"],
+.ad-state[data-count="497"], .ad-state[data-count="498"], .ad-state[data-count="499"],
+.ad-state[data-count="500"], .ad-state[data-count="501"], .ad-state[data-count="502"],
+.ad-state[data-count="503"], .ad-state[data-count="504"], .ad-state[data-count="505"],
+.ad-state[data-count="506"], .ad-state[data-count="507"], .ad-state[data-count="508"],
+.ad-state[data-count="509"], .ad-state[data-count="510"], .ad-state[data-count="511"],
+.ad-state[data-count="512"], .ad-state[data-count="513"], .ad-state[data-count="514"],
+.ad-state[data-count="515"], .ad-state[data-count="516"], .ad-state[data-count="517"],
+.ad-state[data-count="518"], .ad-state[data-count="519"], .ad-state[data-count="520"],
+.ad-state[data-count="521"], .ad-state[data-count="522"], .ad-state[data-count="523"],
+.ad-state[data-count="524"], .ad-state[data-count="525"], .ad-state[data-count="526"],
+.ad-state[data-count="527"], .ad-state[data-count="528"], .ad-state[data-count="529"],
+.ad-state[data-count="530"], .ad-state[data-count="531"], .ad-state[data-count="532"],
+.ad-state[data-count="533"], .ad-state[data-count="534"], .ad-state[data-count="535"],
+.ad-state[data-count="536"], .ad-state[data-count="537"], .ad-state[data-count="538"],
+.ad-state[data-count="539"], .ad-state[data-count="540"], .ad-state[data-count="541"],
+.ad-state[data-count="542"], .ad-state[data-count="543"], .ad-state[data-count="544"],
+.ad-state[data-count="545"], .ad-state[data-count="546"], .ad-state[data-count="547"],
+.ad-state[data-count="548"], .ad-state[data-count="549"], .ad-state[data-count="550"],
+.ad-state[data-count="551"], .ad-state[data-count="552"], .ad-state[data-count="553"],
+.ad-state[data-count="554"], .ad-state[data-count="555"], .ad-state[data-count="556"],
+.ad-state[data-count="557"], .ad-state[data-count="558"], .ad-state[data-count="559"],
+.ad-state[data-count="560"], .ad-state[data-count="561"], .ad-state[data-count="562"],
+.ad-state[data-count="563"], .ad-state[data-count="564"], .ad-state[data-count="565"],
+.ad-state[data-count="566"], .ad-state[data-count="567"], .ad-state[data-count="568"],
+.ad-state[data-count="569"], .ad-state[data-count="570"], .ad-state[data-count="571"],
+.ad-state[data-count="572"], .ad-state[data-count="573"], .ad-state[data-count="574"],
+.ad-state[data-count="575"], .ad-state[data-count="576"], .ad-state[data-count="577"],
+.ad-state[data-count="578"], .ad-state[data-count="579"], .ad-state[data-count="580"],
+.ad-state[data-count="581"], .ad-state[data-count="582"], .ad-state[data-count="583"],
+.ad-state[data-count="584"], .ad-state[data-count="585"], .ad-state[data-count="586"],
+.ad-state[data-count="587"], .ad-state[data-count="588"], .ad-state[data-count="589"],
+.ad-state[data-count="590"], .ad-state[data-count="591"], .ad-state[data-count="592"],
+.ad-state[data-count="593"], .ad-state[data-count="594"], .ad-state[data-count="595"],
+.ad-state[data-count="596"], .ad-state[data-count="597"], .ad-state[data-count="598"],
+.ad-state[data-count="599"], .ad-state[data-count="600"], .ad-state[data-count="601"],
+.ad-state[data-count="602"], .ad-state[data-count="603"], .ad-state[data-count="604"],
+.ad-state[data-count="605"], .ad-state[data-count="606"], .ad-state[data-count="607"],
+.ad-state[data-count="608"], .ad-state[data-count="609"], .ad-state[data-count="610"],
+.ad-state[data-count="611"], .ad-state[data-count="612"], .ad-state[data-count="613"],
+.ad-state[data-count="614"], .ad-state[data-count="615"], .ad-state[data-count="616"],
+.ad-state[data-count="617"], .ad-state[data-count="618"], .ad-state[data-count="619"],
+.ad-state[data-count="620"], .ad-state[data-count="621"], .ad-state[data-count="622"],
+.ad-state[data-count="623"], .ad-state[data-count="624"], .ad-state[data-count="625"],
+.ad-state[data-count="626"], .ad-state[data-count="627"], .ad-state[data-count="628"],
+.ad-state[data-count="629"], .ad-state[data-count="630"], .ad-state[data-count="631"],
+.ad-state[data-count="632"], .ad-state[data-count="633"], .ad-state[data-count="634"],
+.ad-state[data-count="635"], .ad-state[data-count="636"], .ad-state[data-count="637"],
+.ad-state[data-count="638"], .ad-state[data-count="639"], .ad-state[data-count="640"],
+.ad-state[data-count="641"], .ad-state[data-count="642"], .ad-state[data-count="643"],
+.ad-state[data-count="644"], .ad-state[data-count="645"], .ad-state[data-count="646"],
+.ad-state[data-count="647"], .ad-state[data-count="648"], .ad-state[data-count="649"],
+.ad-state[data-count="650"], .ad-state[data-count="651"], .ad-state[data-count="652"],
+.ad-state[data-count="653"], .ad-state[data-count="654"], .ad-state[data-count="655"],
+.ad-state[data-count="656"], .ad-state[data-count="657"], .ad-state[data-count="658"],
+.ad-state[data-count="659"], .ad-state[data-count="660"], .ad-state[data-count="661"],
+.ad-state[data-count="662"], .ad-state[data-count="663"], .ad-state[data-count="664"],
+.ad-state[data-count="665"], .ad-state[data-count="666"], .ad-state[data-count="667"],
+.ad-state[data-count="668"], .ad-state[data-count="669"], .ad-state[data-count="670"],
+.ad-state[data-count="671"], .ad-state[data-count="672"], .ad-state[data-count="673"],
+.ad-state[data-count="674"], .ad-state[data-count="675"], .ad-state[data-count="676"],
+.ad-state[data-count="677"], .ad-state[data-count="678"], .ad-state[data-count="679"],
+.ad-state[data-count="680"], .ad-state[data-count="681"], .ad-state[data-count="682"],
+.ad-state[data-count="683"], .ad-state[data-count="684"], .ad-state[data-count="685"],
+.ad-state[data-count="686"], .ad-state[data-count="687"], .ad-state[data-count="688"],
+.ad-state[data-count="689"], .ad-state[data-count="690"], .ad-state[data-count="691"],
+.ad-state[data-count="692"], .ad-state[data-count="693"], .ad-state[data-count="694"],
+.ad-state[data-count="695"], .ad-state[data-count="696"], .ad-state[data-count="697"],
+.ad-state[data-count="698"], .ad-state[data-count="699"], .ad-state[data-count="700"],
+.ad-state[data-count="701"], .ad-state[data-count="702"], .ad-state[data-count="703"],
+.ad-state[data-count="704"], .ad-state[data-count="705"], .ad-state[data-count="706"],
+.ad-state[data-count="707"], .ad-state[data-count="708"], .ad-state[data-count="709"],
+.ad-state[data-count="710"], .ad-state[data-count="711"], .ad-state[data-count="712"],
+.ad-state[data-count="713"], .ad-state[data-count="714"], .ad-state[data-count="715"],
+.ad-state[data-count="716"], .ad-state[data-count="717"], .ad-state[data-count="718"],
+.ad-state[data-count="719"], .ad-state[data-count="720"], .ad-state[data-count="721"],
+.ad-state[data-count="722"], .ad-state[data-count="723"], .ad-state[data-count="724"],
+.ad-state[data-count="725"], .ad-state[data-count="726"], .ad-state[data-count="727"],
+.ad-state[data-count="728"], .ad-state[data-count="729"], .ad-state[data-count="730"],
+.ad-state[data-count="731"], .ad-state[data-count="732"], .ad-state[data-count="733"],
+.ad-state[data-count="734"], .ad-state[data-count="735"], .ad-state[data-count="736"],
+.ad-state[data-count="737"], .ad-state[data-count="738"], .ad-state[data-count="739"],
+.ad-state[data-count="740"], .ad-state[data-count="741"], .ad-state[data-count="742"],
+.ad-state[data-count="743"], .ad-state[data-count="744"], .ad-state[data-count="745"],
+.ad-state[data-count="746"], .ad-state[data-count="747"], .ad-state[data-count="748"],
+.ad-state[data-count="749"], .ad-state[data-count="750"], .ad-state[data-count="751"],
+.ad-state[data-count="752"], .ad-state[data-count="753"], .ad-state[data-count="754"],
+.ad-state[data-count="755"], .ad-state[data-count="756"], .ad-state[data-count="757"],
+.ad-state[data-count="758"], .ad-state[data-count="759"], .ad-state[data-count="760"],
+.ad-state[data-count="761"], .ad-state[data-count="762"], .ad-state[data-count="763"],
+.ad-state[data-count="764"], .ad-state[data-count="765"], .ad-state[data-count="766"],
+.ad-state[data-count="767"], .ad-state[data-count="768"], .ad-state[data-count="769"],
+.ad-state[data-count="770"], .ad-state[data-count="771"], .ad-state[data-count="772"],
+.ad-state[data-count="773"], .ad-state[data-count="774"], .ad-state[data-count="775"],
+.ad-state[data-count="776"], .ad-state[data-count="777"], .ad-state[data-count="778"],
+.ad-state[data-count="779"], .ad-state[data-count="780"], .ad-state[data-count="781"],
+.ad-state[data-count="782"], .ad-state[data-count="783"], .ad-state[data-count="784"],
+.ad-state[data-count="785"], .ad-state[data-count="786"], .ad-state[data-count="787"],
+.ad-state[data-count="788"], .ad-state[data-count="789"], .ad-state[data-count="790"],
+.ad-state[data-count="791"], .ad-state[data-count="792"], .ad-state[data-count="793"],
+.ad-state[data-count="794"], .ad-state[data-count="795"], .ad-state[data-count="796"],
+.ad-state[data-count="797"], .ad-state[data-count="798"], .ad-state[data-count="799"],
+.ad-state[data-count="800"], .ad-state[data-count="801"], .ad-state[data-count="802"],
+.ad-state[data-count="803"], .ad-state[data-count="804"], .ad-state[data-count="805"],
+.ad-state[data-count="806"], .ad-state[data-count="807"], .ad-state[data-count="808"],
+.ad-state[data-count="809"], .ad-state[data-count="810"], .ad-state[data-count="811"],
+.ad-state[data-count="812"], .ad-state[data-count="813"], .ad-state[data-count="814"],
+.ad-state[data-count="815"], .ad-state[data-count="816"], .ad-state[data-count="817"],
+.ad-state[data-count="818"], .ad-state[data-count="819"], .ad-state[data-count="820"],
+.ad-state[data-count="821"], .ad-state[data-count="822"], .ad-state[data-count="823"],
+.ad-state[data-count="824"], .ad-state[data-count="825"], .ad-state[data-count="826"],
+.ad-state[data-count="827"], .ad-state[data-count="828"], .ad-state[data-count="829"],
+.ad-state[data-count="830"], .ad-state[data-count="831"], .ad-state[data-count="832"],
+.ad-state[data-count="833"], .ad-state[data-count="834"], .ad-state[data-count="835"],
+.ad-state[data-count="836"], .ad-state[data-count="837"], .ad-state[data-count="838"],
+.ad-state[data-count="839"], .ad-state[data-count="840"], .ad-state[data-count="841"],
+.ad-state[data-count="842"], .ad-state[data-count="843"], .ad-state[data-count="844"],
+.ad-state[data-count="845"], .ad-state[data-count="846"], .ad-state[data-count="847"],
+.ad-state[data-count="848"], .ad-state[data-count="849"], .ad-state[data-count="850"],
+.ad-state[data-count="851"], .ad-state[data-count="852"], .ad-state[data-count="853"],
+.ad-state[data-count="854"], .ad-state[data-count="855"], .ad-state[data-count="856"],
+.ad-state[data-count="857"], .ad-state[data-count="858"], .ad-state[data-count="859"],
+.ad-state[data-count="860"], .ad-state[data-count="861"], .ad-state[data-count="862"],
+.ad-state[data-count="863"], .ad-state[data-count="864"], .ad-state[data-count="865"],
+.ad-state[data-count="866"], .ad-state[data-count="867"], .ad-state[data-count="868"],
+.ad-state[data-count="869"], .ad-state[data-count="870"], .ad-state[data-count="871"],
+.ad-state[data-count="872"], .ad-state[data-count="873"], .ad-state[data-count="874"],
+.ad-state[data-count="875"], .ad-state[data-count="876"], .ad-state[data-count="877"],
+.ad-state[data-count="878"], .ad-state[data-count="879"], .ad-state[data-count="880"],
+.ad-state[data-count="881"], .ad-state[data-count="882"], .ad-state[data-count="883"],
+.ad-state[data-count="884"], .ad-state[data-count="885"], .ad-state[data-count="886"],
+.ad-state[data-count="887"], .ad-state[data-count="888"], .ad-state[data-count="889"],
+.ad-state[data-count="890"], .ad-state[data-count="891"], .ad-state[data-count="892"],
+.ad-state[data-count="893"], .ad-state[data-count="894"], .ad-state[data-count="895"],
+.ad-state[data-count="896"], .ad-state[data-count="897"], .ad-state[data-count="898"],
+.ad-state[data-count="899"], .ad-state[data-count="900"], .ad-state[data-count="901"],
+.ad-state[data-count="902"], .ad-state[data-count="903"], .ad-state[data-count="904"],
+.ad-state[data-count="905"], .ad-state[data-count="906"], .ad-state[data-count="907"],
+.ad-state[data-count="908"], .ad-state[data-count="909"], .ad-state[data-count="910"],
+.ad-state[data-count="911"], .ad-state[data-count="912"], .ad-state[data-count="913"],
+.ad-state[data-count="914"], .ad-state[data-count="915"], .ad-state[data-count="916"],
+.ad-state[data-count="917"], .ad-state[data-count="918"], .ad-state[data-count="919"],
+.ad-state[data-count="920"], .ad-state[data-count="921"], .ad-state[data-count="922"],
+.ad-state[data-count="923"], .ad-state[data-count="924"], .ad-state[data-count="925"],
+.ad-state[data-count="926"], .ad-state[data-count="927"], .ad-state[data-count="928"],
+.ad-state[data-count="929"], .ad-state[data-count="930"], .ad-state[data-count="931"],
+.ad-state[data-count="932"], .ad-state[data-count="933"], .ad-state[data-count="934"],
+.ad-state[data-count="935"], .ad-state[data-count="936"], .ad-state[data-count="937"],
+.ad-state[data-count="938"], .ad-state[data-count="939"], .ad-state[data-count="940"],
+.ad-state[data-count="941"], .ad-state[data-count="942"], .ad-state[data-count="943"],
+.ad-state[data-count="944"], .ad-state[data-count="945"], .ad-state[data-count="946"],
+.ad-state[data-count="947"], .ad-state[data-count="948"], .ad-state[data-count="949"],
+.ad-state[data-count="950"], .ad-state[data-count="951"], .ad-state[data-count="952"],
+.ad-state[data-count="953"], .ad-state[data-count="954"], .ad-state[data-count="955"],
+.ad-state[data-count="956"], .ad-state[data-count="957"], .ad-state[data-count="958"],
+.ad-state[data-count="959"], .ad-state[data-count="960"], .ad-state[data-count="961"],
+.ad-state[data-count="962"], .ad-state[data-count="963"], .ad-state[data-count="964"],
+.ad-state[data-count="965"], .ad-state[data-count="966"], .ad-state[data-count="967"],
+.ad-state[data-count="968"], .ad-state[data-count="969"], .ad-state[data-count="970"],
+.ad-state[data-count="971"], .ad-state[data-count="972"], .ad-state[data-count="973"],
+.ad-state[data-count="974"], .ad-state[data-count="975"], .ad-state[data-count="976"],
+.ad-state[data-count="977"], .ad-state[data-count="978"], .ad-state[data-count="979"],
+.ad-state[data-count="980"], .ad-state[data-count="981"], .ad-state[data-count="982"],
+.ad-state[data-count="983"], .ad-state[data-count="984"], .ad-state[data-count="985"],
+.ad-state[data-count="986"], .ad-state[data-count="987"], .ad-state[data-count="988"],
+.ad-state[data-count="989"], .ad-state[data-count="990"], .ad-state[data-count="991"],
+.ad-state[data-count="992"], .ad-state[data-count="993"], .ad-state[data-count="994"],
+.ad-state[data-count="995"], .ad-state[data-count="996"], .ad-state[data-count="997"],
+.ad-state[data-count="998"], .ad-state[data-count="999"], .ad-state[data-count="1000"] {
+  --state-fill: rgba(244, 63, 94, 0.30); --state-stroke: rgba(244, 63, 94, 0.55);
+}
+
+/* ===== STATE HOVER / ACTIVE ===== */
 .ad-state:hover {
-  fill: rgba(34, 211, 238, 0.18);
-  stroke: rgba(34, 211, 238, 0.5);
-  filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.4));
+  fill: rgba(165, 243, 252, 0.35);
+  stroke: rgba(165, 243, 252, 0.70);
+  stroke-width: 1.4;
+  filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.55)) drop-shadow(0 0 22px rgba(34, 211, 238, 0.18));
+  transform: scale(1.015);
 }
 
 .ad-state.selected {
-  fill: rgba(167, 139, 250, 0.25);
-  stroke: rgba(167, 139, 250, 0.6);
-  stroke-width: 1.5;
+  fill: rgba(167, 139, 250, 0.30);
+  stroke: rgba(167, 139, 250, 0.65);
+  stroke-width: 1.6;
+  filter: drop-shadow(0 0 12px rgba(167, 139, 250, 0.50));
+  transform: scale(1.02);
+}
+
+/* Pulsing ring for active/selected state */
+.ad-state.selected::after {
+  content: '';
+  animation: ad-state-pulse-ring 2s ease-out infinite;
+}
+
+@keyframes ad-state-pulse-ring {
+  0%   { opacity: 0.6; }
+  100% { opacity: 0; }
 }
 
 .ad-state.empty-state {
-  fill: rgba(34, 211, 238, 0.03);
-  stroke: rgba(34, 211, 238, 0.08);
+  fill: var(--state-fill, rgba(34, 211, 238, 0.03));
+  stroke: var(--state-stroke, rgba(34, 211, 238, 0.08));
 }
 
 .ad-state.empty-state.anim-ambient {
   animation: ad-ambient-pulse 4s ease-in-out infinite;
 }
 
-/* District shapes */
+/* ===== DISTRICT COLORS — same gradient palette ===== */
 .ad-district {
-  fill: rgba(34, 211, 238, 0.1);
-  stroke: rgba(34, 211, 238, 0.25);
+  fill: var(--state-fill, rgba(34, 211, 238, 0.10));
+  stroke: var(--state-stroke, rgba(34, 211, 238, 0.25));
   stroke-width: 0.6;
-  cursor: pointer;
-  transition: fill 0.2s ease, stroke 0.2s ease;
+  transition: fill 0.2s ease, stroke 0.2s ease, filter 0.2s ease, transform 0.2s ease;
 }
 
 .ad-district:hover {
-  fill: rgba(34, 211, 238, 0.25);
-  stroke: rgba(34, 211, 238, 0.5);
+  fill: rgba(165, 243, 252, 0.30);
+  stroke: rgba(165, 243, 252, 0.60);
+  filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.45));
+  transform: scale(1.012);
+}
+
+/* District entrance */
+.ad-district {
+  opacity: 0;
+  animation: ad-state-appear 0.5s ease-out forwards;
 }
 
 /* District labels */
@@ -401,6 +820,19 @@ html, body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   line-height: 1.1;
+  transition: transform 0.15s ease;
+  display: inline-block;
+}
+
+/* Subtle pulse on count change (not initial load) — triggered by JS adding .ad-summary-count--changed */
+.ad-summary-count.ad-summary-count--changed {
+  animation: ad-count-pulse 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes ad-count-pulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
 }
 
 .ad-summary-label {
@@ -454,7 +886,7 @@ html, body {
   z-index: 200;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.25s ease;
 }
 
 .ad-sheet-overlay.open {
@@ -478,7 +910,7 @@ html, body {
   display: flex;
   flex-direction: column;
   transform: translateY(100%);
-  transition: transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
 }
 
@@ -565,19 +997,19 @@ html, body {
   cursor: pointer;
   transition: all 0.25s ease;
   opacity: 0;
-  transform: translateY(16px);
+  transform: translateY(16px) scale(0.97);
 }
 
 .ad-listing-card.visible {
   opacity: 1;
-  transform: translateY(0);
-  transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transform: translateY(0) scale(1);
+  transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .ad-listing-card:hover {
   background: rgba(30, 41, 59, 0.8);
   border-color: var(--border-highlight);
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.01);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
@@ -678,6 +1110,7 @@ html, body {
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-glass);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .ad-filter-drawer.open {
@@ -727,7 +1160,25 @@ html, body {
 
 .ad-filter-group {
   margin-bottom: 24px;
+  opacity: 0;
+  transform: translateX(-12px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
 }
+
+/* Stagger filter groups on open */
+.ad-filter-drawer.open .ad-filter-group {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.ad-filter-drawer.open .ad-filter-group:nth-child(1) { transition-delay: 0.05s; }
+.ad-filter-drawer.open .ad-filter-group:nth-child(2) { transition-delay: 0.10s; }
+.ad-filter-drawer.open .ad-filter-group:nth-child(3) { transition-delay: 0.15s; }
+.ad-filter-drawer.open .ad-filter-group:nth-child(4) { transition-delay: 0.20s; }
+.ad-filter-drawer.open .ad-filter-group:nth-child(5) { transition-delay: 0.25s; }
+.ad-filter-drawer.open .ad-filter-group:nth-child(6) { transition-delay: 0.30s; }
+.ad-filter-drawer.open .ad-filter-group:nth-child(7) { transition-delay: 0.35s; }
+.ad-filter-drawer.open .ad-filter-group:nth-child(8) { transition-delay: 0.40s; }
 
 .ad-filter-group-label {
   font-size: 11px;
@@ -858,6 +1309,7 @@ html, body {
   color: var(--danger-color);
 }
 
+/* ===== BACK BUTTON ===== */
 .lg-on .ad-back-btn,
 .ad-back-btn {
   position: fixed;
@@ -878,17 +1330,24 @@ html, body {
   font-weight: 500;
   cursor: pointer;
   z-index: 90;
-  transition: all 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: var(--shadow-glass);
 }
 
 .ad-back-btn:hover {
   border-color: var(--border-highlight);
   color: var(--primary-color);
+  transform: translateX(-4px);
+  box-shadow: var(--shadow-glass), 0 0 20px rgba(34, 211, 238, 0.08);
 }
 
 .ad-back-btn i {
   font-size: 16px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ad-back-btn:hover i {
+  transform: translateX(-3px);
 }
 
 /* ===== FUNCTIONAL / EDUCATION VIEW (card grid) ===== */
