@@ -213,7 +213,10 @@
     try { total = path.getTotalLength(); } catch { total = 1500; }
     if (!isFinite(total) || total <= 0) total = 1500;
     path.style.strokeDasharray = total;
-    path.style.strokeDashoffset = total;
+    // strokeDashoffset is set by the CSS animation (ad-draw-state),
+    // which reads from --ad-draw-len. Do NOT set it here — it would
+    // override the animation and keep the path permanently hidden.
+    path.style.setProperty('--ad-draw-len', total);
     return total;
   }
 
