@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = 'D:/claude/Deputation';
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const MIME = {
   '.html':'text/html','.css':'text/css','.js':'application/javascript',

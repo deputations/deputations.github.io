@@ -282,6 +282,7 @@
       path.addEventListener('mouseenter', (e) => {
         showTooltip(e, name, count);
         path.classList.add('ad-gpu');
+        announce(`${name}: ${count} vacancy${count !== 1 ? 'ies' : ''}`);
         document.querySelectorAll('#map-svg .ad-state').forEach(s => {
           if (s !== path) s.classList.add('neighbor-dim');
         });
@@ -296,14 +297,8 @@
       path.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drillToState(abbr, name); }
       });
-      path.addEventListener('mouseenter', (e) => {
-        showTooltip(e, name, count);
-        path.classList.add('ad-gpu');
-        announce(`${name}: ${count} vacancy${count !== 1 ? 'ies' : ''}`);
-        document.querySelectorAll('#map-svg .ad-state').forEach(s => {
-          if (s !== path) s.classList.add('neighbor-dim');
-        });
-      });
+
+      g.appendChild(path);   // <-- BUG FIX: actually add the path to the SVG
 
       // Label
       const [clon, clat] = centroid(feat.geometry);
