@@ -229,9 +229,12 @@
 
   function clearMap() {
     const old = document.getElementById('map-svg');
-    if (old) old.remove();
-    const wrap = document.getElementById('mapSvgWrap');
-    if (wrap) wrap.appendChild(buildSvg());
+    if (old) {
+      const g = old.querySelector('#map-group');
+      const lg = old.querySelector('#map-labels');
+      if (g) g.innerHTML = '';
+      if (lg) lg.innerHTML = '';
+    }
   }
 
   // ----- Render national -----

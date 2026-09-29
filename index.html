@@ -470,12 +470,12 @@
         <a href="#mapSvgWrap" class="ad-skip-link">Skip to map</a>
         <div id="mapAnnounce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
         <div class="map-container" id="mapContainer">
+          <button id="mapBackBtn" class="map-back-btn" hidden aria-label="Back to Home">
+            <svg class="icon"><use href="#i-chevron-down" style="transform:rotate(180deg)"/></svg>
+            <span>Back</span>
+          </button>
           <canvas id="particleCanvas" class="map-particles" aria-hidden="true"></canvas>
           <div class="map-header">
-            <button id="mapBackBtn" class="map-back-btn" aria-label="Back to Home">
-              <svg class="icon"><use href="#i-chevron-down" style="transform:rotate(180deg)"/></svg>
-              <span>Back to Home</span>
-            </button>
             <div class="map-title">
               <h2>Explore India</h2>
               <p class="map-subtitle" id="mapSubtitle">Interactive vacancy map</p>
