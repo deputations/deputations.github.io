@@ -7252,14 +7252,21 @@ body.map-active .app-container { overflow: hidden; }
   100% { r: 60; opacity: 0; stroke-width: 0.3; }
 }
 
-/* Home→Map transition */
+/* Home→Map transition — display:contents so #home-view's children
+   (.filters-sidebar, .dashboard-content) participate as direct grid items
+   of .main-layout. The 'hidden' attribute still works: [hidden] sets
+   display:none !important which wins over display:contents. */
 #home-view {
+  display: contents;
   transition: opacity 0.4s ease, transform 0.4s ease, filter 0.4s ease;
 }
 #home-view.hiding {
   opacity: 0;
   transform: scale(0.96);
   filter: blur(4px);
+}
+#home-view[hidden] {
+  display: none;
 }
 #map-view {
   opacity: 0;
