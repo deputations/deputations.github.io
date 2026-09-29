@@ -224,7 +224,7 @@
     path.style.animation = 'none';
     // force reflow to restart animation
     void path.getBoundingClientRect();
-    path.style.animation = `ad-draw-state 1.2s ease-out ${delay}ms forwards`;
+    path.style.animation = `ad-draw-state 2s cubic-bezier(0.22, 0.61, 0.36, 1) ${delay}ms forwards`;
   }
 
   function clearMap() {
@@ -282,7 +282,7 @@
       path.addEventListener('mouseenter', (e) => {
         showTooltip(e, name, count);
         path.classList.add('ad-gpu');
-        announce(`${name}: ${count} vacancy${count !== 1 ? 'ies' : ''}`);
+        announce(`${name}: ${count} vacanc${count !== 1 ? 'ies' : ''}`);
         document.querySelectorAll('#map-svg .ad-state').forEach(s => {
           if (s !== path) s.classList.add('neighbor-dim');
         });
@@ -330,12 +330,12 @@
         const delay = Math.min(i * 30, 600);
         playDrawIn(p, delay);
         // Make visible after its draw-in completes
-        const totalDuration = delay + 1200;
+        const totalDuration = delay + 2000;
         setTimeout(() => p.classList.add('drawn'), totalDuration);
       });
-      // Count labels pop in after draw-in
+      // Count labels pop in after draw-in finishes (2s + max stagger 600ms)
       document.querySelectorAll('#map-svg .ad-state-count').forEach((el, i) => {
-        el.style.animationDelay = `${900 + i * 20}ms`;
+        el.style.animationDelay = `${1800 + i * 25}ms`;
         el.classList.add('pop');
       });
     });
@@ -606,8 +606,20 @@
     if (!t) return;
     const n = document.getElementById('mapTooltipName');
     const c = document.getElementById('mapTooltipCount');
+    const m = document.getElementById('mapTooltipMeta');
     if (n) n.textContent = name;
-    if (c) c.textContent = `${count} vacancy${count !== 1 ? 'ies' : ''}`;
+    if (c) c.textContent = `${count} vacanc${count !== 1 ? 'ies' : ''}`;
+    if (m) {
+      const listings = window.IndiaMapData ? IndiaMapData.getAllVacancies().filter(v => {
+        if (!isActive(v) || !v.state_abbr) return false;
+        // find abbr for this state name
+        const ab = Object.entries(ABBR_TO_NAME).find(([,nm]) => nm === name);
+        return ab ? v.state_abbr === ab[0] : false;
+      }) : [];
+      const cats = {};
+      listings.forEach(v => { cats[v.category] = (cats[v.category]||0)+1; });
+      m.textContent = Object.entries(cats).map(([k,v]) => `${v} ${k}`).join(' · ') || '';
+    }
     moveTooltip(event);
     t.hidden = false;
     requestAnimationFrame(() => t.classList.add('visible'));

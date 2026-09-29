@@ -4178,7 +4178,15 @@ function syncCardSortUI() {
 
     // Animate count from 0 to total
     if (countEl) {
-      const total = parseInt(countEl.textContent) || 798;
+      const total = rawData.filter(r => {
+        const iso = String(r.Last_Date_To_Apply || r.last_date_to_apply || '').trim();
+        if (!iso) return true;
+        const d = new Date(iso + 'T00:00:00');
+        if (isNaN(d.getTime())) return true;
+        const today = new Date(); today.setHours(0,0,0,0);
+        return d >= today;
+      }).length;
+      countEl.textContent = total;
       const duration = 1400;
       const start = performance.now();
       function tick(now) {

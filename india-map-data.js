@@ -74,15 +74,52 @@ window.IndiaMapData = (() => {
     return true;
   }
 
+  async function loadFromRawData() {
+    // Third fallback: app.js already fetched & enriched the full dataset into
+    // window.rawData (Supabase wins when available, JSON when not). If both
+    // Supabase RPC and the bundled JSON are unavailable (e.g. NIC network
+    // with empty JSON), derive counts directly from the in-memory rawData.
+    if (!window.rawData || !window.rawData.length) return false;
+    recomputeCountsFrom(window.rawData);
+    source = 'rawdata';
+    return true;
+  }
+
+  function recomputeCountsFrom(list) {
+    stateCounts = {};
+    districtCounts = {};
+    nationwideCount = 0;
+    multiStateCount = 0;
+    list.forEach(v => {
+      if (!isActive(v)) return;
+      if (v.location_scope === 'nationwide') { nationwideCount++; return; }
+      if (v.location_scope === 'multi_state') { multiStateCount++; return; }
+      const abbr = v.state_abbr || '';
+      if (!abbr) return;
+      stateCounts[abbr] = (stateCounts[abbr] || 0) + 1;
+      const dist = v.district || '';
+      if (dist) {
+        const key = abbr + '|' + dist.toLowerCase();
+        districtCounts[key] = (districtCounts[key] || 0) + 1;
+      }
+    });
+  }
+
   async function load() {
+    // Order: Supabase RPC → bundled JSON → in-memory rawData (from app.js)
     try {
       await loadFromSupabase();
     } catch (e) {
-      // Expected on the NIC network (TLS to *.supabase.co is blocked) —
-      // the bundled JSON is the documented fallback, not an error path.
-      console.info('[map-data] using bundled JSON:', e.message);
-      await loadFromJSON();
-      recomputeCounts();
+      console.info('[map-data] Supabase RPC failed:', e.message);
+      try {
+        await loadFromJSON();
+        recomputeCounts();
+      } catch (e2) {
+        console.info('[map-data] JSON also failed:', e2.message);
+        if (!(await loadFromRawData())) {
+          throw new Error('No data source available (Supabase, JSON, rawData all empty)');
+        }
+      }
     }
     return { total: getTotal(), source, stateCounts };
   }
