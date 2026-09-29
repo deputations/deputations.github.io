@@ -7100,7 +7100,9 @@ body.map-active .app-container { overflow: hidden; }
 /* ===== MAP SVG SHAPES (core rendering, matching prototype) ===== */
 /* Palette is the approved SarvaLinks dark/gold scheme, not the dashboard's cyan.
    Kept as local tokens so the map reads as its own surface while still
-   inheriting the page background. */
+   inheriting the page background. Light-theme overrides follow below — the
+   map must read as its own surface in either theme while respecting the
+   page-wide background. */
 #map-view {
   --ad-bg: #181d26;
   --ad-surface: #1a1f2b;
@@ -7118,6 +7120,28 @@ body.map-active .app-container { overflow: hidden; }
   width: 100%;
   height: 100%;
   background: var(--ad-bg);
+}
+
+/* Light-theme overrides for the map page. Variables live on #map-view so the
+   override has to live there too — a bare [data-theme="light"] would be
+   shadowed by the inner #map-view scope. The accent stays the same gold so
+   the map's identity carries between themes; only the surface/border/text
+   tones flip. */
+[data-theme="light"] #map-view {
+  --ad-bg: #f6f8fc;            /* matches page --bg-main */
+  --ad-surface: #ffffff;
+  --ad-border: rgba(15, 23, 42, 0.12);
+  --ad-text: #0f172a;            /* matches page --text-primary */
+  --ad-text-muted: #64748b;
+  /* Slightly darker gold for legibility on white — the bright #ffb840
+     disappears into the bg in daylight. */
+  --ad-accent: #c47600;
+  --ad-accent-bright: #a35a00;
+  --ad-accent-dim: #8a4d00;
+  /* Polygon fills: pale slate for "has vacancies" and an even lighter
+     slate for "zero vacancies" — both stay readable against #f6f8fc. */
+  --ad-polygon-fill: #cbd5e1;
+  --ad-polygon-fill-zero: #e2e8f0;
 }
 
 .ad-state {
