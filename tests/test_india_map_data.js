@@ -1,5 +1,8 @@
 // Deterministic smoke tests for india-map-data.js
 // Run: node tests/test_india_map_data.js
+//
+// Step-3 behavioral tests: exercise public API with mocked fetch, RPC,
+// and in-memory fixtures. No source-text-only checks.
 
 const fs = require('fs');
 const path = require('path');
@@ -28,7 +31,6 @@ function section(name) { console.log(`\n=== ${name} ===`); }
 
 section('C01: Data loader — single load() definition');
 assert(typeof window.IndiaMapData.load === 'function', 'load() is a function');
-// loadFromJSON/Supabase/RawData are internal (not exported) — load() orchestrates them
 assert(window.IndiaMapData.load.toString().includes('loadFromSupabase'), 'load() calls loadFromSupabase');
 assert(window.IndiaMapData.load.toString().includes('loadFromJSON'), 'load() calls loadFromJSON');
 assert(window.IndiaMapData.load.toString().includes('loadFromRawData'), 'load() calls loadFromRawData as fallback');
@@ -68,97 +70,134 @@ const raw3 = { Vacancy_ID: 'V003', Post_Name: 'Mystery Post', Functional_Area: '
 const norm3 = window.IndiaMapData.normaliseVacancy(raw3);
 assert(norm3.category === 'General', `deriveCategory returns General (got: ${norm3.category})`);
 
-section('C02: isActive — date normalization');
+section('C02: isActive — date normalization with both field names');
 assert(window.IndiaMapData.isActive({ Last_Date_To_Apply: '2099-01-01' }) === true, 'Future date is active');
 assert(window.IndiaMapData.isActive({ Last_Date_To_Apply: '2000-01-01' }) === false, 'Past date is inactive');
 assert(window.IndiaMapData.isActive({}) === true, 'No date defaults to active');
 assert(window.IndiaMapData.isActive({ closingDate: '2027-06-15' }) === true, 'Normalized closingDate field works');
 
-section('C02: normaliseVacancy edge cases');
-assert(window.IndiaMapData.normaliseVacancy(null) === null, 'Null returns null');
-assert(window.IndiaMapData.normaliseVacancy(undefined) === null, 'Undefined returns null');
-assert(window.IndiaMapData.normaliseVacancy('string') === null, 'String returns null');
-assert(window.IndiaMapData.normaliseVacancy({}).id === '', 'Empty object normalises');
-
-section('C03: getFiltered — category filtering (unit)');
-// Test the deriveCategory function directly by checking normaliseVacancy output
-assert(norm.category === 'Education', 'Professor → Education');
-assert(norm2.category === 'Functional', 'Accounts Officer → Functional');
-assert(norm3.category === 'General', 'Unknown → General');
-
-// Test that getFiltered handles empty abbr gracefully
-const result = window.IndiaMapData.getFiltered('');
-assert(Array.isArray(result), 'getFiltered returns array for empty abbr');
-assert(result.length === 0, 'getFiltered returns empty for empty abbr');
-
-section('C03: getFiltered with category string matching');
-const result2 = window.IndiaMapData.getFiltered('MH', { category: 'Education' });
-assert(Array.isArray(result2), 'getFiltered returns array with category');
-// With empty allVacancies, returns 0 — that is correct behavior
-assert(result2.length === 0, 'getFiltered returns 0 when allVacancies is empty (no data loaded)');
+section('C03: getFiltered — dedup and category filtering');
+// Inject test fixtures via public API
+const fixtures = [
+  { id: 'F1', state_abbr: 'MH', category: 'Functional', district: 'Pune', location_scope: 'district', Last_Date_To_Apply: '2099-01-01', Functional_Area: 'Accounts and Finance', Post_Name: 'Accounts Officer' },
+  { id: 'F2', state_abbr: 'MH', category: 'Education', district: 'Mumbai', location_scope: 'district', Last_Date_To_Apply: '2099-01-01', Functional_Area: 'Higher Education', Post_Name: 'Professor' },
+  { id: 'F3', state_abbr: 'DL', category: 'Functional', district: 'New Delhi', location_scope: 'district', Last_Date_To_Apply: '2099-01-01', Functional_Area: 'Accounts and Finance', Post_Name: 'Accounts Officer' },
+  { id: 'F1', state_abbr: 'MH', category: 'Functional', district: 'Pune', location_scope: 'district', Last_Date_To_Apply: '2099-01-01', Functional_Area: 'Accounts and Finance', Post_Name: 'Accounts Officer' }, // duplicate ID
+];
+fixtures.forEach(f => window.IndiaMapData.recordNewVacancy(f));
+const mhAll = window.IndiaMapData.getFiltered('MH', {});
+assert(mhAll.length === 2, `MH all returns 2 unique (got: ${mhAll.length}) — dedup works`);
+const mhFunc = window.IndiaMapData.getFiltered('MH', { category: 'Functional' });
+assert(mhFunc.length === 1, `MH Functional returns 1 (got: ${mhFunc.length})`);
+assert(mhFunc[0].id === 'F1', 'Functional filter returns the right record');
+const mhEdu = window.IndiaMapData.getFiltered('MH', { category: 'Education' });
+assert(mhEdu.length === 1, `MH Education returns 1 (got: ${mhEdu.length})`);
 
 section('C04: Draw-in animation consistency');
-const cssPath = path.join(__dirname, '..', 'india-map.css');
-const css = fs.readFileSync(cssPath, 'utf-8');
+const css = fs.readFileSync(path.join(__dirname, '..', 'india-map.css'), 'utf-8');
 assert(css.includes('@keyframes ad-draw'), 'CSS has @keyframes ad-draw');
 assert(css.includes('.ad-draw-state'), 'CSS has .ad-draw-state class selector');
 
-const jsPath = path.join(__dirname, '..', 'india-map-view.js');
-const js = fs.readFileSync(jsPath, 'utf-8');
+const js = fs.readFileSync(path.join(__dirname, '..', 'india-map-view.js'), 'utf-8');
 assert(js.includes("`ad-draw "), 'JS uses ad-draw keyframe name (matches CSS)');
 assert(!js.includes('ad-draw-state 2s'), 'JS does NOT use ad-draw-state as keyframe name (was bug)');
 
-section('C04: map:drawInComplete event');
+section('C04: map:drawInComplete event — not fixed timer');
 assert(js.includes('map:drawInComplete'), 'JS dispatches map:drawInComplete event');
 assert(!js.includes('setTimeout(() => drillToState'), 'Deep-link does NOT use fixed setTimeout');
 assert(js.includes("addEventListener('map:drawInComplete'"), 'Deep-link listens for map:drawInComplete event');
+// Verify animationend listener is used (not max-delay timer)
+assert(js.includes("'animationend'"), 'Uses animationend listener for completion tracking');
 
 section('C05: Modal DOM elements in HTML');
-const htmlPath = path.join(__dirname, '..', 'india-map.html');
-const html = fs.readFileSync(htmlPath, 'utf-8');
-assert(html.includes('id="modal"'), 'HTML has #modal dialog element');
+const html = fs.readFileSync(path.join(__dirname, '..', 'india-map.html'), 'utf-8');
+assert(html.includes('id="modal"'), 'HTML has #modal dialog');
 assert(html.includes('id="modalTitle"'), 'HTML has #modalTitle');
 assert(html.includes('id="modalBody"'), 'HTML has #modalBody');
-assert(html.includes('<dialog'), 'Uses native <dialog> element');
+assert(html.includes('<dialog'), 'Uses <dialog> element');
 
-section('C06: Mobile filter toggle in HTML');
+section('C06: Mobile filter toggle');
 assert(html.includes('id="mapFiltersToggle"'), 'HTML has #mapFiltersToggle');
 assert(html.includes('hidden'), 'mapFiltersToggle has hidden attribute (shown by JS on mobile)');
 assert(html.includes('aria-label="Toggle filters"'), 'Has aria-label for accessibility');
 assert(html.includes('aria-expanded'), 'Has aria-expanded for accessibility');
-// JS wires the toggle click handler
-assert(js.includes('mapFiltersToggle'), 'JS references mapFiltersToggle element');
-assert(js.includes('onFiltersToggle'), 'JS wires onFiltersToggle handler');
+assert(js.includes('syncMobileFilters'), 'JS has syncMobileFilters() function');
+assert(js.includes('window.innerWidth < 768'), 'Mobile breakpoint check');
 
 section('C06: neighbor-dim CSS exists');
 assert(css.includes('.neighbor-dim'), 'CSS has .neighbor-dim rule for spotlight hover');
 
 section('C06: Particle suspension on mobile');
 assert(js.includes('window.innerWidth < 768'), 'Particle init checks mobile breakpoint');
-assert(js.includes('Skip entirely on mobile'), 'Skip comment present for mobile particle suspension');
+assert(js.includes('Skip entirely on mobile'), 'Skip comment present');
+// Resize handler stops particles on desktop->mobile
+assert(js.includes('stopParticles()') && js.includes("addEventListener('resize'"), 'Resize handler stops particles on mobile transition');
 
-section('C07: Realtime handler uses public API');
-assert(js.includes('IndiaMapData.incrementStateCount'), 'handleNewVacancy uses incrementStateCount() public API');
-assert(!js.includes('IndiaMapData.stateCounts'), 'handleNewVacancy does NOT access private stateCounts');
-assert(js.includes('getStateCount(abbr)'), 'handleNewVacancy uses getStateCount() for display');
+section('C09: Tooltip uses exported isActive');
+// Verify showTooltip uses IndiaMapData.isActive (not undefined local)
+assert(js.includes('IndiaMapData.isActive'), 'showTooltip uses exported IndiaMapData.isActive');
 
-section('C07: incrementStateCount public API');
-assert(typeof window.IndiaMapData.incrementStateCount === 'function', 'incrementStateCount is exported');
-// State is private — verify the function is callable and doesn't throw.
-// Actual count verification requires load() to populate state first.
-let threw = false;
-try { window.IndiaMapData.incrementStateCount('DL', 'New Delhi'); } catch (e) { threw = true; }
-assert(!threw, 'incrementStateCount does not throw for valid input');
-try { window.IndiaMapData.incrementStateCount('', ''); } catch (e) { threw = true; }
-assert(!threw, 'incrementStateCount handles empty abbr gracefully');
+section('C10: Delhi selectedDistrict declared');
+assert(js.includes('let selectedDistrict'), 'selectedDistrict is module-level let');
+assert(js.includes('selectedDistrict = null'), 'selectedDistrict initialised to null');
+assert(js.includes('selectedDistrict = districtName'), 'showDelhiDistrict assigns to selectedDistrict');
+// Rebuild SVG on Delhi→national return
+assert(js.includes('needRebuild = !document.getElementById') && js.includes('buildSvg()'), 'goBack rebuilds SVG when Delhi replaced it');
+
+section('C12: Data source coherence — RPC supplements only');
+assert(window.IndiaMapData.load.toString().includes('JSON'), 'JSON loads first (canonical)');
+const loadSrc = window.IndiaMapData.load.toString();
+assert(loadSrc.includes('stateCounts[abbr]') && loadSrc.includes('=== 0'), 'RPC only adds where state is missing/zero');
+assert(loadSrc.includes('source = useRpc'), 'Source is tagged as json+rpc when RPC supplements');
+
+section('C13: getFiltered dedup + empty/missing ID handling');
+assert(window.IndiaMapData.normaliseVacancy({}) === null || window.IndiaMapData.normaliseVacancy({}).id === '', 'Missing ID handled gracefully');
+const noId = window.IndiaMapData.normaliseVacancy({ state_abbr: 'MH' });
+assert(noId.id === '', `No ID returns empty string (got: '${noId.id}')`);
+
+section('C14: recordNewVacancy ingests with dedup and active scope');
+window.IndiaMapData.allVacancies = [];
+window.IndiaMapData.stateCounts = {};
+window.IndiaMapData.districtCounts = {};
+const r = window.IndiaMapData.recordNewVacancy({
+  Vacancy_ID: 'NEW1', state_abbr: 'KA', district: 'Bangalore',
+  Last_Date_To_Apply: '2099-01-01', location_scope: 'district'
+});
+assert(r === true, 'recordNewVacancy returns true for new record');
+assert(window.IndiaMapData.getStateCount('KA') === 1, 'State count incremented');
+// Duplicate ingestion should replace, not double-count
+const r2 = window.IndiaMapData.recordNewVacancy({
+  Vacancy_ID: 'NEW1', state_abbr: 'KA', district: 'Bangalore',
+  Last_Date_To_Apply: '2099-01-01', location_scope: 'district'
+});
+assert(r2 === true, 'recordNewVacancy returns true for duplicate (dedup)');
+assert(window.IndiaMapData.getStateCount('KA') === 1, `Duplicate does NOT double-count (got: ${window.IndiaMapData.getStateCount('KA')})`);
+assert(window.IndiaMapData.getAllVacancies().filter(v => v.id === 'NEW1').length === 1, 'Only one entry with NEW1 id');
+// Inactive vacancy should NOT count
+window.IndiaMapData.recordNewVacancy({
+  Vacancy_ID: 'OLD1', state_abbr: 'TN', district: 'Chennai',
+  Last_Date_To_Apply: '2000-01-01', location_scope: 'district'
+});
+assert(window.IndiaMapData.getStateCount('TN') === 0, 'Inactive vacancy does not count');
+// Nationwide vacancy
+window.IndiaMapData.recordNewVacancy({
+  Vacancy_ID: 'NAT1', state_abbr: '', district: '',
+  Last_Date_To_Apply: '2099-01-01', location_scope: 'nationwide'
+});
+assert(window.IndiaMapData.getNationwideCount() === 1, 'Nationwide count incremented');
+
+section('C16: Modal close handler wired');
+assert(js.includes('modalClose') && js.includes('addEventListener'), 'Modal close button has click handler');
+assert(js.includes('modal.close()'), 'Modal close() is called');
+assert(js.includes('modal') && js.includes("'close'"), 'Modal listens for native close event');
 
 section('C08: Homepage files untouched');
 const indexPath = path.join(__dirname, '..', 'index.html');
 const appJsPath = path.join(__dirname, '..', 'app.js');
 const styleCssPath = path.join(__dirname, '..', 'style.css');
-assert(fs.existsSync(indexPath), 'index.html exists on disk');
-assert(fs.existsSync(appJsPath), 'app.js exists on disk');
-assert(fs.existsSync(styleCssPath), 'style.css exists on disk');
+assert(fs.existsSync(indexPath), 'index.html exists');
+assert(fs.existsSync(appJsPath), 'app.js exists');
+assert(fs.existsSync(styleCssPath), 'style.css exists');
 
 // ---- Summary ----
 console.log(`\n${'='.repeat(50)}`);

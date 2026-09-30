@@ -106,41 +106,39 @@ window.IndiaMapData = (() => {
 
   // ----- Canonical load sequence (single definition) -----
   async function load() {
-    // 1. Try Supabase RPC first (fast counts). Non-fatal if unreachable.
-    let useRpc = false;
-    let rpcCounts = {};
-    try {
-      const rpcResult = await loadFromSupabase();
-      rpcCounts = rpcResult.rpcCounts;
-      useRpc = rpcResult.hasRpcData;
-    } catch (e) {
-      console.info('[map-data] Supabase RPC skipped:', e.message);
-    }
-
-    // 2. Always load JSON for full vacancy records (drill-down, filters).
-    //    This is the canonical data source.
+    // 1. Load JSON first (canonical source for full vacancy records).
     try {
       await loadFromJSON();
     } catch (e2) {
       console.info('[map-data] JSON failed:', e2.message);
-      // 3. NIC fallback: app.js / enrich.js may have window.rawData
       if (!(await loadFromRawData())) {
-        throw new Error('No data source available (Supabase, JSON, rawData all empty)');
+        throw new Error('No data source available');
       }
     }
 
-    // 4. Recompute counts from loaded vacancies (canonical)
+    // 2. Recompute counts from loaded vacancies (canonical)
     recomputeCounts();
 
-    // 5. If RPC had non-zero data, overlay its counts (supersedes JSON for
-    //    state totals only — district/nationwide/multistate stay JSON-derived).
-    if (useRpc && Object.keys(rpcCounts).length > 0) {
-      Object.entries(rpcCounts).forEach(([abbr, count]) => {
-        stateCounts[abbr] = count;
-      });
+    // 3. Supabase RPC supplements — only fills in states JSON missed.
+    //    NEVER overwrites a non-zero JSON count (prevents stale RPC from
+    //    contradicting the canonical source).
+    let useRpc = false;
+    try {
+      const rpcResult = await loadFromSupabase();
+      const rpcCounts = rpcResult.rpcCounts;
+      if (rpcResult.hasRpcData && Object.keys(rpcCounts).length > 0) {
+        Object.entries(rpcCounts).forEach(([abbr, count]) => {
+          if ((stateCounts[abbr] || 0) === 0 && count > 0) {
+            stateCounts[abbr] = count;
+          }
+        });
+        useRpc = true;
+      }
+    } catch (e) {
+      console.info('[map-data] Supabase RPC skipped:', e.message);
     }
 
-    source = useRpc ? 'supabase+json' : (allVacancies.length ? 'json' : source);
+    source = useRpc ? 'json+rpc' : (allVacancies.length ? 'json' : source);
     return { total: getTotal(), source, stateCounts };
   }
 
@@ -193,25 +191,53 @@ window.IndiaMapData = (() => {
 
   function getFiltered(abbr, opts = {}) {
     if (!abbr) return [];
-    let list = allVacancies.filter(v =>
-      isActive(v) &&
-      v.state_abbr === abbr
-    );
-    if (opts.category) {
-      const cat = String(opts.category);
-      list = list.filter(v => v.category === cat);
-    }
-    return list;
+    const seen = new Set(); // same dedup contract as recomputeCounts
+    return allVacancies.filter(v => {
+      if (!isActive(v)) return false;
+      if (v.state_abbr !== abbr) return false;
+      if (seen.has(v.id)) return false;
+      seen.add(v.id);
+      if (opts.category && v.category !== opts.category) return false;
+      return true;
+    });
   }
 
-  // Realtime support: increment a state count by one for a new vacancy.
-  function incrementStateCount(abbr, district) {
-    if (!abbr) return;
-    stateCounts[abbr] = (stateCounts[abbr] || 0) + 1;
-    if (district && district.trim()) {
-      const key = abbr + '|' + district.toLowerCase().trim();
-      districtCounts[key] = (districtCounts[key] || 0) + 1;
+  // Realtime support: ingest a new vacancy with ID dedup and active-date scope.
+  // Updates allVacancies, stateCounts, districtCounts so that filtered counts,
+  // tooltip breakdowns, and district listings all stay consistent.
+  function recordNewVacancy(raw) {
+    const v = normaliseVacancy(raw);
+    if (!v || !v.id) return false;
+    // Dedup: drop existing entry with same ID (and its counts)
+    const idx = allVacancies.findIndex(existing => existing.id === v.id);
+    if (idx >= 0) {
+      const old = allVacancies[idx];
+      allVacancies.splice(idx, 1);
+      // Decrement old counts
+      if (old.location_scope === 'nationwide') { nationwideCount--; }
+      else if (old.location_scope === 'multi_state') { multiStateCount--; }
+      else if (old.state_abbr) {
+        stateCounts[old.state_abbr] = Math.max((stateCounts[old.state_abbr] || 0) - 1, 0);
+        if (old.district) {
+          const key = old.state_abbr + '|' + old.district.toLowerCase();
+          districtCounts[key] = Math.max((districtCounts[key] || 0) - 1, 0);
+        }
+      }
     }
+    allVacancies.push(v);
+    // Increment counts only if active
+    if (isActive(v)) {
+      if (v.location_scope === 'nationwide') { nationwideCount++; return true; }
+      if (v.location_scope === 'multi_state') { multiStateCount++; return true; }
+      if (v.state_abbr) {
+        stateCounts[v.state_abbr] = (stateCounts[v.state_abbr] || 0) + 1;
+        if (v.district) {
+          const key = v.state_abbr + '|' + v.district.toLowerCase();
+          districtCounts[key] = (districtCounts[key] || 0) + 1;
+        }
+      }
+    }
+    return true;
   }
 
   return {
@@ -219,6 +245,6 @@ window.IndiaMapData = (() => {
     getStateCount, getStateCounts, getTotal, getSource, getAllVacancies,
     getNationwideCount, getMultiStateCount,
     getListingsForDistrict, getFiltered, normaliseVacancy, deriveCategory,
-    incrementStateCount,
+    recordNewVacancy,
   };
 })();

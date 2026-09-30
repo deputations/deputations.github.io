@@ -9,6 +9,7 @@
   let mapInitialised = false;
   let viewMode = 'national';
   let selectedAbbr = null;
+  let selectedDistrict = null;
   let districtsGeo = null;
   let districtsPromise = null;
   let currentProjection = null;
@@ -354,23 +355,40 @@
 
     // Trigger draw-in for all paths after the SVG is in the DOM
     requestAnimationFrame(() => {
-      document.querySelectorAll('#map-svg .ad-state').forEach((p, i) => {
-        const delay = Math.min(i * 30, 600);
-        playDrawIn(p, delay);
-        // Make visible after its draw-in completes
-        const totalDuration = delay + 2000;
-        setTimeout(() => p.classList.add('drawn'), totalDuration);
+      const paths = document.querySelectorAll('#map-svg .ad-state');
+      let completed = 0;
+      const total = paths.length;
+      const gen = ++generation;
+      const useReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function onPathComplete() {
+        completed++;
+        if (completed >= total && gen === generation) {
+          document.dispatchEvent(new CustomEvent('map:drawInComplete'));
+        }
+      }
+
+      paths.forEach((p, i) => {
+        playDrawIn(p, i * 30);
+        const totalDuration = i * 30 + 2000;
+        setTimeout(() => {
+          if (gen === generation) p.classList.add('drawn');
+        }, totalDuration);
+        if (useReducedMotion) {
+          onPathComplete(); // no animation, count immediately
+        } else {
+          p.addEventListener('animationend', onPathComplete, { once: true });
+          // Safety fallback: if animationend never fires (interrupted/removed), count after max duration
+          setTimeout(() => {
+            if (completed < total && gen === generation) onPathComplete();
+          }, 3500);
+        }
       });
       // Count labels pop in after draw-in finishes (2s + max stagger 600ms)
       document.querySelectorAll('#map-svg .ad-state-count').forEach((el, i) => {
         el.style.animationDelay = `${1800 + i * 25}ms`;
         el.classList.add('pop');
       });
-      // Signal draw-in complete for deep-link and other listeners
-      const maxDelay = 36 * 30 + 2000; // last state draw-in + animation duration
-      setTimeout(() => {
-        document.dispatchEvent(new CustomEvent('map:drawInComplete'));
-      }, maxDelay + 100);
     });
 
     updateCounter(data);
@@ -809,9 +827,12 @@
     if (n) n.textContent = name;
     if (c) c.textContent = `${count} vacanc${count !== 1 ? 'ies' : ''}`;
     if (m) {
+      // Use the data-layer's exported isActive, never the (non-existent) local one
+      const dataActive = window.IndiaMapData && IndiaMapData.isActive
+        ? (v) => IndiaMapData.isActive(v)
+        : () => true;
       const listings = window.IndiaMapData ? IndiaMapData.getAllVacancies().filter(v => {
-        if (!isActive(v) || !v.state_abbr) return false;
-        // find abbr for this state name
+        if (!dataActive(v) || !v.state_abbr) return false;
         const ab = Object.entries(ABBR_TO_NAME).find(([,nm]) => nm === name);
         return ab ? v.state_abbr === ab[0] : false;
       }) : [];
@@ -918,6 +939,14 @@
   async function goBack() {
     if (viewMode === 'state') {
       const gen = ++generation;
+      selectedDistrict = null;
+      // Delhi replaced #map-svg with HTML — rebuild the SVG before rendering national
+      const mapArea = document.getElementById('mapSvgWrap');
+      const needRebuild = !document.getElementById('map-svg');
+      if (needRebuild && mapArea) {
+        mapArea.innerHTML = '';
+        mapArea.appendChild(buildSvg());
+      }
       const svg = document.getElementById('map-svg');
       if (svg) {
         const vb = svg.viewBox.baseVal;
@@ -948,6 +977,7 @@
       } else {
         goBack();
       }
+      selectedDistrict = null;
     }
   }
 
@@ -995,15 +1025,16 @@
 
     renderNational(getData());
 
-    // Deep-link auto-drill (?state=XX, ?state=XX&district=YY)
+    // Deep-link auto-drill (?state=XX)
+    // District deep-links (?state=XX&district=YY) are deferred — district
+    // drill-down requires additional plumbing in the drill-to-state flow.
     const urlParams = new URLSearchParams(location.search);
     const deepState = urlParams.get('state');
     if (deepState) {
       const abbr = deepState.toUpperCase();
       const name = ABBR_TO_NAME[abbr] || deepState;
-      const deepDistrict = urlParams.get('district');
       // Wait for draw-in animation to finish before drilling
-      const doDrill = () => drillToState(abbr, name, deepDistrict);
+      const doDrill = () => drillToState(abbr, name);
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
           document.addEventListener('map:drawInComplete', doDrill, { once: true });
@@ -1024,6 +1055,21 @@
     document.getElementById('zoomInBtn')?.addEventListener('click', zoomIn);
     document.getElementById('zoomOutBtn')?.addEventListener('click', zoomOut);
     document.getElementById('zoomResetBtn')?.addEventListener('click', zoomReset);
+
+    // Wire modal close handlers
+    const modal = document.getElementById('modal');
+    const modalClose = modal?.querySelector('.map-modal-close');
+    if (modalClose && modal) {
+      modalClose.addEventListener('click', () => modal.close());
+    }
+    if (modal) {
+      modal.addEventListener('close', () => {
+        // Restore focus to the last clicked district path
+        const lastFocus = document.querySelector('.ad-district[data-focus="true"]');
+        if (lastFocus) lastFocus.focus();
+      });
+    }
+
     document.querySelectorAll('.map-filter-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.map-filter-btn').forEach(b => {
@@ -1054,6 +1100,15 @@
 
     // Filter toggle button (mobile)
     document.getElementById('mapFiltersToggle')?.addEventListener('click', onFiltersToggle);
+
+    // Handle viewport resize — particles on desktop→mobile, filter toggle on mobile→desktop
+    window.addEventListener('resize', () => {
+      syncMobileFilters();
+      if (window.innerWidth < 768) {
+        stopParticles();
+      }
+    });
+    syncMobileFilters();
   };
 
   // ----- Wheel zoom (centered on cursor) -----
@@ -1158,6 +1213,20 @@
   }
 
   // ----- Filter toggle (mobile) -----
+  // Show/hide filter buttons and the toggle based on viewport width.
+  // Touch target = 44px minimum. Close filter panel on resize to desktop.
+  function syncMobileFilters() {
+    const btn = document.getElementById('mapFiltersToggle');
+    const filters = document.querySelector('.map-filters');
+    if (!btn || !filters) return;
+    const isMobile = window.innerWidth < 768;
+    btn.hidden = !isMobile;
+    if (!isMobile) {
+      filters.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  }
   function onFiltersToggle() {
     const btn = document.getElementById('mapFiltersToggle');
     const filters = document.querySelector('.map-filters');
@@ -1249,21 +1318,18 @@
   }
 
   function handleNewVacancy(row) {
-    // Normalise using the data layer
-    var norm = window.IndiaMapData ? IndiaMapData.normaliseVacancy(row) : null;
-    if (!norm) return;
+    if (!window.IndiaMapData || !IndiaMapData.recordNewVacancy) return;
+    // recordNewVacancy handles dedup, normalisation, and count updates.
+    var ingested = IndiaMapData.recordNewVacancy(row);
+    if (!ingested) return;
 
-    var abbr = norm.state_abbr;
+    // Re-normalise to get the final abbr (recordNewVacancy already did this internally)
+    var norm = IndiaMapData.normaliseVacancy(row);
+    var abbr = norm && norm.state_abbr;
     if (!abbr) return;
 
-    // Use the data layer's public API to update counts (stateCounts is private)
-    if (window.IndiaMapData && IndiaMapData.incrementStateCount) {
-      IndiaMapData.incrementStateCount(abbr, norm.district);
-    }
+    var newCount = IndiaMapData.getStateCount(abbr);
 
-    var newCount = window.IndiaMapData ? IndiaMapData.getStateCount(abbr) : 0;
-
-    // Update the SVG path
     var path = document.querySelector('#map-svg [data-abbr="' + abbr + '"].ad-state');
     if (path) {
       path.classList.remove('empty-state');
@@ -1272,7 +1338,6 @@
       spawnRipple(path);
     }
 
-    // Update the count label via data-for attribute
     var countEl = document.querySelector('#map-labels text.ad-state-count[data-for="' + abbr + '"]');
     if (countEl) {
       countEl.textContent = newCount;
@@ -1281,9 +1346,8 @@
       countEl.style.display = '';
     }
 
-    // Update header counter
     var totalEl = document.getElementById('mapCounterValue');
-    if (totalEl && window.IndiaMapData) {
+    if (totalEl) {
       totalEl.textContent = (IndiaMapData.getTotal ? IndiaMapData.getTotal() : 0).toLocaleString();
     }
   }
