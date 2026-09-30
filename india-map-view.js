@@ -346,6 +346,11 @@
         el.style.animationDelay = `${1800 + i * 25}ms`;
         el.classList.add('pop');
       });
+      // Signal draw-in complete for deep-link and other listeners
+      const maxDelay = 36 * 30 + 2000; // last state draw-in + animation duration
+      setTimeout(() => {
+        document.dispatchEvent(new CustomEvent('map:drawInComplete'));
+      }, maxDelay + 100);
     });
 
     updateCounter(data);
@@ -381,8 +386,6 @@
       parent.appendChild(ring);
       setTimeout(() => ring.remove(), 2500 + delay);
     });
-
-    updateCounter(data);
   }
 
   // Vortex burst: spawns a spiral of gold particles from the clicked state's
@@ -552,11 +555,12 @@
     viewMode = 'state';
     selectedAbbr = abbr;
 
-    const districtEntries = DELHI_DISTRICTS.map(d => ({
-      name: d.name,
-      count: (data.stateCounts?.[`${abbr.toLowerCase()}|${d.name.toLowerCase()}`]) || 0,
-      image: d.image
-    }));
+    const districtEntries = DELHI_DISTRICTS.map(d => {
+      const key = `${abbr.toLowerCase()}|${d.name.toLowerCase()}`;
+      const count = (data.districtCounts?.[key]) ||
+        IndiaMapData.getListingsForDistrict(abbr, d.name).length;
+      return { name: d.name, count, image: d.image };
+    });
 
     const hotspots = DELHI_DISTRICTS.map(d => {
       const entry = districtEntries.find(e => e.name === d.name);
@@ -827,16 +831,51 @@
   // ----- Filter buttons -----
   function applyFilter(type) {
     const paths = document.querySelectorAll('#map-svg .ad-state');
+    let filteredTotal = 0;
     paths.forEach(p => {
       const abbr = p.dataset.abbr;
       let visible = true;
+      let count = 0;
       if (type === 'functional') {
-        visible = (window.IndiaMapData?.getFiltered?.(abbr, { category: 'Functional' }) || []).length > 0;
+        const list = window.IndiaMapData?.getFiltered?.(abbr, { category: 'Functional' }) || [];
+        count = list.length;
+        visible = count > 0;
       } else if (type === 'education') {
-        visible = (window.IndiaMapData?.getFiltered?.(abbr, { category: 'Education' }) || []).length > 0;
+        const list = window.IndiaMapData?.getFiltered?.(abbr, { category: 'Education' }) || [];
+        count = list.length;
+        visible = count > 0;
+      } else {
+        count = window.IndiaMapData?.getStateCount?.(abbr) || 0;
+        filteredTotal += count;
       }
       p.style.opacity = visible ? '1' : '0.12';
+      // Update count label for this state
+      const countEl = p.parentNode?.querySelector(`text.ad-state-count[data-for="${abbr}"]`);
+      if (countEl && type !== 'all') {
+        countEl.textContent = count;
+        countEl.style.display = count > 0 ? '' : 'none';
+      } else if (countEl) {
+        const orig = window.IndiaMapData?.getStateCount?.(abbr) || 0;
+        countEl.textContent = orig;
+        countEl.style.display = '';
+      }
     });
+    // Update header counter to reflect filter
+    if (type !== 'all') {
+      const total = paths.length;
+      let sum = 0;
+      paths.forEach(p => {
+        const abbr = p.dataset.abbr;
+        const list = window.IndiaMapData?.getFiltered?.(abbr, { category: type.charAt(0).toUpperCase() + type.slice(1) }) || [];
+        sum += list.length;
+      });
+      const counter = document.getElementById('mapCounterValue');
+      if (counter) counter.textContent = sum.toLocaleString();
+    } else {
+      const allTotal = window.IndiaMapData?.getTotal?.() || 0;
+      const counter = document.getElementById('mapCounterValue');
+      if (counter) counter.textContent = allTotal.toLocaleString();
+    }
   }
 
   function zoomIn() {
@@ -882,7 +921,7 @@
       viewMode = 'national';
       // Return focus to the state that was drilled into
       if (lastFocusedState) {
-        const st = document.querySelector(`#map-svg [data-abbr="${lastFocusedState}"].ad-state`);
+        const st = document.querySelector('#map-svg [data-abbr="' + lastFocusedState + '"].ad-state');
         if (st) { st.focus(); return; }
       }
     } else if (viewMode === 'district') {
@@ -952,8 +991,16 @@
     if (deepState) {
       const abbr = deepState.toUpperCase();
       const name = ABBR_TO_NAME[abbr] || deepState;
-      // Wait for draw-in animation to finish, then drill
-      setTimeout(() => drillToState(abbr, name), 1600);
+      const deepDistrict = urlParams.get('district');
+      // Wait for draw-in animation to finish before drilling
+      const doDrill = () => drillToState(abbr, name, deepDistrict);
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          document.addEventListener('map:drawInComplete', doDrill, { once: true });
+        });
+      } else {
+        document.addEventListener('map:drawInComplete', doDrill, { once: true });
+      }
     }
 
     // Subscribe to Supabase Realtime for live vacancy inserts
@@ -999,7 +1046,7 @@
     document.getElementById('mapFiltersToggle')?.addEventListener('click', onFiltersToggle);
   };
 
-  // ----- Wheel zoom (prevent page scroll over map) -----
+  // ----- Wheel zoom (centered on cursor) -----
   function onWheelZoom(e) {
     const svg = document.getElementById('map-svg');
     if (!svg) return;
@@ -1008,8 +1055,14 @@
     const factor = e.deltaY < 0 ? 0.9 : 1.1;
     const newW = Math.min(Math.max(vb.width * factor, 80), 2000);
     const newH = Math.min(Math.max(vb.height * factor, 64), 1600);
-    const cx = vb.x + vb.width / 2, cy = vb.y + vb.height / 2;
-    vb.x = cx - newW / 2; vb.y = cy - newH / 2;
+    // Map cursor position to SVG coordinate space so zoom centers on pointer
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    const svgPt = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const ratioX = (svgPt.x - vb.x) / vb.width;
+    const ratioY = (svgPt.y - vb.y) / vb.height;
+    vb.x = svgPt.x - newW * ratioX;
+    vb.y = svgPt.y - newH * ratioY;
     vb.width = newW; vb.height = newH;
   }
 
@@ -1374,6 +1427,8 @@
 
   function startParticles() {
     if (particleRaf) return; // already running
+    // Skip entirely on mobile to save GPU
+    if (window.innerWidth < 768) return;
     if (!initParticleCanvas()) return;
     resizeParticleCanvas();
     resetParticles();
