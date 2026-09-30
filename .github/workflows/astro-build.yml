@@ -105,6 +105,12 @@ jobs:
           cp ../site-widgets.js public/site-widgets.js
           cp ../style.css public/style.css
           cp ../navbar.css public/navbar.css
+          # India map standalone page
+          cp ../india-map.html public/india-map.html 2>/dev/null || true
+          cp ../india-map-data.js public/india-map-data.js 2>/dev/null || true
+          cp ../india-map-view.js public/india-map-view.js 2>/dev/null || true
+          cp -r ../geo public/geo 2>/dev/null || true
+          cp -r ../img public/img 2>/dev/null || true
 
           echo "Copied assets:"; ls -la public/
 

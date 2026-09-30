@@ -144,6 +144,8 @@ window.IndiaMapData = (() => {
   }
 
   function getStateCount(abbr) { return stateCounts[abbr] || 0; }
+  function getStateCounts() { return stateCounts; }
+  function getDistrictCounts() { return districtCounts; }
   function getTotal() { return Object.values(stateCounts).reduce((s, c) => s + c, 0); }
   function getSource() { return source; }
   function getAllVacancies() { return allVacancies; }
@@ -165,7 +167,7 @@ window.IndiaMapData = (() => {
 
   return {
     load, isActive,
-    getStateCount, getTotal, getSource, getAllVacancies,
+    getStateCount, getStateCounts, getTotal, getSource, getAllVacancies,
     getNationwideCount, getMultiStateCount,
     getListingsForDistrict, normaliseVacancy,
   };

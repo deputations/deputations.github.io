@@ -235,6 +235,11 @@
       if (g) g.innerHTML = '';
       if (lg) lg.innerHTML = '';
     }
+    // Also clear any Delhi image-map content from the SVG wrapper
+    const wrap = document.getElementById('mapSvgWrap');
+    if (wrap && wrap.querySelector('.ad-delhi-map-wrap, .ad-delhi-district-view')) {
+      wrap.innerHTML = '';
+    }
   }
 
   // ----- Render national -----
@@ -437,6 +442,25 @@
     lastFocusedState = abbr;
     const gen = ++generation;
 
+    // Delhi uses image-map, not district GeoJSON
+    if (abbr === 'DL') {
+      const sel = document.querySelector(`[data-abbr="${abbr}"].ad-state`);
+      if (sel) {
+        sel.style.transition = 'fill 0.2s, stroke 0.2s';
+        sel.classList.add('selected');
+      }
+      if (sel) spawnVortex(sel);
+      await cinematicZoom(abbr);
+      if (gen !== generation) return;
+      renderState(abbr, name);
+      selectedAbbr = abbr;
+      viewMode = 'state';
+      const back = document.getElementById('btn-back');
+      if (back) { back.hidden = false; back.focus(); }
+      announce(`${name}: showing 11 districts. Click a district for details.`);
+      return;
+    }
+
     const dGeo = await ensureDistrictsLoaded();
     if (gen !== generation || !dGeo) return;
 
@@ -504,8 +528,156 @@
     });
   }
 
+  // ===== Delhi image-map drill-down =====
+  // Delhi districts: { name, left, top, width, height, image } — percentages
+  // relative to the coloured overview image (1472×1344).
+  const DELHI_DISTRICTS = [
+    { name: 'North',        left: 42, top:  2, width: 24, height: 20, image: 'd7-north.png' },
+    { name: 'North West',   left: 28, top: 16, width: 20, height: 22, image: 'd8-north_west.png' },
+    { name: 'West',         left: 26, top: 38, width: 20, height: 20, image: 'd5-west.png' },
+    { name: 'South West',   left: 16, top: 60, width: 26, height: 22, image: 'd3-south_west.png' },
+    { name: 'North East',   left: 68, top:  4, width: 20, height: 28, image: 'd10-north_east.png' },
+    { name: 'Shahdara',     left: 70, top: 24, width: 18, height: 20, image: 'd9-shahadara.png' },
+    { name: 'East',         left: 76, top: 42, width: 16, height: 20, image: 'd6-east.png' },
+    { name: 'Central',      left: 62, top: 28, width: 14, height: 14, image: 'd11-central.png' },
+    { name: 'New Delhi',    left: 44, top: 52, width: 20, height: 24, image: 'd2-new_delhi.png' },
+    { name: 'South East',   left: 72, top: 62, width: 18, height: 22, image: 'd04-south_east.jpg' },
+    { name: 'South',        left: 40, top: 78, width: 22, height: 18, image: 'd1-south.png' }
+  ];
+
+  function renderDelhiImageMap(abbr, name, data, initialDistrict) {
+    clearMap();
+    const back = document.getElementById('btn-back');
+    if (back) back.hidden = false;
+    viewMode = 'state';
+    selectedAbbr = abbr;
+
+    const districtEntries = DELHI_DISTRICTS.map(d => ({
+      name: d.name,
+      count: (data.stateCounts?.[`${abbr.toLowerCase()}|${d.name.toLowerCase()}`]) || 0,
+      image: d.image
+    }));
+
+    const hotspots = DELHI_DISTRICTS.map(d => {
+      const entry = districtEntries.find(e => e.name === d.name);
+      const count = entry ? entry.count : 0;
+      const zeroAttr = count === 0 ? ' data-zero="true"' : '';
+      const countDisplay = count > 0
+        ? `<span class="ad-delhi-count">${count}</span>` : '';
+      return `<button class="ad-delhi-hotspot"${zeroAttr}
+        style="left:${d.left}%;top:${d.top}%;width:${d.width}%;height:${d.height}%"
+        data-district="${d.name}"
+        data-image="${d.image}"
+        aria-label="${d.name}: ${count} listings">
+        ${countDisplay}
+      </button>`;
+    }).join('');
+
+    const mapArea = document.getElementById('mapSvgWrap');
+    if (mapArea) {
+      mapArea.innerHTML = `
+        <div class="ad-delhi-map-wrap">
+          <img src="img/delhi/delhi-coloured.jpg" alt="Delhi district map" class="ad-delhi-map-img" draggable="false">
+          <img src="" alt="District preview" class="ad-delhi-preview-img" draggable="false" aria-hidden="true">
+          <div class="ad-delhi-hotspots">${hotspots}</div>
+        </div>
+      `;
+
+      const container = mapArea.querySelector('.ad-delhi-hotspots');
+      container.querySelectorAll('.ad-delhi-hotspot').forEach(btn => {
+        btn.addEventListener('click', () => {
+          showDelhiDistrict(abbr, btn.dataset.district, btn.dataset.image, data);
+        });
+        btn.addEventListener('mouseenter', () => {
+          const previewImg = mapArea.querySelector('.ad-delhi-preview-img');
+          if (previewImg) {
+            previewImg.src = `img/delhi/${btn.dataset.image}`;
+            previewImg.classList.add('visible');
+          }
+        });
+        btn.addEventListener('mouseleave', () => {
+          const previewImg = mapArea.querySelector('.ad-delhi-preview-img');
+          if (previewImg) previewImg.classList.remove('visible');
+        });
+      });
+    }
+
+    if (initialDistrict) {
+      const dist = DELHI_DISTRICTS.find(d => d.name === initialDistrict);
+      if (dist) showDelhiDistrict(abbr, initialDistrict, dist.image, data, true);
+    }
+
+    announce(`${name}: showing ${DELHI_DISTRICTS.length} districts. Click a district for details.`);
+  }
+
+  function showDelhiDistrict(stateAbbr, districtName, imageFile, data, skipPush) {
+    selectedDistrict = districtName;
+    viewMode = 'district';
+
+    const mapArea = document.getElementById('mapSvgWrap');
+    if (mapArea) {
+      mapArea.innerHTML = `
+        <div class="ad-delhi-district-view">
+          <img src="img/delhi/${imageFile}" alt="${districtName}" class="ad-delhi-district-img" draggable="false">
+          <button class="ad-delhi-back-btn" id="delhiBackBtn" aria-label="Back to Delhi overview">← Delhi overview</button>
+        </div>
+      `;
+      document.getElementById('delhiBackBtn').addEventListener('click', () => {
+        renderDelhiImageMap(stateAbbr, 'Delhi', data);
+      });
+    }
+
+    const listings = window.IndiaMapData
+      ? IndiaMapData.getListingsForDistrict(stateAbbr, districtName) : [];
+    const seen = new Set();
+    const unique = listings.filter(l => {
+      if (seen.has(l.id)) return false;
+      seen.add(l.id);
+      return true;
+    });
+
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const modal = document.getElementById('modal');
+    if (modalTitle) modalTitle.textContent =
+      `${unique.length} Vacanc${unique.length !== 1 ? 'ies' : 'y'} in ${districtName}`;
+    if (modalBody) {
+      modalBody.innerHTML = unique.map((l, i) => `
+        <div class="ad-listing-card visible" style="animation-delay:${i * 60}ms">
+          <div class="ad-listing-card-header">
+            <div class="ad-listing-title">${esc(l.title)}</div>
+            <span class="ad-listing-badge">${esc(l.functional || l.qualification || 'Any')}</span>
+          </div>
+          <div class="ad-listing-meta">
+            ${l.ministry ? `<span>${esc(l.ministry)}</span>` : ''}
+            ${l.payLevel ? `<span>Pay Level ${esc(l.payLevel)}</span>` : ''}
+          </div>
+          <div class="ad-listing-card-footer">
+            ${l.closingDate ? `<span class="ad-listing-close-date">Closes ${esc(l.closingDate)}</span>` : ''}
+            <span class="ad-listing-posts">${l.posts || 1} post${(l.posts || 1) > 1 ? 's' : ''}</span>
+          </div>
+        </div>`).join('') || '<p style="color:var(--text-muted);text-align:center;padding:20px;">No vacancies found.</p>';
+    }
+    if (modal) modal.showModal?.();
+
+    if (!skipPush) {
+      history.pushState(
+        { view: 'district', state: stateAbbr, district: districtName },
+        '', `?state=${stateAbbr}&district=${encodeURIComponent(districtName)}`
+      );
+    }
+  }
+
   function renderState(abbr, name) {
     clearMap();
+
+    // Delhi uses an image-map drill-down (coloured district photos)
+    if (abbr === 'DL') {
+      const data = getData();
+      renderDelhiImageMap(abbr, name, data);
+      return;
+    }
+
     const mapSvg = document.getElementById('map-svg');
     const g = mapSvg?.querySelector('#map-group');
     const labelsG = mapSvg?.querySelector('#map-labels');
@@ -645,7 +817,7 @@
   }
 
   function getData() {
-    const sc = window.IndiaMapData?.stateCounts || {};
+    const sc = window.IndiaMapData?.getStateCounts?.() || {};
     return {
       nationalCount: Object.values(sc).reduce((s, c) => s + c, 0),
       stateCounts: sc,
@@ -716,7 +888,12 @@
     } else if (viewMode === 'district') {
       const m = document.getElementById('modal');
       if (m) m.close?.();
-      if (selectedAbbr) {
+      // For Delhi, district→state should re-render the image-map
+      if (selectedAbbr === 'DL') {
+        const data = getData();
+        renderDelhiImageMap('DL', 'Delhi', data);
+        viewMode = 'state';
+      } else if (selectedAbbr) {
         renderState(selectedAbbr, ABBR_TO_NAME[selectedAbbr] || selectedAbbr);
         viewMode = 'state';
       } else {
@@ -1219,5 +1396,17 @@
   // ===== GPU acceleration class =====
   // .ad-gpu is toggled per-element on hover (in renderNational / renderState)
   // to avoid 36+ elements always carrying will-change.
+
+  // ===== Auto-init on standalone page load =====
+  const doInit = () => {
+    const mv = document.getElementById('map-view');
+    if (mv) mv.classList.add('visible');
+    window.initIndiaMap();
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', doInit);
+  } else {
+    doInit();
+  }
 
 })();
