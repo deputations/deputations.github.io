@@ -52,8 +52,8 @@
         <div class="map-tooltip-meta" id="mapTooltipMeta"></div>
       </div>
       <div id="mapAnnounce" aria-live="polite" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)"></div>
-      <button id="mapFiltersToggle" class="map-filter-toggle" aria-label="Toggle filters" aria-expanded="false" hidden>
-        <svg class="icon"><use href="#i-sliders"/></svg>
+      <button id="mapFiltersToggle" class="map-filter-toggle" aria-label="Toggle filters" aria-expanded="false">
+        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2"/></svg>
       </button>
       <div class="map-controls">
         <div class="map-filters" id="mapFilters">
@@ -68,6 +68,15 @@
         </div>
       </div>
     </div>
+
+    <!-- District listings modal -->
+    <dialog id="modal" class="map-modal" aria-labelledby="modalTitle">
+      <div class="map-modal-header">
+        <h3 id="modalTitle"></h3>
+        <button class="map-modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div id="modalBody" class="map-modal-body"></div>
+    </dialog>
   </main>
 
   <script src="/config.js"></script>

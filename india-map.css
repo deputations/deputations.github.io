@@ -31,6 +31,8 @@ body.map-active .app-container { overflow: hidden; }
 .map-tooltip-meta { font-size: 9px; color: #64748b; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
 .map-controls { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 8px 20px; gap: 12px; flex-shrink: 0; }
 .map-filters { display: flex; gap: 6px; }
+.map-filter-toggle { display: none; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; border: 1px solid rgba(148,163,184,0.2); background: rgba(15,23,42,0.6); color: #94a3b8; cursor: pointer; }
+.map-filter-toggle.open { background: rgba(34,211,238,0.15); border-color: #22d3ee; color: #22d3ee; }
 .map-filter-btn { padding: 6px 13px; border-radius: 8px; border: 1px solid rgba(148,163,184,0.12); background: rgba(15,23,42,0.5); color: #64748b; font-size: 12px; font-family: "Plus Jakarta Sans", system-ui, sans-serif; cursor: pointer; transition: all 0.2s; }
 .map-filter-btn.active { background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.3); color: #22d3ee; }
 .map-filter-btn:hover { color: #f8fafc; }
@@ -64,6 +66,7 @@ body.map-active .app-container { overflow: hidden; }
   transition: fill 0.25s, stroke 0.25s, stroke-width 0.15s;
 }
 .ad-state:hover { fill: var(--ad-polygon-fill-hover); stroke: var(--ad-accent-bright); stroke-width: 2; }
+.ad-state.neighbor-dim { opacity: 0.25; fill: var(--ad-polygon-fill-zero); }
 .ad-state.selected { stroke: var(--ad-accent-bright); stroke-width: 2.5; filter: url(#state-glow); }
 .ad-state.empty-state { fill: var(--ad-polygon-fill-zero); stroke: var(--ad-polygon-stroke-zero); }
 .ad-state.empty-state.anim-ambient { animation: ad-ambient-pulse 4s ease-in-out infinite; }

@@ -222,9 +222,18 @@
 
   function playDrawIn(path, delay) {
     path.style.animation = 'none';
-    // force reflow to restart animation
     void path.getBoundingClientRect();
-    path.style.animation = `ad-draw-state 2s cubic-bezier(0.22, 0.61, 0.36, 1) ${delay}ms forwards`;
+    const dur = 2;
+    const ease = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
+    const useReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (useReducedMotion) {
+      path.classList.add('ad-draw-state');
+      path.style.strokeDashoffset = '0';
+      path.style.animation = 'none';
+    } else {
+      path.classList.add('ad-draw-state');
+      path.style.animation = `ad-draw ${dur}s ${ease} ${delay}ms forwards`;
+    }
   }
 
   function clearMap() {
@@ -326,8 +335,19 @@
         num.setAttribute('x', cx);
         num.setAttribute('y', cy + 9);
         num.setAttribute('class', 'ad-state-count');
+        num.setAttribute('data-for', abbr);
         num.style.setProperty('--ad-delay', `${900 + idx * 20}ms`);
         num.textContent = count;
+        labelsG.appendChild(num);
+      } else {
+        // Always render a count text (possibly empty) so filter can address it
+        const num = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        num.setAttribute('x', cx);
+        num.setAttribute('y', cy + 9);
+        num.setAttribute('class', 'ad-state-count empty');
+        num.setAttribute('data-for', abbr);
+        num.style.setProperty('--ad-delay', `${900 + idx * 20}ms`);
+        num.textContent = '';
         labelsG.appendChild(num);
       }
     });
@@ -831,7 +851,9 @@
   // ----- Filter buttons -----
   function applyFilter(type) {
     const paths = document.querySelectorAll('#map-svg .ad-state');
+    const labelsG = document.querySelector('#map-svg #map-labels');
     let filteredTotal = 0;
+    let nationalFiltered = 0;
     paths.forEach(p => {
       const abbr = p.dataset.abbr;
       let visible = true;
@@ -840,42 +862,30 @@
         const list = window.IndiaMapData?.getFiltered?.(abbr, { category: 'Functional' }) || [];
         count = list.length;
         visible = count > 0;
+        nationalFiltered += count;
       } else if (type === 'education') {
         const list = window.IndiaMapData?.getFiltered?.(abbr, { category: 'Education' }) || [];
         count = list.length;
         visible = count > 0;
+        nationalFiltered += count;
       } else {
         count = window.IndiaMapData?.getStateCount?.(abbr) || 0;
-        filteredTotal += count;
+        nationalFiltered += count;
       }
       p.style.opacity = visible ? '1' : '0.12';
-      // Update count label for this state
-      const countEl = p.parentNode?.querySelector(`text.ad-state-count[data-for="${abbr}"]`);
-      if (countEl && type !== 'all') {
-        countEl.textContent = count;
-        countEl.style.display = count > 0 ? '' : 'none';
-      } else if (countEl) {
-        const orig = window.IndiaMapData?.getStateCount?.(abbr) || 0;
-        countEl.textContent = orig;
-        countEl.style.display = '';
+      p.setAttribute('aria-label', `${ABBR_TO_NAME[abbr] || abbr}: ${count} vacancies`);
+      // Update count label from the shared #map-labels group
+      if (labelsG) {
+        const countEl = labelsG.querySelector(`text.ad-state-count[data-for="${abbr}"]`);
+        if (countEl) {
+          countEl.textContent = type === 'all' ? count : (count > 0 ? count : '');
+          countEl.style.display = (type !== 'all' && count === 0) ? 'none' : '';
+        }
       }
     });
-    // Update header counter to reflect filter
-    if (type !== 'all') {
-      const total = paths.length;
-      let sum = 0;
-      paths.forEach(p => {
-        const abbr = p.dataset.abbr;
-        const list = window.IndiaMapData?.getFiltered?.(abbr, { category: type.charAt(0).toUpperCase() + type.slice(1) }) || [];
-        sum += list.length;
-      });
-      const counter = document.getElementById('mapCounterValue');
-      if (counter) counter.textContent = sum.toLocaleString();
-    } else {
-      const allTotal = window.IndiaMapData?.getTotal?.() || 0;
-      const counter = document.getElementById('mapCounterValue');
-      if (counter) counter.textContent = allTotal.toLocaleString();
-    }
+    // Update header counter
+    const counter = document.getElementById('mapCounterValue');
+    if (counter) counter.textContent = nationalFiltered.toLocaleString();
   }
 
   function zoomIn() {
@@ -1239,20 +1249,21 @@
   }
 
   function handleNewVacancy(row) {
-    // Normalise using the same function the data layer uses
+    // Normalise using the data layer
     var norm = window.IndiaMapData ? IndiaMapData.normaliseVacancy(row) : null;
     if (!norm) return;
 
     var abbr = norm.state_abbr;
     if (!abbr) return;
 
-    // Increment count
-    var sc = window.IndiaMapData ? IndiaMapData.stateCounts : null;
-    if (sc) {
-      sc[abbr] = (sc[abbr] || 0) + 1;
+    // Use the data layer's public API to update counts (stateCounts is private)
+    if (window.IndiaMapData && IndiaMapData.incrementStateCount) {
+      IndiaMapData.incrementStateCount(abbr, norm.district);
     }
 
-    // Update the SVG path label
+    var newCount = window.IndiaMapData ? IndiaMapData.getStateCount(abbr) : 0;
+
+    // Update the SVG path
     var path = document.querySelector('#map-svg [data-abbr="' + abbr + '"].ad-state');
     if (path) {
       path.classList.remove('empty-state');
@@ -1261,23 +1272,20 @@
       spawnRipple(path);
     }
 
-    // Update the count text element (no data-abbr on count — match via label sibling)
-    var countEl = null;
-    var labels = document.querySelectorAll('#map-labels .ad-state-label');
-    for (var i = 0; i < labels.length; i++) {
-      if (labels[i].textContent === abbr) {
-        var next = labels[i].nextElementSibling;
-        if (next && next.classList.contains('ad-state-count')) { countEl = next; break; }
-      }
-    }
-    var newCount = sc ? (sc[abbr] || 0) : 0;
+    // Update the count label via data-for attribute
+    var countEl = document.querySelector('#map-labels text.ad-state-count[data-for="' + abbr + '"]');
     if (countEl) {
       countEl.textContent = newCount;
+      countEl.classList.remove('empty');
       countEl.classList.add('pop');
+      countEl.style.display = '';
     }
 
-    // Update the header counter
-    updateCounterFromStateCounts(sc);
+    // Update header counter
+    var totalEl = document.getElementById('mapCounterValue');
+    if (totalEl && window.IndiaMapData) {
+      totalEl.textContent = (IndiaMapData.getTotal ? IndiaMapData.getTotal() : 0).toLocaleString();
+    }
   }
 
   function updateCounterFromStateCounts(stateCounts) {
