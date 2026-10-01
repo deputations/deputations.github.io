@@ -22,15 +22,34 @@ window.IndiaMapData = (() => {
   // The JSON's Status was computed at dump time and several days may have
   // passed since. Recompute from Last_Date_To_Apply at load time.
   function isActive(v) {
-    // Accept both raw-field and normalised-field names
     const iso = String(v.Last_Date_To_Apply || v.last_date_to_apply || v.closingDate || '').trim();
-    if (!iso) return true; // no closing date => treat as live
+    if (!iso) return true;
     const d = new Date(iso + 'T00:00:00');
     if (isNaN(d.getTime())) return true;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return d >= today;
   }
+
+  // Derive state abbreviation from Location_State name.
+  // Maps both abbreviations and full names to the 2-letter abbr.
+  // Must match STATE_ABBR from india-map-view.js (which maps abbr -> name).
+  const NAME_TO_ABBR = {
+    'Delhi':'DL','Delhi NCR':'DL','NCT of Delhi':'DL',
+    'Maharashtra':'MH','Andhra Pradesh':'AP','Karnataka':'KA',
+    'Tamil Nadu':'TN','Uttar Pradesh':'UP','Kerala':'KL',
+    'Gujarat':'GJ','Rajasthan':'RJ','West Bengal':'WB','Madhya Pradesh':'MP',
+    'Bihar':'BR','Chhattisgarh':'CT','Odisha':'OD','Telangana':'TS',
+    'Jharkhand':'JH','Assam':'AS','Punjab':'PB','Haryana':'HR',
+    'Himachal Pradesh':'HP','Jammu and Kashmir':'JK','Jammu & Kashmir':'JK',
+    'Uttarakhand':'UK','Goa':'GA','Tripura':'TR','Manipur':'MN',
+    'Meghalaya':'ML','Mizoram':'MZ','Nagaland':'NL','Arunachal Pradesh':'AR',
+    'Sikkim':'SK','Andaman and Nicobar Islands':'AN','Chandigarh':'CH',
+    'Dadra and Nagar Haveli and Daman and Diu':'DH','Puducherry':'PY',
+    'Lakshadweep':'LD','Ladakh':'LA',
+    // Multi-state keywords → empty (handled by location_scope)
+    'Multiple States':'','All India':'','Multiple':'','Across India':'',
+  };
 
   // ----- Category derivation -----
   // The source JSON has no Category column. Functional_Area is free-text.
@@ -55,6 +74,10 @@ window.IndiaMapData = (() => {
 
   function normaliseVacancy(v) {
     if (!v || typeof v !== 'object') return null;
+    const rawState = v.Location_State || '';
+    // Trust an already-resolved abbreviation if present (e.g. realtime rows
+    // pre-enriched by app.js); otherwise derive from Location_State.
+    const abbr = v.state_abbr || NAME_TO_ABBR[rawState] || rawState;
     return {
       id: v.Vacancy_ID || v.id || '',
       title: v.Post_Name || v.title || 'Untitled post',
@@ -62,12 +85,22 @@ window.IndiaMapData = (() => {
       organisation: v.Organisation || '',
       level: v.Level_Text || v.Level || '',
       city: v.Location_City || '',
-      stateName: v.Location_State || '',
+      stateName: rawState,
+      state_abbr: abbr,
       closingDate: v.Last_Date_To_Apply || '',
       category: deriveCategory(v),
       functionalArea: v.Functional_Area || '',
-      state_abbr: v.state_abbr || '',
-      district: v.district || '',
+      district: (() => {
+        const d = v.district || '';
+        if (d) return d;
+        if (abbr === 'DL') {
+          const c = String(v.Location_City || '').toLowerCase().trim();
+          if (c === 'new delhi') return 'New Delhi';
+          // Generic "Delhi" stays district-unknown — no authoritative rule maps it to a specific district
+          return '';
+        }
+        return '';
+      })(),
       location_scope: v.location_scope || 'district',
       notificationLink: v.Official_Notification_Link || '',
     };
@@ -244,6 +277,7 @@ window.IndiaMapData = (() => {
     load, isActive,
     getStateCount, getStateCounts, getTotal, getSource, getAllVacancies,
     getNationwideCount, getMultiStateCount,
+    getDistrictCounts,
     getListingsForDistrict, getFiltered, normaliseVacancy, deriveCategory,
     recordNewVacancy,
   };
