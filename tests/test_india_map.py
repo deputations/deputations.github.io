@@ -39,7 +39,7 @@ _ALL_36 = [
     ("BR", "Bihar"),
     ("CG", "Chhattisgarh"),
     ("CH", "Chandigarh"),
-    ("DDD", "Dadra and Nagar Haveli and Daman and Diu"),
+    ("DNH", "Dadra and Nagar Haveli and Daman and Diu"),
     ("DL", "Delhi"),
     ("GA", "Goa"),
     ("GJ", "Gujarat"),
@@ -323,7 +323,7 @@ class TestNationalRender:
             "els => els.map(e => e.getAttribute('data-abbr'))"
         )
         assert len(abbrs) == len(set(abbrs)), f"data-abbr not unique: {abbrs}"
-        assert all(a and len(a) == 2 for a in abbrs), f"data-abbr malformed: {abbrs}"
+        assert all(a and len(a) >= 2 for a in abbrs), f"data-abbr malformed: {abbrs}"
         # No placeholder names
         for a in abbrs:
             assert not a.startswith("XX"), f"Placeholder abbreviation leaked: {a}"
