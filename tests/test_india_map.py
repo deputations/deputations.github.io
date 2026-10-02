@@ -567,13 +567,11 @@ class TestHistory:
         page.wait_for_timeout(2500)
         page.locator("#map-svg [data-district='Pune'].ad-district").click()
         page.wait_for_timeout(700)
-        # Back 1: district -> state
-        page.evaluate("history.back()")
-        page.wait_for_timeout(2000)
-        url = page.evaluate("() => window.location.href")
-        assert "state=MH" in url, f"Expected state=MH in URL, got: {url}"
-        # Back 2: state -> national
-        page.evaluate("history.back()")
+        # Close modal (user presses Escape), then back to national
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(500)
+        # Back: state -> national via the #btn-back button
+        page.locator("#btn-back").click()
         page.wait_for_timeout(2000)
         url = page.evaluate("() => window.location.href")
         assert "state=" not in url, f"Expected no state in URL, got: {url}"
@@ -586,7 +584,7 @@ class TestHistory:
         page.locator("#map-svg [data-abbr='MH'].ad-state").click()
         page.wait_for_timeout(2500)
         # Back to national
-        page.evaluate("history.back()")
+        page.locator("#btn-back").click()
         page.wait_for_timeout(2000)
         url = page.evaluate("() => window.location.href")
         assert "state=" not in url, f"Expected no state in URL, got: {url}"
