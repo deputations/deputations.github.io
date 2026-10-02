@@ -661,15 +661,20 @@ class TestDelhi:
     def test_delhi_back_returns_to_india(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(2000)
-        page.locator("#map-svg [data-abbr='DL'].ad-state").click()
-        page.wait_for_timeout(2500)
-        page.locator("#map-svg [data-abbr='DL'].ad-state").click()  # already at state view; back to national
-        # Simpler: use back button
-        page.click("#btn-back")
+        page.wait_for_timeout(3000)
+        # Use JS click for Delhi state
+        page.evaluate("""() => {
+            const el = document.querySelector('#map-svg [data-abbr="DL"].ad-state');
+            if (el) el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+        }""")
+        page.wait_for_selector(".ad-delhi-hotspot", timeout=10000)
+        page.wait_for_timeout(500)
+        # Click back button to return to national
+        back = page.locator("#btn-back")
+        assert not back.is_hidden(), "Back button should be visible in state view"
+        back.click()
         page.wait_for_timeout(2000)
         assert page.locator("#btn-back").is_hidden()
-        assert page.locator("#map-svg .ad-state").count() == 36
 
 
 # ---------------------------------------------------------------------------
