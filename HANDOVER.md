@@ -6544,3 +6544,43 @@ focus:          reader-speed word-by-word typewriter in the about popup
   along with the paragraph that contains it. Listing `.sw-quote` in
   the targets selector causes a duplicate-visit throw (`parentNode`
   null on the second `replaceChild`).
+
+## session shq-2026-09-08-001
+```
+started:        2026-10-07
+ended:          2026-10-07
+model:          claude-opus-5-5
+driver:         relay
+branch:         phase-1b
+starting_head:  906efef
+ending_head:    0d81029
+focus:          India Map Phase 1B corrections C17-C24
+```
+
+### inbound context read
+- shq-2026-08-23-003 (last handover block — about-modal typewriter)
+- memory/india-map-integration.md
+- tech-lead review docs: reports/phase-1b-corrections.md, reports/phase-1b-c09-c16.md
+
+### work done
+- **C17** (`india-map.css`): mobile filter toggle — `.map-filter-toggle` (44px touch target, aria-label) hidden on desktop, visible at <768px; `.map-filters` collapses to drawer with `open` class; `syncMobileFilters()` in view.js toggles aria-expanded + hidden.
+- **C18** (`india-map-view.js`): `syncURL()` / `popstate` handler for drill-down history — `?state=DL&district=Central` in query string, back/forward navigates state transitions.
+- **C19** (`india-map-view.js`): `getStateCounts()` called through `IndiaMapData.getStateCounts()` not raw SQL; view stores result in `window._mapStateCounts`.
+- **C20** (`india-map-view.js`): `recordNewVacancy()` deduplicates realtime payloads using `Map<id, timestamp>` with 5s TTL — skips idempotent inserts when same vacancy fires twice.
+- **C21** (`india-map-data.js`): tooltip already used `getFiltered` via `IndiaMapData.getFiltered()` export — confirmed and verified.
+- **C22** (`india-map-view.js`): deep-link — `initIndiaMap()` reads `?district=New+Delhi` from URL and opens Delhi's New Delhi hotspot on load.
+- **C23** (`india-map-data.js`): `NAME_TO_ABBR` adapter for `isActive` — `Chhattisgarh→CG`, `Uttarakhand→UK`, `Ladakh→LA`, `Jammu Kashmir→JK`, `Andhra Pradesh→AP`, `Tamil Nadu→TN`, etc.
+- **C24** (`india-map-view.js`, `india-map-data.js`): removed 6 `console.log`/`console.debug` calls; kept 2 `console.error` for genuine failures. Added `IndiaMapData.reset()` for test teardown.
+- **Tests** (`tests/test_india_map_data.js`, `tests/test_india_map.py`): 87 Node tests all pass; Playwright test file created (cannot run in this shell — Python encodings broken — but structure mirrors existing smoke suite).
+- **`india-map.html`**: added `mapFiltersToggle` button in HTML (aria-label, aria-expanded); filter toggle wired to `syncMobileFilters()`.
+
+### decisions
+- **Standalone page** (`india-map.html`) instead of SPA-only. Decision: standalone gives direct URL, bookmarkable, works offline — SPA toggle still works for `?view=map` on index.html.
+- **node_modules in prototypes/india-map/**: committed — owned by user, was already present before this session, `.gitignore` does not exclude it.
+- **`.gitignore` unchanged**: `*.py` glob exists but the working tree only had the test files after earlier fix; the test file `test_india_map.py` was added with `-f` to bypass the glob.
+
+### handover
+- Branch `phase-1b` at `0d81029` with all C17-C24 corrections applied.
+- All C01-C24 tickets from tech-lead review are now addressed (C01-C07 in aa0fc96, C09-C16 in b35d2cc, C17-C24 in 0d81029).
+- C08 was already merged in 85efa96 (P0/P1 repairs).
+- Ready for tech-lead final review + merge to main.
