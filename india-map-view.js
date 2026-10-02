@@ -1105,6 +1105,9 @@
   async function goToNational() {
     const gen = ++renderGeneration;
     selectedDistrict = null;
+    // Close district modal if open (can survive after a back-navigation)
+    const modal = document.getElementById('modal');
+    if (modal) { try { modal.close(); } catch(e) {} }
     const mapArea = document.getElementById('mapSvgWrap');
     const needRebuild = !document.getElementById('map-svg');
     if (needRebuild && mapArea) {
