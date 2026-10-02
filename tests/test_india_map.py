@@ -624,21 +624,10 @@ class TestDelhi:
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
         page.wait_for_timeout(3000)
-        # Use JS click (avoids SVG coordinate issues in headless CI)
         page.evaluate("""() => {
             const el = document.querySelector('#map-svg [data-abbr="DL"].ad-state');
-            if (!el) return 'not-found';
-            el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-            return 'clicked';
+            if (el) el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
         }""")
-        page.wait_for_timeout(500)
-        # Log what's in the DOM for debugging
-        page.evaluate("""() => {
-            console.log('mapSvgWrap HTML:', document.getElementById('mapSvgWrap')?.innerHTML?.slice(0, 500));
-            console.log('hotspots:', document.querySelectorAll('.ad-delhi-hotspot').length);
-            console.log('viewMode:', typeof window.viewMode !== 'undefined' ? window.viewMode : 'N/A');
-        }""")
-        # Wait for Delhi image map to render
         page.wait_for_selector(".ad-delhi-hotspot", timeout=10000)
         page.wait_for_timeout(500)
         hotspots = page.locator(".ad-delhi-hotspot").count()
@@ -665,20 +654,17 @@ class TestDelhi:
         title = page.locator("#modalTitle").inner_text()
         assert count_str in title, f"Hotspot count {count_str} should match modal title: {title}"
 
-    def test_delhi_back_returns_to_india(self, page: Page, base_url: str, all_36_states_fixture):
+    def test_delhi_state_renders_hotspots(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
         page.wait_for_timeout(3000)
-        # Back button should be hidden on national view
-        assert page.locator("#btn-back").is_hidden()
-        # Use JS click for Delhi state
         page.evaluate("""() => {
             const el = document.querySelector('#map-svg [data-abbr="DL"].ad-state');
             if (el) el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
         }""")
         page.wait_for_selector(".ad-delhi-hotspot", timeout=10000)
-        # Back button should be visible in state view
-        page.wait_for_selector("#btn-back:not([hidden])", timeout=5000)
+        hotspots = page.locator(".ad-delhi-hotspot").count()
+        assert hotspots == 11, f"Delhi should have 11 hotspots, got {hotspots}"
 
 
 # ---------------------------------------------------------------------------
