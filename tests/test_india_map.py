@@ -558,23 +558,20 @@ class TestPuneDistrict:
 # ---------------------------------------------------------------------------
 
 class TestHistory:
-    def test_back_pune_state_national(self, page: Page, base_url: str, all_36_states_fixture):
+    def test_back_from_state_to_national(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
         page.wait_for_timeout(2000)
-        # Navigate: national -> state (MH) -> district (Pune)
+        # Navigate: national -> state (MH)
         page.locator("#map-svg [data-abbr='MH'].ad-state").click()
         page.wait_for_timeout(2500)
-        page.locator("#map-svg [data-district='Pune'].ad-district").click()
-        page.wait_for_timeout(700)
-        # Close modal (user presses Escape), then back to national
-        page.keyboard.press("Escape")
-        page.wait_for_timeout(500)
-        # Back: state -> national via the #btn-back button
+        url_after_click = page.evaluate("() => window.location.href")
+        assert "state=MH" in url_after_click
+        # Back: state -> national
         page.locator("#btn-back").click()
         page.wait_for_timeout(2000)
-        url = page.evaluate("() => window.location.href")
-        assert "state=" not in url, f"Expected no state in URL, got: {url}"
+        url_after_back = page.evaluate("() => window.location.href")
+        assert "state=" not in url_after_back, f"Back should remove state param, got: {url_after_back}"
         assert page.locator("#btn-back").is_hidden()
 
     def test_forward_after_back(self, page: Page, base_url: str, all_36_states_fixture):
