@@ -221,12 +221,21 @@ window.IndiaMapData = (() => {
     const key = String(stateAbbr) + '|' + String(districtName).toLowerCase();
     const count = districtCounts[key] || 0;
     if (count === 0) return [];
-    return allVacancies.filter(v =>
-      isActive(v) &&
-      v.location_scope === 'district' &&
-      v.state_abbr === stateAbbr &&
-      String(v.district).toLowerCase() === String(districtName).toLowerCase()
-    );
+    // BLOCKER 5: depend on normalized state_abbr + district, NOT location_scope
+    // Bundled production JSON may not contain location_scope; rely on what was
+    // emitted into districtCounts at recomputeCounts() time.
+    // Exclude nationwide/multi_state records because they should never have a
+    // concrete district; generic "Delhi" stays district-unknown.
+    const targetDistrict = String(districtName).toLowerCase();
+    return allVacancies.filter(v => {
+      if (!isActive(v)) return false;
+      if (v.state_abbr !== stateAbbr) return false;
+      // Exclude nationwide/multi_state records (they have no concrete district)
+      if (v.location_scope === 'nationwide' || v.location_scope === 'multi_state') return false;
+      // Match on the normalized district
+      if (!v.district) return false;
+      return String(v.district).toLowerCase() === targetDistrict;
+    });
   }
 
   function getFiltered(abbr, opts = {}) {

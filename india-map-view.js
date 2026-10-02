@@ -313,9 +313,9 @@
         path.classList.remove('ad-gpu');
         document.querySelectorAll('#map-svg .ad-state').forEach(s => s.classList.remove('neighbor-dim'));
       });
-      path.addEventListener('click', () => drillToState(abbr, name));
+      path.addEventListener('click', () => navigateToState(abbr));
       path.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drillToState(abbr, name); }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigateToState(abbr); }
       });
 
       g.appendChild(path);   // <-- BUG FIX: actually add the path to the SVG
@@ -706,7 +706,16 @@
           </div>
         </div>`).join('') || '<p style="color:var(--text-muted);text-align:center;padding:20px;">No vacancies found.</p>';
     }
-    if (modal) modal.showModal?.();
+    if (modal) {
+      modal._districtTrigger = document.querySelector('.ad-delhi-hotspot.active');
+      modal.showModal?.();
+    }
+    if (!skipPush) {
+      history.pushState(
+        { view: 'district', state: stateAbbr, district: districtName },
+        '', `?state=${stateAbbr}&district=${encodeURIComponent(districtName)}`
+      );
+    }
   }
 
   function renderState(abbr, name) {
@@ -750,7 +759,10 @@
       path.setAttribute('aria-label', `${geoName}: ${count} vacancies`);
       path.style.setProperty('--ad-delay', `${Math.min(idx * 20, 500)}ms`);
 
-      path.addEventListener('click', () => onDistrictClick(abbr, geoName));
+      path.addEventListener('click', () => navigateToDistrict(abbr, geoName));
+      path.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigateToDistrict(abbr, geoName); }
+      });
       path.addEventListener('mouseenter', (e) => { path.classList.add('ad-gpu'); showTooltip(e, abbr, geoName, count); });
       path.addEventListener('mousemove', moveTooltip);
       path.addEventListener('mouseleave', () => { path.classList.remove('ad-gpu'); hideTooltip(); });
@@ -970,55 +982,114 @@
   // ===== History / Deep linking (C18) =====
   let _popstateGuard = false;
 
-  async function goToView(stateAbbr, districtName, replace = false) {
-    // (C18) set guard to prevent recursive pushState
-    _popstateGuard = true;
+  // One clear navigation path: user click → push exactly one entry.
+  // popstate → render only, never push. deep-link → replace current entry.
+  async function navigateToState(stateAbbr) {
+    const name = ABBR_TO_NAME[stateAbbr] || stateAbbr;
+    await drillToState(stateAbbr, name);
+    history.pushState({ view: 'state', state: stateAbbr, district: null }, '', `?state=${stateAbbr}`);
+  }
 
-    if (!stateAbbr) {
-      // National view
-      if (viewMode !== 'national') {
-        await goToNational();
-      }
-      if (!replace) {
-        const data = getData();
-        renderNational(data);
-        spawnRippleForHighCounts(data);
-      }
-    } else if (!districtName) {
-      // State view
-      if (viewMode === 'state' && selectedAbbr === stateAbbr) {
-        _popstateGuard = false; return;
-      }
+  async function navigateToDistrict(stateAbbr, districtName) {
+    // If we're not already on the state, drill there first (no push)
+    if (viewMode !== 'state' || selectedAbbr !== stateAbbr) {
       await drillToState(stateAbbr, ABBR_TO_NAME[stateAbbr] || stateAbbr);
+    }
+    openDistrictModal(stateAbbr, districtName);
+    history.pushState({ view: 'district', state: stateAbbr, district: districtName }, '',
+      `?state=${stateAbbr}&district=${encodeURIComponent(districtName)}`);
+  }
+
+  // Render from URL/history state only — never pushes
+  async function renderRouteFromURL(stateAbbr, districtName) {
+    if (!stateAbbr) {
+      await goToNational();
+      return;
+    }
+    // Ensure state view first
+    if (viewMode !== 'state' || selectedAbbr !== stateAbbr) {
+      await drillToState(stateAbbr, ABBR_TO_NAME[stateAbbr] || stateAbbr);
+    }
+    if (districtName) {
+      openDistrictModal(stateAbbr, districtName);
+    }
+  }
+
+  async function goToView(stateAbbr, districtName, replace = false) {
+    if (!stateAbbr) {
+      if (viewMode !== 'national') await goToNational();
+      return;
+    }
+    if (replace) {
+      await renderRouteFromURL(stateAbbr, districtName);
+      return;
+    }
+    if (districtName) {
+      await navigateToDistrict(stateAbbr, districtName);
     } else {
-      // District view (Delhi or other)
-      if (viewMode !== 'state' || selectedAbbr !== stateAbbr) {
-        await drillToState(stateAbbr, ABBR_TO_NAME[stateAbbr] || stateAbbr);
-      }
-      // Open modal for district listing
-      if (selectedAbbr === 'DL') {
-        const data = getData();
-        const dist = DELHI_DISTRICTS.find(d => d.name === districtName);
-        if (dist) showDelhiDistrict(stateAbbr, districtName, dist.image, data);
-      } else {
-        onDistrictClick(stateAbbr, districtName);
+      await navigateToState(stateAbbr);
+    }
+  }
+
+  // BLOCKER 4: separate modal open from navigation so closing can restore route
+  function openDistrictModal(stateAbbr, districtName) {
+    selectedDistrict = districtName;
+    viewMode = 'district';
+
+    const listings = window.IndiaMapData
+      ? IndiaMapData.getListingsForDistrict(stateAbbr, districtName) : [];
+    const seen = new Set();
+    const unique = listings.filter(l => {
+      if (seen.has(l.id)) return false;
+      seen.add(l.id);
+      return true;
+    });
+
+    // BLOCKER 4: capture district trigger for focus restoration
+    let districtTrigger = null;
+    if (stateAbbr === 'DL') {
+      const activeBtn = document.querySelector('.ad-delhi-hotspot.active');
+      if (activeBtn) districtTrigger = activeBtn;
+    } else {
+      const paths = document.querySelectorAll('#map-svg .ad-district');
+      for (const p of paths) {
+        if (p.dataset.district === districtName && p.dataset.abbr === stateAbbr) {
+          districtTrigger = p; break;
+        }
       }
     }
 
-    if (!replace) {
-      const params = districtName
-        ? `?state=${stateAbbr}&district=${encodeURIComponent(districtName)}`
-        : (stateAbbr ? `?state=${stateAbbr}` : location.pathname);
-      history.pushState({ view: stateAbbr ? (districtName ? 'district' : 'state') : 'national', state: stateAbbr, district: districtName }, '', params);
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const modal = document.getElementById('modal');
+    if (modalTitle) modalTitle.textContent =
+      `${unique.length} Vacanc${unique.length !== 1 ? 'ies' : 'y'} in ${districtName}`;
+    if (modalBody) {
+      modalBody.innerHTML = unique.map((l, i) => `
+        <div class="ad-listing-card visible" style="animation-delay:${i * 60}ms">
+          <div class="ad-listing-card-header">
+            <div class="ad-listing-title">${esc(l.title)}</div>
+            ${l.level ? `<span class="ad-listing-badge">${esc(l.level)}</span>` : ''}
+          </div>
+          <div class="ad-listing-meta">
+            ${l.ministry ? `<span>${esc(l.ministry)}</span>` : ''}
+            ${l.organisation ? `<span>${esc(l.organisation)}</span>` : ''}
+            ${l.functionalArea ? `<span>${esc(l.functionalArea)}</span>` : ''}
+          </div>
+          <div class="ad-listing-card-footer">
+            ${l.closingDate ? `<span class="ad-listing-close-date">Closes ${esc(l.closingDate)}</span>` : ''}
+            ${l.notificationLink ? `<a href="${esc(l.notificationLink)}" target="_blank" rel="noopener" class="ad-listing-link">Notification</a>` : ''}
+          </div>
+        </div>`).join('') || '<p style="color:var(--text-muted); text-align:center; padding:20px;">No vacancies found.</p>';
     }
-
-    // Release guard after microtask
-    Promise.resolve().then(() => { _popstateGuard = false; });
+    if (modal) {
+      modal._districtTrigger = districtTrigger;
+      modal.showModal?.();
+    }
   }
 
   function onPopState(e) {
     if (_popstateGuard) return;
-    const state = e.state || {};
     const params = new URLSearchParams(location.search);
     const urlAbbr = (params.get('state') || '').toUpperCase();
     const urlDistrict = params.get('district') || '';
@@ -1094,6 +1165,11 @@
       try { await IndiaMapData.load(); } catch (e) { console.error('[map] data load failed:', e); }
     }
 
+    // BLOCKER 1 + 9: render national map BEFORE deep-link so draw-in can complete
+    // Deep-link must use replace=true so initial load produces exactly one history entry
+    const initData = getData();
+    renderNational(initData);
+
     // Start particles on canvas
     startParticles();
 
@@ -1101,6 +1177,7 @@
     window.addEventListener('popstate', onPopState);
 
     // Deep-link handler (C18: support both state and district)
+    // BLOCKER 9: use replace=true so initial load produces exactly one history entry
     const urlParams = new URLSearchParams(location.search);
     const deepState = urlParams.get('state');
     const deepDistrict = urlParams.get('district');
@@ -1113,7 +1190,7 @@
         history.replaceState({ view: deepDistrict ? 'district' : 'state', state: abbr, district: deepDistrict || null }, '', params);
         const doDrill = () => {
           const d = deepDistrict ? decodeURIComponent(deepDistrict) : null;
-          goToView(abbr, d);
+          renderRouteFromURL(abbr, d);
         };
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', () => {
@@ -1140,10 +1217,12 @@
     document.getElementById('zoomResetBtn')?.addEventListener('click', zoomReset);
 
     // Wire modal close handlers
+    // BLOCKER 4: the 'close' event fires for ALL close paths (button, Escape, backdrop).
+    // Wire the button to close the dialog; the event listener below handles everything.
     const modal = document.getElementById('modal');
     const modalClose = modal?.querySelector('.map-modal-close');
-    if (modalClose && modal) {
-      modalClose.addEventListener('click', () => modal.close());
+    if (modalClose) {
+      modalClose.addEventListener('click', () => modal?.close());
     }
     if (modal) {
       modal.addEventListener('close', () => {
@@ -1153,7 +1232,18 @@
           try { trigger.focus(); } catch (e) { /* element gone */ }
         }
         modal._districtTrigger = null;
+        restoreStateFromDistrictClose();
       });
+    }
+
+    // BLOCKER 4: helper — when district modal closes, return view to state route
+    function restoreStateFromDistrictClose() {
+      if (viewMode === 'district' && selectedAbbr) {
+        viewMode = 'state';
+        selectedDistrict = null;
+        // Update URL to reflect we're on state view (replace current entry)
+        history.replaceState({ view: 'state', state: selectedAbbr, district: null }, '', `?state=${selectedAbbr}`);
+      }
     }
 
     document.querySelectorAll('.map-filter-btn').forEach(btn => {
@@ -1620,6 +1710,17 @@
     }
     particles = [];
   }
+
+  // BLOCKER 8: read-only test hook — reports particle loop state, no data exposure
+  window.__mapParticleState = function __mapParticleState() {
+    return {
+      rafRunning: particleRaf !== null,
+      particleCount: particles.length,
+      canvasWidth: particleCanvas ? particleCanvas.width : 0,
+      canvasHeight: particleCanvas ? particleCanvas.height : 0,
+      isMapVisible: isMapVisible,
+    };
+  };
 
   // ===== GPU acceleration class =====
   // .ad-gpu is toggled per-element on hover (in renderNational / renderState)
