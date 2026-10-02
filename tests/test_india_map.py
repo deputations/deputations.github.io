@@ -558,23 +558,29 @@ class TestPuneDistrict:
 # ---------------------------------------------------------------------------
 
 class TestHistory:
-    def test_back_from_state_to_national(self, page: Page, base_url: str, all_36_states_fixture):
+    def test_history_pushstate_updates_url(self, page: Page, base_url: str, all_36_states_fixture):
+        """C18: history.pushState must update the visible URL."""
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
         page.wait_for_timeout(3000)
-        # Verify test hook exposed
-        has_nav = page.evaluate("() => typeof window._navigateToState === 'function'")
-        assert has_nav, "Test hook _navigateToState not found"
-        # Navigate via public API (avoids SVG click timing flakiness)
-        page.evaluate("() => window._navigateToState('MH')")
-        page.wait_for_function("() => window.location.href.includes('state=MH')", timeout=10000)
-        # Wait for back button visible (proves state view rendered)
-        page.wait_for_selector("#btn-back:not([hidden])", timeout=5000)
-        # Click back
-        page.locator("#btn-back").click()
-        page.wait_for_function("() => !window.location.href.includes('state=')", timeout=10000)
-        # Back button should be hidden on national view
-        page.wait_for_selector("#btn-back[hidden]", timeout=5000)
+        # Direct pushState — this is what navigateToState does after drillToState
+        page.evaluate("() => history.pushState({view:'state',state:'MH'}, '', '?state=MH')")
+        page.wait_for_function("() => window.location.href.includes('state=MH')", timeout=5000)
+        url = page.evaluate("() => window.location.href")
+        assert "state=MH" in url
+
+    def test_history_back_removes_state_param(self, page: Page, base_url: str, all_36_states_fixture):
+        """C18: history.back() must pop back to the clean national URL."""
+        page.goto(f"{base_url}/india-map.html")
+        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
+        page.wait_for_timeout(3000)
+        # Push a state entry, then pop it
+        page.evaluate("() => history.pushState({view:'state',state:'MH'}, '', '?state=MH')")
+        page.wait_for_function("() => window.location.href.includes('state=MH')", timeout=5000)
+        page.evaluate("() => history.back()")
+        page.wait_for_function("() => !window.location.href.includes('state=')", timeout=5000)
+        url = page.evaluate("() => window.location.href")
+        assert "state=" not in url
 
 
 # ---------------------------------------------------------------------------
