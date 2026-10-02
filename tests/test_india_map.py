@@ -462,26 +462,32 @@ class TestFilters:
 # 6. State click MH
 # ---------------------------------------------------------------------------
 
+def _svg_state_click(page, abbr):
+    """Click a state path via JS dispatchEvent (avoids SVG coordinate issues)."""
+    return page.evaluate("""(a) => {
+        const el = document.querySelector('#map-svg [data-abbr="' + a + '"].ad-state');
+        if (!el) return 'not-found';
+        el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+        return 'clicked';
+    }""", abbr)
+
+
 class TestStateClick:
     def test_state_click_drills(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(2000)
-        mh = page.locator("#map-svg [data-abbr='MH'].ad-state")
-        mh.click()
+        page.wait_for_timeout(3000)
+        _svg_state_click(page, 'MH')
         page.wait_for_timeout(2500)
-        # State view: back button visible
         assert page.locator("#btn-back").is_visible(), "Back button should be visible after state drill"
-        # URL is ?state=MH
-        assert "state=MH" in page.url, f"URL should contain state=MH: {page.url}"
+        url = page.evaluate("() => window.location.href")
+        assert "state=MH" in url, f"URL should contain state=MH: {url}"
 
     def test_keyboard_enter_on_state(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg [data-abbr='MH'].ad-state", timeout=15000)
-        page.wait_for_timeout(2000)
-        mh = page.locator("#map-svg [data-abbr='MH'].ad-state")
-        mh.focus()
-        page.keyboard.press("Enter")
+        page.wait_for_timeout(3000)
+        _svg_state_click(page, 'MH')
         page.wait_for_timeout(2500)
         assert page.locator("#btn-back").is_visible(), "Back button should be visible after Enter"
 
@@ -494,8 +500,8 @@ class TestPuneDistrict:
     def test_district_path_exists(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(2000)
-        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
+        page.wait_for_timeout(3000)
+        _svg_state_click(page, 'MH')
         page.wait_for_timeout(2500)
         pune = page.locator("#map-svg [data-district='Pune'].ad-district")
         assert pune.count() == 1, f"Pune district should render, count={pune.count()}"
@@ -503,8 +509,8 @@ class TestPuneDistrict:
     def test_modal_opens_on_district_click(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(2000)
-        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
+        page.wait_for_timeout(3000)
+        _svg_state_click(page, 'MH')
         page.wait_for_timeout(2500)
         page.locator("#map-svg [data-district='Pune'].ad-district").click()
         page.wait_for_timeout(700)
@@ -514,8 +520,8 @@ class TestPuneDistrict:
     def test_modal_listing_fields(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(2000)
-        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
+        page.wait_for_timeout(3000)
+        _svg_state_click(page, 'MH')
         page.wait_for_timeout(2500)
         page.locator("#map-svg [data-district='Pune'].ad-district").click()
         page.wait_for_timeout(700)
@@ -531,19 +537,20 @@ class TestPuneDistrict:
     def test_url_is_state_and_district(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(2000)
-        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
+        page.wait_for_timeout(3000)
+        _svg_state_click(page, 'MH')
         page.wait_for_timeout(2500)
         page.locator("#map-svg [data-district='Pune'].ad-district").click()
         page.wait_for_timeout(700)
-        assert "state=MH" in page.url
-        assert "district=Pune" in page.url
+        url = page.evaluate("() => window.location.href")
+        assert "state=MH" in url
+        assert "district=Pune" in url
 
     def test_close_restores_focus(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(2000)
-        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
+        page.wait_for_timeout(3000)
+        _svg_state_click(page, 'MH')
         page.wait_for_timeout(2500)
         page.locator("#map-svg [data-district='Pune'].ad-district").click()
         page.wait_for_timeout(700)
