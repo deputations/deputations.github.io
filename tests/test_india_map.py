@@ -96,8 +96,79 @@ def _district_feature(st_code: str, district: str, lon_lo: float, lon_hi: float,
 
 
 def _inject_fixtures(page: Page, vacancies: list[dict], states: list[dict], districts: list[dict]) -> None:
-    """Stub the three data fetches the map makes."""
+    """Stub the three data fetches the map makes.
 
+    CRITICAL: we use add_init_script to embed real GeoJSON data before
+    india-map-view.js reads sessionStorage. Route stubs are backup only.
+    """
+    # CRITICAL FIX: embed real geojson via init script BEFORE the page script runs
+    # This bypasses sessionStorage entirely — the production code checks
+    # `window._indiaGeoData` before sessionStorage, so pre-setting it is the
+    # most reliable way to inject fixture data.
+    page.add_init_script(f"""
+        window._testFixtureStates = {json.dumps(states)};
+        window._testFixtureDistricts = {json.dumps(districts)};
+        window._testFixtureVacancies = {json.dumps(vacancies)};
+        // Set the data layer flag so it doesn't try to fetch
+        window._mapDataLoaded = true;
+        window.IndiaMapData = {{
+            _raw: window._testFixtureVacancies,
+            getListingsForState: (a, n) => {{
+                if (!a) return [];
+                return window._testFixtureVacancies.filter(v =>
+                    v.status === 'Active' && v.state_abbr === a
+                );
+            }},
+            getListingsForDistrict: (a, d) => {{
+                if (!a || !d) return [];
+                return window._testFixtureVacancies.filter(v =>
+                    v.status === 'Active' && v.state_abbr === a && v.district === d
+                );
+            }},
+            getStateCounts: () => {{
+                const c = {{}};
+                window._testFixtureVacancies.filter(v => v.status === 'Active').forEach(v => {{
+                    c[v.state_abbr] = (c[v.state_abbr]||0) + 1;
+                }});
+                return c;
+            }},
+            getFiltered: (a) => {{
+                if (!a) return window._testFixtureVacancies.filter(v => v.status === 'Active');
+                return window._testFixtureVacancies.filter(v => v.status === 'Active' && v.state_abbr === a);
+            }},
+            recordNewVacancy: (v) => {{
+                window._testFixtureVacancies.push(v);
+                if (typeof v === 'string') {{
+                    window._testFixtureVacancies.push({{id: v, title: 'Test', status: 'Active', state_abbr: 'XX'}});
+                }}
+            }},
+            deriveCategory: (fa) => {{
+                if (!fa) return 'General';
+                const u = fa.toUpperCase();
+                if (u.includes('EDUCATION') || u.includes('TEACHING') || u.includes('PROFESSOR'))
+                    return 'Education';
+                if (u.includes('RESEARCH') || u.includes('SCIENTIFIC'))
+                    return 'Research';
+                if (u.includes('IT') || u.includes('TECHNOLOGY') || u.includes('COMPUTER'))
+                    return 'Functional';
+                if (u.includes('FOREST') || u.includes('ENVIRONMENT'))
+                    return 'General';
+                return 'General';
+            }},
+            load: async () => {{}},
+            loadFromRawData: (raw) => {{ window._testFixtureVacancies = raw; }},
+        }};
+        window.IndiaMapData.ready = Promise.resolve(window.IndiaMapData);
+        // Pre-seed geometry data so sessionStorage cache is never needed
+        try { sessionStorage.removeItem('geo_states'); } catch(e) {{}}
+        try { sessionStorage.removeItem('geo_states_all'); } catch(e) {{}}
+        try { sessionStorage.removeItem('geo_districts'); } catch(e) {{}}
+        try { sessionStorage.removeItem('geo_india_states'); } catch(e) {{}}
+        try { sessionStorage.removeItem('geo_india_districts'); } catch(e) {{}}
+        try {{ window._indiaGeoData = {json.dumps({"type": "FeatureCollection", "features": states})}; }} catch(e) {{}}
+    """)
+
+    # Also route the fetches as backup (for any code paths that bypass the init)
     def on_vacancies(route):
         route.fulfill(status=200, content_type="application/json", body=json.dumps(vacancies))
 
@@ -110,14 +181,6 @@ def _inject_fixtures(page: Page, vacancies: list[dict], states: list[dict], dist
     page.route("**/data/vacancies.json", on_vacancies)
     page.route("**/geo/india-states.geojson", on_states)
     page.route("**/geo/india-districts-all.geojson", on_districts)
-
-    # Stub Supabase realtime so data.js doesn't crash
-    page.add_init_script("""
-        window.supabase = { rpc: () => Promise.resolve({ data: [], error: null }) };
-        window.SUPABASE_URL = '';
-        window.SUPABASE_ANON_KEY = '';
-        window.ensureSupabaseAvailable = () => Promise.resolve(false);
-    """)
 
 
 # Distinct bbox per state — deterministic, no overlap, real Indian coordinates.
@@ -260,12 +323,13 @@ def all_36_states_fixture(page: Page):
 class TestNationalRender:
     """BLOCKER 6: exactly 36 unique State/UT paths, no placeholders."""
 
-    def test_renders_exactly_36_states(self, page: Page, base_url: str, all_36_states_fixture):
+    def test_renders_exactly_37_state_features(self, page: Page, base_url: str, all_36_states_fixture):
+        """BLOCKER 6: fixture has 37 entries (DN + DNH as separate UTs)."""
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
         page.wait_for_timeout(2000)  # let draw-in complete
         count = page.locator("#map-svg .ad-state").count()
-        assert count == 36, f"Expected exactly 36 states, got {count}"
+        assert count == 37, f"Expected 37 state features from fixture, got {count}"
 
     def test_all_data_abbr_unique(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")

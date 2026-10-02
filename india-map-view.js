@@ -1139,15 +1139,19 @@
     // Load geometry (7-day sessionStorage cache)
     const stateGeoKey = 'india-states-geo';
     const stateGeoCacheMaxAge = 7 * 86400000; // 7 days
-    try {
-      const cached = sessionStorage.getItem(stateGeoKey);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed && parsed._ts && (Date.now() - parsed._ts) < stateGeoCacheMaxAge) {
-          window._indiaGeoData = parsed.data;
+    // Check window._indiaGeoData first (set by tests / inline script)
+    // so sessionStorage from a different page doesn't win.
+    if (!window._indiaGeoData) {
+      try {
+        const cached = sessionStorage.getItem(stateGeoKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed._ts && (Date.now() - parsed._ts) < stateGeoCacheMaxAge) {
+            window._indiaGeoData = parsed.data;
+          }
         }
-      }
-    } catch (e) { /* sessionStorage unavailable */ }
+      } catch (e) { /* sessionStorage unavailable */ }
+    }
     if (!window._indiaGeoData) {
       try {
         const resp = await fetch('geo/india-states.geojson');
