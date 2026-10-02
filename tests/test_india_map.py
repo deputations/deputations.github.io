@@ -616,18 +616,37 @@ class TestDelhi:
     def test_11_hotspots(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(2000)
-        page.locator("#map-svg [data-abbr='DL'].ad-state").click()
-        page.wait_for_timeout(2500)
+        page.wait_for_timeout(3000)
+        # Use JS click (avoids SVG coordinate issues in headless CI)
+        page.evaluate("""() => {
+            const el = document.querySelector('#map-svg [data-abbr="DL"].ad-state');
+            if (!el) return 'not-found';
+            el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+            return 'clicked';
+        }""")
+        page.wait_for_timeout(500)
+        # Log what's in the DOM for debugging
+        page.evaluate("""() => {
+            console.log('mapSvgWrap HTML:', document.getElementById('mapSvgWrap')?.innerHTML?.slice(0, 500));
+            console.log('hotspots:', document.querySelectorAll('.ad-delhi-hotspot').length);
+            console.log('viewMode:', typeof window.viewMode !== 'undefined' ? window.viewMode : 'N/A');
+        }""")
+        # Wait for Delhi image map to render
+        page.wait_for_selector(".ad-delhi-hotspot", timeout=10000)
+        page.wait_for_timeout(500)
         hotspots = page.locator(".ad-delhi-hotspot").count()
         assert hotspots == 11, f"Delhi should have 11 hotspots, got {hotspots}"
 
     def test_new_delhi_count_matches_listings(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(2000)
-        page.locator("#map-svg [data-abbr='DL'].ad-state").click()
-        page.wait_for_timeout(2500)
+        page.wait_for_timeout(3000)
+        page.evaluate("""() => {
+            const dl = document.querySelector('#map-svg [data-abbr="DL"].ad-state');
+            if (dl) dl.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+        }""")
+        page.wait_for_selector(".ad-delhi-hotspot", timeout=10000)
+        page.wait_for_timeout(500)
         # New Delhi hotspot has a count badge
         new_delhi = page.locator('.ad-delhi-hotspot[data-district="New Delhi"]')
         badge = new_delhi.locator(".ad-delhi-count")
