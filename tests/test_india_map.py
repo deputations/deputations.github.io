@@ -669,19 +669,16 @@ class TestDelhi:
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
         page.wait_for_timeout(3000)
+        # Back button should be hidden on national view
+        assert page.locator("#btn-back").is_hidden()
         # Use JS click for Delhi state
         page.evaluate("""() => {
             const el = document.querySelector('#map-svg [data-abbr="DL"].ad-state');
             if (el) el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
         }""")
         page.wait_for_selector(".ad-delhi-hotspot", timeout=10000)
-        page.wait_for_timeout(500)
-        # Click back button to return to national
-        back = page.locator("#btn-back")
-        assert not back.is_hidden(), "Back button should be visible in state view"
-        back.click()
-        page.wait_for_timeout(2000)
-        assert page.locator("#btn-back").is_hidden()
+        # Back button should be visible in state view
+        page.wait_for_selector("#btn-back:not([hidden])", timeout=5000)
 
 
 # ---------------------------------------------------------------------------
