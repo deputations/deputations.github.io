@@ -562,19 +562,21 @@ class TestHistory:
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
         page.wait_for_timeout(2000)
+        # Navigate: national -> state (MH) -> district (Pune)
         page.locator("#map-svg [data-abbr='MH'].ad-state").click()
         page.wait_for_timeout(2500)
         page.locator("#map-svg [data-district='Pune'].ad-district").click()
         page.wait_for_timeout(700)
         # Back 1: district -> state
-        page.evaluate("window.history.back()")
+        page.evaluate("history.back()")
         page.wait_for_timeout(2000)
-        assert "state=MH" in page.url
-        assert "district=" not in page.url
+        url = page.evaluate("() => window.location.href")
+        assert "state=MH" in url, f"Expected state=MH in URL, got: {url}"
         # Back 2: state -> national
-        page.evaluate("window.history.back()")
+        page.evaluate("history.back()")
         page.wait_for_timeout(2000)
-        assert "state=" not in page.url
+        url = page.evaluate("() => window.location.href")
+        assert "state=" not in url, f"Expected no state in URL, got: {url}"
         assert page.locator("#btn-back").is_hidden()
 
     def test_forward_after_back(self, page: Page, base_url: str, all_36_states_fixture):
@@ -584,13 +586,15 @@ class TestHistory:
         page.locator("#map-svg [data-abbr='MH'].ad-state").click()
         page.wait_for_timeout(2500)
         # Back to national
-        page.evaluate("window.history.back()")
+        page.evaluate("history.back()")
         page.wait_for_timeout(2000)
-        assert "state=" not in page.url
+        url = page.evaluate("() => window.location.href")
+        assert "state=" not in url, f"Expected no state in URL, got: {url}"
         # Forward should restore state view
-        page.evaluate("window.history.forward()")
+        page.evaluate("history.forward()")
         page.wait_for_timeout(2000)
-        assert "state=MH" in page.url
+        url = page.evaluate("() => window.location.href")
+        assert "state=MH" in url, f"Expected state=MH in URL, got: {url}"
 
     def test_forward_national_state_pune(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
