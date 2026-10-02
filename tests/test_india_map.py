@@ -113,6 +113,7 @@ def _inject_fixtures(page: Page, vacancies: list[dict], states: list[dict], dist
         // Pre-seed data layer
         window.IndiaMapData = {{
             _raw: {json.dumps(vacancies)},
+            _counts: {{}},
             getListingsForState: (a, n) => {{
                 if (!a) return [];
                 return {json.dumps(vacancies)}.filter(v => v.status === 'Active' && v.state_abbr === a);
@@ -121,29 +122,35 @@ def _inject_fixtures(page: Page, vacancies: list[dict], states: list[dict], dist
                 if (!a || !d) return [];
                 return {json.dumps(vacancies)}.filter(v => v.status === 'Active' && v.state_abbr === a && v.district === d);
             }},
-            getStateCounts: () => {{
+            getStateCounts: (a) => {{
+                if (a) return {{}}; // keep signature, not used per-abbr in tests
                 const c = {{}};
                 {json.dumps(vacancies)}.filter(v => v.status === 'Active').forEach(v => {{
                     c[v.state_abbr] = (c[v.state_abbr]||0) + 1;
                 }});
                 return c;
             }},
-            getFiltered: (a) => {{
-                if (!a) return {json.dumps(vacancies)}.filter(v => v.status === 'Active');
-                return {json.dumps(vacancies)}.filter(v => v.status === 'Active' && v.state_abbr === a);
+            getFiltered: (a, opts) => {{
+                const cat = opts && opts.category;
+                return {json.dumps(vacancies)}.filter(v => {{
+                    if (v.status !== 'Active') return false;
+                    if (a && v.state_abbr !== a) return false;
+                    if (cat && v.category !== cat) return false;
+                    return true;
+                }});
             }},
             recordNewVacancy: (v) => {{ window.IndiaMapData._raw.push(v); }},
-            deriveCategory: (fa) => {{
-                if (!fa) return 'General';
-                const u = fa.toUpperCase();
-                if (u.includes('EDUCATION') || u.includes('TEACHING') || u.includes('PROFESSOR'))
-                    return 'Education';
-                if (u.includes('RESEARCH') || u.includes('SCIENTIFIC'))
-                    return 'Research';
-                if (u.includes('IT') || u.includes('TECHNOLOGY') || u.includes('COMPUTER'))
-                    return 'Functional';
-                if (u.includes('FOREST') || u.includes('ENVIRONMENT'))
-                    return 'General';
+            deriveCategory: (v) => {{
+                const fa = String(v.Functional_Area || v.functional_area || '').toLowerCase();
+                const title = String(v.Post_Name || v.title || '').toLowerCase();
+                const combined = fa + ' ' + title;
+                const eduKws = ['teach', 'faculty', 'professor', 'lecturer', 'education', 'academic',
+                  'institute', 'university', 'college', 'school', 'research fellow', 'scholar'];
+                const funcKws = ['account', 'finance', 'admin', 'steno', 'secretary', 'clerk', 'assistant',
+                  'officer', 'manager', 'supervisor', 'inspector', 'audit', 'legal', 'it ', 'tech ',
+                  'engineer', 'programmer', 'analyst', 'translator', ' hindi', 'stenography'];
+                for (const kw of eduKws) {{ if (combined.includes(kw)) return 'Education'; }}
+                for (const kw of funcKws) {{ if (combined.includes(kw)) return 'Functional'; }}
                 return 'General';
             }},
             load: async () => {{}},
@@ -233,9 +240,10 @@ def all_36_states_fixture(page: Page):
     ]
 
     # 7 vacancies, all using the production data shape.
-    # NOTE: do NOT include synthetic location_scope:'district' here — the
-    # production JSON does not always carry it, and BLOCKER 5 says the
-    # district membership must rely on the normalized state_abbr + district.
+    # Categories must match production deriveCategory() exactly:
+    #   eduKws: teach/faculty/professor/lecturer/education/academic/institute/university/college/school/research fellow/scholar
+    #   funcKws: account/finance/admin/steno/secretary/clerk/assistant/officer/manager/supervisor/inspector/audit/legal/it /tech /engineer/programmer/analyst/translator/ hindi/stenography
+    # Order: eduKws checked first, then funcKws.
     vacancies = [
         # Maharashtra — Pune (Education) — BLOCKER 7
         {"Vacancy_ID": "M1", "Post_Name": "Assistant Professor",
@@ -246,30 +254,30 @@ def all_36_states_fixture(page: Page):
          "state_abbr": "MH", "district": "Pune",
          "Official_Notification_Link": "https://example.com/m1"},
         # Maharashtra — Mumbai (Functional)
-        {"Vacancy_ID": "M2", "Post_Name": "Accounts Officer",
-         "Ministry": "Finance", "Organisation": "Dept of Finance",
-         "Level_Text": "Level-7", "Functional_Area": "Accounts and Finance",
+        {"Vacancy_ID": "M2", "Post_Name": "Software Engineer",
+         "Ministry": "Electronics", "Organisation": "STPI",
+         "Level_Text": "Level-7", "Functional_Area": "IT and Technology",
          "Last_Date_To_Apply": "2099-12-31", "Status": "Active",
          "Location_State": "Maharashtra", "Location_City": "Mumbai",
          "state_abbr": "MH", "district": "Mumbai",
          "Official_Notification_Link": ""},
-        # Maharashtra — Nagpur (General)
-        {"Vacancy_ID": "M3", "Post_Name": "Forest Officer",
-         "Ministry": "Environment", "Organisation": "Forest Dept",
-         "Level_Text": "Level-7", "Functional_Area": "Forest Management",
+        # Maharashtra — Nagpur (General — no edu/func keywords)
+        {"Vacancy_ID": "M3", "Post_Name": "Field Guard",
+         "Ministry": "Environment", "Organisation": "Wildlife Wing",
+         "Level_Text": "Level-7", "Functional_Area": "Wildlife Protection",
          "Last_Date_To_Apply": "2099-12-31", "Status": "Active",
          "Location_State": "Maharashtra", "Location_City": "Nagpur",
          "state_abbr": "MH", "district": "Nagpur",
          "Official_Notification_Link": ""},
-        # Karnataka — Bengaluru
-        {"Vacancy_ID": "K1", "Post_Name": "Software Engineer",
+        # Karnataka — Bengaluru (Functional)
+        {"Vacancy_ID": "K1", "Post_Name": "Systems Analyst",
          "Ministry": "Electronics", "Organisation": "STPI",
          "Level_Text": "Level-9", "Functional_Area": "IT and Technology",
          "Last_Date_To_Apply": "2099-12-31", "Status": "Active",
          "Location_State": "Karnataka", "Location_City": "Bengaluru",
          "state_abbr": "KA", "district": "Bengaluru",
          "Official_Notification_Link": ""},
-        # Tamil Nadu — Chennai
+        # Tamil Nadu — Chennai (Education — "research fellow" hits eduKws)
         {"Vacancy_ID": "T1", "Post_Name": "Research Fellow",
          "Ministry": "Science", "Organisation": "CSIR",
          "Level_Text": "Level-8", "Functional_Area": "Scientific Research",
@@ -277,7 +285,7 @@ def all_36_states_fixture(page: Page):
          "Location_State": "Tamil Nadu", "Location_City": "Chennai",
          "state_abbr": "TN", "district": "Chennai",
          "Official_Notification_Link": ""},
-        # Delhi — New Delhi
+        # Delhi — New Delhi (Functional — "stenography" hits funcKws)
         {"Vacancy_ID": "DL1", "Post_Name": "Stenographer",
          "Ministry": "Parliament", "Organisation": "Rajya Sabha",
          "Level_Text": "Level-5", "Functional_Area": "Stenography",
@@ -285,10 +293,10 @@ def all_36_states_fixture(page: Page):
          "Location_State": "Delhi", "Location_City": "New Delhi",
          "state_abbr": "DL", "district": "New Delhi",
          "Official_Notification_Link": ""},
-        # Chhattisgarh — test CG mapping
-        {"Vacancy_ID": "CG1", "Post_Name": "Forest Officer",
-         "Ministry": "Environment", "Organisation": "Forest Dept",
-         "Level_Text": "Level-7", "Functional_Area": "Forest Management",
+        # Chhattisgarh — General (no edu/func keywords match)
+        {"Vacancy_ID": "CG1", "Post_Name": "Advisor",
+         "Ministry": "External Affairs", "Organisation": "Policy Wing",
+         "Level_Text": "Level-7", "Functional_Area": "Policy Studies",
          "Last_Date_To_Apply": "2099-12-31", "Status": "Active",
          "Location_State": "Chhattisgarh", "Location_City": "Raipur",
          "state_abbr": "CG", "district": "Raipur",
