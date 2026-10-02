@@ -106,42 +106,34 @@ def _inject_fixtures(page: Page, vacancies: list[dict], states: list[dict], dist
     # `window._indiaGeoData` before sessionStorage, so pre-setting it is the
     # most reliable way to inject fixture data.
     page.add_init_script(f"""
-        window._testFixtureStates = {json.dumps(states)};
-        window._testFixtureDistricts = {json.dumps(districts)};
-        window._testFixtureVacancies = {json.dumps(vacancies)};
-        // Set the data layer flag so it doesn't try to fetch
-        window._mapDataLoaded = true;
+        // Set test mode flag BEFORE the page script runs
+        // so the production code skips sessionStorage entirely
+        window.__MAP_TEST_MODE = true;
+        // Pre-seed geometry data so the production code never needs to fetch
+        window._indiaGeoData = {json.dumps({"type": "FeatureCollection", "features": states})};
+        // Pre-seed data layer
         window.IndiaMapData = {{
-            _raw: window._testFixtureVacancies,
+            _raw: {json.dumps(vacancies)},
             getListingsForState: (a, n) => {{
                 if (!a) return [];
-                return window._testFixtureVacancies.filter(v =>
-                    v.status === 'Active' && v.state_abbr === a
-                );
+                return {json.dumps(vacancies)}.filter(v => v.status === 'Active' && v.state_abbr === a);
             }},
             getListingsForDistrict: (a, d) => {{
                 if (!a || !d) return [];
-                return window._testFixtureVacancies.filter(v =>
-                    v.status === 'Active' && v.state_abbr === a && v.district === d
-                );
+                return {json.dumps(vacancies)}.filter(v => v.status === 'Active' && v.state_abbr === a && v.district === d);
             }},
             getStateCounts: () => {{
                 const c = {{}};
-                window._testFixtureVacancies.filter(v => v.status === 'Active').forEach(v => {{
+                {json.dumps(vacancies)}.filter(v => v.status === 'Active').forEach(v => {{
                     c[v.state_abbr] = (c[v.state_abbr]||0) + 1;
                 }});
                 return c;
             }},
             getFiltered: (a) => {{
-                if (!a) return window._testFixtureVacancies.filter(v => v.status === 'Active');
-                return window._testFixtureVacancies.filter(v => v.status === 'Active' && v.state_abbr === a);
+                if (!a) return {json.dumps(vacancies)}.filter(v => v.status === 'Active');
+                return {json.dumps(vacancies)}.filter(v => v.status === 'Active' && v.state_abbr === a);
             }},
-            recordNewVacancy: (v) => {{
-                window._testFixtureVacancies.push(v);
-                if (typeof v === 'string') {{
-                    window._testFixtureVacancies.push({{id: v, title: 'Test', status: 'Active', state_abbr: 'XX'}});
-                }}
-            }},
+            recordNewVacancy: (v) => {{ window.IndiaMapData._raw.push(v); }},
             deriveCategory: (fa) => {{
                 if (!fa) return 'General';
                 const u = fa.toUpperCase();
@@ -156,16 +148,9 @@ def _inject_fixtures(page: Page, vacancies: list[dict], states: list[dict], dist
                 return 'General';
             }},
             load: async () => {{}},
-            loadFromRawData: (raw) => {{ window._testFixtureVacancies = raw; }},
+            loadFromRawData: (raw) => {{ window.IndiaMapData._raw = raw; }},
         }};
         window.IndiaMapData.ready = Promise.resolve(window.IndiaMapData);
-        // Pre-seed geometry data so sessionStorage cache is never needed
-        try { sessionStorage.removeItem('geo_states'); } catch(e) {{}}
-        try { sessionStorage.removeItem('geo_states_all'); } catch(e) {{}}
-        try { sessionStorage.removeItem('geo_districts'); } catch(e) {{}}
-        try { sessionStorage.removeItem('geo_india_states'); } catch(e) {{}}
-        try { sessionStorage.removeItem('geo_india_districts'); } catch(e) {{}}
-        try {{ window._indiaGeoData = {json.dumps({"type": "FeatureCollection", "features": states})}; }} catch(e) {{}}
     """)
 
     # Also route the fetches as backup (for any code paths that bypass the init)

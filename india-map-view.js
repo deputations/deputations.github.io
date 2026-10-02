@@ -1139,9 +1139,9 @@
     // Load geometry (7-day sessionStorage cache)
     const stateGeoKey = 'india-states-geo';
     const stateGeoCacheMaxAge = 7 * 86400000; // 7 days
-    // Check window._indiaGeoData first (set by tests / inline script)
-    // so sessionStorage from a different page doesn't win.
-    if (!window._indiaGeoData) {
+    // Tests set window.__MAP_TEST_MODE to bypass sessionStorage;
+    // in production this is never set so normal cache applies.
+    if (!window.__MAP_TEST_MODE && !window._indiaGeoData) {
       try {
         const cached = sessionStorage.getItem(stateGeoKey);
         if (cached) {
@@ -1157,9 +1157,11 @@
         const resp = await fetch('geo/india-states.geojson');
         if (resp.ok) {
           window._indiaGeoData = await resp.json();
-          try {
-            sessionStorage.setItem(stateGeoKey, JSON.stringify({ _ts: Date.now(), data: window._indiaGeoData }));
-          } catch (e) { /* quota exceeded */ }
+          if (!window.__MAP_TEST_MODE) {
+            try {
+              sessionStorage.setItem(stateGeoKey, JSON.stringify({ _ts: Date.now(), data: window._indiaGeoData }));
+            } catch (e) { /* quota exceeded */ }
+          }
         }
       } catch (e) { console.error('[map] state geo load failed:', e); }
     }
