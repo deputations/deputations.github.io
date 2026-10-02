@@ -39,9 +39,8 @@ _ALL_36 = [
     ("BR", "Bihar"),
     ("CG", "Chhattisgarh"),
     ("CH", "Chandigarh"),
+    ("DDD", "Dadra and Nagar Haveli and Daman and Diu"),
     ("DL", "Delhi"),
-    ("DN", "Dadra and Nagar Haveli"),
-    ("DNH", "Dadra and Nagar Haveli and Daman and Diu"),
     ("GA", "Goa"),
     ("GJ", "Gujarat"),
     ("HR", "Haryana"),
@@ -179,7 +178,6 @@ _STATES_36_COORDS = {
     "CG": (80.0, 84.5, 17.0, 24.0),
     "CH": (76.7, 76.9, 30.7, 30.8),
     "DL": (76.8, 77.4, 28.4, 28.9),
-    "DN": (72.8, 73.1, 20.0, 20.4),
     "DNH": (72.5, 73.5, 20.0, 20.6),
     "GA": (73.6, 74.4, 14.8, 15.8),
     "GJ": (68.0, 73.5, 20.0, 24.5),
@@ -308,13 +306,13 @@ def all_36_states_fixture(page: Page):
 class TestNationalRender:
     """BLOCKER 6: exactly 36 unique State/UT paths, no placeholders."""
 
-    def test_renders_exactly_37_state_features(self, page: Page, base_url: str, all_36_states_fixture):
-        """BLOCKER 6: fixture has 37 entries (DN + DNH as separate UTs)."""
+    def test_renders_exactly_36_state_features(self, page: Page, base_url: str, all_36_states_fixture):
+        """BLOCKER 6: exactly 36 unique State/UT paths, no placeholders."""
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
         page.wait_for_timeout(2000)  # let draw-in complete
         count = page.locator("#map-svg .ad-state").count()
-        assert count == 37, f"Expected 37 state features from fixture, got {count}"
+        assert count == 36, f"Expected exactly 36 state features, got {count}"
 
     def test_all_data_abbr_unique(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
