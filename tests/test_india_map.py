@@ -567,15 +567,30 @@ class TestHistory:
         page.locator("#map-svg [data-district='Pune'].ad-district").click()
         page.wait_for_timeout(700)
         # Back 1: district -> state
-        page.go_back()
-        page.wait_for_timeout(1500)
+        page.evaluate("window.history.back()")
+        page.wait_for_timeout(2000)
         assert "state=MH" in page.url
         assert "district=" not in page.url
         # Back 2: state -> national
-        page.go_back()
-        page.wait_for_timeout(1500)
+        page.evaluate("window.history.back()")
+        page.wait_for_timeout(2000)
         assert "state=" not in page.url
         assert page.locator("#btn-back").is_hidden()
+
+    def test_forward_after_back(self, page: Page, base_url: str, all_36_states_fixture):
+        page.goto(f"{base_url}/india-map.html")
+        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
+        page.wait_for_timeout(2000)
+        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
+        page.wait_for_timeout(2500)
+        # Back to national
+        page.evaluate("window.history.back()")
+        page.wait_for_timeout(2000)
+        assert "state=" not in page.url
+        # Forward should restore state view
+        page.evaluate("window.history.forward()")
+        page.wait_for_timeout(2000)
+        assert "state=MH" in page.url
 
     def test_forward_national_state_pune(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
