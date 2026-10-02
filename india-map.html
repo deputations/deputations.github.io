@@ -32,10 +32,10 @@
     <div class="map-container" id="mapContainer">
       <canvas id="particleCanvas" class="map-particles" aria-hidden="true"></canvas>
       <div class="map-header">
-        <a href="/index.html" class="map-back-btn" aria-label="Back to Home">
+        <button id="btn-back" class="map-back-btn" aria-label="Back to India" hidden>
           <span>‹</span>
-          <span>Back to Home</span>
-        </a>
+          <span>Back to India</span>
+        </button>
         <div class="map-title">
           <h2>Explore India</h2>
           <p class="map-subtitle" id="mapSubtitle">Interactive vacancy map</p>
@@ -51,8 +51,12 @@
         <div class="map-tooltip-count" id="mapTooltipCount"></div>
         <div class="map-tooltip-meta" id="mapTooltipMeta"></div>
       </div>
+      <div id="mapAnnounce" aria-live="polite" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)"></div>
+      <button id="mapFiltersToggle" class="map-filter-toggle" aria-label="Toggle filters" aria-expanded="false" hidden>
+        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2"/></svg>
+      </button>
       <div class="map-controls">
-        <div class="map-filters">
+        <div class="map-filters" id="mapFilters">
           <button class="map-filter-btn active" data-filter="all">All</button>
           <button class="map-filter-btn" data-filter="functional">Functional</button>
           <button class="map-filter-btn" data-filter="education">Education</button>
@@ -64,6 +68,15 @@
         </div>
       </div>
     </div>
+
+    <!-- District listings modal -->
+    <dialog id="modal" class="map-modal" aria-labelledby="modalTitle">
+      <div class="map-modal-header">
+        <h3 id="modalTitle"></h3>
+        <button class="map-modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div id="modalBody" class="map-modal-body"></div>
+    </dialog>
   </main>
 
   <script src="/config.js"></script>
