@@ -39,13 +39,13 @@ window.IndiaMapData = (() => {
     'Maharashtra':'MH','Andhra Pradesh':'AP','Karnataka':'KA',
     'Tamil Nadu':'TN','Uttar Pradesh':'UP','Kerala':'KL',
     'Gujarat':'GJ','Rajasthan':'RJ','West Bengal':'WB','Madhya Pradesh':'MP',
-    'Bihar':'BR','Chhattisgarh':'CT','Odisha':'OD','Telangana':'TS',
+    'Bihar':'BR','Chhattisgarh':'CG','Odisha':'OD','Telangana':'TS',
     'Jharkhand':'JH','Assam':'AS','Punjab':'PB','Haryana':'HR',
     'Himachal Pradesh':'HP','Jammu and Kashmir':'JK','Jammu & Kashmir':'JK',
     'Uttarakhand':'UK','Goa':'GA','Tripura':'TR','Manipur':'MN',
     'Meghalaya':'ML','Mizoram':'MZ','Nagaland':'NL','Arunachal Pradesh':'AR',
     'Sikkim':'SK','Andaman and Nicobar Islands':'AN','Chandigarh':'CH',
-    'Dadra and Nagar Haveli and Daman and Diu':'DH','Puducherry':'PY',
+    'Dadra and Nagar Haveli and Daman and Diu':'DNH','Puducherry':'PY',
     'Lakshadweep':'LD','Ladakh':'LA',
     // Multi-state keywords → empty (handled by location_scope)
     'Multiple States':'','All India':'','Multiple':'','Across India':'',
@@ -75,9 +75,11 @@ window.IndiaMapData = (() => {
   function normaliseVacancy(v) {
     if (!v || typeof v !== 'object') return null;
     const rawState = v.Location_State || '';
-    // Trust an already-resolved abbreviation if present (e.g. realtime rows
-    // pre-enriched by app.js); otherwise derive from Location_State.
-    const abbr = v.state_abbr || NAME_TO_ABBR[rawState] || rawState;
+    // Trust an already-resolved abbreviation only if it's a known valid one;
+    // otherwise derive from Location_State name. Unknown strings never become state IDs.
+    const VALID_ABBRS = new Set(Object.values(NAME_TO_ABBR).filter(a => a.length === 2));
+    const preAbbr = v.state_abbr && VALID_ABBRS.has(v.state_abbr) ? v.state_abbr : null;
+    const abbr = preAbbr || NAME_TO_ABBR[rawState] || '';
     return {
       id: v.Vacancy_ID || v.id || '',
       title: v.Post_Name || v.title || 'Untitled post',
@@ -101,7 +103,7 @@ window.IndiaMapData = (() => {
         }
         return '';
       })(),
-      location_scope: v.location_scope || 'district',
+      location_scope: v.location_scope || '',
       notificationLink: v.Official_Notification_Link || '',
     };
   }
@@ -129,6 +131,28 @@ window.IndiaMapData = (() => {
     return { rpcCounts, hasRpcData };
   }
 
+  // Diagnostic: compare JSON counts with RPC counts for freshness monitoring.
+  // Does NOT modify visible state counts. Returns diff object.
+  function rpcDiagnostic() {
+    return new Promise((resolve) => {
+      if (!window.supabase || typeof window.supabase.rpc !== 'function') {
+        resolve(null); return;
+      }
+      window.supabase.rpc('get_map_state_counts').then(({ data: rows, error }) => {
+        if (error || !rows) { resolve(null); return; }
+        const rpc = {};
+        rows.forEach(r => { rpc[r.state_abbr] = r.active || 0; });
+        const diff = {};
+        Object.keys(stateCounts).forEach(abbr => {
+          const j = stateCounts[abbr] || 0;
+          const r = rpc[abbr] || 0;
+          if (j !== r) diff[abbr] = { json: j, rpc: r };
+        });
+        resolve({ diff, totalJson: getTotal(), totalRpc: Object.values(rpc).reduce((s,c)=>s+c,0) });
+      }).catch(() => resolve(null));
+    });
+  }
+
   async function loadFromRawData() {
     if (!window.rawData || !window.rawData.length) return false;
     // Recompute from raw (un-normalised) data — normalise on the fly
@@ -152,26 +176,9 @@ window.IndiaMapData = (() => {
     // 2. Recompute counts from loaded vacancies (canonical)
     recomputeCounts();
 
-    // 3. Supabase RPC supplements — only fills in states JSON missed.
-    //    NEVER overwrites a non-zero JSON count (prevents stale RPC from
-    //    contradicting the canonical source).
-    let useRpc = false;
-    try {
-      const rpcResult = await loadFromSupabase();
-      const rpcCounts = rpcResult.rpcCounts;
-      if (rpcResult.hasRpcData && Object.keys(rpcCounts).length > 0) {
-        Object.entries(rpcCounts).forEach(([abbr, count]) => {
-          if ((stateCounts[abbr] || 0) === 0 && count > 0) {
-            stateCounts[abbr] = count;
-          }
-        });
-        useRpc = true;
-      }
-    } catch (e) {
-      console.info('[map-data] Supabase RPC skipped:', e.message);
-    }
-
-    source = useRpc ? 'json+rpc' : (allVacancies.length ? 'json' : source);
+    // 3. Supabase RPC is available for diagnostic/freshness via rpcDiagnostic().
+    //    Do NOT overlay RPC-only counts — visible counts must be record-coherent.
+    source = allVacancies.length ? 'json' : source;
     return { total: getTotal(), source, stateCounts };
   }
 
@@ -245,15 +252,19 @@ window.IndiaMapData = (() => {
     const idx = allVacancies.findIndex(existing => existing.id === v.id);
     if (idx >= 0) {
       const old = allVacancies[idx];
+      // Only decrement counters if the old record WAS active and counted.
+      // If old was inactive, it never contributed to counts, so don't subtract.
+      const oldWasActive = isActive(old);
       allVacancies.splice(idx, 1);
-      // Decrement old counts
-      if (old.location_scope === 'nationwide') { nationwideCount--; }
-      else if (old.location_scope === 'multi_state') { multiStateCount--; }
-      else if (old.state_abbr) {
-        stateCounts[old.state_abbr] = Math.max((stateCounts[old.state_abbr] || 0) - 1, 0);
-        if (old.district) {
-          const key = old.state_abbr + '|' + old.district.toLowerCase();
-          districtCounts[key] = Math.max((districtCounts[key] || 0) - 1, 0);
+      if (oldWasActive) {
+        if (old.location_scope === 'nationwide') { nationwideCount--; }
+        else if (old.location_scope === 'multi_state') { multiStateCount--; }
+        else if (old.state_abbr) {
+          stateCounts[old.state_abbr] = Math.max((stateCounts[old.state_abbr] || 0) - 1, 0);
+          if (old.district) {
+            const key = old.state_abbr + '|' + old.district.toLowerCase();
+            districtCounts[key] = Math.max((districtCounts[key] || 0) - 1, 0);
+          }
         }
       }
     }
@@ -273,12 +284,22 @@ window.IndiaMapData = (() => {
     return true;
   }
 
+  // Testing helper: reset all internal state (not for production use)
+  function reset() {
+    allVacancies = [];
+    stateCounts = {};
+    districtCounts = {};
+    nationwideCount = 0;
+    multiStateCount = 0;
+    source = 'none';
+  }
+
   return {
     load, isActive,
     getStateCount, getStateCounts, getTotal, getSource, getAllVacancies,
     getNationwideCount, getMultiStateCount,
     getDistrictCounts,
     getListingsForDistrict, getFiltered, normaliseVacancy, deriveCategory,
-    recordNewVacancy,
+    recordNewVacancy, rpcDiagnostic, reset,
   };
 })();

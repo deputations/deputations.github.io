@@ -14,9 +14,11 @@
   let districtsPromise = null;
   let currentProjection = null;
   let zoomAnimFrame = null;
-  let generation = 0;
+  let renderGeneration = 0;  // navigation/render lifecycle (J)
+  let drawGeneration = 0;    // decorative draw-in lifecycle (J)
   let lastFocusedState = null;
   let announceTimer = null;
+  let activeMapFilter = 'all'; // C21: explicit filter state
 
   function announce(msg) {
     const el = document.getElementById('mapAnnounce');
@@ -298,7 +300,7 @@
 
       // Hover spotlight (dims neighbours)
       path.addEventListener('mouseenter', (e) => {
-        showTooltip(e, name, count);
+        showTooltip(e, abbr, name, count);
         path.classList.add('ad-gpu');
         announce(`${name}: ${count} vacanc${count !== 1 ? 'ies' : ''}`);
         document.querySelectorAll('#map-svg .ad-state').forEach(s => {
@@ -358,12 +360,12 @@
       const paths = document.querySelectorAll('#map-svg .ad-state');
       let completed = 0;
       const total = paths.length;
-      const gen = ++generation;
+      const gen = ++drawGeneration; // (J) separate from renderGeneration
       const useReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       function onPathComplete() {
         completed++;
-        if (completed >= total && gen === generation) {
+        if (completed >= total && gen === drawGeneration) {
           document.dispatchEvent(new CustomEvent('map:drawInComplete'));
         }
       }
@@ -372,7 +374,7 @@
         playDrawIn(p, i * 30);
         const totalDuration = i * 30 + 2000;
         setTimeout(() => {
-          if (gen === generation) p.classList.add('drawn');
+          if (gen === drawGeneration) p.classList.add('drawn');
         }, totalDuration);
         if (useReducedMotion) {
           onPathComplete(); // no animation, count immediately
@@ -380,7 +382,7 @@
           p.addEventListener('animationend', onPathComplete, { once: true });
           // Safety fallback: if animationend never fires (interrupted/removed), count after max duration
           setTimeout(() => {
-            if (completed < total && gen === generation) onPathComplete();
+            if (completed < total && gen === drawGeneration) onPathComplete();
           }, 3500);
         }
       });
@@ -481,7 +483,7 @@
   async function drillToState(abbr, name) {
     if (viewMode === 'state' && selectedAbbr === abbr) return;
     lastFocusedState = abbr;
-    const gen = ++generation;
+    const gen = ++renderGeneration; // (J) render navigation generation
 
     // Delhi uses image-map, not district GeoJSON
     if (abbr === 'DL') {
@@ -492,7 +494,7 @@
       }
       if (sel) spawnVortex(sel);
       await cinematicZoom(abbr);
-      if (gen !== generation) return;
+      if (gen !== renderGeneration) return;
       renderState(abbr, name);
       selectedAbbr = abbr;
       viewMode = 'state';
@@ -503,7 +505,7 @@
     }
 
     const dGeo = await ensureDistrictsLoaded();
-    if (gen !== generation || !dGeo) return;
+    if (gen !== renderGeneration || !dGeo) return;
 
     // Mark selected
     const sel = document.querySelector(`[data-abbr="${abbr}"].ad-state`);
@@ -516,7 +518,7 @@
     if (sel) spawnVortex(sel);
 
     await cinematicZoom(abbr);
-    if (gen !== generation) return;
+    if (gen !== renderGeneration) return;
 
     renderState(abbr, name);
     selectedAbbr = abbr;
@@ -554,6 +556,7 @@
     return new Promise(resolve => {
       const vb = svg.viewBox.baseVal;
       const t0 = performance.now();
+      let resolved = false;
       if (zoomAnimFrame) cancelAnimationFrame(zoomAnimFrame);
       function frame(now) {
         const t = Math.min((now - t0) / duration, 1);
@@ -563,9 +566,11 @@
         vb.width = start.w + (target.w - start.w) * e;
         vb.height = start.h + (target.h - start.h) * e;
         if (t < 1) zoomAnimFrame = requestAnimationFrame(frame);
-        else { zoomAnimFrame = null; resolve(); }
+        else { zoomAnimFrame = null; resolved = true; resolve(); }
       }
       zoomAnimFrame = requestAnimationFrame(frame);
+      // Safety: if RAF is throttled, resolve after expected duration + margin
+      setTimeout(() => { if (!resolved) { zoomAnimFrame = null; resolve(); } }, duration + 200);
     });
   }
 
@@ -688,26 +693,20 @@
         <div class="ad-listing-card visible" style="animation-delay:${i * 60}ms">
           <div class="ad-listing-card-header">
             <div class="ad-listing-title">${esc(l.title)}</div>
-            <span class="ad-listing-badge">${esc(l.functional || l.qualification || 'Any')}</span>
+            ${l.level ? `<span class="ad-listing-badge">${esc(l.level)}</span>` : ''}
           </div>
           <div class="ad-listing-meta">
             ${l.ministry ? `<span>${esc(l.ministry)}</span>` : ''}
-            ${l.payLevel ? `<span>Pay Level ${esc(l.payLevel)}</span>` : ''}
+            ${l.organisation ? `<span>${esc(l.organisation)}</span>` : ''}
+            ${l.functionalArea ? `<span>${esc(l.functionalArea)}</span>` : ''}
           </div>
           <div class="ad-listing-card-footer">
             ${l.closingDate ? `<span class="ad-listing-close-date">Closes ${esc(l.closingDate)}</span>` : ''}
-            <span class="ad-listing-posts">${l.posts || 1} post${(l.posts || 1) > 1 ? 's' : ''}</span>
+            ${l.notificationLink ? `<a href="${esc(l.notificationLink)}" target="_blank" rel="noopener" class="ad-listing-link">Notification</a>` : ''}
           </div>
         </div>`).join('') || '<p style="color:var(--text-muted);text-align:center;padding:20px;">No vacancies found.</p>';
     }
     if (modal) modal.showModal?.();
-
-    if (!skipPush) {
-      history.pushState(
-        { view: 'district', state: stateAbbr, district: districtName },
-        '', `?state=${stateAbbr}&district=${encodeURIComponent(districtName)}`
-      );
-    }
   }
 
   function renderState(abbr, name) {
@@ -752,7 +751,7 @@
       path.style.setProperty('--ad-delay', `${Math.min(idx * 20, 500)}ms`);
 
       path.addEventListener('click', () => onDistrictClick(abbr, geoName));
-      path.addEventListener('mouseenter', (e) => { path.classList.add('ad-gpu'); showTooltip(e, geoName, count); });
+      path.addEventListener('mouseenter', (e) => { path.classList.add('ad-gpu'); showTooltip(e, abbr, geoName, count); });
       path.addEventListener('mousemove', moveTooltip);
       path.addEventListener('mouseleave', () => { path.classList.remove('ad-gpu'); hideTooltip(); });
       g.appendChild(path);
@@ -793,6 +792,20 @@
     const seen = new Set();
     const unique = listings.filter(l => { if (seen.has(l.id)) return false; seen.add(l.id); return true; });
 
+    // C24: capture district trigger element for focus restoration
+    let districtTrigger = null;
+    if (abbr === 'DL') {
+      const activeBtn = document.querySelector('.ad-delhi-hotspot.active');
+      if (activeBtn) districtTrigger = activeBtn;
+    } else {
+      const paths = document.querySelectorAll('#map-svg .ad-district');
+      for (const p of paths) {
+        if (p.dataset.district === districtName && p.dataset.abbr === abbr) {
+          districtTrigger = p; break;
+        }
+      }
+    }
+
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     const modal = document.getElementById('modal');
@@ -802,40 +815,46 @@
         <div class="ad-listing-card visible" style="animation-delay:${i * 60}ms">
           <div class="ad-listing-card-header">
             <div class="ad-listing-title">${esc(l.title)}</div>
-            <span class="ad-listing-badge">${esc(l.functional || l.qualification || 'Any')}</span>
+            ${l.level ? `<span class="ad-listing-badge">${esc(l.level)}</span>` : ''}
           </div>
           <div class="ad-listing-meta">
             ${l.ministry ? `<span>${esc(l.ministry)}</span>` : ''}
-            ${l.payLevel ? `<span>Pay Level ${esc(l.payLevel)}</span>` : ''}
+            ${l.organisation ? `<span>${esc(l.organisation)}</span>` : ''}
+            ${l.functionalArea ? `<span>${esc(l.functionalArea)}</span>` : ''}
           </div>
           <div class="ad-listing-card-footer">
             ${l.closingDate ? `<span class="ad-listing-close-date">Closes ${esc(l.closingDate)}</span>` : ''}
-            <span class="ad-listing-posts">${l.posts || 1} post${(l.posts || 1) > 1 ? 's' : ''}</span>
+            ${l.notificationLink ? `<a href="${esc(l.notificationLink)}" target="_blank" rel="noopener" class="ad-listing-link">Notification</a>` : ''}
           </div>
         </div>`).join('') || '<p style="color:var(--text-muted); text-align:center; padding:20px;">No vacancies found.</p>';
     }
-    if (modal) modal.showModal?.();
+    if (modal) {
+      modal._districtTrigger = districtTrigger;
+      modal.showModal?.();
+      history.pushState(
+        { view: 'district', state: abbr, district: districtName },
+        '', `?state=${abbr}&district=${encodeURIComponent(districtName)}`
+      );
+    }
   }
 
   // ----- Tooltip -----
-  function showTooltip(event, name, count) {
+  function showTooltip(event, abbr, name, count) {
     const t = document.getElementById('mapTooltip');
     if (!t) return;
     const n = document.getElementById('mapTooltipName');
     const c = document.getElementById('mapTooltipCount');
     const m = document.getElementById('mapTooltipMeta');
     if (n) n.textContent = name;
-    if (c) c.textContent = `${count} vacanc${count !== 1 ? 'ies' : ''}`;
+    // C21: tooltip count respects activeMapFilter
+    let tooltipCount = count;
+    if (activeMapFilter !== 'all' && window.IndiaMapData) {
+      const filtered = IndiaMapData.getFiltered(abbr, { category: activeMapFilter === 'functional' ? 'Functional' : 'Education' });
+      tooltipCount = filtered.length;
+    }
+    if (c) c.textContent = `${tooltipCount} vacanc${tooltipCount !== 1 ? 'ies' : ''}`;
     if (m) {
-      // Use the data-layer's exported isActive, never the (non-existent) local one
-      const dataActive = window.IndiaMapData && IndiaMapData.isActive
-        ? (v) => IndiaMapData.isActive(v)
-        : () => true;
-      const listings = window.IndiaMapData ? IndiaMapData.getAllVacancies().filter(v => {
-        if (!dataActive(v) || !v.state_abbr) return false;
-        const ab = Object.entries(ABBR_TO_NAME).find(([,nm]) => nm === name);
-        return ab ? v.state_abbr === ab[0] : false;
-      }) : [];
+      const listings = window.IndiaMapData ? IndiaMapData.getFiltered(abbr, {}) : [];
       const cats = {};
       listings.forEach(v => { cats[v.category] = (cats[v.category]||0)+1; });
       m.textContent = Object.entries(cats).map(([k,v]) => `${v} ${k}`).join(' · ') || '';
@@ -871,10 +890,10 @@
 
   // ----- Filter buttons -----
   function applyFilter(type) {
+    activeMapFilter = type; // C21: store filter state for tooltip consistency
     const paths = document.querySelectorAll('#map-svg .ad-state');
     const labelsG = document.querySelector('#map-svg #map-labels');
     let filteredTotal = 0;
-    let nationalFiltered = 0;
     paths.forEach(p => {
       const abbr = p.dataset.abbr;
       let visible = true;
@@ -883,16 +902,14 @@
         const list = window.IndiaMapData?.getFiltered?.(abbr, { category: 'Functional' }) || [];
         count = list.length;
         visible = count > 0;
-        nationalFiltered += count;
       } else if (type === 'education') {
         const list = window.IndiaMapData?.getFiltered?.(abbr, { category: 'Education' }) || [];
         count = list.length;
         visible = count > 0;
-        nationalFiltered += count;
       } else {
         count = window.IndiaMapData?.getStateCount?.(abbr) || 0;
-        nationalFiltered += count;
       }
+      filteredTotal += count;
       p.style.opacity = visible ? '1' : '0.12';
       p.setAttribute('aria-label', `${ABBR_TO_NAME[abbr] || abbr}: ${count} vacancies`);
       // Update count label from the shared #map-labels group
@@ -906,7 +923,7 @@
     });
     // Update header counter
     const counter = document.getElementById('mapCounterValue');
-    if (counter) counter.textContent = nationalFiltered.toLocaleString();
+    if (counter) counter.textContent = filteredTotal.toLocaleString();
   }
 
   function zoomIn() {
@@ -935,50 +952,107 @@
     vb.x = 0; vb.y = 0; vb.width = 1000; vb.height = 800;
   }
 
-  // ----- Back button -----
+  // ----- Back button (C18: delegates to history for URL sync) -----
   async function goBack() {
     if (viewMode === 'state') {
-      const gen = ++generation;
-      selectedDistrict = null;
-      // Delhi replaced #map-svg with HTML — rebuild the SVG before rendering national
-      const mapArea = document.getElementById('mapSvgWrap');
-      const needRebuild = !document.getElementById('map-svg');
-      if (needRebuild && mapArea) {
-        mapArea.innerHTML = '';
-        mapArea.appendChild(buildSvg());
-      }
-      const svg = document.getElementById('map-svg');
-      if (svg) {
-        const vb = svg.viewBox.baseVal;
-        await animateViewBox(svg, { x: vb.x, y: vb.y, w: vb.width, h: vb.height }, { x: 0, y: 0, w: 1000, h: 800 }, 400);
-        if (gen !== generation) return;
-      }
-      renderNational(getData());
-      const back = document.getElementById('btn-back');
-      if (back) back.hidden = true;
-      selectedAbbr = null;
-      viewMode = 'national';
-      // Return focus to the state that was drilled into
-      if (lastFocusedState) {
-        const st = document.querySelector('#map-svg [data-abbr="' + lastFocusedState + '"].ad-state');
-        if (st) { st.focus(); return; }
-      }
+      history.back(); // triggers popstate → goToView
+      return;
     } else if (viewMode === 'district') {
       const m = document.getElementById('modal');
       if (m) m.close?.();
-      // For Delhi, district→state should re-render the image-map
+      // After close, the close handler on the modal will restore focus.
+      // Fall back to the state view if district → state navigation needed.
+      history.back(); // pops district → triggers popstate
+      return;
+    }
+  }
+
+  // ===== History / Deep linking (C18) =====
+  let _popstateGuard = false;
+
+  async function goToView(stateAbbr, districtName, replace = false) {
+    // (C18) set guard to prevent recursive pushState
+    _popstateGuard = true;
+
+    if (!stateAbbr) {
+      // National view
+      if (viewMode !== 'national') {
+        await goToNational();
+      }
+      if (!replace) {
+        const data = getData();
+        renderNational(data);
+        spawnRippleForHighCounts(data);
+      }
+    } else if (!districtName) {
+      // State view
+      if (viewMode === 'state' && selectedAbbr === stateAbbr) {
+        _popstateGuard = false; return;
+      }
+      await drillToState(stateAbbr, ABBR_TO_NAME[stateAbbr] || stateAbbr);
+    } else {
+      // District view (Delhi or other)
+      if (viewMode !== 'state' || selectedAbbr !== stateAbbr) {
+        await drillToState(stateAbbr, ABBR_TO_NAME[stateAbbr] || stateAbbr);
+      }
+      // Open modal for district listing
       if (selectedAbbr === 'DL') {
         const data = getData();
-        renderDelhiImageMap('DL', 'Delhi', data);
-        viewMode = 'state';
-      } else if (selectedAbbr) {
-        renderState(selectedAbbr, ABBR_TO_NAME[selectedAbbr] || selectedAbbr);
-        viewMode = 'state';
+        const dist = DELHI_DISTRICTS.find(d => d.name === districtName);
+        if (dist) showDelhiDistrict(stateAbbr, districtName, dist.image, data);
       } else {
-        goBack();
+        onDistrictClick(stateAbbr, districtName);
       }
-      selectedDistrict = null;
     }
+
+    if (!replace) {
+      const params = districtName
+        ? `?state=${stateAbbr}&district=${encodeURIComponent(districtName)}`
+        : (stateAbbr ? `?state=${stateAbbr}` : location.pathname);
+      history.pushState({ view: stateAbbr ? (districtName ? 'district' : 'state') : 'national', state: stateAbbr, district: districtName }, '', params);
+    }
+
+    // Release guard after microtask
+    Promise.resolve().then(() => { _popstateGuard = false; });
+  }
+
+  function onPopState(e) {
+    if (_popstateGuard) return;
+    const state = e.state || {};
+    const params = new URLSearchParams(location.search);
+    const urlAbbr = (params.get('state') || '').toUpperCase();
+    const urlDistrict = params.get('district') || '';
+    const validAbbr = urlAbbr && (ABBR_TO_NAME[urlAbbr] || false) ? urlAbbr : null;
+
+    if (!validAbbr && viewMode !== 'national') {
+      goToNational();
+      return;
+    }
+    goToView(validAbbr, urlDistrict || null, true);
+  }
+
+  async function goToNational() {
+    const gen = ++renderGeneration;
+    selectedDistrict = null;
+    const mapArea = document.getElementById('mapSvgWrap');
+    const needRebuild = !document.getElementById('map-svg');
+    if (needRebuild && mapArea) {
+      mapArea.innerHTML = '';
+      mapArea.appendChild(buildSvg());
+    }
+    const svg = document.getElementById('map-svg');
+    if (svg) {
+      const vb = svg.viewBox.baseVal;
+      await animateViewBox(svg, { x: vb.x, y: vb.y, w: vb.width, h: vb.height }, { x: 0, y: 0, w: 1000, h: 800 }, 400);
+    }
+    if (gen !== renderGeneration) return;
+    selectedAbbr = null;
+    viewMode = 'national';
+    const back = document.getElementById('btn-back');
+    if (back) back.hidden = true;
+    const data = getData();
+    renderNational(data);
+    spawnRippleForHighCounts(data);
   }
 
   // ----- Main init -----
@@ -1023,25 +1097,34 @@
     // Start particles on canvas
     startParticles();
 
-    renderNational(getData());
+    // Wire popstate handler (C18)
+    window.addEventListener('popstate', onPopState);
 
-    // Deep-link auto-drill (?state=XX)
-    // District deep-links (?state=XX&district=YY) are deferred — district
-    // drill-down requires additional plumbing in the drill-to-state flow.
+    // Deep-link handler (C18: support both state and district)
     const urlParams = new URLSearchParams(location.search);
     const deepState = urlParams.get('state');
+    const deepDistrict = urlParams.get('district');
     if (deepState) {
       const abbr = deepState.toUpperCase();
-      const name = ABBR_TO_NAME[abbr] || deepState;
-      // Wait for draw-in animation to finish before drilling
-      const doDrill = () => drillToState(abbr, name);
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
+      if (ABBR_TO_NAME[abbr]) {
+        const params = deepDistrict
+          ? `?state=${abbr}&district=${encodeURIComponent(deepDistrict)}`
+          : `?state=${abbr}`;
+        history.replaceState({ view: deepDistrict ? 'district' : 'state', state: abbr, district: deepDistrict || null }, '', params);
+        const doDrill = () => {
+          const d = deepDistrict ? decodeURIComponent(deepDistrict) : null;
+          goToView(abbr, d);
+        };
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', () => {
+            document.addEventListener('map:drawInComplete', doDrill, { once: true });
+          });
+        } else {
           document.addEventListener('map:drawInComplete', doDrill, { once: true });
-        });
-      } else {
-        document.addEventListener('map:drawInComplete', doDrill, { once: true });
+        }
       }
+    } else {
+      history.replaceState({ view: 'national', state: null, district: null }, '', location.pathname);
     }
 
     // Subscribe to Supabase Realtime for live vacancy inserts
@@ -1064,9 +1147,12 @@
     }
     if (modal) {
       modal.addEventListener('close', () => {
-        // Restore focus to the last clicked district path
-        const lastFocus = document.querySelector('.ad-district[data-focus="true"]');
-        if (lastFocus) lastFocus.focus();
+        // Restore focus to the district trigger that opened the modal (C24)
+        const trigger = modal._districtTrigger;
+        if (trigger && document.contains(trigger)) {
+          try { trigger.focus(); } catch (e) { /* element gone */ }
+        }
+        modal._districtTrigger = null;
       });
     }
 
@@ -1101,12 +1187,12 @@
     // Filter toggle button (mobile)
     document.getElementById('mapFiltersToggle')?.addEventListener('click', onFiltersToggle);
 
-    // Handle viewport resize — particles on desktop→mobile, filter toggle on mobile→desktop
+    // Handle viewport resize — particles + filter toggle (C24)
+    let resizeDebounce;
     window.addEventListener('resize', () => {
+      clearTimeout(resizeDebounce);
+      resizeDebounce = setTimeout(() => handleParticleResize(), 150);
       syncMobileFilters();
-      if (window.innerWidth < 768) {
-        stopParticles();
-      }
     });
     syncMobileFilters();
   };
@@ -1234,6 +1320,21 @@
     const isOpen = filters.classList.toggle('open');
     btn.classList.toggle('open', isOpen);
     btn.setAttribute('aria-expanded', String(isOpen));
+  }
+
+  // C24: handle particle lifecycle on resize
+  function handleParticleResize() {
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      stopParticles();
+    } else {
+      resizeParticleCanvas();
+      if (!particleRaf) {
+        resetParticles();
+        isMapVisible = true;
+        tickParticles();
+      }
+    }
   }
 
   // ----- Particles (canvas background) -----

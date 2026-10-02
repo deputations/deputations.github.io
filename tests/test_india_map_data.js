@@ -31,9 +31,11 @@ function section(name) { console.log(`\n=== ${name} ===`); }
 
 section('C01: Data loader — single load() definition');
 assert(typeof window.IndiaMapData.load === 'function', 'load() is a function');
-assert(window.IndiaMapData.load.toString().includes('loadFromSupabase'), 'load() calls loadFromSupabase');
 assert(window.IndiaMapData.load.toString().includes('loadFromJSON'), 'load() calls loadFromJSON');
 assert(window.IndiaMapData.load.toString().includes('loadFromRawData'), 'load() calls loadFromRawData as fallback');
+// C19: RPC overlay removed; rpcDiagnostic is the new entry point
+assert(window.IndiaMapData.load.toString().includes('recomputeCounts'), 'load() calls recomputeCounts');
+assert(typeof window.IndiaMapData.rpcDiagnostic === 'function', 'rpcDiagnostic() is exposed for freshness comparison');
 
 section('C02: normaliseVacancy + deriveCategory');
 const raw = {
@@ -133,9 +135,11 @@ assert(js.includes('Skip entirely on mobile'), 'Skip comment present');
 // Resize handler stops particles on desktop->mobile
 assert(js.includes('stopParticles()') && js.includes("addEventListener('resize'"), 'Resize handler stops particles on mobile transition');
 
-section('C09: Tooltip uses exported isActive');
-// Verify showTooltip uses IndiaMapData.isActive (not undefined local)
-assert(js.includes('IndiaMapData.isActive'), 'showTooltip uses exported IndiaMapData.isActive');
+section('C09: Tooltip uses getFiltered for filtered tooltip counts');
+// Verify showTooltip uses getFiltered and activeMapFilter (C21)
+assert(js.includes('getFiltered(abbr'), 'Tooltip uses getFiltered with abbr');
+assert(js.includes('activeMapFilter'), 'Tooltip respects activeMapFilter');
+assert(!js.includes('getAllVacancies().filter(v =>'), 'Tooltip does not use getAllVacancies (inefficient)');
 
 section('C10: Delhi selectedDistrict declared');
 assert(js.includes('let selectedDistrict'), 'selectedDistrict is module-level let');
@@ -144,11 +148,13 @@ assert(js.includes('selectedDistrict = districtName'), 'showDelhiDistrict assign
 // Rebuild SVG on Delhi→national return
 assert(js.includes('needRebuild = !document.getElementById') && js.includes('buildSvg()'), 'goBack rebuilds SVG when Delhi replaced it');
 
-section('C12: Data source coherence — RPC supplements only');
+section('C12: Data source coherence — RPC removed from visible counts');
 assert(window.IndiaMapData.load.toString().includes('JSON'), 'JSON loads first (canonical)');
 const loadSrc = window.IndiaMapData.load.toString();
-assert(loadSrc.includes('stateCounts[abbr]') && loadSrc.includes('=== 0'), 'RPC only adds where state is missing/zero');
-assert(loadSrc.includes('source = useRpc'), 'Source is tagged as json+rpc when RPC supplements');
+assert(!loadSrc.includes('useRpc'), 'RPC does NOT modify visible stateCounts');
+assert(!loadSrc.includes('json+rpc'), 'Source is not tagged as json+rpc (RPC no longer visible)');
+// Verify rpcDiagnostic does not modify stateCounts
+assert(typeof window.IndiaMapData.rpcDiagnostic === 'function', 'rpcDiagnostic exists for diagnostic use');
 
 section('C13: getFiltered dedup + empty/missing ID handling');
 assert(window.IndiaMapData.normaliseVacancy({}) === null || window.IndiaMapData.normaliseVacancy({}).id === '', 'Missing ID handled gracefully');
@@ -206,3 +212,85 @@ if (failed > 0) {
   console.error('\nSome tests failed. Review output above.');
   process.exit(1);
 }
+
+// ===== C20: recordNewVacancy — inactive→active, active→inactive, state A→B =====
+section('C20: Realtime replacement — inactive→active same ID');
+window.IndiaMapData.reset();
+window.IndiaMapData.recordNewVacancy({
+  Vacancy_ID: 'R1', state_abbr: 'KA', district: 'Bangalore',
+  Last_Date_To_Apply: '2000-01-01', location_scope: 'district'
+});
+assert(window.IndiaMapData.getStateCount('KA') === 0, 'Inactive record does not count');
+window.IndiaMapData.recordNewVacancy({
+  Vacancy_ID: 'R1', state_abbr: 'KA', district: 'Bangalore',
+  Last_Date_To_Apply: '2099-01-01', location_scope: 'district'
+});
+assert(window.IndiaMapData.getStateCount('KA') === 1, 'inactive→active transition now counts');
+
+section('C20: Realtime replacement — active→inactive same ID');
+window.IndiaMapData.recordNewVacancy({
+  Vacancy_ID: 'R1', state_abbr: 'KA', district: 'Bangalore',
+  Last_Date_To_Apply: '2000-01-01', location_scope: 'district'
+});
+assert(window.IndiaMapData.getStateCount('KA') === 0, 'active→inactive transition decrements count');
+
+section('C20: Realtime replacement — state A→B');
+window.IndiaMapData.recordNewVacancy({
+  Vacancy_ID: 'R2', state_abbr: 'MH', district: 'Pune',
+  Last_Date_To_Apply: '2099-01-01', location_scope: 'district'
+});
+assert(window.IndiaMapData.getStateCount('MH') === 1, 'State A has 1');
+assert(window.IndiaMapData.getStateCount('KA') === 0, 'State B has 0');
+window.IndiaMapData.recordNewVacancy({
+  Vacancy_ID: 'R2', state_abbr: 'KA', district: 'Bangalore',
+  Last_Date_To_Apply: '2099-01-01', location_scope: 'district'
+});
+assert(window.IndiaMapData.getStateCount('MH') === 0, 'State A decremented to 0');
+assert(window.IndiaMapData.getStateCount('KA') === 1, 'State B incremented to 1');
+
+section('C20: Counters never negative');
+window.IndiaMapData.recordNewVacancy({
+  Vacancy_ID: 'R3', state_abbr: 'MH', district: 'Pune',
+  Last_Date_To_Apply: '2099-01-01', location_scope: 'nationwide'
+});
+assert(window.IndiaMapData.getNationwideCount() === 1, 'Nationwide count 1');
+window.IndiaMapData.recordNewVacancy({
+  Vacancy_ID: 'R3', state_abbr: 'MH', district: 'Pune',
+  Last_Date_To_Apply: '2099-01-01', location_scope: 'nationwide'
+});
+assert(window.IndiaMapData.getNationwideCount() === 1, 'Nationwide count stays 1 (no negative)');
+assert(window.IndiaMapData.getStateCount('MH') === 0, 'State MH stays 0 after nationwide dedup');
+
+// ===== C23: State-ID adapter correctness =====
+section('C23: State adapter — known abbreviations');
+const norm23a = window.IndiaMapData.normaliseVacancy({ Vacancy_ID: 'X1', Location_State: 'Chhattisgarh', Last_Date_To_Apply: '2099-01-01' });
+assert(norm23a && norm23a.state_abbr === 'CG', `Chhattisgarh → CG (got: ${norm23a?.state_abbr})`);
+
+const norm23b = window.IndiaMapData.normaliseVacancy({ Vacancy_ID: 'X2', Location_State: 'Dadra and Nagar Haveli and Daman and Diu', Last_Date_To_Apply: '2099-01-01' });
+assert(norm23b && norm23b.state_abbr === 'DNH', `DNHDD → DNH (got: ${norm23b?.state_abbr})`);
+
+const norm23c = window.IndiaMapData.normaliseVacancy({ Vacancy_ID: 'X3', Location_State: 'Uttarakhand', Last_Date_To_Apply: '2099-01-01' });
+assert(norm23c && norm23c.state_abbr === 'UK', `Uttarakhand → UK (got: ${norm23c?.state_abbr})`);
+
+const norm23d = window.IndiaMapData.normaliseVacancy({ Vacancy_ID: 'X4', Location_State: 'Ladakh', Last_Date_To_Apply: '2099-01-01' });
+assert(norm23d && norm23d.state_abbr === 'LA', `Ladakh → LA (got: ${norm23d?.state_abbr})`);
+
+const norm23e = window.IndiaMapData.normaliseVacancy({ Vacancy_ID: 'X5', Location_State: 'Andaman and Nicobar Islands', Last_Date_To_Apply: '2099-01-01' });
+assert(norm23e && norm23e.state_abbr === 'AN', `Andaman → AN (got: ${norm23e?.state_abbr})`);
+
+section('C23: State adapter — unknown / invalid');
+const bad23 = window.IndiaMapData.normaliseVacancy({ Vacancy_ID: 'X6', Location_State: 'Unknown State', Last_Date_To_Apply: '2099-01-01' });
+assert(bad23 && bad23.state_abbr === '', `Unknown state → empty abbr (got: '${bad23?.state_abbr}')`);
+
+const invalidPre = window.IndiaMapData.normaliseVacancy({ Vacancy_ID: 'X7', Location_State: 'MH', Last_Date_To_Apply: '2099-01-01', state_abbr: 'XX' });
+assert(invalidPre && invalidPre.state_abbr === '', `Invalid pre-set abbr XX → empty (got: '${invalidPre?.state_abbr}')`);
+
+const validPre = window.IndiaMapData.normaliseVacancy({ Vacancy_ID: 'X8', Location_State: '', Last_Date_To_Apply: '2099-01-01', state_abbr: 'DL' });
+assert(validPre && validPre.state_abbr === 'DL', `Valid pre-set abbr DL preserved (got: '${validPre?.state_abbr}')`);
+
+section('C23: Delhi exact mapping');
+const delhiNew = window.IndiaMapData.normaliseVacancy({ Vacancy_ID: 'D1', Location_State: 'Delhi', Location_City: 'New Delhi', Last_Date_To_Apply: '2099-01-01' });
+assert(delhiNew && delhiNew.district === 'New Delhi', `"New Delhi" city → New Delhi district (got: '${delhiNew?.district}')`);
+
+const delhiGeneric = window.IndiaMapData.normaliseVacancy({ Vacancy_ID: 'D2', Location_State: 'Delhi', Location_City: 'Delhi', Last_Date_To_Apply: '2099-01-01' });
+assert(delhiGeneric && delhiGeneric.district === '', `Generic "Delhi" → no district (got: '${delhiGeneric?.district}')`);
