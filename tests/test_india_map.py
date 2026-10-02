@@ -132,10 +132,24 @@ def _inject_fixtures(page: Page, vacancies: list[dict], states: list[dict], dist
             }},
             getFiltered: (a, opts) => {{
                 const cat = opts && opts.category;
+                // Compute category per-vacancy matching production deriveCategory
+                const getCat = (v) => {{
+                    const fa = String(v.Functional_Area || v.functional_area || '').toLowerCase();
+                    const title = String(v.Post_Name || v.title || '').toLowerCase();
+                    const combined = fa + ' ' + title;
+                    const eduKws = ['teach', 'faculty', 'professor', 'lecturer', 'education', 'academic',
+                      'institute', 'university', 'college', 'school', 'research fellow', 'scholar'];
+                    const funcKws = ['account', 'finance', 'admin', 'steno', 'secretary', 'clerk', 'assistant',
+                      'officer', 'manager', 'supervisor', 'inspector', 'audit', 'legal', 'it ', 'tech ',
+                      'engineer', 'programmer', 'analyst', 'translator', ' hindi', 'stenography'];
+                    for (const kw of eduKws) {{ if (combined.includes(kw)) return 'Education'; }}
+                    for (const kw of funcKws) {{ if (combined.includes(kw)) return 'Functional'; }}
+                    return 'General';
+                }};
                 return {json.dumps(vacancies)}.filter(v => {{
                     if (v.status !== 'Active') return false;
                     if (a && v.state_abbr !== a) return false;
-                    if (cat && v.category !== cat) return false;
+                    if (cat && getCat(v) !== cat) return false;
                     return true;
                 }});
             }},
@@ -409,11 +423,8 @@ class TestFilters:
         page.wait_for_selector("#mapCounterValue", timeout=10000)
         page.wait_for_timeout(2000)
         all_count = int(page.locator("#mapCounterValue").inner_text().replace(",", ""))
-        # All = 7 (no Functional in MH or others? Let's count:
-        # M1 = Education, M2 = Functional, M3 = General, K1 = Functional (IT), T1 = General (Research), DL1 = Functional, CG1 = General
-        # Functional: M2, K1, DL1 = 3
-        # Education: M1 = 1
-        # General: M3, T1, CG1 = 3
+        # 7 vacancies: M1=Education, M2=Functional, M3=General, K1=Functional,
+        # T1=Education, DL1=Functional, CG1=General
         assert all_count == 7, f"All filter should be 7, got {all_count}"
 
     def test_functional_filter_label_count(self, page: Page, base_url: str, all_36_states_fixture):
@@ -423,6 +434,7 @@ class TestFilters:
         page.click(".map-filter-btn[data-filter='functional']")
         page.wait_for_timeout(300)
         n = int(page.locator("#mapCounterValue").inner_text().replace(",", ""))
+        # Functional: M2, K1, DL1 = 3
         assert n == 3, f"Functional filter should be 3, got {n}"
 
     def test_education_filter_label_count(self, page: Page, base_url: str, all_36_states_fixture):
@@ -432,7 +444,8 @@ class TestFilters:
         page.click(".map-filter-btn[data-filter='education']")
         page.wait_for_timeout(300)
         n = int(page.locator("#mapCounterValue").inner_text().replace(",", ""))
-        assert n == 1, f"Education filter should be 1, got {n}"
+        # Education: M1 (Assistant Professor → professor keyword), T1 (Research Fellow → research fellow keyword) = 2
+        assert n == 2, f"Education filter should be 2, got {n}"
 
     def test_aria_pressed(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
