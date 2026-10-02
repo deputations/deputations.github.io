@@ -1731,6 +1731,10 @@
     };
   };
 
+  // Test hook: expose navigateToState so tests can drive navigation without
+  // relying on SVG click timing.
+  window._navigateToState = navigateToState;
+
   // ===== GPU acceleration class =====
   // .ad-gpu is toggled per-element on hover (in renderNational / renderState)
   // to avoid 36+ elements always carrying will-change.
