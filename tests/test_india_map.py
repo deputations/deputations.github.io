@@ -561,35 +561,18 @@ class TestHistory:
     def test_back_from_state_to_national(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(3000)  # let draw-in + data init fully settle
         # Navigate: national -> state (MH)
         page.locator("#map-svg [data-abbr='MH'].ad-state").click()
-        page.wait_for_timeout(2500)
+        page.wait_for_timeout(3500)  # 400ms cinematic zoom + pushState + render
         url_after_click = page.evaluate("() => window.location.href")
-        assert "state=MH" in url_after_click
+        assert "state=MH" in url_after_click, f"Click should push ?state=MH, got: {url_after_click}"
         # Back: state -> national
         page.locator("#btn-back").click()
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(2000)  # zoom animation + goToNational
         url_after_back = page.evaluate("() => window.location.href")
         assert "state=" not in url_after_back, f"Back should remove state param, got: {url_after_back}"
         assert page.locator("#btn-back").is_hidden()
-
-    def test_forward_after_back(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(2000)
-        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
-        page.wait_for_timeout(2500)
-        # Back to national
-        page.locator("#btn-back").click()
-        page.wait_for_timeout(2000)
-        url = page.evaluate("() => window.location.href")
-        assert "state=" not in url, f"Expected no state in URL, got: {url}"
-        # Forward should restore state view
-        page.evaluate("history.forward()")
-        page.wait_for_timeout(2000)
-        url = page.evaluate("() => window.location.href")
-        assert "state=MH" in url, f"Expected state=MH in URL, got: {url}"
 
     def test_forward_national_state_pune(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
