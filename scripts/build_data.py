@@ -87,10 +87,29 @@ def parse_level_value(value: Any) -> int | None:
     return int(match.group(1))
 
 
+_ISO_DATE_RX = re.compile(r"^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ].*)?$")
+
+
 def parse_date(value: Any) -> str:
+    """Normalise a date to ISO yyyy-mm-dd.
+
+    ISO input (what Supabase stores) is read as year-month-day, explicitly.
+    It must NOT go through dateutil with dayfirst=True: that swaps month and
+    day on ISO strings whenever the day is <= 12 ("2026-10-05" → 10 May), so
+    every date on the 1st–12th of a month came out wrong in
+    data/vacancies.json — and validate_and_fix_row_dates() then "repaired" the
+    resulting impossible orderings by swapping ND and LD, turning open
+    vacancies into expired ones. Only non-ISO input (the legacy Google Sheet's
+    DD-MM-YYYY / free text) uses the day-first fuzzy parser."""
     text = safe_str(value)
     if not text:
         return ""
+    m = _ISO_DATE_RX.match(text)
+    if m:
+        try:
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3))).isoformat()
+        except ValueError:
+            return text
     try:
         dt = date_parser.parse(text, dayfirst=True, fuzzy=True)
         return dt.date().isoformat()
