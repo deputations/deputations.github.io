@@ -33,7 +33,18 @@
   let gestureState = null;
   let panState = null;
 
-  const ABBR_TO_CODE = { 'JK':'01','HP':'02','PB':'03','CH':'04','UT':'05','HR':'06','DL':'07','RJ':'08','UP':'09','BR':'10','SK':'11','AR':'12','NL':'13','MN':'14','MZ':'15','TR':'16','ML':'17','AS':'18','WB':'19','JH':'20','OD':'21','CG':'22','MP':'23','GJ':'24','DD':'25','DN':'26','MH':'27','AP':'28','KA':'29','GA':'30','LD':'31','KL':'32','TN':'33','PY':'34','AN':'35','TS':'36','LA':'38' };
+  // State abbreviation → Census st_code(s).
+  // Single entry = scalar string; multi-entry (DNH) = array of codes
+  // to cover districts that share or split across legacy codes.
+  const ABBR_TO_CODE_MAP = {
+    'JK':'01','HP':'02','PB':'03','CH':'04','UK':'05','HR':'06','DL':'07',
+    'RJ':'08','UP':'09','BR':'10','SK':'11','AR':'12','NL':'13','MN':'14',
+    'MZ':'15','TR':'16','ML':'17','AS':'18','WB':'19','JH':'20','OD':'21',
+    'CG':'22','MP':'23','GJ':'24','DD':'25','DN':'25','DNH':['25','26'],
+    'MH':'27','AP':'28','KA':'29','GA':'30','LD':'31','KL':'32','TN':'33',
+    'PY':'34','AN':'35','TS':'36','LA':'38'
+  };
+  function getCodes(abbr) { return ABBR_TO_CODE_MAP[abbr] || []; }
 
   const STATE_ABBR = {
     'Andaman and Nicobar':'AN','Andhra Pradesh':'AP','Arunachal Pradesh':'AR','Assam':'AS',
@@ -533,8 +544,8 @@
     if (!svg) return;
     const vb = svg.viewBox.baseVal;
 
-    const code = ABBR_TO_CODE[abbr] || abbr;
-    const feats = (districtsGeo?.features || []).filter(f => f.properties.st_code === code);
+    const codes = getCodes(abbr);
+    const feats = (districtsGeo?.features || []).filter(f => codes.includes(f.properties.st_code));
     let cx = 500, cy = 400;
     if (feats.length) {
       const all = feats.flatMap(f => f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates.flat().flat() : f.geometry.coordinates[0]);
@@ -964,30 +975,59 @@
     vb.x = 0; vb.y = 0; vb.width = 1000; vb.height = 800;
   }
 
-  // ----- Back button (C18: delegates to history for URL sync) -----
+  // ----- Back button -----
+  // QA-P2-01: only call history.back() when the current route has an
+  // in-map parent (hasMapParent=true). For deep-linked direct entries
+  // (hasMapParent=false), navigate forward to the national URL instead.
   async function goBack() {
-    if (viewMode === 'state') {
-      history.back(); // triggers popstate → goToView
-      return;
-    } else if (viewMode === 'district') {
+    const entry = history.state || {};
+    if (viewMode === 'district') {
+      // District → close modal first (no history mutation)
       const m = document.getElementById('modal');
       if (m) m.close?.();
-      // After close, the close handler on the modal will restore focus.
-      // Fall back to the state view if district → state navigation needed.
-      history.back(); // pops district → triggers popstate
+      // restoreStateFromDistrictClose already ran via the close handler,
+      // setting viewMode='state'. Now pop the district history entry.
+      history.back();
+      return;
+    }
+    if (viewMode === 'state') {
+      if (entry.hasMapParent === false) {
+        // Direct deep link to state: navigate forward to national URL
+        await goToNational();
+        history.replaceState(
+          makeRoute('national', null, null, false),
+          '', location.pathname
+        );
+      } else {
+        history.back();
+      }
       return;
     }
   }
 
-  // ===== History / Deep linking (C18) =====
-  let _popstateGuard = false;
+  // ===== History / Deep linking =====
+  // Coherent routing contract: structured history state with hasMapParent
+  // — initial national load: replaceState, no parent
+  // — user National→State: one pushState
+  // — user State→District: one pushState
+  // — direct state deep link: replaceState, no duplicate push
+  // — direct district deep link: replaceState, no duplicate push
+  // — popstate: render only, never push
+  // — modal close: return to existing parent state, no extra history mutation
+  // — route-driven modal close: guard against recursive history mutation
+
+  function makeRoute(view, state, district, hasMapParent) {
+    return { mapRoute: true, view, state: state || null, district: district || null, hasMapParent };
+  }
 
   // One clear navigation path: user click → push exactly one entry.
-  // popstate → render only, never push. deep-link → replace current entry.
   async function navigateToState(stateAbbr) {
     const name = ABBR_TO_NAME[stateAbbr] || stateAbbr;
     await drillToState(stateAbbr, name);
-    history.pushState({ view: 'state', state: stateAbbr, district: null }, '', `?state=${stateAbbr}`);
+    history.pushState(
+      makeRoute('state', stateAbbr, null, true),
+      '', `?state=${stateAbbr}`
+    );
   }
 
   async function navigateToDistrict(stateAbbr, districtName) {
@@ -996,8 +1036,10 @@
       await drillToState(stateAbbr, ABBR_TO_NAME[stateAbbr] || stateAbbr);
     }
     openDistrictModal(stateAbbr, districtName);
-    history.pushState({ view: 'district', state: stateAbbr, district: districtName }, '',
-      `?state=${stateAbbr}&district=${encodeURIComponent(districtName)}`);
+    history.pushState(
+      makeRoute('district', stateAbbr, districtName, true),
+      '', `?state=${stateAbbr}&district=${encodeURIComponent(districtName)}`
+    );
   }
 
   // Render from URL/history state only — never pushes
@@ -1089,17 +1131,33 @@
   }
 
   function onPopState(e) {
-    if (_popstateGuard) return;
     const params = new URLSearchParams(location.search);
     const urlAbbr = (params.get('state') || '').toUpperCase();
     const urlDistrict = params.get('district') || '';
     const validAbbr = urlAbbr && (ABBR_TO_NAME[urlAbbr] || false) ? urlAbbr : null;
 
+    // QA-P1-02: Browser Back from district → state. The current history
+    // entry is the state entry. Close modal, set viewMode='state',
+    // selectedDistrict=null. Do NOT push or replace — URL already correct.
+    if (validAbbr && !urlDistrict) {
+      const modal = document.getElementById('modal');
+      if (modal) { try { modal.close(); } catch(e) {} }
+      selectedDistrict = null;
+      viewMode = 'state';
+      if (selectedAbbr !== validAbbr) {
+        // Rare: direct district deep-link back to different state
+        renderRouteFromURL(validAbbr, null);
+      }
+      return;
+    }
+    if (validAbbr && urlDistrict) {
+      renderRouteFromURL(validAbbr, urlDistrict);
+      return;
+    }
     if (!validAbbr && viewMode !== 'national') {
       goToNational();
       return;
     }
-    goToView(validAbbr, urlDistrict || null, true);
   }
 
   async function goToNational() {
@@ -1185,8 +1243,8 @@
     // Wire popstate handler (C18)
     window.addEventListener('popstate', onPopState);
 
-    // Deep-link handler (C18: support both state and district)
-    // BLOCKER 9: use replace=true so initial load produces exactly one history entry
+    // Deep-link handler: support both state and district
+    // Direct entry: hasMapParent=false (in-app Back navigates forward to national)
     const urlParams = new URLSearchParams(location.search);
     const deepState = urlParams.get('state');
     const deepDistrict = urlParams.get('district');
@@ -1196,7 +1254,10 @@
         const params = deepDistrict
           ? `?state=${abbr}&district=${encodeURIComponent(deepDistrict)}`
           : `?state=${abbr}`;
-        history.replaceState({ view: deepDistrict ? 'district' : 'state', state: abbr, district: deepDistrict || null }, '', params);
+        history.replaceState(
+          makeRoute(deepDistrict ? 'district' : 'state', abbr, deepDistrict || null, false),
+          '', params
+        );
         const doDrill = () => {
           const d = deepDistrict ? decodeURIComponent(deepDistrict) : null;
           renderRouteFromURL(abbr, d);
@@ -1210,7 +1271,7 @@
         }
       }
     } else {
-      history.replaceState({ view: 'national', state: null, district: null }, '', location.pathname);
+      history.replaceState(makeRoute('national', null, null, false), '', location.pathname);
     }
 
     // Subscribe to Supabase Realtime for live vacancy inserts
@@ -1246,12 +1307,14 @@
     }
 
     // BLOCKER 4: helper — when district modal closes, return view to state route
+    // QA-P1-01: do NOT replace the district history entry. The existing state
+    // entry is already below this district entry in the stack. Just update
+    // internal view state — Back navigation will reach the state entry naturally.
     function restoreStateFromDistrictClose() {
       if (viewMode === 'district' && selectedAbbr) {
         viewMode = 'state';
         selectedDistrict = null;
-        // Update URL to reflect we're on state view (replace current entry)
-        history.replaceState({ view: 'state', state: selectedAbbr, district: null }, '', `?state=${selectedAbbr}`);
+        // No history mutation
       }
     }
 

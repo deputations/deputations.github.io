@@ -810,3 +810,223 @@ class TestKeyboard:
         page.keyboard.press("Escape")
         page.wait_for_timeout(500)
         assert page.locator("#modal").evaluate("el => el.open") is False
+
+
+# ---------------------------------------------------------------------------
+# QA-P0-01: Uttarakhand and DNH district mapping
+# QA-P1-01: Modal close does not duplicate state history entry
+# QA-P1-02: Browser Back leaves modal closed, stays on state
+# QA-P2-01/P2-02: In-app Back to India for deep links, no duplicate route
+# ---------------------------------------------------------------------------
+
+class TestQAP001_DistrictMapping:
+    """QA-P0-01: UK uses st_code 05, DNH uses st_code 26 — both render districts."""
+
+    def test_uttarakhand_districts_render(self, page: Page, base_url: str, all_36_states_fixture):
+        page.goto(f"{base_url}/india-map.html")
+        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
+        page.wait_for_timeout(3000)
+        page.locator("#map-svg [data-abbr='UK'].ad-state").click()
+        page.wait_for_timeout(2500)
+        # District paths should appear
+        districts = page.locator("#map-svg .ad-district").count()
+        assert districts > 0, f"UK should have district paths, got {districts}"
+        # Count label should show non-zero
+        count = page.locator("#map-svg .ad-state-count[data-for='UK']").inner_text().strip()
+        assert int(count) > 0, f"UK count should be > 0, got '{count}'"
+
+    def test_dnh_districts_render(self, page: Page, base_url: str, all_36_states_fixture):
+        page.goto(f"{base_url}/india-map.html")
+        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
+        page.wait_for_timeout(3000)
+        page.locator("#map-svg [data-abbr='DNH'].ad-state").click()
+        page.wait_for_timeout(2500)
+        districts = page.locator("#map-svg .ad-district").count()
+        assert districts > 0, f"DNH should have district paths, got {districts}"
+
+
+class TestQAP001_NavigationRouting:
+    """QA-P1-01: Modal close returns to state without duplicate route."""
+
+    def test_escape_then_back_to_national(self, page: Page, base_url: str, all_36_states_fixture):
+        """MH → Pune → Escape → one Back to India → National."""
+        page.goto(f"{base_url}/india-map.html")
+        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
+        page.wait_for_timeout(3000)
+        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
+        page.wait_for_timeout(2500)
+        page.locator("#map-svg [data-district='Pune'].ad-district").click()
+        page.wait_for_timeout(700)
+        assert page.locator("#modal").evaluate("el => el.open") is True
+        # Close via Escape
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(500)
+        assert page.locator("#modal").evaluate("el => el.open") is False
+        # Modal closed, view should be state view (not district)
+        assert page.evaluate("() => window.selectedDistrict") is None
+        # Now Back to national
+        page.locator("#btn-back").click()
+        page.wait_for_timeout(1500)
+        # One back should land on national — URL should have no state param
+        url = page.evaluate("() => window.location.href")
+        assert "state=" not in url, f"Back from state should go to national, got {url}"
+
+    def test_modal_close_button_then_back(self, page: Page, base_url: str, all_36_states_fixture):
+        """MH → Pune → modal close button → one Back to India → National."""
+        page.goto(f"{base_url}/india-map.html")
+        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
+        page.wait_for_timeout(3000)
+        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
+        page.wait_for_timeout(2500)
+        page.locator("#map-svg [data-district='Pune'].ad-district").click()
+        page.wait_for_timeout(700)
+        assert page.locator("#modal").evaluate("el => el.open") is True
+        # Close via button
+        modal_close = page.locator("#modal .map-modal-close")
+        if modal_close.count() > 0:
+            modal_close.click()
+        else:
+            page.keyboard.press("Escape")
+        page.wait_for_timeout(500)
+        assert page.locator("#modal").evaluate("el => el.open") is False
+        # Back should land on national in one step
+        page.locator("#btn-back").click()
+        page.wait_for_timeout(1500)
+        url = page.evaluate("() => window.location.href")
+        assert "state=" not in url, f"Back should go to national, got {url}"
+
+    def test_no_duplicate_route_after_modal_close(self, page: Page, base_url: str, all_36_states_fixture):
+        """Closing modal must not add a duplicate state entry in history."""
+        page.goto(f"{base_url}/india-map.html")
+        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
+        page.wait_for_timeout(3000)
+        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
+        page.wait_for_timeout(2500)
+        page.locator("#map-svg [data-district='Pune'].ad-district").click()
+        page.wait_for_timeout(700)
+        assert page.locator("#modal").evaluate("el => el.open") is True
+        # Close modal
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(500)
+        # Forward should still work (no duplicate state entry inserted)
+        page.go_forward()
+        page.wait_for_timeout(700)
+        # After forward, district should be open again (restored from history)
+        assert page.locator("#modal").evaluate("el => el.open") is True
+
+
+class TestQAP002_BrowserBackRouting:
+    """QA-P1-02 + QA-P2-01 + QA-P2-02: Browser Back behavior with deep links."""
+
+    def test_browser_back_from_district(self, page: Page, base_url: str, all_36_states_fixture):
+        """MH → Pune → Browser Back → MH with modal closed → Back → National."""
+        page.goto(f"{base_url}/india-map.html")
+        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
+        page.wait_for_timeout(3000)
+        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
+        page.wait_for_timeout(2500)
+        page.locator("#map-svg [data-district='Pune'].ad-district").click()
+        page.wait_for_timeout(700)
+        assert page.evaluate("() => window.viewMode") == 'district'
+        # Browser Back: should go to state view, modal closed
+        page.go_back()
+        page.wait_for_timeout(1000)
+        assert page.evaluate("() => window.viewMode") == 'state', \
+            f"After back, viewMode should be 'state', got '{page.evaluate('() => window.viewMode')}'"
+        assert page.evaluate("() => window.selectedDistrict") is None
+        assert page.locator("#modal").evaluate("el => el.open") is False
+        # URL should have state=MH but no district
+        url = page.evaluate("() => window.location.href")
+        assert "state=MH" in url, f"URL should have state=MH: {url}"
+        assert "district=" not in url, f"URL should not have district: {url}"
+        # Browser Back again → national
+        page.go_back()
+        page.wait_for_timeout(1500)
+        url = page.evaluate("() => window.location.href")
+        assert "state=" not in url, f"Second back should go to national: {url}"
+
+    def test_browser_forward_restores_district(self, page: Page, base_url: str, all_36_states_fixture):
+        """Forward after Back from district restores the district modal."""
+        page.goto(f"{base_url}/india-map.html")
+        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
+        page.wait_for_timeout(3000)
+        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
+        page.wait_for_timeout(2500)
+        page.locator("#map-svg [data-district='Pune'].ad-district").click()
+        page.wait_for_timeout(700)
+        # Back to state
+        page.go_back()
+        page.wait_for_timeout(1000)
+        # Forward should restore district
+        page.go_forward()
+        page.wait_for_timeout(1000)
+        assert page.evaluate("() => window.viewMode") == 'district'
+
+
+class TestQAP002_DeepLinkBack:
+    """QA-P2-01/P2-02: In-app Back from deep-linked direct entries."""
+
+    def test_deep_link_state_back_to_national(self, page: Page, base_url: str, all_36_states_fixture):
+        """Direct ?state=MH → Back to India → National."""
+        page.goto(f"{base_url}/india-map.html?state=MH")
+        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
+        page.wait_for_timeout(4000)
+        assert "state=MH" in page.url
+        # In-app Back should navigate forward to national
+        page.locator("#btn-back").click()
+        page.wait_for_timeout(1000)
+        url = page.evaluate("() => window.location.href")
+        assert "india-map.html" in url, f"Should stay on india-map page: {url}"
+        assert "state=" not in url, f"Back from direct state should remove state param: {url}"
+
+    def test_deep_link_district_close_then_back(self, page: Page, base_url: str, all_36_states_fixture):
+        """Direct ?state=MH&district=Pune → close modal → MH → Back to India → National."""
+        page.goto(f"{base_url}/india-map.html?state=MH&district=Pune")
+        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
+        page.wait_for_timeout(5000)
+        assert "state=MH" in page.url
+        assert "district=Pune" in page.url
+        assert page.locator("#modal").evaluate("el => el.open") is True
+        # Close modal → URL should be ?state=MH
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(500)
+        assert page.locator("#modal").evaluate("el => el.open") is False
+        url = page.evaluate("() => window.location.href")
+        assert "state=MH" in url, f"After modal close URL should have state=MH: {url}"
+        assert "district=" not in url, f"After modal close URL should not have district: {url}"
+        # Back to India → National
+        page.locator("#btn-back").click()
+        page.wait_for_timeout(1000)
+        url = page.evaluate("() => window.location.href")
+        assert "state=" not in url, f"Back to India should remove state param: {url}"
+        assert "india-map.html" in url, f"Should stay on india-map page: {url}"
+
+
+class TestQAP003_DelhiRouting:
+    """Delhi follows the same routing semantics as other states."""
+
+    def test_delhi_back_forward(self, page: Page, base_url: str, all_36_states_fixture):
+        """National → DL → New Delhi → Escape → Back to DL → Back to National."""
+        page.goto(f"{base_url}/india-map.html")
+        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
+        page.wait_for_timeout(3000)
+        # Click Delhi
+        page.evaluate("""() => {
+            const dl = document.querySelector('#map-svg [data-abbr="DL"].ad-state');
+            if (dl) dl.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+        }""")
+        page.wait_for_selector(".ad-delhi-hotspot", timeout=10000)
+        page.wait_for_timeout(500)
+        # Click New Delhi hotspot
+        page.locator('.ad-delhi-hotspot[data-district="New Delhi"]').click()
+        page.wait_for_timeout(500)
+        assert page.locator("#modal").evaluate("el => el.open") is True
+        # Escape closes modal
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(500)
+        assert page.locator("#modal").evaluate("el => el.open") is False
+        # Back → national
+        page.locator("#btn-back").click()
+        page.wait_for_timeout(1500)
+        url = page.evaluate("() => window.location.href")
+        assert "state=" not in url, f"Back from Delhi should go to national: {url}"
