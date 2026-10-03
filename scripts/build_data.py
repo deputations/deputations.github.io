@@ -584,7 +584,7 @@ def transform_rows(rows: list[dict[str, str]]) -> tuple[list[dict[str, Any]], in
             safe_str(x.get("Post_Name", "")).lower(),
         )
     )
-    return transformed
+    return transformed, date_fixes
 
 
 def build_filters(vacancies: list[dict[str, Any]]) -> dict[str, Any]:

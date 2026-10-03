@@ -529,21 +529,6 @@ function loadDataFromJSON() {
 // SSL interceptors, and (c) Supabase REST is cross-origin and frequently
 // fails on NIC networks with ERR_SSL_PROTOCOL_ERROR. Both paths run through
 // the shared enrich.js so the rendered records have identical derived fields.
-// Newest updated_at among the approved (user-visible) rows of the Supabase
-// vacancies table, captured by fetchVacancies when the live fetch succeeds.
-// Drives the footer "Updated <date>"; null when Supabase is unreachable.
-let liveVacanciesUpdatedAt = null;
-
-// Latest updated_at (falling back to created_at) across rows, as a Date.
-function latestRowTimestamp(rows) {
-    let latest = null;
-    rows.forEach(r => {
-        const d = new Date((r && (r.updated_at || r.created_at)) || '');
-        if (!Number.isNaN(d.getTime()) && (!latest || d > latest)) latest = d;
-    });
-    return latest;
-}
-
 function fetchVacancies() {
     const enrich = (rows) =>
         (window.DepEnrich ? window.DepEnrich.enrichAll(rows) : rows);
@@ -581,7 +566,6 @@ function fetchVacancies() {
 
     return Promise.all([jsonPromise, sbPromise]).then(([jsonRows, sbRows]) => {
         const json = Array.isArray(jsonRows) ? jsonRows : [];
-        liveVacanciesUpdatedAt = Array.isArray(sbRows) ? latestRowTimestamp(sbRows) : null;
         // build_data.py fills most derived fields at cron time, but two fields
         // are NOT computed there: Region (left blank by the source spreadsheet,
         // expected to be derived from Location_State) and eligibility_tiers
@@ -670,14 +654,14 @@ function loadMeta() {
         .catch(() => null);
 }
 
-// "Updated <date>" in the footer — when the vacancies users see last changed:
-// the newest updated_at in the live Supabase vacancies table, else the same
-// value recorded by the daily build (meta.vacancies_updated_at_utc), else the
-// build time itself. Self-contained (no dependency on the nested date helpers)
-// so it can run from the top-level load flow.
+// "Updated <date>" in the footer — when the vacancies users see last changed.
+// Read only from the static data/meta.json: the daily build (which runs off
+// the NIC network) records the newest updated_at of the approved rows as
+// vacancies_updated_at_utc, so no Supabase call is needed here. Older meta
+// files without it fall back to the build time. Self-contained (no dependency
+// on the nested date helpers) so it can run from the top-level load flow.
 function setDataUpdated(meta) {
     const candidates = [
-        liveVacanciesUpdatedAt,
         meta && meta.vacancies_updated_at_utc,
         meta && meta.generated_at_utc,
     ];
