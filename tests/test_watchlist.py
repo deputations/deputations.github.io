@@ -87,44 +87,35 @@ def _force_supabase_offline(page):
 
 
 def _seed_active_ids(count: int = 2) -> str:
-    """Return a JS snippet that seeds `localStorage` with real Vacancy_IDs
-    from `data/vacancies.json` that are also visible in the rendered table
-    (the default Status=Active filter).
+    """Return a JS snippet that seeds `localStorage` with the Vacancy_IDs of
+    the first `count` rows currently rendered in the table (the default
+    Status=Active filter, first page).
 
-    Reconciliation (`reconcileWatchlistWithData`) silently drops any ID
-    it can't find in `rawData`, AND pagination means even valid IDs may
-    not be in the rendered table's first page. We need IDs that survive
-    BOTH gates: present in the JSON AND rendered in row 1+ of the table.
+    Reconciliation (`reconcileWatchlistWithData`) silently drops any ID it
+    can't find in `rawData`, AND pagination / the Active filter mean even
+    valid IDs may not be in the rendered table. Reading the IDs off the live
+    DOM guarantees they survive BOTH gates. A hardcoded ID list used to live
+    here; it broke as soon as those vacancies' last dates passed (Status is
+    recomputed client-side from Last_Date_To_Apply), so the seeded rows fell
+    out of the Active view and no `.saved` button ever rendered.
 
-    Pick the last few rows from the rendered table after `wait_for_function`
-    waits for ≥10 rows. Hardcoding IDs is brittle, so this helper inspects
-    the live DOM via the page object passed in.
+    The snippet waits (up to 10s) for enough rows to render, then throws if
+    there still aren't `count` of them, so a genuinely empty table fails
+    loudly here rather than as a confusing timeout later.
     """
-    # IDs taken from the live dashboard at the time of writing, sorted by
-    # the default sort key. They are all ACTIVE in data/vacancies.json
-    # AND visible on the first page (10 rows) of the default view. If the
-    # data ever churns enough that these IDs disappear, the test will
-    # fail loudly with "no .saved buttons visible" — exactly the signal
-    # we'd want to catch a real-world breakage. This list is intentionally
-    # in render order so the test can locate saved buttons deterministically.
-    _known_first_page_ids = [
-        "R-2026-LX-034",        # row 1
-        "HA-2026-LX-025",       # row 2
-        "HA-2026-LX-024",       # row 3
-        "HA-2026-LX-023",       # row 4
-        "HA-2026-LX-026",       # row 5
-        "A-2026-L12-012",       # row 6
-        "A-2026-L12-013",       # row 7
-        "A-2026-L8-001",        # row 8
-        "A-2026-L11-002",       # row 9
-        "HAFW-2026-L12-0161",   # row 10
-    ]
-    _ids = _known_first_page_ids[:count]
-    _js_arr = "[" + ",".join(repr(i) for i in _ids) + "]"
     return (
-        "() => {"
-        f"  localStorage.setItem('deputationWatchlist', JSON.stringify({_js_arr}));"
+        "async () => {"
+        f"  const n = {int(count)};"
+        "  const sel = 'tr.clickable-row .table-heart-btn[data-id]';"
+        "  const t0 = Date.now();"
+        "  while (document.querySelectorAll(sel).length < n && Date.now() - t0 < 10000) {"
+        "    await new Promise(r => setTimeout(r, 100));"
+        "  }"
+        "  const ids = [...document.querySelectorAll(sel)].slice(0, n).map(b => b.dataset.id);"
+        "  if (ids.length < n) throw new Error(`expected ${n} rendered rows to seed, found ${ids.length}`);"
+        "  localStorage.setItem('deputationWatchlist', JSON.stringify(ids));"
         "  localStorage.setItem('deputation_bookmark_intro_seen', '1');"
+        "  return ids;"
         "}"
     )
 

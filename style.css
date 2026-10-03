@@ -2389,6 +2389,21 @@ select:disabled {
   .filters-sidebar.collapsed > :not(.mobile-filter-toggle) {
     display: none !important;
   }
+
+  /* Light theme: the dark navy gradient above paired with the light theme's
+     near-black --text-primary made the label unreadable. Use a light surface. */
+  [data-theme="light"] .mobile-filter-toggle {
+    background: linear-gradient(145deg, #ffffff, #eef6fb);
+    border-color: rgba(14, 165, 233, 0.30);
+    color: var(--text-primary);
+  }
+
+  [data-theme="light"] .mobile-filter-toggle:hover {
+    border-color: rgba(14, 165, 233, 0.50);
+    box-shadow:
+      0 0 0 1px rgba(14, 165, 233, 0.12),
+      0 8px 24px rgba(15, 23, 42, 0.12);
+  }
 }
 
 /* =========================

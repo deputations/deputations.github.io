@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -422,11 +422,13 @@ SUPABASE_TO_TITLE_MAP: dict[str, str] = {
 }
 
 
-def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> list[dict[str, str]]:
+def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> tuple[list[dict[str, str]], str | None]:
     """Read approved vacancies from Supabase REST. RLS already limits anon to
     status='approved' rows, so the anon key works. Returns rows in Title_Case
     shape (mapped from snake_case) plus a synthetic 'DRAFT / APPROVED' column
-    set to 'Approved ✅' so transform_rows() accepts them."""
+    set to 'Approved ✅' so transform_rows() accepts them, together with the
+    newest updated_at among those rows — i.e. when a live vacancy was last
+    added or edited (the footer's "Updated" date)."""
     api = supabase_url.rstrip("/") + "/rest/v1/vacancies"
     qs = "status=eq.approved&select=*&limit=1000"
     req = urllib.request.Request(
@@ -455,7 +457,39 @@ def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> list[dict[
         # infer_status() recomputes from days_left instead.
         row["Status"] = ""
         mapped.append(row)
-    return mapped
+    return mapped, latest_updated_at(sb_rows)
+
+
+def latest_updated_at(sb_rows: list[dict[str, Any]]) -> str | None:
+    """Newest updated_at (falling back to created_at) across raw Supabase rows,
+    as a UTC ISO-8601 string, or None when no row carries a parseable one."""
+    latest: datetime | None = None
+    for sb_row in sb_rows:
+        raw = sb_row.get("updated_at") or sb_row.get("created_at")
+        if not raw:
+            continue
+        try:
+            dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        if latest is None or dt > latest:
+            latest = dt
+    if latest is None:
+        return None
+    return latest.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def previous_vacancies_updated_at() -> str | None:
+    """vacancies_updated_at_utc from the meta.json currently on disk (the last
+    published build), or None if absent/unreadable."""
+    try:
+        with OUTPUT_META.open(encoding="utf-8") as f:
+            value = json.load(f).get("vacancies_updated_at_utc")
+    except (OSError, ValueError, AttributeError):
+        return None
+    return value if isinstance(value, str) and value else None
 
 
 def validate_required_columns(rows: list[dict[str, str]]) -> None:
@@ -562,7 +596,7 @@ def transform_rows(rows: list[dict[str, str]]) -> tuple[list[dict[str, Any]], in
             safe_str(x.get("Post_Name", "")).lower(),
         )
     )
-    return transformed
+    return transformed, date_fixes
 
 
 def build_filters(vacancies: list[dict[str, Any]]) -> dict[str, Any]:
@@ -614,9 +648,13 @@ def build_stats(vacancies: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def build_meta(vacancies: list[dict[str, Any]], filters: dict[str, Any], stats: dict[str, Any], source: str = "supabase_rest_api_via_anon_key") -> dict[str, Any]:
+def build_meta(vacancies: list[dict[str, Any]], filters: dict[str, Any], stats: dict[str, Any], source: str = "supabase_rest_api_via_anon_key", vacancies_updated_at: str | None = None) -> dict[str, Any]:
     return {
         "generated_at_utc": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        # When a user-visible vacancy was last added or edited (newest
+        # Supabase updated_at). Never the build time: a rebuild with no row
+        # changes must not move the footer's "Updated" date.
+        "vacancies_updated_at_utc": vacancies_updated_at,
         "record_count": len(vacancies),
         "active_count": stats["active_vacancies"],
         "inactive_count": stats["inactive_vacancies"],
@@ -743,12 +781,14 @@ def main() -> None:
 
     rows: list[dict[str, str]] = []
     source_used = "(none)"
+    vacancies_updated_at: str | None = None
 
     if supabase_url and supabase_anon_key:
         try:
-            sb_rows = fetch_supabase_rows(supabase_url, supabase_anon_key)
+            sb_rows, sb_updated_at = fetch_supabase_rows(supabase_url, supabase_anon_key)
             if sb_rows:
                 rows = sb_rows
+                vacancies_updated_at = sb_updated_at
                 source_used = f"Supabase ({len(sb_rows)} approved rows)"
             else:
                 print("Supabase returned 0 approved rows — falling back to Google Sheet.")
@@ -779,7 +819,12 @@ def main() -> None:
         if source_used.startswith("Supabase")
         else "private_google_sheet_via_sheets_api"
     )
-    meta = build_meta(vacancies, filters, stats, source=meta_source)
+    if not vacancies_updated_at:
+        # No row timestamps this run (Sheet fallback): keep the last known
+        # value rather than substituting the build time.
+        vacancies_updated_at = previous_vacancies_updated_at()
+    meta = build_meta(vacancies, filters, stats, source=meta_source,
+                      vacancies_updated_at=vacancies_updated_at)
 
     write_json(OUTPUT_VACANCIES, vacancies)
     write_json(OUTPUT_FILTERS, filters)

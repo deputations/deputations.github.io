@@ -654,12 +654,17 @@ function loadMeta() {
         .catch(() => null);
 }
 
-// "Updated <date>" chip in the results bar — the daily data-refresh date from
-// meta.generated_at_utc. Self-contained (no dependency on the nested date
-// helpers) so it can run from the top-level load flow.
+// "Updated <date>" in the footer — when a vacancy users can see was last
+// added or edited. Read only from the static data/meta.json: the daily build
+// (which runs off the NIC network) records the newest updated_at of the
+// approved rows as vacancies_updated_at_utc, so no Supabase call is needed
+// here. Deliberately never the build time (generated_at_utc): a rebuild with
+// no row changes must not move the date. Missing value → footer stays hidden.
+// Self-contained (no dependency on the nested date helpers) so it can run
+// from the top-level load flow.
 function setDataUpdated(meta) {
-    if (!meta || !meta.generated_at_utc) return;
-    const dt = new Date(meta.generated_at_utc);
+    if (!meta || !meta.vacancies_updated_at_utc) return;
+    const dt = new Date(meta.vacancies_updated_at_utc);
     if (Number.isNaN(dt.getTime())) return;
     const text = 'Updated ' + dt.toLocaleDateString('en-IN', {
         day: '2-digit', month: 'short', year: 'numeric'
