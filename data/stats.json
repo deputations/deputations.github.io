@@ -1,8 +1,8 @@
 {
   "total_vacancies": 1270,
-  "active_vacancies": 324,
-  "inactive_vacancies": 665,
-  "closing_soon_vacancies": 78,
+  "active_vacancies": 323,
+  "inactive_vacancies": 666,
+  "closing_soon_vacancies": 187,
   "delhi_ncr_vacancies": 392,
   "top_ministries": {
     "Finance": 291,
@@ -11,10 +11,10 @@
     "Education": 49,
     "Consumer Affairs, Food and Public Distribution": 43,
     "Agriculture and Farmers Welfare": 39,
-    "Corporate Affairs": 29,
     "Jal Shakti": 29,
-    "Housing and Urban Affairs": 27,
-    "": 27
+    "Corporate Affairs": 29,
+    "": 27,
+    "Housing and Urban Affairs": 27
   },
   "top_locations": {
     "New Delhi, Delhi": 327,
