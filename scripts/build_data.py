@@ -427,7 +427,8 @@ def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> tuple[list
     status='approved' rows, so the anon key works. Returns rows in Title_Case
     shape (mapped from snake_case) plus a synthetic 'DRAFT / APPROVED' column
     set to 'Approved ✅' so transform_rows() accepts them, together with the
-    newest updated_at among those rows (the footer's "Updated" date)."""
+    newest updated_at among those rows — i.e. when a live vacancy was last
+    added or edited (the footer's "Updated" date)."""
     api = supabase_url.rstrip("/") + "/rest/v1/vacancies"
     qs = "status=eq.approved&select=*&limit=1000"
     req = urllib.request.Request(
@@ -478,6 +479,17 @@ def latest_updated_at(sb_rows: list[dict[str, Any]]) -> str | None:
     if latest is None:
         return None
     return latest.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def previous_vacancies_updated_at() -> str | None:
+    """vacancies_updated_at_utc from the meta.json currently on disk (the last
+    published build), or None if absent/unreadable."""
+    try:
+        with OUTPUT_META.open(encoding="utf-8") as f:
+            value = json.load(f).get("vacancies_updated_at_utc")
+    except (OSError, ValueError, AttributeError):
+        return None
+    return value if isinstance(value, str) and value else None
 
 
 def validate_required_columns(rows: list[dict[str, str]]) -> None:
@@ -637,12 +649,12 @@ def build_stats(vacancies: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def build_meta(vacancies: list[dict[str, Any]], filters: dict[str, Any], stats: dict[str, Any], source: str = "supabase_rest_api_via_anon_key", vacancies_updated_at: str | None = None) -> dict[str, Any]:
-    generated_at = datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
     return {
-        "generated_at_utc": generated_at,
-        # When the user-visible vacancies last changed (newest Supabase
-        # updated_at); the build time when that is unknown (Sheet fallback).
-        "vacancies_updated_at_utc": vacancies_updated_at or generated_at,
+        "generated_at_utc": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        # When a user-visible vacancy was last added or edited (newest
+        # Supabase updated_at). Never the build time: a rebuild with no row
+        # changes must not move the footer's "Updated" date.
+        "vacancies_updated_at_utc": vacancies_updated_at,
         "record_count": len(vacancies),
         "active_count": stats["active_vacancies"],
         "inactive_count": stats["inactive_vacancies"],
@@ -807,6 +819,10 @@ def main() -> None:
         if source_used.startswith("Supabase")
         else "private_google_sheet_via_sheets_api"
     )
+    if not vacancies_updated_at:
+        # No row timestamps this run (Sheet fallback): keep the last known
+        # value rather than substituting the build time.
+        vacancies_updated_at = previous_vacancies_updated_at()
     meta = build_meta(vacancies, filters, stats, source=meta_source,
                       vacancies_updated_at=vacancies_updated_at)
 
