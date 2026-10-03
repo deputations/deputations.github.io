@@ -311,16 +311,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterMinistry = createSingleSelect(document.getElementById('filterMinistrySS'), {
       placeholder: 'All Ministries',
     });
-    // Organisation: value = the Organisation field as stored; shown as
+    // Organisation: one option per organisation, however its name was typed —
+    // "Central Water Commission" and "Central Water Commission (CWC)" are the
+    // same option (see orgKey()). The option value is that key; it's shown as
     // "Full Name (ACR)" on desktop and just the short form on mobile (both are
     // rendered, CSS picks one by width — see .org-full / .org-short).
-    // orgShortLabels is rebuilt from the data in populateFilters().
-    let orgShortLabels = {};
-    const orgFullLabel = (v) =>
-        (window.DepEnrich && window.DepEnrich.withAcronym) ? window.DepEnrich.withAcronym(v) : v;
-    const orgLabelHTML = (v) => {
-        const full = orgFullLabel(v);
-        const short = orgShortLabels[v];
+    // orgIndex is rebuilt from the data in populateFilters().
+    let orgIndex = { names: {}, short: {} };
+    const orgFullLabel = (key) => {
+        const name = orgIndex.names[key] || key;
+        return (window.DepEnrich && window.DepEnrich.withAcronym) ? window.DepEnrich.withAcronym(name) : name;
+    };
+    const orgLabelHTML = (key) => {
+        const full = orgFullLabel(key);
+        const short = orgIndex.short[key];
         if (!short || short === full) return escapeHtml(full);
         return `<span class="org-full">${escapeHtml(full)}</span><span class="org-short">${escapeHtml(short)}</span>`;
     };
@@ -328,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
       placeholder: 'All Organisations',
       multiPattern: (n) => `${n} organisations`,
       labelHTML: orgLabelHTML,
-      searchText: (v) => `${orgFullLabel(v)} ${orgShortLabels[v] || ''}`,
+      searchText: (key) => `${orgFullLabel(key)} ${orgIndex.short[key] || ''}`,
     });
     const filterOrgType = createSingleSelect(document.getElementById('filterOrgTypeSS'), {
       placeholder: 'All Types',
@@ -838,8 +842,8 @@ function hydrateFiltersFromUrl() {
           if (arr.length) filterLevel.__pendingValues = arr;
         }
         if (params.has('org')) {
-          const arr = params.getAll('org').map(s => s.trim()).filter(Boolean);
-          if (arr.length) filterOrganisation.__pendingValues = arr;
+          const arr = params.getAll('org').map(orgKey).filter(Boolean);
+          if (arr.length) filterOrganisation.__pendingValues = [...new Set(arr)];
         }
         if (params.has('location')) {
           const arr = (params.get('location') || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -1668,9 +1672,9 @@ function renderTable(data) {
         ));
 
         // ORGANISATION (multi-select) — A → Z by full name.
-        if (orgShortLabels.__forRows !== rawData) orgShortLabels = buildOrgShortLabels(rawData);
+        if (orgIndex.forRows !== rawData) orgIndex = buildOrgIndex(rawData);
         const orgCounts = withSelected(
-            tally(rowsExcluding('organisation'), i => safe(i.Organisation)), filterOrganisation.values);
+            tally(rowsExcluding('organisation'), i => orgKey(i.Organisation)), filterOrganisation.values);
         const orgs = Object.keys(orgCounts).sort((a, b) => orgFullLabel(a).localeCompare(orgFullLabel(b)));
         setItems(filterOrganisation, orgs, orgCounts);
 
@@ -2286,7 +2290,7 @@ function applyUrlParameters() {
 
     if (search && !matchesSearchCached(item, search, searchableText)) return false;
     if (levelSet && !levelSet.has(itemLevel)) return false;
-    if (orgSet && !orgSet.has(safe(item.Organisation))) return false;
+    if (orgSet && !orgSet.has(orgKey(item.Organisation))) return false;
     if (ministry && itemMinistry !== ministry) return false;
     if (orgType && safe(item.Organisation_Type) !== orgType) return false;
     if (region && safe(item.Region) !== region) return false;
@@ -2571,7 +2575,7 @@ function maybeShowBookmarkIntroToast() {
   });
   if (filterMinistry.value) chips.push(makeChip('ministry', `Ministry: ${escapeHtml(filterMinistry.value)}`));
   filterOrganisation.values.forEach(org => {
-    chips.push(makeChip(`org:${org}`, `Organisation: ${escapeHtml(orgShortLabels[org] || orgFullLabel(org))}`));
+    chips.push(makeChip(`org:${org}`, `Organisation: ${escapeHtml(orgIndex.short[org] || orgFullLabel(org))}`));
   });
   if (filterOrgType.value) chips.push(makeChip('orgType', `Type: ${escapeHtml(filterOrgType.value)}`));
   if (filterRegion.value) chips.push(makeChip('region', `Region: ${escapeHtml(filterRegion.value === 'NorthEast' ? 'North-East' : filterRegion.value)}`));
@@ -3617,30 +3621,83 @@ function syncCardSortUI() {
         return f(safe(item.Organisation)) || f(safe(item.Department)) || '';
     }
 
-    // Short (mobile) label per Organisation for the Organisation filter.
-    //   "Indian Institute of Technology Goa"                 → "IITG"
-    //   "All India Institute of Medical Sciences (AIIMS), Jodhpur" → "AIIMS, Jodhpur"
-    //     (text after an explicit "(ACR)" is kept, so the AIIMS campuses differ)
-    // Organisations with no short form, or whose short form would be shared
-    // with another organisation (e.g. IIT Goa / IIT Gandhinagar → "IITG"), get
-    // none and show their full name instead, so the list is never ambiguous.
-    function buildOrgShortLabels(rows) {
+    // Matching key for an organisation name, so spellings of the same body
+    // collapse into one filter option:
+    //   "Central Water Commission (CWC)"                ┐
+    //   "Central Water Commission"                      ┘→ "central water commission"
+    //   "Footwear Design & Development Institute"       ┐
+    //   "Footwear Design and Development Institute (FDDI)" ┘→ same key
+    //   "AIIMS, Rishikesh" / "AIIMS Rishikesh"           → same key
+    // A bracket is dropped only when it is a short form (its first word is in
+    // capitals: "(CWC)", "(AIIMS Nagpur)", "(SPM-NIWAS)"); descriptive brackets
+    // such as "(Handicrafts)" or "(Storage and Research Division)" stay part of
+    // the key, so genuinely different offices remain separate options.
+    const orgKeyMemo = new Map();
+    function orgKey(name) {
+        const raw = safe(name);
+        if (!raw) return '';
+        let key = orgKeyMemo.get(raw);
+        if (key === undefined) {
+            key = raw
+                .replace(/\(([^()]*)\)/g, (m, inner) =>
+                    isShortFormWord(inner.trim().split(/\s+/)[0]) ? ' ' : ` ${inner} `)
+                .toLowerCase()
+                .replace(/&/g, ' and ')
+                .replace(/[^a-z0-9]+/g, ' ')
+                .trim();
+            orgKeyMemo.set(raw, key);
+        }
+        return key;
+    }
+    function isShortFormWord(w) {
+        return !!w && /^[A-Z0-9][A-Z0-9&.\-]*$/.test(w) && /[A-Z]/.test(w);
+    }
+
+    // Per organisation key: the name to display and its short (mobile) label.
+    //  • Display name: among the spellings in the data, prefer one that carries
+    //    its official short form in brackets (so "(CFQCTI)" wins over an
+    //    auto-built acronym), then the most frequent, then the longest.
+    //  • Short label: "IIT Goa" → "IITG"; an explicit bracket is used whole and
+    //    text after it is kept ("AIIMS Nagpur", "AIIMS, Jodhpur") so campuses
+    //    differ. Organisations with no short
+    //    form, or one shared with another organisation (IIT Goa / IIT
+    //    Gandhinagar → "IITG"), get none and show their full name instead, so
+    //    the list is never ambiguous.
+    function buildOrgIndex(rows) {
         const acronymFor = window.DepEnrich && window.DepEnrich.acronymFor;
-        const names = [...new Set(rows.map(r => safe(r.Organisation)).filter(Boolean))];
-        const shortOf = {};
-        names.forEach(name => {
+        const variants = {};   // key → { name → row count }
+        rows.forEach(r => {
+            const name = safe(r.Organisation);
+            const key = orgKey(name);
+            if (!key) return;
+            const v = variants[key] || (variants[key] = {});
+            v[name] = (v[name] || 0) + 1;
+        });
+        const hasShortForm = (n) => {
+            const m = n.match(/\(([^()]*)\)/);
+            return !!m && isShortFormWord(m[1].trim().split(/\s+/)[0]);
+        };
+        const names = {}, shortOf = {};
+        Object.keys(variants).forEach(key => {
+            const counts = variants[key];
+            const name = Object.keys(counts).sort((a, b) =>
+                (hasShortForm(b) - hasShortForm(a)) || (counts[b] - counts[a]) || (b.length - a.length))[0];
+            names[key] = name;
             const acr = acronymFor ? acronymFor(name) : '';
             if (!acr) return;
+            // An explicit bracket that starts with the acronym is used whole
+            // ("(AIIMS Nagpur)" → "AIIMS Nagpur"), plus any text after it.
             const m = name.match(/^(.*?)\(\s*([^()]+?)\s*\)\s*(.*)$/);
-            const tail = m && m[2] === acr ? m[3].trim() : '';
-            shortOf[name] = tail ? `${acr}${tail.startsWith(',') ? '' : ' '}${tail}` : acr;
+            const explicit = m && m[2].startsWith(acr) ? m : null;
+            const base = explicit ? explicit[2] : acr;
+            const tail = explicit ? explicit[3].trim() : '';
+            shortOf[key] = tail ? `${base}${tail.startsWith(',') ? '' : ' '}${tail}` : base;
         });
         const uses = {};
         Object.values(shortOf).forEach(sh => { uses[sh] = (uses[sh] || 0) + 1; });
-        const out = {};
-        Object.keys(shortOf).forEach(name => { if (uses[shortOf[name]] === 1) out[name] = shortOf[name]; });
-        Object.defineProperty(out, '__forRows', { value: rows, enumerable: false });
-        return out;
+        const short = {};
+        Object.keys(shortOf).forEach(key => { if (uses[shortOf[key]] === 1) short[key] = shortOf[key]; });
+        return { names, short, forRows: rows };
     }
 
     function formatLocation(item) {
