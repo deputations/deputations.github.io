@@ -645,10 +645,10 @@ function fetchVacancies() {
             console.log('📡 Source: Supabase live + JSON merged',
                 sbRows.length, 'live,', json.length, 'json,',
                 sbOnly.length, 'sb-only enriched');
-            return recomputeStatus(merged);
+            return disambiguateDuplicateIds(recomputeStatus(merged));
         }
         console.log('📄 Source: data/vacancies.json (Supabase unavailable / empty)');
-        return recomputeStatus(json);
+        return disambiguateDuplicateIds(recomputeStatus(json));
     });
 }
 
@@ -657,6 +657,42 @@ function fetchVacancies() {
 // may have passed and rows that were "Active" then are now expired. Recompute
 // Status from last_date_to_apply for every row so the active filter and the
 // KPI cards always reflect reality.
+// Safety net for duplicate Vacancy_IDs. IDs are meant to be unique, but the
+// ingest pipeline numbers rows per upload, so two different vacancies can end
+// up sharing one (e.g. HAFW-2026-L11-046: an expired "Executive Engineer
+// (AC and R)" and an active "Executive Engineer (Civil)"). Everything here —
+// row/card clicks, the modal, ?v= permalinks, bookmarks — looks vacancies up
+// by ID and takes the FIRST match, so clicking the active row opened the
+// expired one. Within each group of rows sharing an ID, the one most likely
+// meant keeps the plain ID: Active first, then the newest notification, then
+// the latest closing date. The others get "<ID>~2", "~3"… so every row is
+// reachable and opens itself. A no-op once IDs are unique at the source.
+function disambiguateDuplicateIds(rows) {
+    const groups = new Map();
+    rows.forEach(r => {
+        const id = String(r.Vacancy_ID || '').trim();
+        if (!id) return;
+        const g = groups.get(id);
+        if (g) g.push(r); else groups.set(id, [r]);
+    });
+    const dupIds = [];
+    groups.forEach((group, id) => {
+        if (group.length < 2) return;
+        dupIds.push(id);
+        group.sort((a, b) =>
+            ((b.Status === 'Active') - (a.Status === 'Active')) ||
+            String(b.Notification_Date || '').localeCompare(String(a.Notification_Date || '')) ||
+            String(b.Last_Date_To_Apply || '').localeCompare(String(a.Last_Date_To_Apply || '')));
+        group.forEach((r, i) => {
+            if (i === 0) return;
+            r.Shared_Vacancy_ID = id;
+            r.Vacancy_ID = `${id}~${i + 1}`;
+        });
+    });
+    if (dupIds.length) console.warn('⚠️ Duplicate Vacancy_IDs made unique on the client:', dupIds.join(', '));
+    return rows;
+}
+
 function recomputeStatus(rows) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
