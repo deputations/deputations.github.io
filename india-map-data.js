@@ -293,6 +293,29 @@ window.IndiaMapData = (() => {
     return true;
   }
 
+  // ----- District geometry codes -----
+  // State/UT abbreviation → st_code(s) used by geo/india-districts-all.geojson.
+  // This is the ONLY resolver for district geometry; india-map-view.js calls
+  // getDistrictCodes() for rendering and zoom. Values match the bundled
+  // GeoJSON exactly (verified by tests/test_india_map.py::TestDistrictGeoContract):
+  // Andhra Pradesh is 37 (not the pre-2014 28), and the merged
+  // Dadra and Nagar Haveli and Daman and Diu has all three districts under 26.
+  const ABBR_TO_DISTRICT_CODES = {
+    JK:'01', HP:'02', PB:'03', CH:'04', UK:'05', HR:'06', DL:'07', RJ:'08',
+    UP:'09', BR:'10', SK:'11', AR:'12', NL:'13', MN:'14', MZ:'15', TR:'16',
+    ML:'17', AS:'18', WB:'19', JH:'20', OD:'21', CG:'22', MP:'23', GJ:'24',
+    DNH:'26', MH:'27', KA:'29', GA:'30', LD:'31', KL:'32', TN:'33', PY:'34',
+    AN:'35', TS:'36', AP:'37', LA:'38',
+  };
+
+  // Always returns a fresh array (never a bare string), so callers test
+  // membership with Array#includes rather than substring matching.
+  function getDistrictCodes(abbr) {
+    const v = ABBR_TO_DISTRICT_CODES[abbr];
+    if (!v) return [];
+    return Array.isArray(v) ? v.slice() : [v];
+  }
+
   // Testing helper: reset all internal state (not for production use)
   function reset() {
     allVacancies = [];
@@ -307,7 +330,7 @@ window.IndiaMapData = (() => {
     load, isActive,
     getStateCount, getStateCounts, getTotal, getSource, getAllVacancies,
     getNationwideCount, getMultiStateCount,
-    getDistrictCounts,
+    getDistrictCounts, getDistrictCodes,
     getListingsForDistrict, getFiltered, normaliseVacancy, deriveCategory,
     recordNewVacancy, rpcDiagnostic, reset,
   };

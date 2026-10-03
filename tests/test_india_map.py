@@ -19,7 +19,9 @@ Run:
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
+from urllib.parse import quote
 
 import pytest
 from playwright.sync_api import Page, expect
@@ -188,46 +190,20 @@ def _inject_fixtures(page: Page, vacancies: list[dict], states: list[dict], dist
     page.route("**/geo/india-districts-all.geojson", on_districts)
 
 
-# Distinct bbox per state — deterministic, no overlap, real Indian coordinates.
-# Layout: 7 columns × 6 rows over the Indian subcontinent lon=68-98 / lat=6-38.
-_STATES_36_COORDS = {
-    "AN": (92.0, 94.0, 6.0, 14.0),
-    "AP": (76.0, 84.5, 12.5, 19.5),
-    "AR": (92.0, 97.5, 26.5, 29.5),
-    "AS": (89.5, 96.0, 24.0, 28.0),
-    "BR": (83.0, 88.5, 24.0, 28.0),
-    "CG": (80.0, 84.5, 17.0, 24.0),
-    "CH": (76.7, 76.9, 30.7, 30.8),
-    "DL": (76.8, 77.4, 28.4, 28.9),
-    "DNH": (72.5, 73.5, 20.0, 20.6),
-    "GA": (73.6, 74.4, 14.8, 15.8),
-    "GJ": (68.0, 73.5, 20.0, 24.5),
-    "HR": (74.5, 77.5, 27.5, 30.5),
-    "HP": (75.5, 79.0, 30.0, 33.0),
-    "JK": (73.5, 80.0, 32.0, 36.0),
-    "JH": (83.0, 88.0, 22.0, 25.5),
-    "KA": (74.0, 78.5, 11.5, 18.5),
-    "KL": (74.5, 77.5, 8.0, 12.5),
-    "LA": (75.5, 79.0, 32.0, 35.5),
-    "LD": (72.0, 73.0, 8.0, 12.0),
-    "MH": (72.5, 81.0, 15.5, 22.0),
-    "ML": (89.5, 92.5, 25.0, 26.5),
-    "MN": (93.0, 95.0, 23.5, 25.5),
-    "MP": (74.0, 82.5, 21.0, 26.5),
-    "MZ": (92.0, 93.5, 21.5, 24.5),
-    "NL": (93.5, 95.5, 25.0, 27.0),
-    "OD": (81.5, 87.5, 17.5, 22.5),
-    "PB": (73.5, 76.5, 29.5, 32.5),
-    "PY": (79.5, 80.0, 11.5, 12.0),
-    "RJ": (69.5, 78.5, 23.0, 30.0),
-    "SK": (88.0, 89.0, 27.0, 28.5),
-    "TN": (76.0, 80.5, 8.0, 13.5),
-    "TR": (91.0, 92.5, 22.5, 24.5),
-    "TS": (77.0, 81.5, 15.5, 19.5),
-    "UK": (77.5, 81.5, 28.5, 31.5),
-    "UP": (77.0, 84.5, 23.5, 30.5),
-    "WB": (85.5, 90.0, 21.5, 27.5),
-}
+# Distinct, NON-overlapping bbox per state: a 6×6 grid over lon 68–98 /
+# lat 6–38 in _ALL_36 order. Real-world boxes overlap (UP covers UK's centre,
+# AP covers MH's), which makes a real pointer click land on the wrong state;
+# the grid keeps every state's centre on that state's own path.
+def _grid_coords() -> dict:
+    coords = {}
+    for i, (abbr, _name) in enumerate(_ALL_36):
+        col, row = i % 6, i // 6
+        lon_lo, lat_lo = 68.0 + col * 5.0, 6.0 + row * 5.3
+        coords[abbr] = (lon_lo + 0.3, lon_lo + 4.7, lat_lo + 0.3, lat_lo + 5.0)
+    return coords
+
+
+_STATES_36_COORDS = _grid_coords()
 
 
 @pytest.fixture()
@@ -246,11 +222,30 @@ def all_36_states_fixture(page: Page):
         # Maharashtra districts — BLOCKER 7
         _district_feature("27", "Pune",    73.5, 74.5, 18.0, 19.0),
         _district_feature("27", "Mumbai",  72.8, 73.2, 18.8, 19.3),
+        # Second Mumbai fragment: same logical district, must not add a row
+        _district_feature("27", "Mumbai",  72.8, 73.2, 19.5, 19.7),
         _district_feature("27", "Nagpur",  78.8, 79.6, 20.8, 21.5),
         # Tamil Nadu
         _district_feature("33", "Chennai", 80.0, 80.4, 12.8, 13.3),
         # Karnataka
         _district_feature("29", "Bengaluru", 77.4, 77.8, 12.8, 13.2),
+        # QA geometry for the codes the real GeoJSON uses
+        _district_feature("05", "Dehradun", 77.6, 78.4, 30.0, 30.8),        # UK
+        _district_feature("05", "Nainital", 79.0, 79.8, 29.0, 29.6),        # UK
+        _district_feature("26", "Dadra and Nagar Haveli", 72.9, 73.2, 20.0, 20.4),  # DNH
+        _district_feature("26", "Daman", 72.8, 72.9, 20.4, 20.5),           # DNH
+        _district_feature("26", "Diu",   70.9, 71.0, 20.7, 20.8),           # DNH
+        _district_feature("37", "Visakhapatnam", 82.8, 83.4, 17.6, 18.2),   # AP
+        _district_feature("37", "Krishna", 80.6, 81.4, 15.8, 16.6),         # AP
+        _district_feature("22", "Raipur", 81.4, 82.0, 21.0, 21.6),          # CG
+        _district_feature("38", "Leh",    77.0, 79.0, 33.5, 35.5),          # LA
+        _district_feature("38", "Kargil", 75.5, 76.8, 33.8, 34.8),          # LA
+        _district_feature("35", "South Andaman", 92.5, 93.0, 11.4, 12.0),   # AN
+        _district_feature("17", "East Khasi Hills", 91.6, 92.1, 25.2, 25.7),  # ML
+        # Blank-name sentinels: state outlines in the real GeoJSON, not
+        # districts. Listed last so a regression would draw them on top.
+        _district_feature("27", "", 72.5, 81.0, 15.5, 22.0),
+        _district_feature("05", "", 77.5, 81.0, 28.7, 31.4),
     ]
 
     # 7 vacancies, all using the production data shape.
@@ -463,13 +458,8 @@ class TestFilters:
 # ---------------------------------------------------------------------------
 
 def _svg_state_click(page, abbr):
-    """Click a state path via JS dispatchEvent (avoids SVG coordinate issues)."""
-    return page.evaluate("""(a) => {
-        const el = document.querySelector('#map-svg [data-abbr="' + a + '"].ad-state');
-        if (!el) return 'not-found';
-        el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-        return 'clicked';
-    }""", abbr)
+    """Real pointer click on a state path (the grid fixture never overlaps)."""
+    page.locator(f"#map-svg [data-abbr='{abbr}'].ad-state").click()
 
 
 class TestStateClick:
@@ -561,33 +551,89 @@ class TestPuneDistrict:
 
 
 # ---------------------------------------------------------------------------
-# 8 + 9. Browser Back/Forward
+# Routing helpers — public contract only: URL, modal, visible view, Back
+# button, district DOM, browser history. No IIFE-private state.
+# ---------------------------------------------------------------------------
+
+_NATIONAL_URL = re.compile(r"/india-map\.html$")
+
+
+def _open_map(page: Page, base_url: str, query: str = "") -> None:
+    page.goto(f"{base_url}/india-map.html{query}")
+    expect(page.locator("#map-svg .ad-state")).to_have_count(36, timeout=15000)
+
+
+def _history_length(page: Page) -> int:
+    return page.evaluate("() => history.length")
+
+
+def _expect_national(page: Page) -> None:
+    expect(page).to_have_url(_NATIONAL_URL, timeout=10000)
+    expect(page.locator("#map-svg .ad-state")).to_have_count(36, timeout=10000)
+    expect(page.locator("#btn-back")).to_be_hidden()
+    expect(page.locator("#modal")).to_be_hidden()
+
+
+def _expect_state(page: Page, abbr: str) -> None:
+    expect(page).to_have_url(re.compile(rf"\?state={abbr}$"), timeout=10000)
+    expect(page.locator("#modal")).to_be_hidden()
+    expect(page.locator("#btn-back")).to_be_visible()
+    if abbr == "DL":
+        expect(page.locator(".ad-delhi-hotspot")).to_have_count(11, timeout=10000)
+    else:
+        expect(page.locator("#map-svg .ad-district").first).to_be_visible(timeout=10000)
+
+
+def _expect_district(page: Page, abbr: str, district: str) -> None:
+    expect(page).to_have_url(
+        re.compile(rf"\?state={abbr}&district={re.escape(quote(district))}$"), timeout=10000)
+    expect(page.locator("#modal")).to_be_visible()
+    expect(page.locator("#modalTitle")).to_contain_text(district)
+
+
+def _go_national_to_pune(page: Page, base_url: str) -> int:
+    """National → click MH → click Pune. Returns history.length at the end."""
+    _open_map(page, base_url)
+    _svg_state_click(page, "MH")
+    _expect_state(page, "MH")
+    page.locator("#map-svg [data-district='Pune'].ad-district").click()
+    _expect_district(page, "MH", "Pune")
+    return _history_length(page)
+
+
+def _district_names(page: Page) -> list[str]:
+    return page.eval_on_selector_all(
+        "#map-svg .ad-district", "els => els.map(e => e.getAttribute('data-district'))")
+
+
+# ---------------------------------------------------------------------------
+# 8 + 9. Browser Back/Forward (real user actions)
 # ---------------------------------------------------------------------------
 
 class TestHistory:
-    def test_history_pushstate_updates_url(self, page: Page, base_url: str, all_36_states_fixture):
-        """C18: history.pushState must update the visible URL."""
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(3000)
-        # Direct pushState — this is what navigateToState does after drillToState
-        page.evaluate("() => history.pushState({view:'state',state:'MH'}, '', '?state=MH')")
-        page.wait_for_function("() => window.location.href.includes('state=MH')", timeout=5000)
-        url = page.evaluate("() => window.location.href")
-        assert "state=MH" in url
+    def test_state_click_pushes_one_entry(self, page: Page, base_url: str, all_36_states_fixture):
+        """Real MH click → ?state=MH, exactly one new history entry."""
+        _open_map(page, base_url)
+        before = _history_length(page)
+        _svg_state_click(page, "MH")
+        _expect_state(page, "MH")
+        assert _history_length(page) == before + 1
 
-    def test_history_back_removes_state_param(self, page: Page, base_url: str, all_36_states_fixture):
-        """C18: history.back() must pop back to the clean national URL."""
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(3000)
-        # Push a state entry, then pop it
-        page.evaluate("() => history.pushState({view:'state',state:'MH'}, '', '?state=MH')")
-        page.wait_for_function("() => window.location.href.includes('state=MH')", timeout=5000)
-        page.evaluate("() => history.back()")
-        page.wait_for_function("() => !window.location.href.includes('state=')", timeout=5000)
-        url = page.evaluate("() => window.location.href")
-        assert "state=" not in url
+    def test_district_click_pushes_one_entry(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        before = _history_length(page)
+        _svg_state_click(page, "MH")
+        _expect_state(page, "MH")
+        page.locator("#map-svg [data-district='Pune'].ad-district").click()
+        _expect_district(page, "MH", "Pune")
+        assert _history_length(page) == before + 2
+
+    def test_browser_back_from_state_to_national(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        _svg_state_click(page, "MH")
+        _expect_state(page, "MH")
+        page.go_back()
+        _expect_national(page)
 
 
 # ---------------------------------------------------------------------------
@@ -598,21 +644,24 @@ class TestDeepLink:
     def test_state_deep_link_executes_once(self, page: Page, base_url: str, all_36_states_fixture):
         # BLOCKER 9: one history entry for the deep link
         page.goto(f"{base_url}/india-map.html?state=MH")
-        page.wait_for_timeout(4000)
-        assert "state=MH" in page.url
+        _expect_state(page, "MH")
         # Now go back — should leave the page (single entry, not land on another ?state=MH)
         page.go_back()
         page.wait_for_timeout(1500)
-        assert "state=" not in page.url or "india-map.html?state=MH" != page.url
+        assert "state=MH" not in page.url
 
     def test_district_deep_link(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html?state=MH&district=Pune")
-        page.wait_for_timeout(5000)
-        assert "state=MH" in page.url
-        assert "district=Pune" in page.url
-        # Modal should be open
-        modal = page.locator("#modal")
-        assert modal.evaluate("el => el.open") is True
+        _expect_district(page, "MH", "Pune")
+
+    def test_deep_link_is_replaced_not_pushed(self, page: Page, base_url: str, all_36_states_fixture):
+        page.goto(f"{base_url}/india-map.html")
+        expect(page.locator("#map-svg .ad-state")).to_have_count(36, timeout=15000)
+        before = _history_length(page)
+        page.goto(f"{base_url}/india-map.html?state=MH&district=Pune")
+        _expect_district(page, "MH", "Pune")
+        # One navigation = one entry; the deep-link render added none
+        assert _history_length(page) == before + 1
 
 
 # ---------------------------------------------------------------------------
@@ -621,50 +670,23 @@ class TestDeepLink:
 
 class TestDelhi:
     def test_11_hotspots(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(3000)
-        page.evaluate("""() => {
-            const el = document.querySelector('#map-svg [data-abbr="DL"].ad-state');
-            if (el) el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-        }""")
-        page.wait_for_selector(".ad-delhi-hotspot", timeout=10000)
-        page.wait_for_timeout(500)
-        hotspots = page.locator(".ad-delhi-hotspot").count()
-        assert hotspots == 11, f"Delhi should have 11 hotspots, got {hotspots}"
+        _open_map(page, base_url)
+        _svg_state_click(page, 'DL')
+        _expect_state(page, "DL")
 
     def test_new_delhi_count_matches_listings(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(3000)
-        page.evaluate("""() => {
-            const dl = document.querySelector('#map-svg [data-abbr="DL"].ad-state');
-            if (dl) dl.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-        }""")
-        page.wait_for_selector(".ad-delhi-hotspot", timeout=10000)
-        page.wait_for_timeout(500)
+        _open_map(page, base_url)
+        _svg_state_click(page, 'DL')
+        _expect_state(page, "DL")
         # New Delhi hotspot has a count badge
         new_delhi = page.locator('.ad-delhi-hotspot[data-district="New Delhi"]')
         badge = new_delhi.locator(".ad-delhi-count")
-        assert badge.count() == 1, "New Delhi hotspot should have a count"
+        expect(badge).to_have_count(1)
         count_str = badge.inner_text().strip()
-        # Open it
         new_delhi.click()
-        page.wait_for_timeout(500)
+        _expect_district(page, "DL", "New Delhi")
         title = page.locator("#modalTitle").inner_text()
         assert count_str in title, f"Hotspot count {count_str} should match modal title: {title}"
-
-    def test_delhi_state_renders_hotspots(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(3000)
-        page.evaluate("""() => {
-            const el = document.querySelector('#map-svg [data-abbr="DL"].ad-state');
-            if (el) el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-        }""")
-        page.wait_for_selector(".ad-delhi-hotspot", timeout=10000)
-        hotspots = page.locator(".ad-delhi-hotspot").count()
-        assert hotspots == 11, f"Delhi should have 11 hotspots, got {hotspots}"
 
 
 # ---------------------------------------------------------------------------
@@ -813,220 +835,246 @@ class TestKeyboard:
 
 
 # ---------------------------------------------------------------------------
-# QA-P0-01: Uttarakhand and DNH district mapping
-# QA-P1-01: Modal close does not duplicate state history entry
-# QA-P1-02: Browser Back leaves modal closed, stays on state
-# QA-P2-01/P2-02: In-app Back to India for deep links, no duplicate route
+# QA-P0-01: district geometry resolves for UK, DNH, AP; sentinels/fragments
+# QA-P1-01: user closing a district returns to State in URL and UI
+# QA-P1-02: Browser Back from district → State with modal closed
+# QA-P2-01/P2-02: in-app Back to India for deep links stays on the page
+# QA-P3: Delhi uses the same single navigation layer
+# All journeys use real clicks / keys — no history.pushState() in tests.
 # ---------------------------------------------------------------------------
 
 class TestQAP001_DistrictMapping:
-    """QA-P0-01: UK uses st_code 05, DNH uses st_code 26 — both render districts."""
+    """Real clicks on UK / DNH / AP render their district geometry."""
 
     def test_uttarakhand_districts_render(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(3000)
-        page.locator("#map-svg [data-abbr='UK'].ad-state").click()
-        page.wait_for_timeout(2500)
-        # District paths should appear
-        districts = page.locator("#map-svg .ad-district").count()
-        assert districts > 0, f"UK should have district paths, got {districts}"
-        # Count label should show non-zero
-        count = page.locator("#map-svg .ad-state-count[data-for='UK']").inner_text().strip()
-        assert int(count) > 0, f"UK count should be > 0, got '{count}'"
+        _open_map(page, base_url)
+        _svg_state_click(page, "UK")
+        _expect_state(page, "UK")
+        assert sorted(_district_names(page)) == ["Dehradun", "Nainital"]
 
     def test_dnh_districts_render(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(3000)
-        page.locator("#map-svg [data-abbr='DNH'].ad-state").click()
-        page.wait_for_timeout(2500)
-        districts = page.locator("#map-svg .ad-district").count()
-        assert districts > 0, f"DNH should have district paths, got {districts}"
+        """All three DNH districts live under st_code 26 in the real GeoJSON."""
+        _open_map(page, base_url)
+        _svg_state_click(page, "DNH")
+        _expect_state(page, "DNH")
+        assert sorted(_district_names(page)) == ["Dadra and Nagar Haveli", "Daman", "Diu"]
+
+    def test_andhra_pradesh_districts_render(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        _svg_state_click(page, "AP")
+        _expect_state(page, "AP")
+        assert sorted(_district_names(page)) == ["Krishna", "Visakhapatnam"]
+
+    def test_blank_sentinels_and_fragments_not_rendered_as_districts(
+            self, page: Page, base_url: str, all_36_states_fixture):
+        """MH fixture has a blank-name sentinel and a two-fragment Mumbai."""
+        _open_map(page, base_url)
+        _svg_state_click(page, "MH")
+        _expect_state(page, "MH")
+        names = _district_names(page)
+        assert sorted(names) == ["Mumbai", "Nagpur", "Pune"], names
+        labels = page.eval_on_selector_all(
+            "#map-labels .ad-district-label", "els => els.map(e => e.textContent)")
+        assert not any(l == "" or l.startswith("District ") for l in labels), labels
 
 
 class TestQAP001_NavigationRouting:
-    """QA-P1-01: Modal close returns to state without duplicate route."""
+    """User closes the district → URL and UI both State → one Back → National."""
 
     def test_escape_then_back_to_national(self, page: Page, base_url: str, all_36_states_fixture):
-        """MH → Pune → Escape → one Back to India → National."""
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(3000)
-        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
-        page.wait_for_timeout(2500)
-        page.locator("#map-svg [data-district='Pune'].ad-district").click()
-        page.wait_for_timeout(700)
-        assert page.locator("#modal").evaluate("el => el.open") is True
-        # Close via Escape
+        """National → MH → Pune → Escape → ?state=MH → one Back to India → National."""
+        length = _go_national_to_pune(page, base_url)
         page.keyboard.press("Escape")
-        page.wait_for_timeout(500)
-        assert page.locator("#modal").evaluate("el => el.open") is False
-        # Modal closed, view should be state view (not district)
-        assert page.evaluate("() => window.selectedDistrict") is None
-        # Now Back to national
+        _expect_state(page, "MH")
+        assert _history_length(page) == length, "closing must not push"
         page.locator("#btn-back").click()
-        page.wait_for_timeout(1500)
-        # One back should land on national — URL should have no state param
-        url = page.evaluate("() => window.location.href")
-        assert "state=" not in url, f"Back from state should go to national, got {url}"
+        _expect_national(page)
+        # Stack is still National, MH, Pune — nothing was duplicated
+        page.go_forward()
+        _expect_state(page, "MH")
 
     def test_modal_close_button_then_back(self, page: Page, base_url: str, all_36_states_fixture):
-        """MH → Pune → modal close button → one Back to India → National."""
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(3000)
-        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
-        page.wait_for_timeout(2500)
-        page.locator("#map-svg [data-district='Pune'].ad-district").click()
-        page.wait_for_timeout(700)
-        assert page.locator("#modal").evaluate("el => el.open") is True
-        # Close via button
-        modal_close = page.locator("#modal .map-modal-close")
-        if modal_close.count() > 0:
-            modal_close.click()
-        else:
-            page.keyboard.press("Escape")
-        page.wait_for_timeout(500)
-        assert page.locator("#modal").evaluate("el => el.open") is False
-        # Back should land on national in one step
+        """National → MH → Pune → close button → ?state=MH → one Back to India → National."""
+        length = _go_national_to_pune(page, base_url)
+        page.locator("#modal .map-modal-close").click()
+        _expect_state(page, "MH")
+        assert _history_length(page) == length, "closing must not push"
         page.locator("#btn-back").click()
-        page.wait_for_timeout(1500)
-        url = page.evaluate("() => window.location.href")
-        assert "state=" not in url, f"Back should go to national, got {url}"
+        _expect_national(page)
 
-    def test_no_duplicate_route_after_modal_close(self, page: Page, base_url: str, all_36_states_fixture):
-        """Closing modal must not add a duplicate state entry in history."""
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(3000)
-        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
-        page.wait_for_timeout(2500)
-        page.locator("#map-svg [data-district='Pune'].ad-district").click()
-        page.wait_for_timeout(700)
-        assert page.locator("#modal").evaluate("el => el.open") is True
-        # Close modal
+    def test_forward_after_close_reopens_district(self, page: Page, base_url: str, all_36_states_fixture):
+        """Closing steps back onto the State entry, so Forward reopens Pune."""
+        _go_national_to_pune(page, base_url)
         page.keyboard.press("Escape")
-        page.wait_for_timeout(500)
-        # Forward should still work (no duplicate state entry inserted)
+        _expect_state(page, "MH")
         page.go_forward()
-        page.wait_for_timeout(700)
-        # After forward, district should be open again (restored from history)
-        assert page.locator("#modal").evaluate("el => el.open") is True
+        _expect_district(page, "MH", "Pune")
 
 
 class TestQAP002_BrowserBackRouting:
-    """QA-P1-02 + QA-P2-01 + QA-P2-02: Browser Back behavior with deep links."""
-
     def test_browser_back_from_district(self, page: Page, base_url: str, all_36_states_fixture):
-        """MH → Pune → Browser Back → MH with modal closed → Back → National."""
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(3000)
-        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
-        page.wait_for_timeout(2500)
-        page.locator("#map-svg [data-district='Pune'].ad-district").click()
-        page.wait_for_timeout(700)
-        assert page.evaluate("() => window.viewMode") == 'district'
-        # Browser Back: should go to state view, modal closed
+        """MH → Pune → Browser Back → MH, modal closed → Back to India → National."""
+        _go_national_to_pune(page, base_url)
         page.go_back()
-        page.wait_for_timeout(1000)
-        assert page.evaluate("() => window.viewMode") == 'state', \
-            f"After back, viewMode should be 'state', got '{page.evaluate('() => window.viewMode')}'"
-        assert page.evaluate("() => window.selectedDistrict") is None
-        assert page.locator("#modal").evaluate("el => el.open") is False
-        # URL should have state=MH but no district
-        url = page.evaluate("() => window.location.href")
-        assert "state=MH" in url, f"URL should have state=MH: {url}"
-        assert "district=" not in url, f"URL should not have district: {url}"
-        # Browser Back again → national
-        page.go_back()
-        page.wait_for_timeout(1500)
-        url = page.evaluate("() => window.location.href")
-        assert "state=" not in url, f"Second back should go to national: {url}"
+        _expect_state(page, "MH")
+        expect(page.locator("#map-svg [data-district='Pune'].ad-district")).to_have_count(1)
+        page.locator("#btn-back").click()
+        _expect_national(page)
 
-    def test_browser_forward_restores_district(self, page: Page, base_url: str, all_36_states_fixture):
-        """Forward after Back from district restores the district modal."""
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(3000)
-        page.locator("#map-svg [data-abbr='MH'].ad-state").click()
-        page.wait_for_timeout(2500)
-        page.locator("#map-svg [data-district='Pune'].ad-district").click()
-        page.wait_for_timeout(700)
-        # Back to state
+    def test_browser_back_back_forward_forward(self, page: Page, base_url: str, all_36_states_fixture):
+        """Browser Back → MH → Back → National; Forward → MH → Forward → Pune."""
+        _go_national_to_pune(page, base_url)
         page.go_back()
-        page.wait_for_timeout(1000)
-        # Forward should restore district
+        _expect_state(page, "MH")
+        page.go_back()
+        _expect_national(page)
         page.go_forward()
-        page.wait_for_timeout(1000)
-        assert page.evaluate("() => window.viewMode") == 'district'
+        _expect_state(page, "MH")
+        page.go_forward()
+        _expect_district(page, "MH", "Pune")
 
 
 class TestQAP002_DeepLinkBack:
-    """QA-P2-01/P2-02: In-app Back from deep-linked direct entries."""
+    """Direct entries have no in-app parent: closing/Back replace, never leave."""
 
     def test_deep_link_state_back_to_national(self, page: Page, base_url: str, all_36_states_fixture):
-        """Direct ?state=MH → Back to India → National."""
+        """Direct ?state=MH → in-app Back to India → National, same entry."""
         page.goto(f"{base_url}/india-map.html?state=MH")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(4000)
-        assert "state=MH" in page.url
-        # In-app Back should navigate forward to national
+        _expect_state(page, "MH")
+        length = _history_length(page)
         page.locator("#btn-back").click()
-        page.wait_for_timeout(1000)
-        url = page.evaluate("() => window.location.href")
-        assert "india-map.html" in url, f"Should stay on india-map page: {url}"
-        assert "state=" not in url, f"Back from direct state should remove state param: {url}"
+        _expect_national(page)
+        assert _history_length(page) == length
 
     def test_deep_link_district_close_then_back(self, page: Page, base_url: str, all_36_states_fixture):
-        """Direct ?state=MH&district=Pune → close modal → MH → Back to India → National."""
+        """Direct ?state=MH&district=Pune → Escape → MH → Back to India → National."""
         page.goto(f"{base_url}/india-map.html?state=MH&district=Pune")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(5000)
-        assert "state=MH" in page.url
-        assert "district=Pune" in page.url
-        assert page.locator("#modal").evaluate("el => el.open") is True
-        # Close modal → URL should be ?state=MH
+        _expect_district(page, "MH", "Pune")
+        length = _history_length(page)
         page.keyboard.press("Escape")
-        page.wait_for_timeout(500)
-        assert page.locator("#modal").evaluate("el => el.open") is False
-        url = page.evaluate("() => window.location.href")
-        assert "state=MH" in url, f"After modal close URL should have state=MH: {url}"
-        assert "district=" not in url, f"After modal close URL should not have district: {url}"
-        # Back to India → National
+        _expect_state(page, "MH")
         page.locator("#btn-back").click()
-        page.wait_for_timeout(1000)
-        url = page.evaluate("() => window.location.href")
-        assert "state=" not in url, f"Back to India should remove state param: {url}"
-        assert "india-map.html" in url, f"Should stay on india-map page: {url}"
+        _expect_national(page)
+        assert _history_length(page) == length, "direct entry must be replaced, not pushed"
+
+    def test_deep_link_district_close_button(self, page: Page, base_url: str, all_36_states_fixture):
+        page.goto(f"{base_url}/india-map.html?state=MH&district=Pune")
+        _expect_district(page, "MH", "Pune")
+        page.locator("#modal .map-modal-close").click()
+        _expect_state(page, "MH")
 
 
 class TestQAP003_DelhiRouting:
-    """Delhi follows the same routing semantics as other states."""
+    """Delhi goes through the same navigation layer as every other state."""
 
-    def test_delhi_back_forward(self, page: Page, base_url: str, all_36_states_fixture):
-        """National → DL → New Delhi → Escape → Back to DL → Back to National."""
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(3000)
-        # Click Delhi
-        page.evaluate("""() => {
-            const dl = document.querySelector('#map-svg [data-abbr="DL"].ad-state');
-            if (dl) dl.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-        }""")
-        page.wait_for_selector(".ad-delhi-hotspot", timeout=10000)
-        page.wait_for_timeout(500)
-        # Click New Delhi hotspot
+    def _open_new_delhi(self, page: Page, base_url: str) -> None:
+        _open_map(page, base_url)
+        _svg_state_click(page, "DL")
+        _expect_state(page, "DL")
         page.locator('.ad-delhi-hotspot[data-district="New Delhi"]').click()
-        page.wait_for_timeout(500)
-        assert page.locator("#modal").evaluate("el => el.open") is True
-        # Escape closes modal
+        _expect_district(page, "DL", "New Delhi")
+
+    def test_delhi_back_forward_chain(self, page: Page, base_url: str, all_36_states_fixture):
+        """DL → New Delhi; Back → DL; Back → National; Forward → DL; Forward → New Delhi."""
+        self._open_new_delhi(page, base_url)
+        page.go_back()
+        _expect_state(page, "DL")
+        page.go_back()
+        _expect_national(page)
+        page.go_forward()
+        _expect_state(page, "DL")
+        page.go_forward()
+        _expect_district(page, "DL", "New Delhi")
+
+    def test_delhi_escape_then_back_to_national(self, page: Page, base_url: str, all_36_states_fixture):
+        self._open_new_delhi(page, base_url)
+        length = _history_length(page)
         page.keyboard.press("Escape")
-        page.wait_for_timeout(500)
-        assert page.locator("#modal").evaluate("el => el.open") is False
-        # Back → national
+        _expect_state(page, "DL")
+        assert _history_length(page) == length, "closing must not push"
         page.locator("#btn-back").click()
-        page.wait_for_timeout(1500)
-        url = page.evaluate("() => window.location.href")
-        assert "state=" not in url, f"Back from Delhi should go to national: {url}"
+        _expect_national(page)
+
+    def test_delhi_district_deep_link(self, page: Page, base_url: str, all_36_states_fixture):
+        """Direct ?state=DL&district=New%20Delhi: close → DL → Back to India → National."""
+        page.goto(f"{base_url}/india-map.html?state=DL&district=New%20Delhi")
+        _expect_district(page, "DL", "New Delhi")
+        length = _history_length(page)
+        page.keyboard.press("Escape")
+        _expect_state(page, "DL")
+        page.locator("#btn-back").click()
+        _expect_national(page)
+        assert _history_length(page) == length, "direct entry must be replaced, not pushed"
+
+
+# ---------------------------------------------------------------------------
+# Real GeoJSON contract — no fixtures. Fixture-only tests missed AP (28 vs 37);
+# these read the bundled geo/india-districts-all.geojson and the production
+# resolver (IndiaMapData.getDistrictCodes) together.
+# ---------------------------------------------------------------------------
+
+_REAL_DISTRICTS = REPO_ROOT / "geo" / "india-districts-all.geojson"
+
+
+def _real_features_by_code() -> dict[str, list[dict]]:
+    by_code: dict[str, list[dict]] = {}
+    for f in json.loads(_REAL_DISTRICTS.read_text(encoding="utf-8"))["features"]:
+        props = f.get("properties") or {}
+        by_code.setdefault(str(props.get("st_code")), []).append(props)
+    return by_code
+
+
+class TestDistrictGeoContract:
+    def test_every_rendered_state_resolves_named_districts(self, page: Page, base_url: str):
+        _open_map(page, base_url)  # real india-states.geojson, real resolver
+        resolved = page.evaluate("""() => Array.from(
+            document.querySelectorAll('#map-svg .ad-state'),
+            p => [p.dataset.abbr, window.IndiaMapData.getDistrictCodes(p.dataset.abbr)])""")
+        assert len(resolved) == 36
+        by_code = _real_features_by_code()
+        problems = []
+        for abbr, codes in resolved:
+            if abbr == "DL":
+                continue  # Delhi uses the 11-hotspot image map
+            assert isinstance(codes, list), f"{abbr}: resolver must return an array, got {codes!r}"
+            feats = [p for c in codes for p in by_code.get(c, [])]
+            named = [p for p in feats if str(p.get("district") or "").strip()]
+            if not feats:
+                problems.append(f"{abbr} {codes}: no features")
+            elif not named:
+                problems.append(f"{abbr} {codes}: only blank-district sentinels")
+        assert not problems, problems
+
+    @pytest.mark.parametrize("abbr,code", [
+        ("AP", "37"), ("UK", "05"), ("DNH", "26"), ("CG", "22"),
+        ("LA", "38"), ("AN", "35"), ("ML", "17"),
+    ])
+    def test_specific_codes(self, page: Page, base_url: str, abbr, code):
+        _open_map(page, base_url)
+        codes = page.evaluate("(a) => window.IndiaMapData.getDistrictCodes(a)", abbr)
+        assert codes == [code]
+        named = [p for p in _real_features_by_code().get(code, [])
+                 if str(p.get("district") or "").strip()]
+        assert named, f"{abbr}: no named district under st_code {code}"
+
+
+class TestRealGeoDrill:
+    """Keyboard drill on the real national map with the real district GeoJSON."""
+
+    @pytest.mark.parametrize("abbr,minimum", [("AP", 13), ("UK", 13), ("DNH", 3)])
+    def test_real_state_renders_districts(self, page: Page, base_url: str, abbr, minimum):
+        _open_map(page, base_url)
+        page.locator(f"#map-svg [data-abbr='{abbr}'].ad-state").focus()
+        page.keyboard.press("Enter")
+        _expect_state(page, abbr)
+        n = page.locator("#map-svg .ad-district").count()
+        assert n >= minimum, f"{abbr}: expected >= {minimum} district paths, got {n}"
+
+    def test_real_fragments_collapse_to_one_district(self, page: Page, base_url: str):
+        """Chandigarh's GeoJSON has two fragments with the same district name."""
+        _open_map(page, base_url)
+        page.locator("#map-svg [data-abbr='CH'].ad-state").focus()
+        page.keyboard.press("Enter")
+        _expect_state(page, "CH")
+        names = _district_names(page)
+        assert len(names) == len(set(names)) == 1, names

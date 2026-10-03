@@ -33,18 +33,31 @@
   let gestureState = null;
   let panState = null;
 
-  // State abbreviation → Census st_code(s).
-  // Single entry = scalar string; multi-entry (DNH) = array of codes
-  // to cover districts that share or split across legacy codes.
-  const ABBR_TO_CODE_MAP = {
-    'JK':'01','HP':'02','PB':'03','CH':'04','UK':'05','HR':'06','DL':'07',
-    'RJ':'08','UP':'09','BR':'10','SK':'11','AR':'12','NL':'13','MN':'14',
-    'MZ':'15','TR':'16','ML':'17','AS':'18','WB':'19','JH':'20','OD':'21',
-    'CG':'22','MP':'23','GJ':'24','DD':'25','DN':'25','DNH':['25','26'],
-    'MH':'27','AP':'28','KA':'29','GA':'30','LD':'31','KL':'32','TN':'33',
-    'PY':'34','AN':'35','TS':'36','LA':'38'
-  };
-  function getCodes(abbr) { return ABBR_TO_CODE_MAP[abbr] || []; }
+  // The single district-geometry resolver. Codes come from
+  // IndiaMapData.getDistrictCodes() (always an array). Features with a blank
+  // district name are state-outline sentinels in the GeoJSON, not districts,
+  // so they are dropped here. Used by both cinematicZoom() and renderState().
+  function districtFeaturesFor(abbr) {
+    const codes = window.IndiaMapData?.getDistrictCodes?.(abbr) || [];
+    if (!codes.length) return [];
+    return (districtsGeo?.features || []).filter(f =>
+      f && f.geometry && f.properties &&
+      codes.includes(String(f.properties.st_code)) &&
+      String(f.properties.district || '').trim() !== ''
+    );
+  }
+
+  // Groups geometry fragments that share a district name into one logical
+  // district: [{ name, features: [...] }], in first-seen order.
+  function groupDistricts(features) {
+    const byName = new Map();
+    features.forEach(f => {
+      const name = String(f.properties.district).trim();
+      if (!byName.has(name)) byName.set(name, []);
+      byName.get(name).push(f);
+    });
+    return Array.from(byName, ([name, feats]) => ({ name, features: feats }));
+  }
 
   const STATE_ABBR = {
     'Andaman and Nicobar':'AN','Andhra Pradesh':'AP','Arunachal Pradesh':'AR','Assam':'AS',
@@ -491,8 +504,15 @@
   }
 
   // ----- Drill to state -----
+  // Rendering only — never touches history. Resolves true when the state
+  // view is on screen, false when superseded by a newer navigation or when
+  // district geometry could not be loaded.
+  function isOnState(abbr) {
+    return selectedAbbr === abbr && (viewMode === 'state' || viewMode === 'district');
+  }
+
   async function drillToState(abbr, name) {
-    if (viewMode === 'state' && selectedAbbr === abbr) return;
+    if (isOnState(abbr)) return true;
     lastFocusedState = abbr;
     const gen = ++renderGeneration; // (J) render navigation generation
 
@@ -505,18 +525,18 @@
       }
       if (sel) spawnVortex(sel);
       await cinematicZoom(abbr);
-      if (gen !== renderGeneration) return;
+      if (gen !== renderGeneration) return false;
       renderState(abbr, name);
       selectedAbbr = abbr;
       viewMode = 'state';
       const back = document.getElementById('btn-back');
       if (back) { back.hidden = false; back.focus(); }
       announce(`${name}: showing 11 districts. Click a district for details.`);
-      return;
+      return true;
     }
 
     const dGeo = await ensureDistrictsLoaded();
-    if (gen !== renderGeneration || !dGeo) return;
+    if (gen !== renderGeneration || !dGeo) return false;
 
     // Mark selected
     const sel = document.querySelector(`[data-abbr="${abbr}"].ad-state`);
@@ -529,7 +549,7 @@
     if (sel) spawnVortex(sel);
 
     await cinematicZoom(abbr);
-    if (gen !== renderGeneration) return;
+    if (gen !== renderGeneration) return false;
 
     renderState(abbr, name);
     selectedAbbr = abbr;
@@ -537,6 +557,7 @@
     const back = document.getElementById('btn-back');
     if (back) { back.hidden = false; back.focus(); }
     announce(`${name}: zoomed in. Explore districts for ${name}.`);
+    return true;
   }
 
   async function cinematicZoom(abbr) {
@@ -544,8 +565,7 @@
     if (!svg) return;
     const vb = svg.viewBox.baseVal;
 
-    const codes = getCodes(abbr);
-    const feats = (districtsGeo?.features || []).filter(f => codes.includes(f.properties.st_code));
+    const feats = districtFeaturesFor(abbr);
     let cx = 500, cy = 400;
     if (feats.length) {
       const all = feats.flatMap(f => f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates.flat().flat() : f.geometry.coordinates[0]);
@@ -602,7 +622,7 @@
     { name: 'South',        left: 40, top: 78, width: 22, height: 18, image: 'd1-south.png' }
   ];
 
-  function renderDelhiImageMap(abbr, name, data, initialDistrict) {
+  function renderDelhiImageMap(abbr, name, data) {
     clearMap();
     const back = document.getElementById('btn-back');
     if (back) back.hidden = false;
@@ -643,9 +663,8 @@
 
       const container = mapArea.querySelector('.ad-delhi-hotspots');
       container.querySelectorAll('.ad-delhi-hotspot').forEach(btn => {
-        btn.addEventListener('click', () => {
-          showDelhiDistrict(abbr, btn.dataset.district, btn.dataset.image, data);
-        });
+        // Same navigation layer as every other district click
+        btn.addEventListener('click', () => navigateToDistrict(abbr, btn.dataset.district));
         btn.addEventListener('mouseenter', () => {
           const previewImg = mapArea.querySelector('.ad-delhi-preview-img');
           if (previewImg) {
@@ -660,73 +679,22 @@
       });
     }
 
-    if (initialDistrict) {
-      const dist = DELHI_DISTRICTS.find(d => d.name === initialDistrict);
-      if (dist) showDelhiDistrict(abbr, initialDistrict, dist.image, data, true);
-    }
-
     announce(`${name}: showing ${DELHI_DISTRICTS.length} districts. Click a district for details.`);
   }
 
-  function showDelhiDistrict(stateAbbr, districtName, imageFile, data, skipPush) {
-    selectedDistrict = districtName;
-    viewMode = 'district';
-
+  // Delhi district photo behind the listings modal. Rendering only — the
+  // modal and history are owned by openDistrictModal() / the navigation layer.
+  function renderDelhiDistrictView(districtName) {
+    const dist = DELHI_DISTRICTS.find(d => d.name === districtName);
     const mapArea = document.getElementById('mapSvgWrap');
-    if (mapArea) {
-      mapArea.innerHTML = `
-        <div class="ad-delhi-district-view">
-          <img src="img/delhi/${imageFile}" alt="${districtName}" class="ad-delhi-district-img" draggable="false">
-          <button class="ad-delhi-back-btn" id="delhiBackBtn" aria-label="Back to Delhi overview">← Delhi overview</button>
-        </div>
-      `;
-      document.getElementById('delhiBackBtn').addEventListener('click', () => {
-        renderDelhiImageMap(stateAbbr, 'Delhi', data);
-      });
-    }
-
-    const listings = window.IndiaMapData
-      ? IndiaMapData.getListingsForDistrict(stateAbbr, districtName) : [];
-    const seen = new Set();
-    const unique = listings.filter(l => {
-      if (seen.has(l.id)) return false;
-      seen.add(l.id);
-      return true;
-    });
-
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    const modal = document.getElementById('modal');
-    if (modalTitle) modalTitle.textContent =
-      `${unique.length} Vacanc${unique.length !== 1 ? 'ies' : 'y'} in ${districtName}`;
-    if (modalBody) {
-      modalBody.innerHTML = unique.map((l, i) => `
-        <div class="ad-listing-card visible" style="animation-delay:${i * 60}ms">
-          <div class="ad-listing-card-header">
-            <div class="ad-listing-title">${esc(l.title)}</div>
-            ${l.level ? `<span class="ad-listing-badge">${esc(l.level)}</span>` : ''}
-          </div>
-          <div class="ad-listing-meta">
-            ${l.ministry ? `<span>${esc(l.ministry)}</span>` : ''}
-            ${l.organisation ? `<span>${esc(l.organisation)}</span>` : ''}
-            ${l.functionalArea ? `<span>${esc(l.functionalArea)}</span>` : ''}
-          </div>
-          <div class="ad-listing-card-footer">
-            ${l.closingDate ? `<span class="ad-listing-close-date">Closes ${esc(l.closingDate)}</span>` : ''}
-            ${l.notificationLink ? `<a href="${esc(l.notificationLink)}" target="_blank" rel="noopener" class="ad-listing-link">Notification</a>` : ''}
-          </div>
-        </div>`).join('') || '<p style="color:var(--text-muted);text-align:center;padding:20px;">No vacancies found.</p>';
-    }
-    if (modal) {
-      modal._districtTrigger = document.querySelector('.ad-delhi-hotspot.active');
-      modal.showModal?.();
-    }
-    if (!skipPush) {
-      history.pushState(
-        { view: 'district', state: stateAbbr, district: districtName },
-        '', `?state=${stateAbbr}&district=${encodeURIComponent(districtName)}`
-      );
-    }
+    if (!dist || !mapArea) return;
+    mapArea.innerHTML = `
+      <div class="ad-delhi-district-view">
+        <img src="img/delhi/${dist.image}" alt="${esc(districtName)}" class="ad-delhi-district-img" draggable="false">
+        <button class="ad-delhi-back-btn" id="delhiBackBtn" aria-label="Back to Delhi overview">← Delhi overview</button>
+      </div>
+    `;
+    document.getElementById('delhiBackBtn').addEventListener('click', closeDistrict);
   }
 
   function renderState(abbr, name) {
@@ -744,20 +712,18 @@
     const labelsG = mapSvg?.querySelector('#map-labels');
     if (!g) return;
 
-    const code = ABBR_TO_CODE[abbr] || abbr;
-    const feats = (districtsGeo?.features || []).filter(f => f.properties.st_code === code);
+    const feats = districtFeaturesFor(abbr);
+    if (!feats.length) return;
 
-    // Re-project for state's bbox
-    if (feats.length) {
-      computeProjection(feats);
-      // Re-project national shapes too? No — keep current projection but fit
-      // For now just render districts
-    }
+    // Re-project so the state's districts fill the full 1000×800 canvas,
+    // then reset the viewBox: cinematicZoom() left it zoomed on the national
+    // projection, which would crop the re-projected district view.
+    computeProjection(feats);
+    mapSvg.setAttribute('viewBox', '0 0 1000 800');
 
-    feats.forEach((feat, idx) => {
-      const geoName = feat.properties.district || `District ${idx}`;
+    groupDistricts(feats).forEach(({ name: geoName, features: parts }, idx) => {
       const count = getDistrictCount(abbr, geoName);
-      const d = projectCoords(feat.geometry);
+      const d = parts.map(f => projectCoords(f.geometry)).filter(Boolean).join(' ');
       if (!d) return;
 
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -779,7 +745,12 @@
       path.addEventListener('mouseleave', () => { path.classList.remove('ad-gpu'); hideTooltip(); });
       g.appendChild(path);
 
-      const [clon, clat] = centroid(feat.geometry);
+      // Label at the centroid of all fragments combined
+      const [clon, clat] = centroid({
+        type: 'MultiPolygon',
+        coordinates: parts.flatMap(f => f.geometry.type === 'MultiPolygon'
+          ? f.geometry.coordinates : [f.geometry.coordinates]),
+      });
       const [cx, cy] = project(clon, clat);
 
       if (count > 0) {
@@ -808,57 +779,6 @@
     const seen = new Set();
     listings.forEach(l => seen.add(l.id));
     return seen.size;
-  }
-
-  function onDistrictClick(abbr, districtName) {
-    const listings = window.IndiaMapData ? IndiaMapData.getListingsForDistrict(abbr, districtName) : [];
-    const seen = new Set();
-    const unique = listings.filter(l => { if (seen.has(l.id)) return false; seen.add(l.id); return true; });
-
-    // C24: capture district trigger element for focus restoration
-    let districtTrigger = null;
-    if (abbr === 'DL') {
-      const activeBtn = document.querySelector('.ad-delhi-hotspot.active');
-      if (activeBtn) districtTrigger = activeBtn;
-    } else {
-      const paths = document.querySelectorAll('#map-svg .ad-district');
-      for (const p of paths) {
-        if (p.dataset.district === districtName && p.dataset.abbr === abbr) {
-          districtTrigger = p; break;
-        }
-      }
-    }
-
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    const modal = document.getElementById('modal');
-    if (modalTitle) modalTitle.textContent = `${unique.length} Vacanc${unique.length !== 1 ? 'ies' : 'y'} in ${districtName}`;
-    if (modalBody) {
-      modalBody.innerHTML = unique.map((l, i) => `
-        <div class="ad-listing-card visible" style="animation-delay:${i * 60}ms">
-          <div class="ad-listing-card-header">
-            <div class="ad-listing-title">${esc(l.title)}</div>
-            ${l.level ? `<span class="ad-listing-badge">${esc(l.level)}</span>` : ''}
-          </div>
-          <div class="ad-listing-meta">
-            ${l.ministry ? `<span>${esc(l.ministry)}</span>` : ''}
-            ${l.organisation ? `<span>${esc(l.organisation)}</span>` : ''}
-            ${l.functionalArea ? `<span>${esc(l.functionalArea)}</span>` : ''}
-          </div>
-          <div class="ad-listing-card-footer">
-            ${l.closingDate ? `<span class="ad-listing-close-date">Closes ${esc(l.closingDate)}</span>` : ''}
-            ${l.notificationLink ? `<a href="${esc(l.notificationLink)}" target="_blank" rel="noopener" class="ad-listing-link">Notification</a>` : ''}
-          </div>
-        </div>`).join('') || '<p style="color:var(--text-muted); text-align:center; padding:20px;">No vacancies found.</p>';
-    }
-    if (modal) {
-      modal._districtTrigger = districtTrigger;
-      modal.showModal?.();
-      history.pushState(
-        { view: 'district', state: abbr, district: districtName },
-        '', `?state=${abbr}&district=${encodeURIComponent(districtName)}`
-      );
-    }
   }
 
   // ----- Tooltip -----
@@ -975,108 +895,143 @@
     vb.x = 0; vb.y = 0; vb.width = 1000; vb.height = 800;
   }
 
-  // ----- Back button -----
-  // QA-P2-01: only call history.back() when the current route has an
-  // in-map parent (hasMapParent=true). For deep-linked direct entries
-  // (hasMapParent=false), navigate forward to the national URL instead.
-  async function goBack() {
-    const entry = history.state || {};
-    if (viewMode === 'district') {
-      // District → close modal first (no history mutation)
-      const m = document.getElementById('modal');
-      if (m) m.close?.();
-      // restoreStateFromDistrictClose already ran via the close handler,
-      // setting viewMode='state'. Now pop the district history entry.
-      history.back();
-      return;
-    }
-    if (viewMode === 'state') {
-      if (entry.hasMapParent === false) {
-        // Direct deep link to state: navigate forward to national URL
-        await goToNational();
-        history.replaceState(
-          makeRoute('national', null, null, false),
-          '', location.pathname
-        );
-      } else {
-        history.back();
-      }
-      return;
-    }
-  }
-
-  // ===== History / Deep linking =====
-  // Coherent routing contract: structured history state with hasMapParent
-  // — initial national load: replaceState, no parent
-  // — user National→State: one pushState
-  // — user State→District: one pushState
-  // — direct state deep link: replaceState, no duplicate push
-  // — direct district deep link: replaceState, no duplicate push
-  // — popstate: render only, never push
-  // — modal close: return to existing parent state, no extra history mutation
-  // — route-driven modal close: guard against recursive history mutation
+  // ===== Navigation layer (the only code that mutates history) =====
+  // Every history entry the map writes is makeRoute(...):
+  //   hasMapParent=true  → the entry directly below is this route's in-app
+  //                        parent (National below State, State below District),
+  //                        so leaving it is history.back().
+  //   hasMapParent=false → direct entry (initial load or deep link); there is
+  //                        no in-app parent below, so leaving it replaces the
+  //                        current entry instead of backing out of the page.
+  //
+  //   initial national load          replaceState(national, no parent)
+  //   direct ?state / ?district link replaceState(route, no parent)
+  //   user National → State          pushState(state, parent)
+  //   user State → District          pushState(district, parent)
+  //   user closes district           parent: history.back() once
+  //                                  no parent: replaceState(state, no parent)
+  //   in-app Back to India           parent: history.back() once
+  //                                  no parent: replaceState(national)
+  //   popstate (browser Back/Fwd)    render only, never push/replace
+  //
+  // Rendering functions (drillToState, renderState, renderDelhiImageMap,
+  // renderDelhiDistrictView, openDistrictModal, goToNational) never touch
+  // history.
 
   function makeRoute(view, state, district, hasMapParent) {
     return { mapRoute: true, view, state: state || null, district: district || null, hasMapParent };
   }
 
-  // One clear navigation path: user click → push exactly one entry.
-  async function navigateToState(stateAbbr) {
-    const name = ABBR_TO_NAME[stateAbbr] || stateAbbr;
-    await drillToState(stateAbbr, name);
-    history.pushState(
-      makeRoute('state', stateAbbr, null, true),
-      '', `?state=${stateAbbr}`
-    );
+  function stateUrl(abbr) { return `?state=${abbr}`; }
+  function districtUrl(abbr, district) {
+    return `?state=${abbr}&district=${encodeURIComponent(district)}`;
   }
 
-  async function navigateToDistrict(stateAbbr, districtName) {
-    // If we're not already on the state, drill there first (no push)
-    if (viewMode !== 'state' || selectedAbbr !== stateAbbr) {
-      await drillToState(stateAbbr, ABBR_TO_NAME[stateAbbr] || stateAbbr);
+  // Set while a route change (popstate, Back to India) closes the modal, so
+  // the dialog's 'close' event does not treat it as a user close and write
+  // history a second time. Only set when the dialog is actually open —
+  // close() on a closed dialog fires no event and would leave it stuck.
+  let routeClosingModal = false;
+  function closeModalForRoute() {
+    const modal = document.getElementById('modal');
+    if (modal && modal.open) {
+      routeClosingModal = true;
+      modal.close();
     }
+  }
+
+  // UI half of leaving a district: back to the state view. Idempotent.
+  function leaveDistrictView() {
+    if (viewMode !== 'district') return;
+    viewMode = 'state';
+    selectedDistrict = null;
+    // Delhi swapped its image map for a district photo — put the map back
+    if (selectedAbbr === 'DL') renderDelhiImageMap('DL', ABBR_TO_NAME.DL, getData());
+  }
+
+  // User closed the district (Escape, close button, backdrop, Delhi overview).
+  function closeDistrict() {
+    const modal = document.getElementById('modal');
+    if (modal && modal.open) {
+      modal.close(); // 'close' handler re-enters via onModalClosedByUser()
+      return;
+    }
+    onModalClosedByUser();
+  }
+
+  function onModalClosedByUser() {
+    if (viewMode !== 'district' || !selectedAbbr) return;
+    const abbr = selectedAbbr;
+    const entry = history.state || {};
+    leaveDistrictView();
+    if (entry.mapRoute && entry.view === 'district' && entry.hasMapParent) {
+      // The State entry is directly below: step back onto it. popstate then
+      // finds the UI already on the state and does nothing further.
+      history.back();
+    } else {
+      history.replaceState(makeRoute('state', abbr, null, false), '', stateUrl(abbr));
+    }
+  }
+
+  // User click: National → State. Exactly one push, after the state renders.
+  async function navigateToState(stateAbbr) {
+    if (isOnState(stateAbbr)) return;
+    const name = ABBR_TO_NAME[stateAbbr] || stateAbbr;
+    const ok = await drillToState(stateAbbr, name);
+    if (!ok) return;
+    history.pushState(makeRoute('state', stateAbbr, null, true), '', stateUrl(stateAbbr));
+  }
+
+  // User click: State → District. Exactly one push.
+  function navigateToDistrict(stateAbbr, districtName) {
+    if (viewMode !== 'state' || selectedAbbr !== stateAbbr) return;
     openDistrictModal(stateAbbr, districtName);
     history.pushState(
       makeRoute('district', stateAbbr, districtName, true),
-      '', `?state=${stateAbbr}&district=${encodeURIComponent(districtName)}`
+      '', districtUrl(stateAbbr, districtName)
     );
   }
 
-  // Render from URL/history state only — never pushes
+  // In-app "Back to India".
+  async function goBack() {
+    if (viewMode === 'district') { closeDistrict(); return; }
+    if (viewMode !== 'state') return;
+    const entry = history.state || {};
+    if (entry.mapRoute && entry.view === 'state' && entry.hasMapParent) {
+      history.back(); // popstate lands on National and renders it
+      return;
+    }
+    // Direct state entry: no in-app parent below, so stay on the page
+    history.replaceState(makeRoute('national', null, null, false), '', location.pathname);
+    await goToNational();
+  }
+
+  // Render a route (deep link or popstate). Never pushes or replaces.
   async function renderRouteFromURL(stateAbbr, districtName) {
     if (!stateAbbr) {
       await goToNational();
       return;
     }
-    // Ensure state view first
-    if (viewMode !== 'state' || selectedAbbr !== stateAbbr) {
-      await drillToState(stateAbbr, ABBR_TO_NAME[stateAbbr] || stateAbbr);
+    if (!isOnState(stateAbbr)) {
+      const ok = await drillToState(stateAbbr, ABBR_TO_NAME[stateAbbr] || stateAbbr);
+      if (!ok) return;
     }
     if (districtName) {
-      openDistrictModal(stateAbbr, districtName);
-    }
-  }
-
-  async function goToView(stateAbbr, districtName, replace = false) {
-    if (!stateAbbr) {
-      if (viewMode !== 'national') await goToNational();
-      return;
-    }
-    if (replace) {
-      await renderRouteFromURL(stateAbbr, districtName);
-      return;
-    }
-    if (districtName) {
-      await navigateToDistrict(stateAbbr, districtName);
+      if (viewMode !== 'district' || selectedDistrict !== districtName) {
+        openDistrictModal(stateAbbr, districtName);
+      }
     } else {
-      await navigateToState(stateAbbr);
+      closeModalForRoute();
+      leaveDistrictView();
     }
   }
 
-  // BLOCKER 4: separate modal open from navigation so closing can restore route
+  // Opens the listings modal for a district. Rendering only.
   function openDistrictModal(stateAbbr, districtName) {
     selectedDistrict = districtName;
     viewMode = 'district';
+
+    if (stateAbbr === 'DL') renderDelhiDistrictView(districtName);
 
     const listings = window.IndiaMapData
       ? IndiaMapData.getListingsForDistrict(stateAbbr, districtName) : [];
@@ -1087,11 +1042,10 @@
       return true;
     });
 
-    // BLOCKER 4: capture district trigger for focus restoration
+    // Focus returns here when the modal closes (C24)
     let districtTrigger = null;
     if (stateAbbr === 'DL') {
-      const activeBtn = document.querySelector('.ad-delhi-hotspot.active');
-      if (activeBtn) districtTrigger = activeBtn;
+      districtTrigger = document.getElementById('delhiBackBtn');
     } else {
       const paths = document.querySelectorAll('#map-svg .ad-district');
       for (const p of paths) {
@@ -1126,46 +1080,31 @@
     }
     if (modal) {
       modal._districtTrigger = districtTrigger;
-      modal.showModal?.();
+      if (!modal.open) modal.showModal?.();
     }
   }
 
-  function onPopState(e) {
+  // Browser Back/Forward: render the route the URL now names. Never writes
+  // history.
+  function onPopState() {
     const params = new URLSearchParams(location.search);
     const urlAbbr = (params.get('state') || '').toUpperCase();
     const urlDistrict = params.get('district') || '';
-    const validAbbr = urlAbbr && (ABBR_TO_NAME[urlAbbr] || false) ? urlAbbr : null;
+    const validAbbr = urlAbbr && ABBR_TO_NAME[urlAbbr] ? urlAbbr : null;
 
-    // QA-P1-02: Browser Back from district → state. The current history
-    // entry is the state entry. Close modal, set viewMode='state',
-    // selectedDistrict=null. Do NOT push or replace — URL already correct.
-    if (validAbbr && !urlDistrict) {
-      const modal = document.getElementById('modal');
-      if (modal) { try { modal.close(); } catch(e) {} }
-      selectedDistrict = null;
-      viewMode = 'state';
-      if (selectedAbbr !== validAbbr) {
-        // Rare: direct district deep-link back to different state
-        renderRouteFromURL(validAbbr, null);
-      }
+    if (!validAbbr) {
+      if (viewMode !== 'national') goToNational();
+      else closeModalForRoute();
       return;
     }
-    if (validAbbr && urlDistrict) {
-      renderRouteFromURL(validAbbr, urlDistrict);
-      return;
-    }
-    if (!validAbbr && viewMode !== 'national') {
-      goToNational();
-      return;
-    }
+    renderRouteFromURL(validAbbr, urlDistrict || null);
   }
 
   async function goToNational() {
     const gen = ++renderGeneration;
     selectedDistrict = null;
     // Close district modal if open (can survive after a back-navigation)
-    const modal = document.getElementById('modal');
-    if (modal) { try { modal.close(); } catch(e) {} }
+    closeModalForRoute();
     const mapArea = document.getElementById('mapSvgWrap');
     const needRebuild = !document.getElementById('map-svg');
     if (needRebuild && mapArea) {
@@ -1185,6 +1124,11 @@
     const data = getData();
     renderNational(data);
     spawnRippleForHighCounts(data);
+    // Return focus to the state that was drilled into
+    if (lastFocusedState) {
+      const st = document.querySelector(`#map-svg [data-abbr="${lastFocusedState}"].ad-state`);
+      if (st) st.focus();
+    }
   }
 
   // ----- Main init -----
@@ -1243,33 +1187,21 @@
     // Wire popstate handler (C18)
     window.addEventListener('popstate', onPopState);
 
-    // Deep-link handler: support both state and district
-    // Direct entry: hasMapParent=false (in-app Back navigates forward to national)
+    // Deep-link handler: support both state and district.
+    // Direct entry: hasMapParent=false — replace, never push, so the deep
+    // link is exactly one history entry and in-app Back stays on the page.
     const urlParams = new URLSearchParams(location.search);
     const deepState = urlParams.get('state');
-    const deepDistrict = urlParams.get('district');
-    if (deepState) {
-      const abbr = deepState.toUpperCase();
-      if (ABBR_TO_NAME[abbr]) {
-        const params = deepDistrict
-          ? `?state=${abbr}&district=${encodeURIComponent(deepDistrict)}`
-          : `?state=${abbr}`;
-        history.replaceState(
-          makeRoute(deepDistrict ? 'district' : 'state', abbr, deepDistrict || null, false),
-          '', params
-        );
-        const doDrill = () => {
-          const d = deepDistrict ? decodeURIComponent(deepDistrict) : null;
-          renderRouteFromURL(abbr, d);
-        };
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', () => {
-            document.addEventListener('map:drawInComplete', doDrill, { once: true });
-          });
-        } else {
-          document.addEventListener('map:drawInComplete', doDrill, { once: true });
-        }
-      }
+    const deepDistrict = urlParams.get('district'); // already decoded
+    const deepAbbr = deepState ? deepState.toUpperCase() : '';
+    if (deepAbbr && ABBR_TO_NAME[deepAbbr]) {
+      history.replaceState(
+        makeRoute(deepDistrict ? 'district' : 'state', deepAbbr, deepDistrict || null, false),
+        '', deepDistrict ? districtUrl(deepAbbr, deepDistrict) : stateUrl(deepAbbr)
+      );
+      // Drill once the national draw-in has finished
+      document.addEventListener('map:drawInComplete',
+        () => renderRouteFromURL(deepAbbr, deepDistrict || null), { once: true });
     } else {
       history.replaceState(makeRoute('national', null, null, false), '', location.pathname);
     }
@@ -1286,9 +1218,8 @@
     document.getElementById('zoomOutBtn')?.addEventListener('click', zoomOut);
     document.getElementById('zoomResetBtn')?.addEventListener('click', zoomReset);
 
-    // Wire modal close handlers
-    // BLOCKER 4: the 'close' event fires for ALL close paths (button, Escape, backdrop).
-    // Wire the button to close the dialog; the event listener below handles everything.
+    // Wire modal close handlers. The dialog 'close' event fires for every
+    // close path (button, Escape, backdrop, or closeModalForRoute()).
     const modal = document.getElementById('modal');
     const modalClose = modal?.querySelector('.map-modal-close');
     if (modalClose) {
@@ -1302,20 +1233,13 @@
           try { trigger.focus(); } catch (e) { /* element gone */ }
         }
         modal._districtTrigger = null;
-        restoreStateFromDistrictClose();
+        if (routeClosingModal) {
+          // The route already moved (popstate / Back to India): no history write
+          routeClosingModal = false;
+          return;
+        }
+        onModalClosedByUser();
       });
-    }
-
-    // BLOCKER 4: helper — when district modal closes, return view to state route
-    // QA-P1-01: do NOT replace the district history entry. The existing state
-    // entry is already below this district entry in the stack. Just update
-    // internal view state — Back navigation will reach the state entry naturally.
-    function restoreStateFromDistrictClose() {
-      if (viewMode === 'district' && selectedAbbr) {
-        viewMode = 'state';
-        selectedDistrict = null;
-        // No history mutation
-      }
     }
 
     document.querySelectorAll('.map-filter-btn').forEach(btn => {
@@ -1793,10 +1717,6 @@
       isMapVisible: isMapVisible,
     };
   };
-
-  // Test hook: expose navigateToState so tests can drive navigation without
-  // relying on SVG click timing.
-  window._navigateToState = navigateToState;
 
   // ===== GPU acceleration class =====
   // .ad-gpu is toggled per-element on hover (in renderNational / renderState)

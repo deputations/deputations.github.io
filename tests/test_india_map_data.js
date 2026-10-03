@@ -205,14 +205,6 @@ assert(fs.existsSync(indexPath), 'index.html exists');
 assert(fs.existsSync(appJsPath), 'app.js exists');
 assert(fs.existsSync(styleCssPath), 'style.css exists');
 
-// ---- Summary ----
-console.log(`\n${'='.repeat(50)}`);
-console.log(`Results: ${passed} passed, ${failed} failed`);
-if (failed > 0) {
-  console.error('\nSome tests failed. Review output above.');
-  process.exit(1);
-}
-
 // ===== C20: recordNewVacancy — inactive→active, active→inactive, state A→B =====
 section('C20: Realtime replacement — inactive→active same ID');
 window.IndiaMapData.reset();
@@ -294,3 +286,50 @@ assert(delhiNew && delhiNew.district === 'New Delhi', `"New Delhi" city → New 
 
 const delhiGeneric = window.IndiaMapData.normaliseVacancy({ Vacancy_ID: 'D2', Location_State: 'Delhi', Location_City: 'Delhi', Last_Date_To_Apply: '2099-01-01' });
 assert(delhiGeneric && delhiGeneric.district === '', `Generic "Delhi" → no district (got: '${delhiGeneric?.district}')`);
+
+section('C25: District geometry resolver (single source, always an array)');
+const DC = window.IndiaMapData.getDistrictCodes;
+const expectedCodes = {
+  JK:'01', HP:'02', PB:'03', CH:'04', UK:'05', HR:'06', DL:'07', RJ:'08',
+  UP:'09', BR:'10', SK:'11', AR:'12', NL:'13', MN:'14', MZ:'15', TR:'16',
+  ML:'17', AS:'18', WB:'19', JH:'20', OD:'21', CG:'22', MP:'23', GJ:'24',
+  DNH:'26', MH:'27', KA:'29', GA:'30', LD:'31', KL:'32', TN:'33', PY:'34',
+  AN:'35', TS:'36', AP:'37', LA:'38',
+};
+for (const [abbr, code] of Object.entries(expectedCodes)) {
+  const got = DC(abbr);
+  assert(Array.isArray(got) && got.length === 1 && got[0] === code,
+    `${abbr} → ['${code}'] (got: ${JSON.stringify(got)})`);
+}
+assert(Array.isArray(DC('XX')) && DC('XX').length === 0, 'Unknown abbr → []');
+const dcCopy = DC('MH'); dcCopy.push('99');
+assert(DC('MH').length === 1, 'Returned array is a copy (mutation does not leak)');
+
+section('C26: Real geo/india-districts-all.geojson contract');
+const realGeo = JSON.parse(fs.readFileSync(
+  path.join(__dirname, '..', 'geo', 'india-districts-all.geojson'), 'utf-8'));
+const statesGeo = JSON.parse(fs.readFileSync(
+  path.join(__dirname, '..', 'geo', 'india-states.geojson'), 'utf-8'));
+assert(statesGeo.features.length === 36, `national map has 36 State/UT features (got ${statesGeo.features.length})`);
+for (const abbr of Object.keys(expectedCodes)) {
+  if (abbr === 'DL') continue; // Delhi uses the 11-hotspot image map
+  const codes = DC(abbr);
+  const feats = realGeo.features.filter(f => codes.includes(String(f.properties.st_code)));
+  const named = feats.filter(f => String(f.properties.district || '').trim() !== '');
+  assert(named.length > 0, `${abbr} ${JSON.stringify(codes)} resolves ${named.length} named district feature(s)`);
+}
+const code25 = realGeo.features.filter(f => String(f.properties.st_code) === '25');
+assert(code25.length === 0, `no features under st_code 25 (got ${code25.length}) — DNH is 26 only`);
+const dnhNames = realGeo.features
+  .filter(f => String(f.properties.st_code) === '26' && String(f.properties.district || '').trim())
+  .map(f => f.properties.district).sort();
+assert(JSON.stringify(dnhNames) === JSON.stringify(['Dadra and Nagar Haveli', 'Daman', 'Diu']),
+  `DNH 26 holds Dadra and Nagar Haveli, Daman, Diu (got: ${JSON.stringify(dnhNames)})`);
+
+// ---- Summary ----
+console.log(`\n${'='.repeat(50)}`);
+console.log(`Results: ${passed} passed, ${failed} failed`);
+if (failed > 0) {
+  console.error('\nSome tests failed. Review output above.');
+  process.exit(1);
+}
