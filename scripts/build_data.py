@@ -430,20 +430,31 @@ def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> tuple[list
     newest updated_at among those rows — i.e. when a live vacancy was last
     added or edited (the footer's "Updated" date)."""
     api = supabase_url.rstrip("/") + "/rest/v1/vacancies"
-    qs = "status=eq.approved&select=*&limit=1000"
-    req = urllib.request.Request(
-        api + "?" + qs,
-        headers={
-            "apikey": supabase_anon_key,
-            "Authorization": "Bearer " + supabase_anon_key,
-            "Accept-Profile": "public",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        body = resp.read().decode("utf-8")
-    sb_rows = json.loads(body) if body else []
-    if not isinstance(sb_rows, list):
-        raise RuntimeError(f"Supabase returned non-list payload: {type(sb_rows).__name__}")
+    # Page through the table: Supabase returns at most 1000 rows per request,
+    # so a single `limit=1000` call silently dropped every approved vacancy
+    # past the first 1000. Ordered by id so pages never overlap or skip.
+    page_size = 1000
+    sb_rows: list[dict[str, Any]] = []
+    offset = 0
+    while True:
+        qs = f"status=eq.approved&select=*&order=id.asc&limit={page_size}&offset={offset}"
+        req = urllib.request.Request(
+            api + "?" + qs,
+            headers={
+                "apikey": supabase_anon_key,
+                "Authorization": "Bearer " + supabase_anon_key,
+                "Accept-Profile": "public",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            body = resp.read().decode("utf-8")
+        page = json.loads(body) if body else []
+        if not isinstance(page, list):
+            raise RuntimeError(f"Supabase returned non-list payload: {type(page).__name__}")
+        sb_rows.extend(page)
+        if len(page) < page_size:
+            break
+        offset += page_size
 
     mapped: list[dict[str, str]] = []
     for sb_row in sb_rows:
