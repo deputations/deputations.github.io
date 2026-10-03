@@ -645,6 +645,23 @@ body {
   /* let long location labels truncate inside their column instead of forcing it wider */
   #filterLocationList .ms-opt { min-width: 0; }
   #filterLocationList .ms-opt-label { min-width: 0; }
+
+  /* Organisation: full names are long — a wider single-column panel. */
+  #filterOrganisationPanel {
+    right: auto;
+    width: min(560px, 52vw);
+    z-index: 95;
+  }
+}
+
+/* Organisation filter labels: "Full Name (ACR)" on desktop, just the short
+   form on mobile. Both are rendered; the viewport picks one. */
+.org-short { display: none; }
+/* Long names wrap instead of truncating, so the "(ACR)" at the end stays visible. */
+#filterOrganisationList .ms-opt-label { white-space: normal; line-height: 1.3; }
+@media (max-width: 768px) {
+  .org-full { display: none; }
+  .org-short { display: inline; }
 }
 
 /* Selected = glow */
