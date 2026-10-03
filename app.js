@@ -45,6 +45,11 @@ function createMultiSelect(root, opts = {}) {
   const placeholder    = opts.placeholder || 'All';
   const singularPattern = opts.singularPattern || ((v) => v);
   const multiPattern    = opts.multiPattern    || ((n) => `${n} selected`);
+  // Optional: an option's displayed label (HTML) and the text the panel's search
+  // box matches against, when they differ from the raw value (e.g. Organisation:
+  // value = full name, label = "Full Name (ACR)" / "ACR" by screen width).
+  const labelHTML  = opts.labelHTML  || null;
+  const searchText = opts.searchText || ((v) => v);
   const changeListeners = [];
 
   let items = [];
@@ -62,7 +67,7 @@ function createMultiSelect(root, opts = {}) {
 
   function renderList(filter = '') {
     const f = filter.trim().toLowerCase();
-    const visible = f ? items.filter(i => i.toLowerCase().includes(f)) : items;
+    const visible = f ? items.filter(i => String(searchText(i)).toLowerCase().includes(f)) : items;
     if (!visible.length) {
       list.innerHTML = '';
       empty.hidden = false;
@@ -74,7 +79,7 @@ function createMultiSelect(root, opts = {}) {
           <span class="ms-opt-check" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
           </span>
-          <span class="ms-opt-label">${esc(v)}</span>${countHTML(v)}
+          <span class="ms-opt-label">${labelHTML ? labelHTML(v) : esc(v)}</span>${countHTML(v)}
         </button></li>`).join('');
     }
     syncCount();
@@ -88,11 +93,19 @@ function createMultiSelect(root, opts = {}) {
   }
 
   function syncTrigger() {
+    label.removeAttribute('title');
     if (!selected.size) {
       label.textContent = placeholder;
       trigger.classList.remove('ms-trigger--active');
     } else if (selected.size === 1) {
-      label.textContent = singularPattern([...selected][0]);
+      const only = [...selected][0];
+      if (labelHTML) {
+        label.innerHTML = labelHTML(only);
+        // the trigger truncates long labels — keep the full one on hover
+        label.title = (label.firstElementChild || label).textContent;
+      } else {
+        label.textContent = singularPattern(only);
+      }
       trigger.classList.add('ms-trigger--active');
     } else {
       label.textContent = multiPattern(selected.size);
@@ -290,12 +303,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterExperience = createSingleSelect(document.getElementById('filterExperienceSS'), {
       placeholder: 'Any',
     });
-    const filterLevel = createSingleSelect(document.getElementById('filterLevelSS'), {
+    const filterLevel = createMultiSelect(document.getElementById('filterLevelMS'), {
       placeholder: 'All Levels',
-      countFormat: (n) => `${n} ${n === 1 ? 'vacancy' : 'vacancies'}`,
+      singularPattern: (v) => v,
+      multiPattern: (n) => `${n} levels`,
     });
     const filterMinistry = createSingleSelect(document.getElementById('filterMinistrySS'), {
       placeholder: 'All Ministries',
+    });
+    // Organisation: value = the Organisation field as stored; shown as
+    // "Full Name (ACR)" on desktop and just the short form on mobile (both are
+    // rendered, CSS picks one by width — see .org-full / .org-short).
+    // orgShortLabels is rebuilt from the data in populateFilters().
+    let orgShortLabels = {};
+    const orgFullLabel = (v) =>
+        (window.DepEnrich && window.DepEnrich.withAcronym) ? window.DepEnrich.withAcronym(v) : v;
+    const orgLabelHTML = (v) => {
+        const full = orgFullLabel(v);
+        const short = orgShortLabels[v];
+        if (!short || short === full) return escapeHtml(full);
+        return `<span class="org-full">${escapeHtml(full)}</span><span class="org-short">${escapeHtml(short)}</span>`;
+    };
+    const filterOrganisation = createMultiSelect(document.getElementById('filterOrganisationMS'), {
+      placeholder: 'All Organisations',
+      multiPattern: (n) => `${n} organisations`,
+      labelHTML: orgLabelHTML,
+      searchText: (v) => `${orgFullLabel(v)} ${orgShortLabels[v] || ''}`,
     });
     const filterOrgType = createSingleSelect(document.getElementById('filterOrgTypeSS'), {
       placeholder: 'All Types',
@@ -795,11 +828,19 @@ function hydrateFiltersFromUrl() {
         setIfPresent('search', searchPost);
         setIfPresent('myPayLevel', filterMyPayLevel);
         setIfPresent('experience', filterExperience);
-        setIfPresent('level', filterLevel);
         setIfPresent('ministry', filterMinistry);
         setIfPresent('orgType', filterOrgType);
         setIfPresent('region', filterRegion);
-        // multi-select: ?location=a,b,c
+        // multi-selects: ?level=Level-10,Level-11  ?org=<name>&org=<name>  ?location=a,b,c
+        // (organisation names contain commas — "AIIMS, Patna" — so one param each)
+        if (params.has('level')) {
+          const arr = (params.get('level') || '').split(',').map(s => s.trim()).filter(Boolean);
+          if (arr.length) filterLevel.__pendingValues = arr;
+        }
+        if (params.has('org')) {
+          const arr = params.getAll('org').map(s => s.trim()).filter(Boolean);
+          if (arr.length) filterOrganisation.__pendingValues = arr;
+        }
         if (params.has('location')) {
           const arr = (params.get('location') || '').split(',').map(s => s.trim()).filter(Boolean);
           if (arr.length) filterLocation.__pendingValues = arr;
@@ -1545,13 +1586,14 @@ function renderTable(data) {
             filterStatus.value = 'Active';
             filterStatus.__defaulted = true;
         }
-        if (filterLocation.__pendingValues) {
-            // ?location=… from the URL: make sure those options exist (count
-            // filled in below) before applying them.
-            filterLocation.populate(filterLocation.__pendingValues, {});
-            filterLocation.setValues(filterLocation.__pendingValues);
-            delete filterLocation.__pendingValues;
-        }
+        [filterLevel, filterOrganisation, filterLocation].forEach(ctl => {
+            if (!ctl.__pendingValues) return;
+            // ?level= / ?org= / ?location= from the URL: make sure those options
+            // exist (counts filled in below) before applying them.
+            ctl.populate(ctl.__pendingValues, {});
+            ctl.setValues(ctl.__pendingValues);
+            delete ctl.__pendingValues;
+        });
 
         const rowsExcluding = (facet) => getFilteredData({ applyKpiFilter: true, exclude: facet });
         const tally = (rows, keyFn) => {
@@ -1604,9 +1646,9 @@ function renderTable(data) {
             syncExperienceState();
         }
 
-        // PAY LEVEL — high → low.
+        // PAY LEVEL (multi-select) — high → low.
         const levelCounts = withSelected(
-            tally(rowsExcluding('level'), i => safe(i.Level_Text)), filterLevel.value);
+            tally(rowsExcluding('level'), i => safe(i.Level_Text)), filterLevel.values);
         const levels = Object.keys(levelCounts).sort((a, b) => {
             const va = parseLevelValue(a), vb = parseLevelValue(b);
             if (va == null && vb == null) return a.localeCompare(b);
@@ -1615,9 +1657,7 @@ function renderTable(data) {
             if (vb !== va) return vb - va;            // higher pay level first
             return a.localeCompare(b);
         });
-        setItems(filterLevel, [{ value: '', name: 'All Levels', count: null }].concat(
-            levels.map(value => ({ value, name: value, count: levelCounts[value] }))
-        ));
+        setItems(filterLevel, levels, levelCounts);
 
         // MINISTRY — A → Z.
         const ministryCounts = withSelected(
@@ -1626,6 +1666,13 @@ function renderTable(data) {
         setItems(filterMinistry, [{ value: '', name: 'All Ministries', count: null }].concat(
             ministries.map(m => ({ value: m, name: m, count: ministryCounts[m] }))
         ));
+
+        // ORGANISATION (multi-select) — A → Z by full name.
+        if (orgShortLabels.__forRows !== rawData) orgShortLabels = buildOrgShortLabels(rawData);
+        const orgCounts = withSelected(
+            tally(rowsExcluding('organisation'), i => safe(i.Organisation)), filterOrganisation.values);
+        const orgs = Object.keys(orgCounts).sort((a, b) => orgFullLabel(a).localeCompare(orgFullLabel(b)));
+        setItems(filterOrganisation, orgs, orgCounts);
 
         // ORGANISATION TYPE — most common first.
         const orgTypeCounts = withSelected(
@@ -1748,6 +1795,7 @@ function renderTable(data) {
     filterExperience,
     filterLevel,
     filterMinistry,
+    filterOrganisation,
     filterOrgType,
     filterRegion,
     filterLocation,
@@ -1777,8 +1825,9 @@ function renderTable(data) {
     searchPost.value = '';
     filterMyPayLevel.value = '';
     if (filterExperience) filterExperience.value = '';
-    filterLevel.value = '';
+    filterLevel.setValues([]);
     filterMinistry.value = '';
+    filterOrganisation.setValues([]);
     filterOrgType.value = '';
     filterRegion.value = '';
     filterLocation.setValues([]);
@@ -1825,7 +1874,14 @@ function renderTable(data) {
     if (filterName === 'search') searchPost.value = '';
     if (filterName === 'myPayLevel') filterMyPayLevel.value = '';
     if (filterName === 'experience' && filterExperience) filterExperience.value = '';
-    if (filterName === 'level') filterLevel.value = '';
+    if (filterName && filterName.startsWith('level:')) {
+      const v = filterName.slice('level:'.length);
+      filterLevel.setValues(filterLevel.values.filter(x => x !== v));
+    }
+    if (filterName && filterName.startsWith('org:')) {
+      const v = filterName.slice('org:'.length);
+      filterOrganisation.setValues(filterOrganisation.values.filter(x => x !== v));
+    }
     if (filterName === 'ministry') filterMinistry.value = '';
     if (filterName === 'orgType') filterOrgType.value = '';
     if (filterName === 'region') filterRegion.value = '';
@@ -2175,13 +2231,17 @@ function applyUrlParameters() {
     }
 
     // `exclude` names one dropdown whose selection is ignored ('myPayLevel',
-    // 'level', 'ministry', 'orgType', 'region', 'location', 'status') — used by
+    // 'level', 'ministry', 'organisation', 'orgType', 'region', 'location',
+    // 'status') — used by
     // populateFilters() to compute that dropdown's faceted counts.
     function getFilteredData({ applyKpiFilter = true, applyStatusFilter = true, exclude = '' } = {}) {
   const search = searchPost.value.trim().toLowerCase();
   const myPayLevel = exclude === 'myPayLevel' ? '' : filterMyPayLevel.value;
   const myYears = filterExperience ? filterExperience.value : '';
-  const level = exclude === 'level' ? '' : filterLevel.value;
+  const levels = exclude === 'level' ? [] : filterLevel.values;
+  const levelSet = levels.length ? new Set(levels) : null;
+  const orgs = exclude === 'organisation' ? [] : filterOrganisation.values;
+  const orgSet = orgs.length ? new Set(orgs) : null;
   const ministry = exclude === 'ministry' ? '' : filterMinistry.value;
   const orgType = exclude === 'orgType' ? '' : filterOrgType.value;
   const region = exclude === 'region' ? '' : filterRegion.value;
@@ -2225,7 +2285,8 @@ function applyUrlParameters() {
     ].map(safe).join(' ').toLowerCase();
 
     if (search && !matchesSearchCached(item, search, searchableText)) return false;
-    if (level && itemLevel !== level) return false;
+    if (levelSet && !levelSet.has(itemLevel)) return false;
+    if (orgSet && !orgSet.has(safe(item.Organisation))) return false;
     if (ministry && itemMinistry !== ministry) return false;
     if (orgType && safe(item.Organisation_Type) !== orgType) return false;
     if (region && safe(item.Region) !== region) return false;
@@ -2505,8 +2566,13 @@ function maybeShowBookmarkIntroToast() {
   if (searchPost.value.trim()) chips.push(makeChip('search', `Search: ${escapeHtml(searchPost.value.trim())}`));
   if (filterMyPayLevel.value) chips.push(makeChip('myPayLevel', `My Pay Level: Level ${filterMyPayLevel.value}`));
   if (filterExperience && filterExperience.value) chips.push(makeChip('experience', `Experience: ${filterExperience.value === '10' ? '10+' : escapeHtml(filterExperience.value)} yr`));
-  if (filterLevel.value) chips.push(makeChip('level', `Pay Level: ${escapeHtml(filterLevel.value)}`));
+  filterLevel.values.forEach(lv => {
+    chips.push(makeChip(`level:${lv}`, `Pay Level: ${escapeHtml(lv)}`));
+  });
   if (filterMinistry.value) chips.push(makeChip('ministry', `Ministry: ${escapeHtml(filterMinistry.value)}`));
+  filterOrganisation.values.forEach(org => {
+    chips.push(makeChip(`org:${org}`, `Organisation: ${escapeHtml(orgShortLabels[org] || orgFullLabel(org))}`));
+  });
   if (filterOrgType.value) chips.push(makeChip('orgType', `Type: ${escapeHtml(filterOrgType.value)}`));
   if (filterRegion.value) chips.push(makeChip('region', `Region: ${escapeHtml(filterRegion.value === 'NorthEast' ? 'North-East' : filterRegion.value)}`));
   filterLocation.values.forEach(loc => {
@@ -2528,8 +2594,9 @@ function maybeShowBookmarkIntroToast() {
 function countHiddenActiveFilters() {
   let n = 0;
   if (filterExperience && filterExperience.value) n++;
-  if (filterLevel.value) n++;
+  if (filterLevel.values.length) n++;
   if (filterMinistry.value) n++;
+  if (filterOrganisation.values.length) n++;
   if (filterOrgType.value) n++;
   if (filterRegion.value) n++;
   if (filterLocation.values.length) n++;
@@ -3548,6 +3615,32 @@ function syncCardSortUI() {
         const f = window.DepEnrich && window.DepEnrich.acronymFor;
         if (!f) return '';
         return f(safe(item.Organisation)) || f(safe(item.Department)) || '';
+    }
+
+    // Short (mobile) label per Organisation for the Organisation filter.
+    //   "Indian Institute of Technology Goa"                 → "IITG"
+    //   "All India Institute of Medical Sciences (AIIMS), Jodhpur" → "AIIMS, Jodhpur"
+    //     (text after an explicit "(ACR)" is kept, so the AIIMS campuses differ)
+    // Organisations with no short form, or whose short form would be shared
+    // with another organisation (e.g. IIT Goa / IIT Gandhinagar → "IITG"), get
+    // none and show their full name instead, so the list is never ambiguous.
+    function buildOrgShortLabels(rows) {
+        const acronymFor = window.DepEnrich && window.DepEnrich.acronymFor;
+        const names = [...new Set(rows.map(r => safe(r.Organisation)).filter(Boolean))];
+        const shortOf = {};
+        names.forEach(name => {
+            const acr = acronymFor ? acronymFor(name) : '';
+            if (!acr) return;
+            const m = name.match(/^(.*?)\(\s*([^()]+?)\s*\)\s*(.*)$/);
+            const tail = m && m[2] === acr ? m[3].trim() : '';
+            shortOf[name] = tail ? `${acr}${tail.startsWith(',') ? '' : ' '}${tail}` : acr;
+        });
+        const uses = {};
+        Object.values(shortOf).forEach(sh => { uses[sh] = (uses[sh] || 0) + 1; });
+        const out = {};
+        Object.keys(shortOf).forEach(name => { if (uses[shortOf[name]] === 1) out[name] = shortOf[name]; });
+        Object.defineProperty(out, '__forRows', { value: rows, enumerable: false });
+        return out;
     }
 
     function formatLocation(item) {
