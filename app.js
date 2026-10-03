@@ -153,7 +153,7 @@ function createMultiSelect(root, opts = {}) {
       countMap = counts || {};
       // drop selections that are no longer present
       [...selected].forEach(v => { if (!items.includes(v)) selected.delete(v); });
-      renderList(); syncTrigger();
+      renderList(search.value); syncTrigger();   // keep any text typed in the open panel
     },
     get values() { return [...selected]; },
     setValues(arr) {
@@ -1528,46 +1528,70 @@ function renderTable(data) {
   `;
 }
     
+    // Faceted filter counts. Each dropdown's "(N)" is the number of vacancies
+    // that match EVERY OTHER active filter (search, quick chips, status, the
+    // other dropdowns…) plus that option — i.e. exactly what the list would show
+    // if you picked it. So a filter used alone counts across everything, and
+    // once something is selected (e.g. Level-10 → 21) every other dropdown only
+    // counts within those rows and drops options that would yield nothing.
+    // A dropdown's own selection is excluded from its own counts, so you can
+    // still switch Level-10 → Level-11 and see the right numbers.
+    //
+    // Called once after load and again on every renderDashboard(). A dropdown is
+    // only rebuilt when its option list actually changed, so an open panel keeps
+    // its scroll position / search text while you click inside it.
     function populateFilters() {
-        // Counts everywhere are based on the ACTIVE subset, so each "(N)" matches
-        // what you see when that option is picked (the list defaults to Active).
-        // These are a fixed property of the dataset (they don't change as the user
-        // changes filters), so we tally them ONCE here — in a single pass — rather
-        // than recomputing per filter change.
-        const activeRows = [];
-        const levelCounts = {}, ministryCounts = {}, locationCounts = {}, orgTypeCounts = {}, regionCounts = {};
-        let inactiveCount = 0;
-        rawData.forEach(i => {
-            const st = safe(i.Status);
-            if (st === 'Active') {
-                activeRows.push(i);
-                const lv = safe(i.Level_Text);   if (lv)  levelCounts[lv]    = (levelCounts[lv]    || 0) + 1;
-                const mn = safe(i.Ministry);      if (mn)  ministryCounts[mn] = (ministryCounts[mn] || 0) + 1;
-                const loc = formatLocation(i);    if (loc) locationCounts[loc] = (locationCounts[loc] || 0) + 1;
-                const ot = safe(i.Organisation_Type); if (ot) orgTypeCounts[ot] = (orgTypeCounts[ot] || 0) + 1;
-                const rg = safe(i.Region);        if (rg)  regionCounts[rg]   = (regionCounts[rg]   || 0) + 1;
-            } else if (st === 'Inactive') {
-                inactiveCount++;
-            }
-        });
+        if (!filterStatus.value && !filterStatus.__defaulted) {
+            filterStatus.value = 'Active';
+            filterStatus.__defaulted = true;
+        }
+        if (filterLocation.__pendingValues) {
+            // ?location=… from the URL: make sure those options exist (count
+            // filled in below) before applying them.
+            filterLocation.populate(filterLocation.__pendingValues, {});
+            filterLocation.setValues(filterLocation.__pendingValues);
+            delete filterLocation.__pendingValues;
+        }
+
+        const rowsExcluding = (facet) => getFilteredData({ applyKpiFilter: true, exclude: facet });
+        const tally = (rows, keyFn) => {
+            const counts = {};
+            rows.forEach(r => { const k = keyFn(r); if (k) counts[k] = (counts[k] || 0) + 1; });
+            return counts;
+        };
+        // Options with ≥1 match, plus whatever is currently selected (shown as
+        // "(0)") so a selection never silently disappears from its dropdown.
+        const withSelected = (counts, selected) => {
+            [].concat(selected || []).forEach(v => { if (v && !(v in counts)) counts[v] = 0; });
+            return counts;
+        };
+        // Rebuild a dropdown only when its options changed (see note above).
+        const setItems = (ctl, items, extra) => {
+            const sig = JSON.stringify(extra === undefined ? items : [items, extra]);
+            if (ctl.__optionsSig === sig) return;
+            ctl.__optionsSig = sig;
+            if (extra === undefined) ctl.populate(items); else ctl.populate(items, extra);
+        };
+
         const isEligibleFn = (window.DepEnrich && window.DepEnrich.isEligible)
             ? window.DepEnrich.isEligible : null;
 
-        // MY PAY LEVEL — all grades 18…1 (13A between 14 & 13); "(N)" = active
+        // MY PAY LEVEL — all grades 18…1 (13A between 14 & 13); "(N)" = matching
         // vacancies you'd be eligible for at that level (experience-independent).
+        // Every grade stays listed: it describes the user, not the data.
+        const myLevelRows = rowsExcluding('myPayLevel');
         const myLevelValues = [];
         for (let i = 18; i >= 1; i--) { myLevelValues.push(String(i)); if (i === 14) myLevelValues.push('13A'); }
-        const myPayLevelItems = [{ value: '', name: 'Any Level', count: null }].concat(
+        setItems(filterMyPayLevel, [{ value: '', name: 'Any Level', count: null }].concat(
             myLevelValues.map(v => ({
                 value: v,
                 name: `Level ${v}`,
-                count: isEligibleFn ? activeRows.filter(it => isEligibleFn(it, v, '')).length : null,
+                count: isEligibleFn ? myLevelRows.filter(it => isEligibleFn(it, v, '')).length : null,
             }))
-        );
-        filterMyPayLevel.populate(myPayLevelItems);
+        ));
 
         // MY YEARS OF EXPERIENCE — themed look, no count (only meaningful with a level).
-        if (filterExperience) {
+        if (filterExperience && !filterExperience.__optionsSig) {
             const expItems = [{ value: '', name: 'Any', count: null }];
             for (let y = 0; y <= 10; y++) {
                 expItems.push({
@@ -1576,11 +1600,13 @@ function renderTable(data) {
                     count: null,
                 });
             }
-            filterExperience.populate(expItems);
+            setItems(filterExperience, expItems);
             syncExperienceState();
         }
 
-        // PAY LEVEL — active vacancies per level, high → low, only levels with ≥1 active.
+        // PAY LEVEL — high → low.
+        const levelCounts = withSelected(
+            tally(rowsExcluding('level'), i => safe(i.Level_Text)), filterLevel.value);
         const levels = Object.keys(levelCounts).sort((a, b) => {
             const va = parseLevelValue(a), vb = parseLevelValue(b);
             if (va == null && vb == null) return a.localeCompare(b);
@@ -1589,50 +1615,54 @@ function renderTable(data) {
             if (vb !== va) return vb - va;            // higher pay level first
             return a.localeCompare(b);
         });
-        filterLevel.populate([{ value: '', name: 'All Levels', count: null }].concat(
+        setItems(filterLevel, [{ value: '', name: 'All Levels', count: null }].concat(
             levels.map(value => ({ value, name: value, count: levelCounts[value] }))
         ));
 
-        // MINISTRY — active vacancies per ministry (only ministries with ≥1 active).
+        // MINISTRY — A → Z.
+        const ministryCounts = withSelected(
+            tally(rowsExcluding('ministry'), i => safe(i.Ministry)), filterMinistry.value);
         const ministries = Object.keys(ministryCounts).sort((a, b) => a.localeCompare(b));
-        filterMinistry.populate([{ value: '', name: 'All Ministries', count: null }].concat(
+        setItems(filterMinistry, [{ value: '', name: 'All Ministries', count: null }].concat(
             ministries.map(m => ({ value: m, name: m, count: ministryCounts[m] }))
         ));
 
-        // ORGANISATION TYPE — active vacancies per type, most common first.
+        // ORGANISATION TYPE — most common first.
+        const orgTypeCounts = withSelected(
+            tally(rowsExcluding('orgType'), i => safe(i.Organisation_Type)), filterOrgType.value);
         const orgTypes = Object.keys(orgTypeCounts).sort((a, b) =>
             (orgTypeCounts[b] - orgTypeCounts[a]) || a.localeCompare(b));
-        filterOrgType.populate([{ value: '', name: 'All Types', count: null }].concat(
+        setItems(filterOrgType, [{ value: '', name: 'All Types', count: null }].concat(
             orgTypes.map(t => ({ value: t, name: t, count: orgTypeCounts[t] }))
         ));
 
-        // REGION — derived client-side from the location's state (enrich.js). Shown
-        // in a fixed geographic order; only regions with ≥1 active vacancy appear.
+        // REGION — derived client-side from the location's state (enrich.js),
+        // shown in a fixed geographic order.
         const REGION_ORDER = ['North', 'South', 'East', 'West', 'Central', 'NorthEast'];
         const REGION_LABEL = { NorthEast: 'North-East' };
+        const regionCounts = withSelected(
+            tally(rowsExcluding('region'), i => safe(i.Region)), filterRegion.value);
         const regions = Object.keys(regionCounts).sort((a, b) => {
             const ia = REGION_ORDER.indexOf(a), ib = REGION_ORDER.indexOf(b);
             return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
         });
-        filterRegion.populate([{ value: '', name: 'All Regions', count: null }].concat(
+        setItems(filterRegion, [{ value: '', name: 'All Regions', count: null }].concat(
             regions.map(r => ({ value: r, name: REGION_LABEL[r] || r, count: regionCounts[r] }))
         ));
 
-        // STATUS — count per status. Preserve the default "Active" selection.
-        filterStatus.populate([
+        // STATUS — always lists All / Active / Inactive.
+        const statusCounts = tally(rowsExcluding('status'), i => safe(i.Status));
+        setItems(filterStatus, [
             { value: '', name: 'All', count: null },
-            { value: 'Active', name: 'Active', count: activeRows.length },
-            { value: 'Inactive', name: 'Inactive', count: inactiveCount },
+            { value: 'Active', name: 'Active', count: statusCounts.Active || 0 },
+            { value: 'Inactive', name: 'Inactive', count: statusCounts.Inactive || 0 },
         ]);
-        if (!filterStatus.value) filterStatus.value = 'Active';
 
-        // LOCATION — active vacancies per location (gradient "(N)" on each option).
+        // LOCATION (multi-select) — A → Z, gradient "(N)" on each option.
+        const locationCounts = withSelected(
+            tally(rowsExcluding('location'), i => formatLocation(i)), filterLocation.values);
         const locations = Object.keys(locationCounts).sort((a, b) => a.localeCompare(b));
-        filterLocation.populate(locations, locationCounts);
-        if (filterLocation.__pendingValues) {
-            filterLocation.setValues(filterLocation.__pendingValues);
-            delete filterLocation.__pendingValues;
-        }
+        setItems(filterLocation, locations, locationCounts);
     }
 
     function buildSearchSuggestions() {
@@ -1997,6 +2027,7 @@ kpiGrid.addEventListener('click', (e) => {
 
    function renderDashboard(resetPageIfNeeded = true) {
   syncExperienceState();
+  populateFilters();   // faceted "(N)" counts follow the current selections
   // KPI cards summarise the whole set regardless of the Status dropdown:
   // "Total Vacancies" = all (Status: All); "Active Vacancies" / "Ministries"
   // = the active subset of them.
@@ -2129,17 +2160,34 @@ function applyUrlParameters() {
   }
 }
 
-    function getFilteredData({ applyKpiFilter = true, applyStatusFilter = true } = {}) {
+    // Search hits memoised per query: populateFilters() runs getFilteredData()
+    // once per dropdown on every render, and fuzzy-matching every row each time
+    // would multiply the cost of a keystroke. Reset whenever the query changes.
+    let searchMemo = { query: null, hits: new WeakMap() };
+    function matchesSearchCached(item, query, textFn) {
+        if (searchMemo.query !== query) searchMemo = { query, hits: new WeakMap() };
+        let hit = searchMemo.hits.get(item);
+        if (hit === undefined) {
+            hit = fuzzyIncludes(query, textFn());
+            searchMemo.hits.set(item, hit);
+        }
+        return hit;
+    }
+
+    // `exclude` names one dropdown whose selection is ignored ('myPayLevel',
+    // 'level', 'ministry', 'orgType', 'region', 'location', 'status') — used by
+    // populateFilters() to compute that dropdown's faceted counts.
+    function getFilteredData({ applyKpiFilter = true, applyStatusFilter = true, exclude = '' } = {}) {
   const search = searchPost.value.trim().toLowerCase();
-  const myPayLevel = filterMyPayLevel.value;
+  const myPayLevel = exclude === 'myPayLevel' ? '' : filterMyPayLevel.value;
   const myYears = filterExperience ? filterExperience.value : '';
-  const level = filterLevel.value;
-  const ministry = filterMinistry.value;
-  const orgType = filterOrgType.value;
-  const region = filterRegion.value;
-  const locations = filterLocation.values;
+  const level = exclude === 'level' ? '' : filterLevel.value;
+  const ministry = exclude === 'ministry' ? '' : filterMinistry.value;
+  const orgType = exclude === 'orgType' ? '' : filterOrgType.value;
+  const region = exclude === 'region' ? '' : filterRegion.value;
+  const locations = exclude === 'location' ? [] : filterLocation.values;
   const locationSet = locations.length ? new Set(locations) : null;
-  const status = filterStatus.value;
+  const status = exclude === 'status' ? '' : filterStatus.value;
 
   return rawData.filter(item => {
     const itemStatus = safe(item.Status);
@@ -2158,7 +2206,7 @@ function applyUrlParameters() {
     // Supabase-only path, since JSON rows take backfillDerived, which doesn't
     // set it. Both legacy keys are kept: harmless when absent, live if the
     // Sheets path ever returns.
-    const searchableText = [
+    const searchableText = () => [
       item.Post_Name,
       item.Organisation,
       item.Department_Organisation,
@@ -2176,7 +2224,7 @@ function applyUrlParameters() {
       item.search_text
     ].map(safe).join(' ').toLowerCase();
 
-    if (search && !fuzzyIncludes(search, searchableText)) return false;
+    if (search && !matchesSearchCached(item, search, searchableText)) return false;
     if (level && itemLevel !== level) return false;
     if (ministry && itemMinistry !== ministry) return false;
     if (orgType && safe(item.Organisation_Type) !== orgType) return false;
