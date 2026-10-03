@@ -166,14 +166,21 @@ def load_pairs() -> list[tuple[str, str]]:
     url, key = read_supabase_config()
     if url and key:
         try:
-            resp = requests.get(
-                f"{url}/rest/v1/vacancies",
-                params={"status": "eq.approved", "select": "*"},
-                headers={"apikey": key, "Authorization": f"Bearer {key}"},
-                timeout=REQUEST_TIMEOUT,
-            )
-            resp.raise_for_status()
-            rows = resp.json()
+            # Paged — Supabase caps each response at 1000 rows.
+            rows = []
+            while True:
+                resp = requests.get(
+                    f"{url}/rest/v1/vacancies",
+                    params={"status": "eq.approved", "select": "*", "order": "id.asc",
+                            "limit": 1000, "offset": len(rows)},
+                    headers={"apikey": key, "Authorization": f"Bearer {key}"},
+                    timeout=REQUEST_TIMEOUT,
+                )
+                resp.raise_for_status()
+                page = resp.json()
+                rows.extend(page)
+                if len(page) < 1000:
+                    break
             print(f"Source: Supabase ({len(rows)} approved rows).")
             return rows_to_pairs(rows)
         except Exception as exc:  # noqa: BLE001
