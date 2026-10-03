@@ -204,7 +204,10 @@
     const lvl = parseLevel(userLevel);
     if (lvl === null) return true;
     const tiers = (vacancy && vacancy.eligibility_tiers) || [];
-    if (!tiers.length) return true;
+    // No eligibility recorded ("Not specified") → we can't say this officer is
+    // eligible, so it must NOT match a chosen pay level. Such posts still show
+    // when no level is chosen (the `lvl === null` early return above).
+    if (!tiers.length) return false;
     const yrs = (userYears === '' || userYears === null || userYears === undefined)
       ? null : (parseInt(userYears, 10) || 0);
     // Eligible only if the officer's level matches one of the post's feeder
