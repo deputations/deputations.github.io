@@ -599,6 +599,28 @@ def transform_rows(rows: list[dict[str, str]]) -> tuple[list[dict[str, Any]], in
     return transformed, date_fixes
 
 
+def warn_duplicate_vacancy_ids(vacancies: list[dict[str, Any]]) -> None:
+    """Flag Vacancy_IDs shared by more than one vacancy. The ID is the public
+    key for ?v= links, bookmarks, push alerts and reports, so a shared one
+    makes the site open the wrong vacancy (the website copes via app.js
+    disambiguateDuplicateIds, and migration 0024 renumbers clashes in the DB,
+    but a new one should still be noticed). Emits GitHub Actions warnings;
+    never fails the build."""
+    rows_by_id: dict[str, list[dict[str, Any]]] = {}
+    for v in vacancies:
+        vid = safe_str(v.get("Vacancy_ID", "")).strip()
+        if vid:
+            rows_by_id.setdefault(vid, []).append(v)
+    dups = {vid: rs for vid, rs in rows_by_id.items() if len(rs) > 1}
+    if not dups:
+        return
+    print(f"::warning::{len(dups)} Vacancy_ID(s) shared by more than one vacancy "
+          "— apply supabase/migrations/0024_unique_vacancy_id.sql")
+    for vid, rs in sorted(dups.items()):
+        posts = "; ".join(f"{safe_str(r.get('Post_Name', ''))} (closes {r.get('Last_Date_To_Apply') or '?'})" for r in rs)
+        print(f"::warning::Duplicate Vacancy_ID {vid}: {posts}")
+
+
 def build_filters(vacancies: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "levels": list_unique_sorted([safe_str(v.get("Level_Text", "")) for v in vacancies]),
@@ -811,6 +833,7 @@ def main() -> None:
         validate_required_columns(rows)
 
     vacancies, date_fixes = transform_rows(rows)
+    warn_duplicate_vacancy_ids(vacancies)
     assert_no_credentials(vacancies)
     filters = build_filters(vacancies)
     stats = build_stats(vacancies)
