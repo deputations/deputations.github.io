@@ -1527,11 +1527,11 @@ function renderTable(data) {
 
         <td class="days-col" data-label="Days Left">
           <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}">
-            ${escapeHtml(formatDaysLeft(daysLeft))}
+            ${escapeHtml(daysLeftLabel(item, daysLeft))}
           </span>
           ${(() => {
             const d = safe(item.Last_Date_To_Apply_Display) || formatDisplayDate(safe(item.Last_Date_To_Apply));
-            return d && d !== 'Not specified' ? `<span class="days-date-sub">${escapeHtml(d)}</span>` : '';
+            return d && d !== 'Not specified' ? `<span class="days-date-sub">${escapeHtml(closingDateLabel(item, d))}</span>` : '';
           })()}
         </td>
 
@@ -2816,7 +2816,7 @@ function cardHeadHtml(item, daysLeft) {
       <span class="vx-pill vx-pill-level">${escapeHtml(safe(item.Level_Text) || '—')}</span>
       ${isNewVacancy(item) ? '<span class="vx-new">NEW</span>' : ''}
       <span class="vx-head-spacer"></span>
-      <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}">${escapeHtml(formatDaysLeft(daysLeft))}</span>
+      <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}">${escapeHtml(daysLeftLabel(item, daysLeft))}</span>
       ${cardHeartBtn(item)}
     </div>`;
 }
@@ -2862,7 +2862,7 @@ function renderGroupCard(group) {
     return `
       <div class="vx-member" data-open-details="${escapeHtml(safe(it.Vacancy_ID))}" role="button" tabindex="0">
         <span class="vx-member-loc">${svgIcon('map-pin')}${escapeHtml(formatLocation(it) || '—')}</span>
-        <span class="days-pill days-pill-${getDaysLeftTone(d)}">${escapeHtml(formatDaysLeft(d))}</span>
+        <span class="days-pill days-pill-${getDaysLeftTone(d)}">${escapeHtml(daysLeftLabel(it, d))}</span>
         ${cardHeartBtn(it, 'table-heart-btn')}
       </div>`;
   }).join('');
@@ -2875,7 +2875,7 @@ function renderGroupCard(group) {
         <span class="vx-pill vx-pill-level">${escapeHtml(safe(rep.Level_Text) || '—')}</span>
         ${group.items.some(isNewVacancy) ? '<span class="vx-new">NEW</span>' : ''}
         <span class="vx-head-spacer"></span>
-        <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}" title="Soonest closing among these posts">${escapeHtml(formatDaysLeft(daysLeft))}</span>
+        <span class="days-pill days-pill-${getDaysLeftTone(daysLeft)}" title="Soonest closing among these posts">${escapeHtml(group.items.every(isOpenUntilFilled) ? daysLeftLabel(rep, daysLeft) : formatDaysLeft(daysLeft))}</span>
       </div>
       <h3 class="vx-title">${escapeHtml(safe(rep.Post_Name) || '—')}</h3>
       <div class="vx-org">${escapeHtml(cardOrgLine(rep))}</div>
@@ -3131,7 +3131,7 @@ function syncCardSortUI() {
                         <span class="badge badge-level">${escapeHtml(level)}</span>
                         <span class="badge ${status === 'Active' ? 'badge-active' : ''}">${escapeHtml(status)}</span>
                         <span class="modal-deadline-chip ${expired ? 'expired' : closingSoon ? 'closing' : ''}">
-                            ${escapeHtml(formatDaysLeft(daysLeft))}
+                            ${escapeHtml(daysLeftLabel(item, daysLeft))}
                         </span>
                     </div>
                 </div>
@@ -3142,9 +3142,10 @@ function syncCardSortUI() {
                         ${buildModalField('Eligibility', eligibility)}
                         ${buildModalField('Location', location)}
                         ${buildModalField('Pay Level', level)}
-                        ${buildModalField('Days Left', formatDaysLeft(daysLeft))}
+                        ${buildModalField('Days Left', daysLeftLabel(item, daysLeft))}
                         ${buildModalField('Organisation', organisation || 'Not specified')}
-                        ${buildModalField('Closing Date', `<span class="${closingDateDays !== null && closingDateDays >= 0 && closingDateDays <= 15 ? 'closing-date-text' : ''}">${escapeHtml(closingDate)}</span>`, true)}
+                        ${buildModalField('Closing Date', `<span class="${closingDateDays !== null && closingDateDays >= 0 && closingDateDays <= 15 ? 'closing-date-text' : ''}">${escapeHtml(closingDateLabel(item, closingDate))}</span>`, true)}
+                        ${isOpenUntilFilled(item) ? buildModalField('* No fixed last date', `Applications are accepted until the vacancies are filled. ${escapeHtml(closingDate)} is an indicative date, not a deadline — check the ${detailedNotificationLink ? `<a href="${escapeHtml(detailedNotificationLink)}" target="_blank" rel="noopener noreferrer">source notification</a>` : 'source notification'} before applying.`, true, 'modal-field--wide') : ''}
                         ${buildModalField('Notification Date', notificationDate)}
                         ${sourceDisplay ? buildModalField('Source', sourceDisplay, true) : ''}
                         ${buildModalField('Mode of Application', renderModeBadge(modeOfApplication), true, 'modal-field--wide')}
@@ -3789,6 +3790,22 @@ function syncCardSortUI() {
         if (req1 !== null) return req1;
         if (req2 !== null) return req2;
         return Number.MAX_SAFE_INTEGER;
+    }
+
+    // Vacancies whose notification has no last date — open until the posts are
+    // filled (0025_open_until_filled.sql). Their Last_Date_To_Apply holds an
+    // indicative date (e.g. 31 Dec 2026), so it is shown with a "*" and the
+    // countdown reads "Open till filled*"; the modal explains the asterisk.
+    function isOpenUntilFilled(item) {
+        const v = item && item.Open_Until_Filled;
+        return v === true || String(v).toLowerCase() === 'true';
+    }
+    function daysLeftLabel(item, daysLeft) {
+        if (isOpenUntilFilled(item) && !(daysLeft < 0)) return 'Open till filled*';
+        return formatDaysLeft(daysLeft);
+    }
+    function closingDateLabel(item, dateText) {
+        return dateText && isOpenUntilFilled(item) ? `${dateText}*` : dateText;
     }
 
     function formatDaysLeft(daysLeft) {
