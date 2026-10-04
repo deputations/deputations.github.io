@@ -1,10 +1,10 @@
 {
-  "generated_at_utc": "2026-10-03T21:31:00Z",
+  "generated_at_utc": "2026-10-04T10:01:39Z",
   "vacancies_updated_at_utc": "2026-10-03T20:05:58Z",
   "record_count": 1270,
-  "active_count": 323,
-  "inactive_count": 666,
-  "closing_soon_count": 187,
+  "active_count": 321,
+  "inactive_count": 668,
+  "closing_soon_count": 194,
   "source": "supabase_rest_api_via_anon_key",
   "filter_counts": {
     "levels": 18,
