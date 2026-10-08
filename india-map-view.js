@@ -775,7 +775,7 @@
       path.setAttribute('aria-label', `${geoName}: ${count} vacancies`);
       path.style.setProperty('--ad-delay', `${Math.min(idx * 20, 500)}ms`);
       // State colour where there are vacancies, neutral surface elsewhere
-      path.style.fill = count > 0 ? stateFill(abbr) : 'var(--map-surface-raised)';
+      path.style.fill = count > 0 ? stateFill(abbr) : 'var(--map-neutral)';
 
       path.addEventListener('click', () => navigateToDistrict(abbr, geoName));
       path.addEventListener('keydown', (e) => {
