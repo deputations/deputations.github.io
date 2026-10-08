@@ -1153,6 +1153,72 @@ class TestDrillTransition:
         assert abs(last["y"] + last["h"] / 2 - cy) < last["h"] * 0.1, f"{abbr}: zoom ended off-centre ({last})"
 
 
+class TestGlassColours:
+    """Colourful glass states: own colour per state, no two neighbours alike."""
+
+    @staticmethod
+    def _real_state_borders() -> dict[str, set[str]]:
+        """Bordering states from the real india-states.geojson: two states
+        border when they have vertices in the same 0.05° grid cell."""
+        import math
+        names = {"Andaman and Nicobar": "AN", "Dadra and Nagar Haveli and Daman and Diu": "DNH"}
+        names.update({n: a for a, n in _ALL_36 if n not in names})
+        geo = json.loads((REPO_ROOT / "geo" / "india-states.geojson").read_text(encoding="utf-8"))
+        cells: dict[tuple[int, int], set[str]] = {}
+        for f in geo["features"]:
+            abbr = names[f["properties"]["NAME_1"]]
+            g = f["geometry"]
+            rings = g["coordinates"] if g["type"] == "Polygon" else [r for poly in g["coordinates"] for r in poly]
+            for ring in rings:
+                for x, y in ring:
+                    cells.setdefault((math.floor(x / 0.05), math.floor(y / 0.05)), set()).add(abbr)
+        borders: dict[str, set[str]] = {}
+        for group in cells.values():
+            for a in group:
+                borders.setdefault(a, set()).update(group - {a})
+        return borders
+
+    def test_no_two_bordering_states_share_a_colour(self, page: Page, base_url: str):
+        _open_map(page, base_url)  # real geometry
+        colours = dict(page.eval_on_selector_all(
+            "#map-svg .ad-state", "els => els.map(e => [e.dataset.abbr, e.dataset.color])"))
+        assert len(colours) == 36 and all(colours.values()), colours
+        assert len(set(colours.values())) >= 8, f"expected a vibrant mix, got {set(colours.values())}"
+        borders = self._real_state_borders()
+        assert sum(len(v) for v in borders.values()) > 50, "border detection found too few borders"
+        clashes = sorted({tuple(sorted((a, b))) for a, nbrs in borders.items() for b in nbrs
+                          if colours.get(a) == colours.get(b)})
+        assert not clashes, f"bordering states share a colour: {clashes}"
+
+    def test_glass_fill_and_sheen(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        fills = page.eval_on_selector_all("#map-svg .ad-state", """els => els.map(e => ({
+            abbr: e.dataset.abbr, color: e.dataset.color, fill: e.style.fill,
+            empty: e.classList.contains('empty-state') }))""")
+        for f in fills:
+            kind = "frost" if f["empty"] else "glass"
+            assert f["fill"] == f'url("#{kind}-{f["color"]}")', f
+        # MH has vacancies (glass); Arunachal has none (frosted)
+        by = {f["abbr"]: f for f in fills}
+        assert not by["MH"]["empty"] and by["AR"]["empty"]
+        expect(page.locator("#map-svg .ad-sheen")).to_have_count(36)
+        assert page.locator("#map-svg defs #glass-sheen").count() == 1
+
+    def test_districts_take_their_state_colour(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        colour = page.locator("#map-svg [data-abbr='MH'].ad-state").get_attribute("data-color")
+        _svg_state_click(page, "MH")
+        _expect_state(page, "MH")
+        pune = page.locator("#map-svg [data-district='Pune'].ad-district")
+        assert pune.evaluate("e => e.style.fill") == f'url("#glass-{colour}")'
+
+    def test_clicked_state_has_no_focus_rectangle(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        mh = page.locator("#map-svg [data-abbr='MH'].ad-state")
+        mh.focus()
+        assert mh.evaluate("e => getComputedStyle(e).outlineStyle") == "none"
+
+
 class TestGesturesAfterDelhi:
     """The Delhi image map replaces the SVG; the rebuilt SVG must still zoom."""
 

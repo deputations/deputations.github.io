@@ -192,6 +192,84 @@
     return districtsPromise;
   }
 
+  // ----- Glass palette -----
+  // iOS system colours (dark-mode variants). STATE_COLORS gives every pair
+  // of bordering states different colours — checked against
+  // geo/india-states.geojson by tests/test_india_map.py::TestGlassColours.
+  const GLASS_PALETTE = {
+    red: '#FF453A', orange: '#FF9F0A', yellow: '#FFD60A', green: '#30D158',
+    teal: '#40C8E0', cyan: '#64D2FF', blue: '#0A84FF', indigo: '#5E5CE6',
+    purple: '#BF5AF2', pink: '#FF375F',
+  };
+  const STATE_COLORS = {
+    JK: 'blue', LA: 'purple', HP: 'green', PB: 'orange', CH: 'pink', HR: 'teal',
+    DL: 'red', UK: 'indigo', UP: 'yellow', RJ: 'pink', GJ: 'blue', MP: 'green',
+    MH: 'purple', DNH: 'orange', GA: 'red', CG: 'red', TS: 'cyan', KA: 'orange',
+    AP: 'indigo', TN: 'pink', KL: 'green', PY: 'yellow', OD: 'teal', JH: 'purple',
+    BR: 'orange', WB: 'pink', SK: 'cyan', AS: 'green', AR: 'purple', NL: 'orange',
+    MN: 'blue', MZ: 'yellow', TR: 'red', ML: 'indigo', AN: 'teal', LD: 'cyan',
+  };
+  function stateColor(abbr) { return STATE_COLORS[abbr] || 'blue'; }
+  // Glass when the shape has vacancies, frosted glass when it has none
+  function glassFill(abbr, count) {
+    return `url(#${count > 0 ? 'glass' : 'frost'}-${stateColor(abbr)})`;
+  }
+
+  // Blend a #rrggbb colour toward another by t (0..1)
+  function mixHex(hex, toward, t) {
+    const a = parseInt(hex.slice(1), 16), b = parseInt(toward.slice(1), 16);
+    const ch = sh => Math.round(((a >> sh) & 255) * (1 - t) + ((b >> sh) & 255) * t);
+    return '#' + ((1 << 24) | (ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).slice(1);
+  }
+
+  // Glass = a per-colour body gradient (lighter top-left, deeper bottom-right)
+  // plus one shared sheen drawn over each shape's top half.
+  function glassDefs(ns) {
+    const frag = document.createDocumentFragment();
+    Object.entries(GLASS_PALETTE).forEach(([name, hex]) => {
+      const lg = document.createElementNS(ns, 'linearGradient');
+      lg.setAttribute('id', `glass-${name}`);
+      lg.setAttribute('x1', '0'); lg.setAttribute('y1', '0');
+      lg.setAttribute('x2', '0.45'); lg.setAttribute('y2', '1');
+      lg.innerHTML = `
+        <stop offset="0%" stop-color="${mixHex(hex, '#ffffff', 0.38)}" stop-opacity="0.95"/>
+        <stop offset="55%" stop-color="${hex}" stop-opacity="0.85"/>
+        <stop offset="100%" stop-color="${mixHex(hex, '#000000', 0.32)}" stop-opacity="0.9"/>`;
+      frag.appendChild(lg);
+      // Frosted variant for shapes with no vacancies: a pale, translucent
+      // tint of the same colour (plain transparency over the dark page
+      // turns yellow olive and red brown)
+      const fr = document.createElementNS(ns, 'linearGradient');
+      fr.setAttribute('id', `frost-${name}`);
+      fr.setAttribute('x1', '0'); fr.setAttribute('y1', '0');
+      fr.setAttribute('x2', '0.45'); fr.setAttribute('y2', '1');
+      fr.innerHTML = `
+        <stop offset="0%" stop-color="${mixHex(hex, '#ffffff', 0.78)}" stop-opacity="0.34"/>
+        <stop offset="100%" stop-color="${mixHex(hex, '#ffffff', 0.55)}" stop-opacity="0.16"/>`;
+      frag.appendChild(fr);
+    });
+    const sheen = document.createElementNS(ns, 'linearGradient');
+    sheen.setAttribute('id', 'glass-sheen');
+    sheen.setAttribute('x1', '0'); sheen.setAttribute('y1', '0');
+    sheen.setAttribute('x2', '0'); sheen.setAttribute('y2', '1');
+    sheen.innerHTML = `
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="34%" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="42%" stop-color="#ffffff" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>`;
+    frag.appendChild(sheen);
+    return frag;
+  }
+
+  // The glossy highlight layer for a glass shape: same outline, no events.
+  function sheenFor(path) {
+    const sh = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    sh.setAttribute('d', path.getAttribute('d'));
+    sh.setAttribute('class', 'ad-sheen');
+    sh.setAttribute('aria-hidden', 'true');
+    return sh;
+  }
+
   // ----- Build / clear SVG -----
   function buildSvg() {
     const ns = 'http://www.w3.org/2000/svg';
@@ -211,16 +289,7 @@
     filter.innerHTML = '<feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>';
     defs.appendChild(filter);
 
-    // Liquid fill gradient (south→north, monsoon metaphor)
-    const lg = document.createElementNS(ns, 'linearGradient');
-    lg.setAttribute('id', 'liquid-gradient');
-    lg.setAttribute('x1', '0'); lg.setAttribute('y1', '1');
-    lg.setAttribute('x2', '0'); lg.setAttribute('y2', '0');
-    lg.innerHTML = `
-      <stop offset="0%" stop-color="#f5a721" stop-opacity="0.85"/>
-      <stop offset="60%" stop-color="#ffb840" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#ffcb6b" stop-opacity="0.3"/>`;
-    defs.appendChild(lg);
+    defs.appendChild(glassDefs(ns));
 
     svg.appendChild(defs);
 
@@ -344,11 +413,9 @@
       path.dataset.drawLen = drawLen;
       path.dataset.idx = idx;
 
-      // Liquid fill: states with vacancies get the gold gradient
-      if (count > 0) {
-        path.classList.add('liquid-fill');
-        path.style.fill = 'url(#liquid-gradient)';
-      }
+      // Glass in the state's own colour; frosted when it has no vacancies
+      path.dataset.color = stateColor(abbr);
+      path.style.fill = glassFill(abbr, count);
 
       // Hover spotlight (dims neighbours)
       path.addEventListener('mouseenter', (e) => {
@@ -370,7 +437,8 @@
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigateToState(abbr); }
       });
 
-      g.appendChild(path);   // <-- BUG FIX: actually add the path to the SVG
+      g.appendChild(path);
+      g.appendChild(sheenFor(path)); // directly after its state (CSS dims it with the state)
 
       // Label
       const [clon, clat] = centroid(feat.geometry);
@@ -810,6 +878,7 @@
       path.setAttribute('role', 'button');
       path.setAttribute('aria-label', `${geoName}: ${count} vacancies`);
       path.style.setProperty('--ad-delay', `${Math.min(idx * 20, 500)}ms`);
+      path.style.fill = glassFill(abbr, count);
 
       path.addEventListener('click', () => navigateToDistrict(abbr, geoName));
       path.addEventListener('keydown', (e) => {
@@ -822,6 +891,7 @@
       path.addEventListener('mousemove', moveTooltip);
       path.addEventListener('mouseleave', () => { path.classList.remove('ad-gpu'); hideTooltip(); });
       g.appendChild(path);
+      g.appendChild(sheenFor(path));
 
       // Label at the centroid of all fragments combined
       const [clon, clat] = centroid({
@@ -939,6 +1009,8 @@
       }
       filteredTotal += count;
       p.style.opacity = visible ? '1' : '0.12';
+      const sh = p.nextElementSibling;
+      if (sh && sh.classList.contains('ad-sheen')) sh.style.opacity = p.style.opacity;
       p.setAttribute('aria-label', `${ABBR_TO_NAME[abbr] || abbr}: ${count} vacancies`);
       // Update count label from the shared #map-labels group
       if (labelsG) {
@@ -1646,8 +1718,7 @@
     var path = document.querySelector('#map-svg [data-abbr="' + abbr + '"].ad-state');
     if (path) {
       path.classList.remove('empty-state');
-      path.classList.add('liquid-fill');
-      path.style.fill = 'url(#liquid-gradient)';
+      path.style.fill = glassFill(abbr, 1);
       spawnRipple(path);
     }
 
