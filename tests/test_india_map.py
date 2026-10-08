@@ -208,7 +208,7 @@ _STATES_36_COORDS = _grid_coords()
 
 @pytest.fixture()
 def all_36_states_fixture(page: Page):
-    """Full 36-state/UT fixture with 7 deterministic vacancies.
+    """Full 36-state/UT fixture with 9 deterministic vacancies.
 
     BLOCKER 6: all 36 real State/UT names — no placeholders.
     BLOCKER 7: Pune + Mumbai + Nagpur districts rendered with vacancies.
@@ -248,7 +248,7 @@ def all_36_states_fixture(page: Page):
         _district_feature("05", "", 77.5, 81.0, 28.7, 31.4),
     ]
 
-    # 7 vacancies, all using the production data shape.
+    # 9 vacancies, all using the production data shape.
     # Categories must match production deriveCategory() exactly:
     #   eduKws: teach/faculty/professor/lecturer/education/academic/institute/university/college/school/research fellow/scholar
     #   funcKws: account/finance/admin/steno/secretary/clerk/assistant/officer/manager/supervisor/inspector/audit/legal/it /tech /engineer/programmer/analyst/translator/ hindi/stenography
@@ -310,6 +310,22 @@ def all_36_states_fixture(page: Page):
          "Location_State": "Chhattisgarh", "Location_City": "Raipur",
          "state_abbr": "CG", "district": "Raipur",
          "Official_Notification_Link": ""},
+        # Uttarakhand — city only, no district field. "Rishikesh" is not a
+        # district name; only the city→district alias places it in Dehradun.
+        {"Vacancy_ID": "UK1", "Post_Name": "Nursing Superintendent",
+         "Ministry": "Health", "Organisation": "AIIMS Rishikesh",
+         "Level_Text": "Level-11", "Functional_Area": "Hospital Services",
+         "Last_Date_To_Apply": "2099-12-31", "Status": "Active",
+         "Location_State": "Uttarakhand", "Location_City": "Rishikesh",
+         "Official_Notification_Link": ""},
+        # Uttarakhand — a city no district or alias matches: must still be
+        # reachable from the state view ("View all").
+        {"Vacancy_ID": "UK2", "Post_Name": "Forest Guard",
+         "Ministry": "Environment", "Organisation": "Forest Division",
+         "Level_Text": "Level-4", "Functional_Area": "Forest Protection",
+         "Last_Date_To_Apply": "2099-12-31", "Status": "Active",
+         "Location_State": "Uttarakhand", "Location_City": "Baun",
+         "Official_Notification_Link": ""},
     ]
 
     _inject_fixtures(page, vacancies, states, districts)
@@ -365,8 +381,8 @@ class TestNationalCounter:
         page.wait_for_timeout(2000)
         val = page.locator("#mapCounterValue").inner_text()
         n = int(val.replace(",", ""))
-        # 7 vacancies, all active in fixture
-        assert n == 7, f"Expected 7 vacancies total, got {n}"
+        # 9 vacancies, all active in fixture
+        assert n == 9, f"Expected 9 vacancies total, got {n}"
 
 
 # ---------------------------------------------------------------------------
@@ -418,9 +434,9 @@ class TestFilters:
         page.wait_for_selector("#mapCounterValue", timeout=10000)
         page.wait_for_timeout(2000)
         all_count = int(page.locator("#mapCounterValue").inner_text().replace(",", ""))
-        # 7 vacancies: M1=Education, M2=Functional, M3=General, K1=Functional,
-        # T1=Education, DL1=Functional, CG1=General
-        assert all_count == 7, f"All filter should be 7, got {all_count}"
+        # 9 vacancies: M1=Education, M2=Functional, M3=General, K1=Functional,
+        # T1=Education, DL1=Functional, CG1=General, UK1=General, UK2=General
+        assert all_count == 9, f"All filter should be 9, got {all_count}"
 
     def test_functional_filter_label_count(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
@@ -1017,6 +1033,190 @@ class TestQAP003_DelhiRouting:
         page.go_back()
         _expect_state(page, "DL")
         expect(page.locator('.ad-delhi-hotspot[data-district="New Delhi"]')).to_be_focused()
+
+
+class TestStateVacancies:
+    """A state the national map counts must show its vacancies on its own page."""
+
+    def test_city_alias_places_vacancy_on_district(self, page: Page, base_url: str, all_36_states_fixture):
+        """UK1 has no district field; its city "Rishikesh" resolves to Dehradun."""
+        _open_map(page, base_url)
+        _svg_state_click(page, "UK")
+        _expect_state(page, "UK")
+        dehradun = page.locator("#map-svg [data-district='Dehradun'].ad-district")
+        expect(dehradun).to_have_attribute("aria-label", "Dehradun: 1 vacancies")
+        expect(page.locator("#map-labels .ad-count-badge")).to_have_count(1)
+        dehradun.click()
+        _expect_district(page, "UK", "Dehradun")
+        expect(page.locator("#modalBody .ad-listing-card")).to_have_count(1)
+        expect(page.locator("#modalBody")).to_contain_text("Nursing Superintendent")
+
+    def test_district_tooltip_uses_district_numbers(self, page: Page, base_url: str, all_36_states_fixture):
+        """A district's tooltip shows its own count and breakdown, not its state's."""
+        _open_map(page, base_url)
+        _svg_state_click(page, "UK")
+        _expect_state(page, "UK")
+        page.locator("#map-svg [data-district='Dehradun'].ad-district").hover()
+        expect(page.locator("#mapTooltipName")).to_have_text("Dehradun")
+        expect(page.locator("#mapTooltipCount")).to_have_text("1 vacancy")
+        expect(page.locator("#mapTooltipMeta")).to_have_text("1 General")
+        page.locator("#map-svg [data-district='Nainital'].ad-district").hover()
+        expect(page.locator("#mapTooltipName")).to_have_text("Nainital")
+        expect(page.locator("#mapTooltipCount")).to_have_text("0 vacancies")
+        expect(page.locator("#mapTooltipMeta")).to_have_text("")
+
+    def test_district_names_are_shown(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        _svg_state_click(page, "UK")
+        _expect_state(page, "UK")
+        label = page.locator("#map-labels .ad-district-label", has_text="Dehradun")
+        expect(label).to_have_css("opacity", "1")
+
+    def test_view_all_lists_every_state_vacancy(self, page: Page, base_url: str, all_36_states_fixture):
+        """UK has 2 vacancies; one ("Baun") matches no district but is still listed."""
+        _open_map(page, base_url)
+        btn = page.locator("#stateListBtn")
+        expect(btn).to_be_hidden()
+        _svg_state_click(page, "UK")
+        _expect_state(page, "UK")
+        expect(btn).to_be_visible()
+        expect(btn).to_contain_text("View all 2 vacancies in Uttarakhand")
+        expect(btn).to_contain_text("1 not linked to a district")
+        length = _history_length(page)
+        btn.click()
+        expect(page.locator("#modal")).to_be_visible()
+        expect(page.locator("#modalTitle")).to_have_text("2 Vacancies in Uttarakhand")
+        expect(page.locator("#modalBody .ad-listing-card")).to_have_count(2)
+        expect(page.locator("#modalBody")).to_contain_text("Forest Guard")
+        page.keyboard.press("Escape")
+        _expect_state(page, "UK")  # still the state route, modal closed
+        assert _history_length(page) == length, "the state list is not a history entry"
+
+    def test_view_all_hidden_after_back_to_india(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        _svg_state_click(page, "UK")
+        _expect_state(page, "UK")
+        page.locator("#btn-back").click()
+        _expect_national(page)
+        expect(page.locator("#stateListBtn")).to_be_hidden()
+
+    def test_delhi_view_all(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        _svg_state_click(page, "DL")
+        _expect_state(page, "DL")
+        btn = page.locator("#stateListBtn")
+        expect(btn).to_have_text("View the 1 vacancy in Delhi")
+        btn.click()
+        expect(page.locator("#modalBody .ad-listing-card")).to_have_count(1)
+
+
+class TestDrillTransition:
+    def test_tooltip_cleared_when_drilling(self, page: Page, base_url: str, all_36_states_fixture):
+        """A national-map tooltip must not stay stuck over the Delhi image map."""
+        _open_map(page, base_url)
+        page.locator("#map-svg [data-abbr='MH'].ad-state").hover()
+        expect(page.locator("#mapTooltip")).to_be_visible()
+        _svg_state_click(page, "DL")
+        _expect_state(page, "DL")
+        expect(page.locator("#mapTooltip")).to_be_hidden()
+
+    @pytest.mark.parametrize("abbr", ["DL", "MH", "UK"])
+    def test_zoom_stays_on_clicked_state(self, page: Page, base_url: str, all_36_states_fixture, abbr):
+        """Every zoom frame keeps the clicked state's centre in view, and the
+        zoom ends centred on it."""
+        _open_map(page, base_url)
+        centre = page.evaluate("""(a) => {
+            window.__zoomFrames = [];
+            const svg = document.getElementById('map-svg');
+            const path = svg.querySelector(`[data-abbr="${a}"].ad-state`);
+            const b = path.getBBox();
+            const cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+            (function tick() {
+                if (!path.isConnected) return;   // state view replaced the national map
+                const vb = svg.viewBox.baseVal;
+                window.__zoomFrames.push({ x: vb.x, y: vb.y, w: vb.width, h: vb.height });
+                requestAnimationFrame(tick);
+            })();
+            return { cx, cy };
+        }""", abbr)
+        _svg_state_click(page, abbr)
+        _expect_state(page, abbr)
+        frames = page.evaluate("() => window.__zoomFrames")
+        assert len(frames) > 5, f"too few zoom frames recorded: {len(frames)}"
+        cx, cy = centre["cx"], centre["cy"]
+        off = [f for f in frames
+               if not (f["x"] <= cx <= f["x"] + f["w"] and f["y"] <= cy <= f["y"] + f["h"])]
+        assert not off, f"{abbr} centre left the view on {len(off)} frame(s), e.g. {off[0]}"
+        last = frames[-1]
+        assert last["w"] < 1000 / 1.5, f"{abbr}: zoom did not zoom in (last frame {last})"
+        assert abs(last["x"] + last["w"] / 2 - cx) < last["w"] * 0.1, f"{abbr}: zoom ended off-centre ({last})"
+        assert abs(last["y"] + last["h"] / 2 - cy) < last["h"] * 0.1, f"{abbr}: zoom ended off-centre ({last})"
+
+
+class TestGlassColours:
+    """Colourful glass states: own colour per state, no two neighbours alike."""
+
+    @staticmethod
+    def _real_state_borders() -> dict[str, set[str]]:
+        """Bordering states from the real india-states.geojson: two states
+        border when they have vertices in the same 0.05° grid cell."""
+        import math
+        names = {"Andaman and Nicobar": "AN", "Dadra and Nagar Haveli and Daman and Diu": "DNH"}
+        names.update({n: a for a, n in _ALL_36 if n not in names})
+        geo = json.loads((REPO_ROOT / "geo" / "india-states.geojson").read_text(encoding="utf-8"))
+        cells: dict[tuple[int, int], set[str]] = {}
+        for f in geo["features"]:
+            abbr = names[f["properties"]["NAME_1"]]
+            g = f["geometry"]
+            rings = g["coordinates"] if g["type"] == "Polygon" else [r for poly in g["coordinates"] for r in poly]
+            for ring in rings:
+                for x, y in ring:
+                    cells.setdefault((math.floor(x / 0.05), math.floor(y / 0.05)), set()).add(abbr)
+        borders: dict[str, set[str]] = {}
+        for group in cells.values():
+            for a in group:
+                borders.setdefault(a, set()).update(group - {a})
+        return borders
+
+    def test_no_two_bordering_states_share_a_colour(self, page: Page, base_url: str):
+        _open_map(page, base_url)  # real geometry
+        colours = dict(page.eval_on_selector_all(
+            "#map-svg .ad-state", "els => els.map(e => [e.dataset.abbr, e.dataset.color])"))
+        assert len(colours) == 36 and all(colours.values()), colours
+        assert len(set(colours.values())) >= 8, f"expected a vibrant mix, got {set(colours.values())}"
+        borders = self._real_state_borders()
+        assert sum(len(v) for v in borders.values()) > 50, "border detection found too few borders"
+        clashes = sorted({tuple(sorted((a, b))) for a, nbrs in borders.items() for b in nbrs
+                          if colours.get(a) == colours.get(b)})
+        assert not clashes, f"bordering states share a colour: {clashes}"
+
+    def test_glass_fill_and_sheen(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        fills = page.eval_on_selector_all("#map-svg .ad-state", """els => els.map(e => ({
+            abbr: e.dataset.abbr, color: e.dataset.color, fill: e.style.fill,
+            empty: e.classList.contains('empty-state') }))""")
+        for f in fills:
+            kind = "frost" if f["empty"] else "glass"
+            assert f["fill"] == f'url("#{kind}-{f["color"]}")', f
+        # MH has vacancies (glass); Arunachal has none (frosted)
+        by = {f["abbr"]: f for f in fills}
+        assert not by["MH"]["empty"] and by["AR"]["empty"]
+        expect(page.locator("#map-svg .ad-sheen")).to_have_count(36)
+        assert page.locator("#map-svg defs #glass-sheen").count() == 1
+
+    def test_districts_take_their_state_colour(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        colour = page.locator("#map-svg [data-abbr='MH'].ad-state").get_attribute("data-color")
+        _svg_state_click(page, "MH")
+        _expect_state(page, "MH")
+        pune = page.locator("#map-svg [data-district='Pune'].ad-district")
+        assert pune.evaluate("e => e.style.fill") == f'url("#glass-{colour}")'
+
+    def test_clicked_state_has_no_focus_rectangle(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        mh = page.locator("#map-svg [data-abbr='MH'].ad-state")
+        mh.focus()
+        assert mh.evaluate("e => getComputedStyle(e).outlineStyle") == "none"
 
 
 class TestGesturesAfterDelhi:

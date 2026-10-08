@@ -14,6 +14,7 @@
   let districtsPromise = null;
   let currentProjection = null;
   let zoomAnimFrame = null;
+  let viewBoxAnimId = 0;
   let renderGeneration = 0;  // navigation/render lifecycle (J)
   let drawGeneration = 0;    // decorative draw-in lifecycle (J)
   let lastFocusedState = null;
@@ -191,6 +192,84 @@
     return districtsPromise;
   }
 
+  // ----- Glass palette -----
+  // iOS system colours (dark-mode variants). STATE_COLORS gives every pair
+  // of bordering states different colours — checked against
+  // geo/india-states.geojson by tests/test_india_map.py::TestGlassColours.
+  const GLASS_PALETTE = {
+    red: '#FF453A', orange: '#FF9F0A', yellow: '#FFD60A', green: '#30D158',
+    teal: '#40C8E0', cyan: '#64D2FF', blue: '#0A84FF', indigo: '#5E5CE6',
+    purple: '#BF5AF2', pink: '#FF375F',
+  };
+  const STATE_COLORS = {
+    JK: 'blue', LA: 'purple', HP: 'green', PB: 'orange', CH: 'pink', HR: 'teal',
+    DL: 'red', UK: 'indigo', UP: 'yellow', RJ: 'pink', GJ: 'blue', MP: 'green',
+    MH: 'purple', DNH: 'orange', GA: 'red', CG: 'red', TS: 'cyan', KA: 'orange',
+    AP: 'indigo', TN: 'pink', KL: 'green', PY: 'yellow', OD: 'teal', JH: 'purple',
+    BR: 'orange', WB: 'pink', SK: 'cyan', AS: 'green', AR: 'purple', NL: 'orange',
+    MN: 'blue', MZ: 'yellow', TR: 'red', ML: 'indigo', AN: 'teal', LD: 'cyan',
+  };
+  function stateColor(abbr) { return STATE_COLORS[abbr] || 'blue'; }
+  // Glass when the shape has vacancies, frosted glass when it has none
+  function glassFill(abbr, count) {
+    return `url(#${count > 0 ? 'glass' : 'frost'}-${stateColor(abbr)})`;
+  }
+
+  // Blend a #rrggbb colour toward another by t (0..1)
+  function mixHex(hex, toward, t) {
+    const a = parseInt(hex.slice(1), 16), b = parseInt(toward.slice(1), 16);
+    const ch = sh => Math.round(((a >> sh) & 255) * (1 - t) + ((b >> sh) & 255) * t);
+    return '#' + ((1 << 24) | (ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).slice(1);
+  }
+
+  // Glass = a per-colour body gradient (lighter top-left, deeper bottom-right)
+  // plus one shared sheen drawn over each shape's top half.
+  function glassDefs(ns) {
+    const frag = document.createDocumentFragment();
+    Object.entries(GLASS_PALETTE).forEach(([name, hex]) => {
+      const lg = document.createElementNS(ns, 'linearGradient');
+      lg.setAttribute('id', `glass-${name}`);
+      lg.setAttribute('x1', '0'); lg.setAttribute('y1', '0');
+      lg.setAttribute('x2', '0.45'); lg.setAttribute('y2', '1');
+      lg.innerHTML = `
+        <stop offset="0%" stop-color="${mixHex(hex, '#ffffff', 0.38)}" stop-opacity="0.95"/>
+        <stop offset="55%" stop-color="${hex}" stop-opacity="0.85"/>
+        <stop offset="100%" stop-color="${mixHex(hex, '#000000', 0.32)}" stop-opacity="0.9"/>`;
+      frag.appendChild(lg);
+      // Frosted variant for shapes with no vacancies: a pale, translucent
+      // tint of the same colour (plain transparency over the dark page
+      // turns yellow olive and red brown)
+      const fr = document.createElementNS(ns, 'linearGradient');
+      fr.setAttribute('id', `frost-${name}`);
+      fr.setAttribute('x1', '0'); fr.setAttribute('y1', '0');
+      fr.setAttribute('x2', '0.45'); fr.setAttribute('y2', '1');
+      fr.innerHTML = `
+        <stop offset="0%" stop-color="${mixHex(hex, '#ffffff', 0.78)}" stop-opacity="0.34"/>
+        <stop offset="100%" stop-color="${mixHex(hex, '#ffffff', 0.55)}" stop-opacity="0.16"/>`;
+      frag.appendChild(fr);
+    });
+    const sheen = document.createElementNS(ns, 'linearGradient');
+    sheen.setAttribute('id', 'glass-sheen');
+    sheen.setAttribute('x1', '0'); sheen.setAttribute('y1', '0');
+    sheen.setAttribute('x2', '0'); sheen.setAttribute('y2', '1');
+    sheen.innerHTML = `
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="34%" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="42%" stop-color="#ffffff" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>`;
+    frag.appendChild(sheen);
+    return frag;
+  }
+
+  // The glossy highlight layer for a glass shape: same outline, no events.
+  function sheenFor(path) {
+    const sh = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    sh.setAttribute('d', path.getAttribute('d'));
+    sh.setAttribute('class', 'ad-sheen');
+    sh.setAttribute('aria-hidden', 'true');
+    return sh;
+  }
+
   // ----- Build / clear SVG -----
   function buildSvg() {
     const ns = 'http://www.w3.org/2000/svg';
@@ -210,16 +289,7 @@
     filter.innerHTML = '<feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>';
     defs.appendChild(filter);
 
-    // Liquid fill gradient (south→north, monsoon metaphor)
-    const lg = document.createElementNS(ns, 'linearGradient');
-    lg.setAttribute('id', 'liquid-gradient');
-    lg.setAttribute('x1', '0'); lg.setAttribute('y1', '1');
-    lg.setAttribute('x2', '0'); lg.setAttribute('y2', '0');
-    lg.innerHTML = `
-      <stop offset="0%" stop-color="#f5a721" stop-opacity="0.85"/>
-      <stop offset="60%" stop-color="#ffb840" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#ffcb6b" stop-opacity="0.3"/>`;
-    defs.appendChild(lg);
+    defs.appendChild(glassDefs(ns));
 
     svg.appendChild(defs);
 
@@ -289,6 +359,8 @@
   }
 
   function clearMap() {
+    // Paths are about to be removed without a mouseleave — drop any tooltip
+    hideTooltip();
     const old = document.getElementById('map-svg');
     if (old) {
       const g = old.querySelector('#map-group');
@@ -341,17 +413,15 @@
       path.dataset.drawLen = drawLen;
       path.dataset.idx = idx;
 
-      // Liquid fill: states with vacancies get the gold gradient
-      if (count > 0) {
-        path.classList.add('liquid-fill');
-        path.style.fill = 'url(#liquid-gradient)';
-      }
+      // Glass in the state's own colour; frosted when it has no vacancies
+      path.dataset.color = stateColor(abbr);
+      path.style.fill = glassFill(abbr, count);
 
       // Hover spotlight (dims neighbours)
       path.addEventListener('mouseenter', (e) => {
         showTooltip(e, abbr, name, count);
         path.classList.add('ad-gpu');
-        announce(`${name}: ${count} vacanc${count !== 1 ? 'ies' : ''}`);
+        announce(`${name}: ${count} vacanc${count !== 1 ? 'ies' : 'y'}`);
         document.querySelectorAll('#map-svg .ad-state').forEach(s => {
           if (s !== path) s.classList.add('neighbor-dim');
         });
@@ -367,7 +437,8 @@
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigateToState(abbr); }
       });
 
-      g.appendChild(path);   // <-- BUG FIX: actually add the path to the SVG
+      g.appendChild(path);
+      g.appendChild(sheenFor(path)); // directly after its state (CSS dims it with the state)
 
       // Label
       const [clon, clat] = centroid(feat.geometry);
@@ -477,10 +548,14 @@
     });
   }
 
-  // Vortex burst: spawns a spiral of gold particles from the clicked state's
-  // centroid while the cinematic zoom plays. Particles fade out over 1.5s.
+  // Vortex burst: a spiral of gold particles centred on the clicked state.
+  // The centre is re-read from the path's screen matrix every frame, so the
+  // burst stays on the state while the cinematic zoom moves it (the SVG is
+  // letterboxed inside the wrapper, so viewBox maths alone lands elsewhere).
+  // Once renderState() replaces the path, the last known centre is kept.
   function spawnVortex(statePath) {
     const wrap = document.getElementById('mapSvgWrap');
+    if (!wrap) return;
     const vortexCanvas = document.createElement('canvas');
     const rect = wrap.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
@@ -490,12 +565,18 @@
     wrap.appendChild(vortexCanvas);
     const ctx = vortexCanvas.getContext('2d');
 
-    const bbox = statePath.getBBox();
-    const svg = document.getElementById('map-svg');
-    const vb = svg.viewBox.baseVal;
-    // Convert SVG centroid to screen coords
-    const cxScreen = (bbox.x + bbox.width / 2 - vb.x) / vb.width * rect.width;
-    const cyScreen = (bbox.y + bbox.height / 2 - vb.y) / vb.height * rect.height;
+    function stateCentre() {
+      if (!statePath.isConnected) return null;
+      const ctm = statePath.getScreenCTM();
+      if (!ctm) return null;
+      const b = statePath.getBBox();
+      const pt = statePath.ownerSVGElement.createSVGPoint();
+      pt.x = b.x + b.width / 2;
+      pt.y = b.y + b.height / 2;
+      const sp = pt.matrixTransform(ctm);
+      return { x: sp.x - rect.left, y: sp.y - rect.top };
+    }
+    let centre = stateCentre() || { x: rect.width / 2, y: rect.height / 2 };
 
     const particles = Array.from({ length: 30 }, () => ({
       angle: Math.random() * Math.PI * 2,
@@ -511,14 +592,15 @@
       const elapsed = performance.now() - t0;
       const alpha = Math.max(0, 1 - elapsed / 1500);
       if (alpha === 0) { vortexCanvas.remove(); return; }
+      centre = stateCentre() || centre;
       ctx.clearRect(0, 0, vortexCanvas.width, vortexCanvas.height);
       for (const p of particles) {
         p.angle += p.speed;
         p.dist += 0.6;
         p.life++;
-        const fade = 1 - p.life / p.maxLife;
-        const x = (cxScreen + Math.cos(p.angle) * p.dist * 8) * dpr;
-        const y = (cyScreen + Math.sin(p.angle) * p.dist * 8) * dpr;
+        const fade = Math.max(0, 1 - p.life / p.maxLife);
+        const x = (centre.x + Math.cos(p.angle) * p.dist * 8) * dpr;
+        const y = (centre.y + Math.sin(p.angle) * p.dist * 8) * dpr;
         ctx.beginPath(); ctx.arc(x, y, p.r * dpr, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255,184,64,${alpha * fade * 0.9})`; ctx.fill();
       }
@@ -540,40 +622,25 @@
     if (isOnState(abbr)) return true;
     lastFocusedState = abbr;
     const gen = ++renderGeneration; // (J) render navigation generation
+    // The national paths are about to be replaced, so their mouseleave will
+    // never fire — clear the hover tooltip now or it sticks over the new view.
+    hideTooltip();
 
-    // Delhi uses image-map, not district GeoJSON
-    if (abbr === 'DL') {
-      const sel = document.querySelector(`[data-abbr="${abbr}"].ad-state`);
-      if (sel) {
-        sel.style.transition = 'fill 0.2s, stroke 0.2s';
-        sel.classList.add('selected');
-      }
-      if (sel) spawnVortex(sel);
-      await cinematicZoom(abbr);
-      if (gen !== renderGeneration) return false;
-      renderState(abbr, name);
-      selectedAbbr = abbr;
-      viewMode = 'state';
-      const back = document.getElementById('btn-back');
-      if (back) { back.hidden = false; back.focus(); }
-      announce(`${name}: showing 11 districts. Click a district for details.`);
-      return true;
+    // Delhi uses the image map; every other state needs district GeoJSON
+    if (abbr !== 'DL') {
+      const dGeo = await ensureDistrictsLoaded();
+      if (gen !== renderGeneration || !dGeo) return false;
     }
 
-    const dGeo = await ensureDistrictsLoaded();
-    if (gen !== renderGeneration || !dGeo) return false;
-
-    // Mark selected
-    const sel = document.querySelector(`[data-abbr="${abbr}"].ad-state`);
+    const sel = document.querySelector(`#map-svg [data-abbr="${abbr}"].ad-state`);
     if (sel) {
       sel.style.transition = 'fill 0.2s, stroke 0.2s';
       sel.classList.add('selected');
+      // Vortex burst: gold particles spiral out from the state during zoom
+      spawnVortex(sel);
     }
 
-    // Vortex burst: gold particles spiral out from clicked state during zoom
-    if (sel) spawnVortex(sel);
-
-    await cinematicZoom(abbr);
+    await cinematicZoom(abbr, sel);
     if (gen !== renderGeneration) return false;
 
     renderState(abbr, name);
@@ -581,52 +648,99 @@
     viewMode = 'state';
     const back = document.getElementById('btn-back');
     if (back) { back.hidden = false; back.focus(); }
-    announce(`${name}: zoomed in. Explore districts for ${name}.`);
+    announce(abbr === 'DL'
+      ? `${name}: showing 11 districts. Click a district for details.`
+      : `${name}: zoomed in. Explore districts for ${name}.`);
     return true;
   }
 
-  async function cinematicZoom(abbr) {
+  // The state's box in viewBox units: its national path when on screen,
+  // otherwise its districts in the current projection.
+  function stateBox(abbr, sel) {
+    if (sel && sel.isConnected) {
+      try {
+        const b = sel.getBBox();
+        if (b.width > 0 && b.height > 0) return { x: b.x, y: b.y, width: b.width, height: b.height };
+      } catch (e) { /* not rendered */ }
+    }
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    districtFeaturesFor(abbr).forEach(f => flattenCoords(f.geometry).forEach(([lon, lat]) => {
+      const [x, y] = project(lon, lat);
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }));
+    if (!isFinite(minX)) return null;
+    return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+  }
+
+  async function cinematicZoom(abbr, sel) {
     const svg = document.getElementById('map-svg');
     if (!svg) return;
     const vb = svg.viewBox.baseVal;
+    const box = stateBox(abbr, sel);
+    if (!box) return;
 
-    const feats = districtFeaturesFor(abbr);
-    let cx = 500, cy = 400;
-    if (feats.length) {
-      const all = feats.flatMap(f => f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates.flat().flat() : f.geometry.coordinates[0]);
-      if (all.length) {
-        const proj = all.map(c => project(c[0], c[1]));
-        cx = proj.reduce((s, p) => s + p[0], 0) / proj.length;
-        cy = proj.reduce((s, p) => s + p[1], 0) / proj.length;
-      }
+    // Fit the state the way renderState() will (computeProjection() fills
+    // 92% of the 1000×800 canvas), so the hand-off to the district view
+    // lands where the zoom ended instead of jumping.
+    const w = Math.max(box.width / 0.92, (box.height / 0.92) * 1.25, 30);
+    const h = w * 0.8;
+    const target = {
+      x: box.x + box.width / 2 - w / 2,
+      y: box.y + box.height / 2 - h / 2,
+      w, h,
+    };
+    // No hover tooltips from states sliding under a still cursor mid-zoom
+    svg.classList.add('ad-zooming');
+    try {
+      await animateViewBox(svg, { x: vb.x, y: vb.y, w: vb.width, h: vb.height }, target, 700);
+    } finally {
+      svg.classList.remove('ad-zooming');
     }
-
-    const targetW = vb.width / 2.4;
-    const targetH = vb.height / 2.4;
-    const start = { x: vb.x, y: vb.y, w: vb.width, h: vb.height };
-    const target = { x: cx - targetW / 2, y: cy - targetH / 2, w: targetW, h: targetH };
-    await animateViewBox(svg, start, target, 600);
   }
 
+  // Zooms geometrically about the centre of the smaller of the two boxes.
+  // That point stays on screen for the whole animation and glides from its
+  // start position to its end position, so a 50× zoom into a small UT never
+  // flies past it (linear viewBox interpolation does).
   function animateViewBox(svg, start, target, duration) {
     return new Promise(resolve => {
       const vb = svg.viewBox.baseVal;
+      const inner = target.w < start.w ? target : start;
+      const px = inner.x + inner.w / 2, py = inner.y + inner.h / 2;
+      const u0 = (px - start.x) / start.w, u1 = (px - target.x) / target.w;
+      const v0 = (py - start.y) / start.h, v1 = (py - target.y) / target.h;
+      function apply(e) {
+        const w = start.w * Math.pow(target.w / start.w, e);
+        const h = start.h * Math.pow(target.h / start.h, e);
+        vb.x = px - (u0 + (u1 - u0) * e) * w;
+        vb.y = py - (v0 + (v1 - v0) * e) * h;
+        vb.width = w;
+        vb.height = h;
+      }
+      const ease = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
       const t0 = performance.now();
+      const id = ++viewBoxAnimId; // a newer animation supersedes this one
       let resolved = false;
+      function finish() {
+        if (resolved) return;
+        resolved = true;
+        if (id !== viewBoxAnimId) { resolve(); return; } // superseded: don't touch the viewBox
+        zoomAnimFrame = null;
+        apply(1);
+        resolve();
+      }
       if (zoomAnimFrame) cancelAnimationFrame(zoomAnimFrame);
       function frame(now) {
+        if (resolved || id !== viewBoxAnimId) return;
         const t = Math.min((now - t0) / duration, 1);
-        const e = 1 - Math.pow(1 - t, 3);
-        vb.x = start.x + (target.x - start.x) * e;
-        vb.y = start.y + (target.y - start.y) * e;
-        vb.width = start.w + (target.w - start.w) * e;
-        vb.height = start.h + (target.h - start.h) * e;
+        apply(ease(t));
         if (t < 1) zoomAnimFrame = requestAnimationFrame(frame);
-        else { zoomAnimFrame = null; resolved = true; resolve(); }
+        else finish();
       }
       zoomAnimFrame = requestAnimationFrame(frame);
-      // Safety: if RAF is throttled, resolve after expected duration + margin
-      setTimeout(() => { if (!resolved) { zoomAnimFrame = null; resolve(); } }, duration + 200);
+      // Safety: if RAF is throttled, land on the target after duration + margin
+      setTimeout(finish, duration + 200);
     });
   }
 
@@ -704,6 +818,7 @@
       });
     }
 
+    updateStateListButton(abbr, name, DELHI_DISTRICTS.map(d => d.name));
     announce(`${name}: showing ${DELHI_DISTRICTS.length} districts. Click a district for details.`);
   }
 
@@ -738,7 +853,7 @@
     if (!g) return;
 
     const feats = districtFeaturesFor(abbr);
-    if (!feats.length) return;
+    if (!feats.length) { updateStateListButton(abbr, name, []); return; }
 
     // Re-project so the state's districts fill the full 1000×800 canvas,
     // then reset the viewBox: cinematicZoom() left it zoomed on the national
@@ -746,7 +861,10 @@
     computeProjection(feats);
     mapSvg.setAttribute('viewBox', '0 0 1000 800');
 
-    groupDistricts(feats).forEach(({ name: geoName, features: parts }, idx) => {
+    const groups = groupDistricts(feats);
+    updateStateListButton(abbr, name, groups.map(g => g.name));
+
+    groups.forEach(({ name: geoName, features: parts }, idx) => {
       const count = getDistrictCount(abbr, geoName);
       const d = parts.map(f => projectCoords(f.geometry)).filter(Boolean).join(' ');
       if (!d) return;
@@ -760,15 +878,20 @@
       path.setAttribute('role', 'button');
       path.setAttribute('aria-label', `${geoName}: ${count} vacancies`);
       path.style.setProperty('--ad-delay', `${Math.min(idx * 20, 500)}ms`);
+      path.style.fill = glassFill(abbr, count);
 
       path.addEventListener('click', () => navigateToDistrict(abbr, geoName));
       path.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigateToDistrict(abbr, geoName); }
       });
-      path.addEventListener('mouseenter', (e) => { path.classList.add('ad-gpu'); showTooltip(e, abbr, geoName, count); });
+      path.addEventListener('mouseenter', (e) => {
+        path.classList.add('ad-gpu');
+        showTooltip(e, abbr, geoName, count, IndiaMapData.getListingsForDistrict(abbr, geoName));
+      });
       path.addEventListener('mousemove', moveTooltip);
       path.addEventListener('mouseleave', () => { path.classList.remove('ad-gpu'); hideTooltip(); });
       g.appendChild(path);
+      g.appendChild(sheenFor(path));
 
       // Label at the centroid of all fragments combined
       const [clon, clat] = centroid({
@@ -796,6 +919,10 @@
       label.style.setProperty('--ad-delay', `${550 + idx * 15}ms`);
       labelsG.appendChild(label);
     });
+
+    // District names and counts fade in (the CSS starts them at opacity 0)
+    requestAnimationFrame(() => labelsG.querySelectorAll('.ad-district-label')
+      .forEach(l => l.classList.add('visible')));
   }
 
   function getDistrictCount(abbr, districtName) {
@@ -807,25 +934,28 @@
   }
 
   // ----- Tooltip -----
-  function showTooltip(event, abbr, name, count) {
+  // `listings` is given for a district; without it the tooltip describes the
+  // whole state. Count and category breakdown always come from the same set,
+  // so a district never shows its state's breakdown.
+  function showTooltip(event, abbr, name, count, listings) {
     const t = document.getElementById('mapTooltip');
     if (!t) return;
     const n = document.getElementById('mapTooltipName');
     const c = document.getElementById('mapTooltipCount');
     const m = document.getElementById('mapTooltipMeta');
     if (n) n.textContent = name;
+    const pool = listings || (window.IndiaMapData ? IndiaMapData.getFiltered(abbr, {}) : []);
     // C21: tooltip count respects activeMapFilter
     let tooltipCount = count;
-    if (activeMapFilter !== 'all' && window.IndiaMapData) {
-      const filtered = IndiaMapData.getFiltered(abbr, { category: activeMapFilter === 'functional' ? 'Functional' : 'Education' });
-      tooltipCount = filtered.length;
+    if (activeMapFilter !== 'all') {
+      const cat = activeMapFilter === 'functional' ? 'Functional' : 'Education';
+      tooltipCount = pool.filter(v => v.category === cat).length;
     }
-    if (c) c.textContent = `${tooltipCount} vacanc${tooltipCount !== 1 ? 'ies' : ''}`;
+    if (c) c.textContent = `${tooltipCount} vacanc${tooltipCount !== 1 ? 'ies' : 'y'}`;
     if (m) {
-      const listings = window.IndiaMapData ? IndiaMapData.getFiltered(abbr, {}) : [];
       const cats = {};
-      listings.forEach(v => { cats[v.category] = (cats[v.category]||0)+1; });
-      m.textContent = Object.entries(cats).map(([k,v]) => `${v} ${k}`).join(' · ') || '';
+      pool.forEach(v => { cats[v.category] = (cats[v.category] || 0) + 1; });
+      m.textContent = Object.entries(cats).map(([k, v]) => `${v} ${k}`).join(' · ') || '';
     }
     moveTooltip(event);
     t.hidden = false;
@@ -879,6 +1009,8 @@
       }
       filteredTotal += count;
       p.style.opacity = visible ? '1' : '0.12';
+      const sh = p.nextElementSibling;
+      if (sh && sh.classList.contains('ad-sheen')) sh.style.opacity = p.style.opacity;
       p.setAttribute('aria-label', `${ABBR_TO_NAME[abbr] || abbr}: ${count} vacancies`);
       // Update count label from the shared #map-labels group
       if (labelsG) {
@@ -1093,14 +1225,22 @@
     const modal = document.getElementById('modal');
     if (modalTitle) modalTitle.textContent =
       `${unique.length} Vacanc${unique.length !== 1 ? 'ies' : 'y'} in ${districtName}`;
-    if (modalBody) {
-      modalBody.innerHTML = unique.map((l, i) => `
+    if (modalBody) modalBody.innerHTML = listingCardsHtml(unique);
+    if (modal) {
+      modal._districtTrigger = districtTrigger;
+      if (!modal.open) modal.showModal?.();
+    }
+  }
+
+  function listingCardsHtml(listings) {
+    return listings.map((l, i) => `
         <div class="ad-listing-card visible" style="animation-delay:${i * 60}ms">
           <div class="ad-listing-card-header">
             <div class="ad-listing-title">${esc(l.title)}</div>
             ${l.level ? `<span class="ad-listing-badge">${esc(l.level)}</span>` : ''}
           </div>
           <div class="ad-listing-meta">
+            ${l.city ? `<span>${esc(l.city)}</span>` : ''}
             ${l.ministry ? `<span>${esc(l.ministry)}</span>` : ''}
             ${l.organisation ? `<span>${esc(l.organisation)}</span>` : ''}
             ${l.functionalArea ? `<span>${esc(l.functionalArea)}</span>` : ''}
@@ -1110,9 +1250,53 @@
             ${l.notificationLink ? `<a href="${esc(l.notificationLink)}" target="_blank" rel="noopener" class="ad-listing-link">Notification</a>` : ''}
           </div>
         </div>`).join('') || '<p style="color:var(--text-muted); text-align:center; padding:20px;">No vacancies found.</p>';
+  }
+
+  // ----- "View all vacancies in <State>" -----
+  // Every active vacancy in the state, including ones whose city could not be
+  // placed on a district (e.g. "Goa", or Chandigarh listed under Punjab), so
+  // a state view never hides vacancies the national map counted.
+  function stateListings(abbr) {
+    return window.IndiaMapData ? IndiaMapData.getFiltered(abbr, {}) : [];
+  }
+
+  function updateStateListButton(abbr, name, districtNames) {
+    const btn = document.getElementById('stateListBtn');
+    if (!btn) return;
+    const all = abbr ? stateListings(abbr) : [];
+    if (!all.length) { btn.hidden = true; return; }
+    const placed = new Set();
+    (districtNames || []).forEach(d =>
+      IndiaMapData.getListingsForDistrict(abbr, d).forEach(l => placed.add(l.id)));
+    const unplaced = all.filter(l => !placed.has(l.id)).length;
+    btn.textContent = all.length === 1
+      ? `View the 1 vacancy in ${name}` : `View all ${all.length} vacancies in ${name}`;
+    if (unplaced) {
+      const note = document.createElement('span');
+      note.className = 'map-state-list-note';
+      note.textContent = `${unplaced} not linked to a district`;
+      btn.appendChild(note);
     }
+    btn.dataset.abbr = abbr;
+    btn.hidden = false;
+  }
+
+  // Opens the listings modal for the whole state. Not a route: closing it
+  // leaves the state view and history exactly as they were.
+  function openStateListModal() {
+    const btn = document.getElementById('stateListBtn');
+    const abbr = btn?.dataset.abbr;
+    if (!abbr || viewMode !== 'state' || selectedAbbr !== abbr) return;
+    const name = ABBR_TO_NAME[abbr] || abbr;
+    const all = stateListings(abbr);
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const modal = document.getElementById('modal');
+    if (modalTitle) modalTitle.textContent =
+      `${all.length} Vacanc${all.length !== 1 ? 'ies' : 'y'} in ${name}`;
+    if (modalBody) modalBody.innerHTML = listingCardsHtml(all);
     if (modal) {
-      modal._districtTrigger = districtTrigger;
+      modal._districtTrigger = btn;
       if (!modal.open) modal.showModal?.();
     }
   }
@@ -1148,6 +1332,7 @@
     viewMode = 'national';
     const back = document.getElementById('btn-back');
     if (back) back.hidden = true;
+    updateStateListButton(null);
     const data = getData();
     renderNational(data);
     spawnRippleForHighCounts(data);
@@ -1239,6 +1424,7 @@
     // Wire controls
     const back = document.getElementById('btn-back');
     if (back) { back.hidden = true; back.addEventListener('click', goBack); }
+    document.getElementById('stateListBtn')?.addEventListener('click', openStateListModal);
     const mapBack = document.getElementById('mapBackBtn');
     if (mapBack) mapBack.addEventListener('click', goBack);
     document.getElementById('zoomInBtn')?.addEventListener('click', zoomIn);
@@ -1532,8 +1718,7 @@
     var path = document.querySelector('#map-svg [data-abbr="' + abbr + '"].ad-state');
     if (path) {
       path.classList.remove('empty-state');
-      path.classList.add('liquid-fill');
-      path.style.fill = 'url(#liquid-gradient)';
+      path.style.fill = glassFill(abbr, 1);
       spawnRipple(path);
     }
 
