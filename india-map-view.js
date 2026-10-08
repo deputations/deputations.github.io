@@ -192,83 +192,25 @@
     return districtsPromise;
   }
 
-  // ----- Glass palette -----
-  // iOS system colours (dark-mode variants). STATE_COLORS gives every pair
-  // of bordering states different colours — checked against
-  // geo/india-states.geojson by tests/test_india_map.py::TestGlassColours.
-  const GLASS_PALETTE = {
-    red: '#FF453A', orange: '#FF9F0A', yellow: '#FFD60A', green: '#30D158',
-    teal: '#40C8E0', cyan: '#64D2FF', blue: '#0A84FF', indigo: '#5E5CE6',
-    purple: '#BF5AF2', pink: '#FF375F',
-  };
+  // ----- State colours -----
+  // Eight muted colours defined once as CSS custom properties (--map-c-<key>
+  // in india-map.css); the view only names the key. The mapping is fixed,
+  // not random: every colour is used 4–5 times, no two bordering states share
+  // one, and bordering states never get one of the palette's near-twin pairs
+  // (mist/slate, sage/olive, powder/lavender) — the weakest contrast between
+  // neighbours is ΔE76 ≈ 33. Checked against geo/india-states.geojson by
+  // tests/test_india_map.py::TestStateColours.
   const STATE_COLORS = {
-    JK: 'blue', LA: 'purple', HP: 'green', PB: 'orange', CH: 'pink', HR: 'teal',
-    DL: 'red', UK: 'indigo', UP: 'yellow', RJ: 'pink', GJ: 'blue', MP: 'green',
-    MH: 'purple', DNH: 'orange', GA: 'red', CG: 'red', TS: 'cyan', KA: 'orange',
-    AP: 'indigo', TN: 'pink', KL: 'green', PY: 'yellow', OD: 'teal', JH: 'purple',
-    BR: 'orange', WB: 'pink', SK: 'cyan', AS: 'green', AR: 'purple', NL: 'orange',
-    MN: 'blue', MZ: 'yellow', TR: 'red', ML: 'indigo', AN: 'teal', LD: 'cyan',
+    JK: 'sage', LA: 'lavender', HP: 'champagne', PB: 'rose', CH: 'olive',
+    HR: 'powder', DL: 'olive', UK: 'sage', UP: 'rose', RJ: 'olive', GJ: 'rose',
+    MP: 'powder', MH: 'champagne', DNH: 'powder', GA: 'slate', CG: 'sage',
+    TS: 'rose', KA: 'sage', AP: 'powder', TN: 'champagne', KL: 'lavender',
+    PY: 'mist', OD: 'rose', JH: 'champagne', BR: 'sage', WB: 'powder',
+    SK: 'olive', AS: 'champagne', AR: 'mist', NL: 'lavender', MN: 'mist',
+    MZ: 'lavender', TR: 'mist', ML: 'slate', AN: 'slate', LD: 'slate',
   };
-  function stateColor(abbr) { return STATE_COLORS[abbr] || 'blue'; }
-  // Glass when the shape has vacancies, frosted glass when it has none
-  function glassFill(abbr, count) {
-    return `url(#${count > 0 ? 'glass' : 'frost'}-${stateColor(abbr)})`;
-  }
-
-  // Blend a #rrggbb colour toward another by t (0..1)
-  function mixHex(hex, toward, t) {
-    const a = parseInt(hex.slice(1), 16), b = parseInt(toward.slice(1), 16);
-    const ch = sh => Math.round(((a >> sh) & 255) * (1 - t) + ((b >> sh) & 255) * t);
-    return '#' + ((1 << 24) | (ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).slice(1);
-  }
-
-  // Glass = a per-colour body gradient (lighter top-left, deeper bottom-right)
-  // plus one shared sheen drawn over each shape's top half.
-  function glassDefs(ns) {
-    const frag = document.createDocumentFragment();
-    Object.entries(GLASS_PALETTE).forEach(([name, hex]) => {
-      const lg = document.createElementNS(ns, 'linearGradient');
-      lg.setAttribute('id', `glass-${name}`);
-      lg.setAttribute('x1', '0'); lg.setAttribute('y1', '0');
-      lg.setAttribute('x2', '0.45'); lg.setAttribute('y2', '1');
-      lg.innerHTML = `
-        <stop offset="0%" stop-color="${mixHex(hex, '#ffffff', 0.38)}" stop-opacity="0.95"/>
-        <stop offset="55%" stop-color="${hex}" stop-opacity="0.85"/>
-        <stop offset="100%" stop-color="${mixHex(hex, '#000000', 0.32)}" stop-opacity="0.9"/>`;
-      frag.appendChild(lg);
-      // Frosted variant for shapes with no vacancies: a pale, translucent
-      // tint of the same colour (plain transparency over the dark page
-      // turns yellow olive and red brown)
-      const fr = document.createElementNS(ns, 'linearGradient');
-      fr.setAttribute('id', `frost-${name}`);
-      fr.setAttribute('x1', '0'); fr.setAttribute('y1', '0');
-      fr.setAttribute('x2', '0.45'); fr.setAttribute('y2', '1');
-      fr.innerHTML = `
-        <stop offset="0%" stop-color="${mixHex(hex, '#ffffff', 0.78)}" stop-opacity="0.34"/>
-        <stop offset="100%" stop-color="${mixHex(hex, '#ffffff', 0.55)}" stop-opacity="0.16"/>`;
-      frag.appendChild(fr);
-    });
-    const sheen = document.createElementNS(ns, 'linearGradient');
-    sheen.setAttribute('id', 'glass-sheen');
-    sheen.setAttribute('x1', '0'); sheen.setAttribute('y1', '0');
-    sheen.setAttribute('x2', '0'); sheen.setAttribute('y2', '1');
-    sheen.innerHTML = `
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
-      <stop offset="34%" stop-color="#ffffff" stop-opacity="0.16"/>
-      <stop offset="42%" stop-color="#ffffff" stop-opacity="0.04"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>`;
-    frag.appendChild(sheen);
-    return frag;
-  }
-
-  // The glossy highlight layer for a glass shape: same outline, no events.
-  function sheenFor(path) {
-    const sh = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    sh.setAttribute('d', path.getAttribute('d'));
-    sh.setAttribute('class', 'ad-sheen');
-    sh.setAttribute('aria-hidden', 'true');
-    return sh;
-  }
+  function stateColor(abbr) { return STATE_COLORS[abbr] || 'slate'; }
+  function stateFill(abbr) { return `var(--map-c-${stateColor(abbr)})`; }
 
   // ----- Build / clear SVG -----
   function buildSvg() {
@@ -283,19 +225,18 @@
 
     const defs = document.createElementNS(ns, 'defs');
 
-    // State hover glow filter
-    const filter = document.createElementNS(ns, 'filter');
-    filter.setAttribute('id', 'state-glow');
-    filter.innerHTML = '<feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>';
-    defs.appendChild(filter);
-
-    defs.appendChild(glassDefs(ns));
-
     svg.appendChild(defs);
 
     const g = document.createElementNS(ns, 'g');
     g.id = 'map-group';
     svg.appendChild(g);
+
+    // One outline path above every shape (see .ad-outline in the CSS)
+    const outline = document.createElementNS(ns, 'path');
+    outline.id = 'map-outline';
+    outline.setAttribute('class', 'ad-outline');
+    outline.setAttribute('aria-hidden', 'true');
+    svg.appendChild(outline);
 
     const labels = document.createElementNS(ns, 'g');
     labels.id = 'map-labels';
@@ -358,9 +299,37 @@
     }
   }
 
+  // Draws the hover / keyboard-focus / selection ring on the outline layer,
+  // above all shapes, so a neighbour's border never covers part of it.
+  function setOutline(path, kind) {
+    const o = document.getElementById('map-outline');
+    if (!o) return;
+    if (!path) {
+      o.setAttribute('class', 'ad-outline');
+      o.removeAttribute('d');
+      delete o.dataset.for;
+      return;
+    }
+    o.setAttribute('d', path.getAttribute('d'));
+    o.setAttribute('class', `ad-outline ad-outline-${kind}`);
+    o.dataset.for = path.dataset.district || path.dataset.abbr || '';
+  }
+  function clearOutline(kind) {
+    const o = document.getElementById('map-outline');
+    if (o && o.classList.contains(`ad-outline-${kind}`)) setOutline(null);
+  }
+  function wireOutline(path) {
+    path.addEventListener('mouseenter', () => setOutline(path, 'hover'));
+    path.addEventListener('mouseleave', () => clearOutline('hover'));
+    path.addEventListener('focus', () => { if (path.matches(':focus-visible')) setOutline(path, 'focus'); });
+    path.addEventListener('blur', () => clearOutline('focus'));
+  }
+
   function clearMap() {
     // Paths are about to be removed without a mouseleave — drop any tooltip
+    // and outline
     hideTooltip();
+    setOutline(null);
     const old = document.getElementById('map-svg');
     if (old) {
       const g = old.querySelector('#map-group');
@@ -413,9 +382,9 @@
       path.dataset.drawLen = drawLen;
       path.dataset.idx = idx;
 
-      // Glass in the state's own colour; frosted when it has no vacancies
+      // Flat fill in the state's palette colour (see STATE_COLORS)
       path.dataset.color = stateColor(abbr);
-      path.style.fill = glassFill(abbr, count);
+      path.style.fill = stateFill(abbr);
 
       // Hover spotlight (dims neighbours)
       path.addEventListener('mouseenter', (e) => {
@@ -432,13 +401,13 @@
         path.classList.remove('ad-gpu');
         document.querySelectorAll('#map-svg .ad-state').forEach(s => s.classList.remove('neighbor-dim'));
       });
+      wireOutline(path);
       path.addEventListener('click', () => navigateToState(abbr));
       path.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigateToState(abbr); }
       });
 
       g.appendChild(path);
-      g.appendChild(sheenFor(path)); // directly after its state (CSS dims it with the state)
 
       // Label
       const [clon, clat] = centroid(feat.geometry);
@@ -490,20 +459,29 @@
         }
       }
 
+      // After its draw-in a border goes back to solid: with non-scaling
+      // strokes, a dash sized in user units would leave gaps once zoomed in.
+      // Runs on the path's own animationend, so the completion event (which
+      // deep links wait for) is never delayed by a racing timer.
       paths.forEach((p, i) => {
         playDrawIn(p, i * 30);
-        const totalDuration = i * 30 + 2000;
-        setTimeout(() => {
-          if (gen === drawGeneration) p.classList.add('drawn');
-        }, totalDuration);
+        let done = false;
+        const finish = () => {
+          if (done || gen !== drawGeneration) return;
+          done = true;
+          p.classList.add('drawn');
+          p.classList.remove('ad-draw-state');
+          p.style.animation = 'none';
+          p.style.strokeDasharray = '';
+          p.style.strokeDashoffset = '';
+          onPathComplete();
+        };
         if (useReducedMotion) {
-          onPathComplete(); // no animation, count immediately
+          finish(); // no animation, count immediately
         } else {
-          p.addEventListener('animationend', onPathComplete, { once: true });
-          // Safety fallback: if animationend never fires (interrupted/removed), count after max duration
-          setTimeout(() => {
-            if (completed < total && gen === drawGeneration) onPathComplete();
-          }, 3500);
+          p.addEventListener('animationend', finish, { once: true });
+          // Safety fallback: if animationend never fires (interrupted/removed)
+          setTimeout(finish, i * 30 + 2600);
         }
       });
       // Count labels pop in after draw-in finishes (2s + max stagger 600ms)
@@ -514,100 +492,19 @@
     });
 
     updateCounter(data);
-    spawnRippleForHighCounts(data);
   }
 
-  // Concentric ring ripple for states with > 5 vacancies
-  function spawnRippleForHighCounts(data) {
-    if (!data?.stateCounts) return;
-    setTimeout(() => {
-      Object.entries(data.stateCounts).forEach(([abbr, count]) => {
-        if (count >= 5) {
-          const path = document.querySelector(`#map-svg [data-abbr="${abbr}"]`);
-          if (path) spawnRipple(path);
-        }
-      });
-    }, 1800); // after draw-in completes
-  }
-
+  // One subtle ring when a live insert lands on a state (realtime only)
   function spawnRipple(targetPath) {
     const ns = 'http://www.w3.org/2000/svg';
     const bbox = targetPath.getBBox();
-    const cx = bbox.x + bbox.width / 2;
-    const cy = bbox.y + bbox.height / 2;
-    const parent = targetPath.parentNode;
-    [0, 200, 400].forEach((delay, i) => {
-      const ring = document.createElementNS(ns, 'circle');
-      ring.setAttribute('cx', cx);
-      ring.setAttribute('cy', cy);
-      ring.setAttribute('r', '4');
-      ring.setAttribute('class', 'ad-ripple');
-      ring.style.animationDelay = `${delay}ms`;
-      parent.appendChild(ring);
-      setTimeout(() => ring.remove(), 2500 + delay);
-    });
-  }
-
-  // Vortex burst: a spiral of gold particles centred on the clicked state.
-  // The centre is re-read from the path's screen matrix every frame, so the
-  // burst stays on the state while the cinematic zoom moves it (the SVG is
-  // letterboxed inside the wrapper, so viewBox maths alone lands elsewhere).
-  // Once renderState() replaces the path, the last known centre is kept.
-  function spawnVortex(statePath) {
-    const wrap = document.getElementById('mapSvgWrap');
-    if (!wrap) return;
-    const vortexCanvas = document.createElement('canvas');
-    const rect = wrap.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    vortexCanvas.width = rect.width * dpr;
-    vortexCanvas.height = rect.height * dpr;
-    vortexCanvas.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:30';
-    wrap.appendChild(vortexCanvas);
-    const ctx = vortexCanvas.getContext('2d');
-
-    function stateCentre() {
-      if (!statePath.isConnected) return null;
-      const ctm = statePath.getScreenCTM();
-      if (!ctm) return null;
-      const b = statePath.getBBox();
-      const pt = statePath.ownerSVGElement.createSVGPoint();
-      pt.x = b.x + b.width / 2;
-      pt.y = b.y + b.height / 2;
-      const sp = pt.matrixTransform(ctm);
-      return { x: sp.x - rect.left, y: sp.y - rect.top };
-    }
-    let centre = stateCentre() || { x: rect.width / 2, y: rect.height / 2 };
-
-    const particles = Array.from({ length: 30 }, () => ({
-      angle: Math.random() * Math.PI * 2,
-      speed: 0.04 + Math.random() * 0.08,
-      dist: Math.random() * 6,
-      life: 0,
-      maxLife: 60 + Math.random() * 40,
-      r: 1.5 + Math.random() * 2,
-    }));
-
-    const t0 = performance.now();
-    function frame() {
-      const elapsed = performance.now() - t0;
-      const alpha = Math.max(0, 1 - elapsed / 1500);
-      if (alpha === 0) { vortexCanvas.remove(); return; }
-      centre = stateCentre() || centre;
-      ctx.clearRect(0, 0, vortexCanvas.width, vortexCanvas.height);
-      for (const p of particles) {
-        p.angle += p.speed;
-        p.dist += 0.6;
-        p.life++;
-        const fade = Math.max(0, 1 - p.life / p.maxLife);
-        const x = (centre.x + Math.cos(p.angle) * p.dist * 8) * dpr;
-        const y = (centre.y + Math.sin(p.angle) * p.dist * 8) * dpr;
-        ctx.beginPath(); ctx.arc(x, y, p.r * dpr, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,184,64,${alpha * fade * 0.9})`; ctx.fill();
-      }
-      requestAnimationFrame(frame);
-    }
-    requestAnimationFrame(frame);
-    setTimeout(() => vortexCanvas.remove(), 2000);
+    const ring = document.createElementNS(ns, 'circle');
+    ring.setAttribute('cx', bbox.x + bbox.width / 2);
+    ring.setAttribute('cy', bbox.y + bbox.height / 2);
+    ring.setAttribute('r', '4');
+    ring.setAttribute('class', 'ad-ripple');
+    targetPath.parentNode.appendChild(ring);
+    setTimeout(() => ring.remove(), 1400);
   }
 
   // ----- Drill to state -----
@@ -636,8 +533,7 @@
     if (sel) {
       sel.style.transition = 'fill 0.2s, stroke 0.2s';
       sel.classList.add('selected');
-      // Vortex burst: gold particles spiral out from the state during zoom
-      spawnVortex(sel);
+      setOutline(sel, 'selected');
     }
 
     await cinematicZoom(abbr, sel);
@@ -878,7 +774,8 @@
       path.setAttribute('role', 'button');
       path.setAttribute('aria-label', `${geoName}: ${count} vacancies`);
       path.style.setProperty('--ad-delay', `${Math.min(idx * 20, 500)}ms`);
-      path.style.fill = glassFill(abbr, count);
+      // State colour where there are vacancies, neutral surface elsewhere
+      path.style.fill = count > 0 ? stateFill(abbr) : 'var(--map-surface-raised)';
 
       path.addEventListener('click', () => navigateToDistrict(abbr, geoName));
       path.addEventListener('keydown', (e) => {
@@ -890,8 +787,8 @@
       });
       path.addEventListener('mousemove', moveTooltip);
       path.addEventListener('mouseleave', () => { path.classList.remove('ad-gpu'); hideTooltip(); });
+      wireOutline(path);
       g.appendChild(path);
-      g.appendChild(sheenFor(path));
 
       // Label at the centroid of all fragments combined
       const [clon, clat] = centroid({
@@ -1009,8 +906,6 @@
       }
       filteredTotal += count;
       p.style.opacity = visible ? '1' : '0.12';
-      const sh = p.nextElementSibling;
-      if (sh && sh.classList.contains('ad-sheen')) sh.style.opacity = p.style.opacity;
       p.setAttribute('aria-label', `${ABBR_TO_NAME[abbr] || abbr}: ${count} vacancies`);
       // Update count label from the shared #map-labels group
       if (labelsG) {
@@ -1335,7 +1230,6 @@
     updateStateListButton(null);
     const data = getData();
     renderNational(data);
-    spawnRippleForHighCounts(data);
     // Return focus to the state that was drilled into
     if (lastFocusedState) {
       const st = document.querySelector(`#map-svg [data-abbr="${lastFocusedState}"].ad-state`);
@@ -1392,9 +1286,6 @@
     // Deep-link must use replace=true so initial load produces exactly one history entry
     const initData = getData();
     renderNational(initData);
-
-    // Start particles on canvas
-    startParticles();
 
     // Wire popstate handler (C18)
     window.addEventListener('popstate', onPopState);
@@ -1471,13 +1362,8 @@
     // Filter toggle button (mobile)
     document.getElementById('mapFiltersToggle')?.addEventListener('click', onFiltersToggle);
 
-    // Handle viewport resize — particles + filter toggle (C24)
-    let resizeDebounce;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeDebounce);
-      resizeDebounce = setTimeout(() => handleParticleResize(), 150);
-      syncMobileFilters();
-    });
+    // Keep the mobile filter drawer in sync with the viewport (C24)
+    window.addEventListener('resize', syncMobileFilters);
     syncMobileFilters();
   };
 
@@ -1606,22 +1492,6 @@
     btn.setAttribute('aria-expanded', String(isOpen));
   }
 
-  // C24: handle particle lifecycle on resize
-  function handleParticleResize() {
-    const isMobile = window.innerWidth < 768;
-    if (isMobile) {
-      stopParticles();
-    } else {
-      resizeParticleCanvas();
-      if (!particleRaf) {
-        resetParticles();
-        isMapVisible = true;
-        tickParticles();
-      }
-    }
-  }
-
-  // ----- Particles (canvas background) -----
   // ===== Supabase Realtime: INSERT events trigger state ripples =====
   let realtimeSubscribed = false;
 
@@ -1718,7 +1588,6 @@
     var path = document.querySelector('#map-svg [data-abbr="' + abbr + '"].ad-state');
     if (path) {
       path.classList.remove('empty-state');
-      path.style.fill = glassFill(abbr, 1);
       spawnRipple(path);
     }
 
@@ -1746,174 +1615,6 @@
   }
 
   // ===== End of realtime additions =====
-
-  // ===== Ambient canvas particles with spatial grid =====
-  const CONN_DIST = 120;
-  const SPEED = 0.35;
-  let particleRaf = null;
-  let particles = [];
-  let particleCanvas = null;
-  let particleCtx = null;
-  let particleMouseX = -9999;
-  let particleMouseY = -9999;
-  let isMapVisible = false;
-
-  function getParticleCount() {
-    const isMobile = window.innerWidth < 768;
-    let count = isMobile ? 25 : 50;
-    const cores = navigator.hardwareConcurrency || 8;
-    if (cores <= 4) count = Math.floor(count / 2);
-    return count;
-  }
-
-  function initParticleCanvas() {
-    particleCanvas = document.getElementById('particleCanvas');
-    if (!particleCanvas) return false;
-    particleCtx = particleCanvas.getContext('2d');
-    return true;
-  }
-
-  function resizeParticleCanvas() {
-    if (!particleCanvas) return;
-    const container = particleCanvas.parentElement;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    particleCanvas.width = rect.width;
-    particleCanvas.height = rect.height;
-  }
-
-  function makeParticle() {
-    const canvas = particleCanvas;
-    return {
-      x: Math.random() * (canvas ? canvas.width : 800),
-      y: Math.random() * (canvas ? canvas.height : 600),
-      vx: (Math.random() - 0.5) * SPEED * 2,
-      vy: (Math.random() - 0.5) * SPEED * 2,
-      r: 1.2 + Math.random() * 1.4,
-      alpha: 0.25 + Math.random() * 0.45,
-    };
-  }
-
-  function resetParticles() {
-    if (!particleCanvas) return;
-    particles = [];
-    for (let i = 0; i < getParticleCount(); i++) {
-      particles.push(makeParticle());
-    }
-  }
-
-  function buildSpatialGrid(pts, cellSize) {
-    const grid = new Map();
-    for (let i = 0; i < pts.length; i++) {
-      const cx = Math.floor(pts[i].x / cellSize);
-      const cy = Math.floor(pts[i].y / cellSize);
-      const key = cx + ',' + cy;
-      if (!grid.has(key)) grid.set(key, []);
-      grid.get(key).push(i);
-    }
-    return grid;
-  }
-
-  function tickParticles() {
-    if (!isMapVisible || !particleCtx || !particleCanvas) return;
-    const w = particleCanvas.width;
-    const h = particleCanvas.height;
-    if (w === 0 || h === 0) { particleRaf = requestAnimationFrame(tickParticles); return; }
-
-    particleCtx.clearRect(0, 0, w, h);
-
-    // Move
-    for (let i = 0; i < particles.length; i++) {
-      const p = particles[i];
-      p.x += p.vx;
-      p.y += p.vy;
-      if (p.x < 0) p.x = w;
-      if (p.x > w) p.x = 0;
-      if (p.y < 0) p.y = h;
-      if (p.y > h) p.y = 0;
-    }
-
-    // Connections via spatial grid
-    const grid = buildSpatialGrid(particles, CONN_DIST);
-    const drawn = new Set();
-    particleCtx.lineWidth = 0.5;
-
-    for (let i = 0; i < particles.length; i++) {
-      const pi = particles[i];
-      const cx = Math.floor(pi.x / CONN_DIST);
-      const cy = Math.floor(pi.y / CONN_DIST);
-      for (let dx = -1; dx <= 1; dx++) {
-        for (let dy = -1; dy <= 1; dy++) {
-          const cell = grid.get((cx + dx) + ',' + (cy + dy));
-          if (!cell) continue;
-          for (let k = 0; k < cell.length; k++) {
-            const j = cell[k];
-            if (j <= i) continue;
-            const pairKey = i * 10000 + j;
-            if (drawn.has(pairKey)) continue;
-            drawn.add(pairKey);
-            const pj = particles[j];
-            const ddx = pi.x - pj.x;
-            const ddy = pi.y - pj.y;
-            const dist = Math.sqrt(ddx * ddx + ddy * ddy);
-            if (dist < CONN_DIST) {
-              const opacity = (1 - dist / CONN_DIST) * 0.18;
-              particleCtx.strokeStyle = `rgba(245,167,33,${opacity})`;
-              particleCtx.beginPath();
-              particleCtx.moveTo(pi.x, pi.y);
-              particleCtx.lineTo(pj.x, pj.y);
-              particleCtx.stroke();
-            }
-          }
-        }
-      }
-    }
-
-    // Draw particles
-    for (let i = 0; i < particles.length; i++) {
-      const p = particles[i];
-      particleCtx.beginPath();
-      particleCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      particleCtx.fillStyle = `rgba(245,167,33,${p.alpha})`;
-      particleCtx.fill();
-    }
-
-    particleRaf = requestAnimationFrame(tickParticles);
-  }
-
-  function startParticles() {
-    if (particleRaf) return; // already running
-    // Skip entirely on mobile to save GPU
-    if (window.innerWidth < 768) return;
-    if (!initParticleCanvas()) return;
-    resizeParticleCanvas();
-    resetParticles();
-    isMapVisible = true;
-    tickParticles();
-  }
-
-  function stopParticles() {
-    isMapVisible = false;
-    if (particleRaf) {
-      cancelAnimationFrame(particleRaf);
-      particleRaf = null;
-    }
-    if (particleCtx && particleCanvas) {
-      particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
-    }
-    particles = [];
-  }
-
-  // BLOCKER 8: read-only test hook — reports particle loop state, no data exposure
-  window.__mapParticleState = function __mapParticleState() {
-    return {
-      rafRunning: particleRaf !== null,
-      particleCount: particles.length,
-      canvasWidth: particleCanvas ? particleCanvas.width : 0,
-      canvasHeight: particleCanvas ? particleCanvas.height : 0,
-      isMapVisible: isMapVisible,
-    };
-  };
 
   // ===== GPU acceleration class =====
   // .ad-gpu is toggled per-element on hover (in renderNational / renderState)

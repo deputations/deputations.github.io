@@ -742,55 +742,32 @@ class TestMobileFilters:
 
 
 # ---------------------------------------------------------------------------
-# 14. Particle lifecycle (BLOCKER 8)
+# 14. No decorative clutter (replaces the particle-lifecycle checks: the
+#     particle background, click burst and load-time pings were removed)
 # ---------------------------------------------------------------------------
 
-class TestParticleLifecycle:
-    def test_desktop_has_one_loop(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(2500)  # let particle system warm up
-        s = page.evaluate("window.__mapParticleState ? window.__mapParticleState() : null")
-        assert s is not None, "Particle state hook missing"
-        assert s["rafRunning"] is True, f"Expected one RAF loop on desktop, got {s}"
-        assert s["particleCount"] > 0, f"Expected particles, got {s['particleCount']}"
-
-    def test_resize_to_mobile_stops_loop(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
+class TestNoDecorations:
+    def test_no_particle_canvas_or_loop(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
         page.wait_for_timeout(2500)
-        assert page.evaluate("window.__mapParticleState().rafRunning") is True
-        page.set_viewport_size({"width": 390, "height": 812})
-        page.wait_for_timeout(500)  # debounce
-        s = page.evaluate("window.__mapParticleState()")
-        assert s["rafRunning"] is False, f"Loop should stop on mobile, got {s}"
-        assert s["particleCount"] == 0, f"Particles should be cleared, got {s['particleCount']}"
+        assert page.locator("#map-view canvas").count() == 0
+        assert page.evaluate("() => typeof window.__mapParticleState") == "undefined"
 
-    def test_resize_back_restarts_one_loop(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(2000)
-        # Resize to mobile, back, back
-        page.set_viewport_size({"width": 390, "height": 812})
-        page.wait_for_timeout(500)
-        page.set_viewport_size({"width": 1280, "height": 800})
-        page.wait_for_timeout(500)
-        s = page.evaluate("window.__mapParticleState()")
-        assert s["rafRunning"] is True, f"Loop should restart on desktop, got {s}"
+    def test_no_burst_when_drilling(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        _svg_state_click(page, "MH")
+        page.wait_for_timeout(200)  # mid-zoom
+        assert page.locator("#mapSvgWrap canvas").count() == 0
+        _expect_state(page, "MH")
 
-    def test_repeated_resize_no_multiloop(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.wait_for_timeout(2000)
-        for _ in range(4):
-            page.set_viewport_size({"width": 390, "height": 812})
-            page.wait_for_timeout(200)
-            page.set_viewport_size({"width": 1280, "height": 800})
-            page.wait_for_timeout(200)
-        page.wait_for_timeout(500)
-        # Should end up with one running loop on desktop
-        s = page.evaluate("window.__mapParticleState()")
-        assert s["rafRunning"] is True, f"Final state should be one running loop, got {s}"
+    def test_no_load_time_pings(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        page.wait_for_timeout(2500)
+        assert page.locator("#map-svg .ad-ripple").count() == 0
+
+    def test_dark_background(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        assert page.locator("#map-view").evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(21, 26, 35)"
 
 
 # ---------------------------------------------------------------------------
@@ -1153,70 +1130,142 @@ class TestDrillTransition:
         assert abs(last["y"] + last["h"] / 2 - cy) < last["h"] * 0.1, f"{abbr}: zoom ended off-centre ({last})"
 
 
-class TestGlassColours:
-    """Colourful glass states: own colour per state, no two neighbours alike."""
+_PALETTE = {
+    "powder": "#79A9E7", "sage": "#77BFAF", "lavender": "#A99ADB", "champagne": "#D5AA79",
+    "mist": "#91B5C7", "rose": "#C28FA5", "olive": "#A5B69A", "slate": "#8E9AB4",
+}
 
-    @staticmethod
-    def _real_state_borders() -> dict[str, set[str]]:
-        """Bordering states from the real india-states.geojson: two states
-        border when they have vertices in the same 0.05° grid cell."""
-        import math
-        names = {"Andaman and Nicobar": "AN", "Dadra and Nagar Haveli and Daman and Diu": "DNH"}
-        names.update({n: a for a, n in _ALL_36 if n not in names})
-        geo = json.loads((REPO_ROOT / "geo" / "india-states.geojson").read_text(encoding="utf-8"))
-        cells: dict[tuple[int, int], set[str]] = {}
-        for f in geo["features"]:
-            abbr = names[f["properties"]["NAME_1"]]
-            g = f["geometry"]
-            rings = g["coordinates"] if g["type"] == "Polygon" else [r for poly in g["coordinates"] for r in poly]
-            for ring in rings:
-                for x, y in ring:
-                    cells.setdefault((math.floor(x / 0.05), math.floor(y / 0.05)), set()).add(abbr)
-        borders: dict[str, set[str]] = {}
-        for group in cells.values():
-            for a in group:
-                borders.setdefault(a, set()).update(group - {a})
-        return borders
 
-    def test_no_two_bordering_states_share_a_colour(self, page: Page, base_url: str):
+def _rgb(hex_colour: str) -> str:
+    r, g, b = (int(hex_colour[i:i + 2], 16) for i in (1, 3, 5))
+    return f"rgb({r}, {g}, {b})"
+
+
+def _lab(hex_colour: str) -> tuple[float, float, float]:
+    """sRGB hex → CIELAB (D65), for ΔE76 contrast between neighbours."""
+    def lin(c):
+        return ((c + 0.055) / 1.055) ** 2.4 if c > 0.04045 else c / 12.92
+    r, g, b = (lin(int(hex_colour[i:i + 2], 16) / 255) for i in (1, 3, 5))
+    x = (r * .4124 + g * .3576 + b * .1805) / .95047
+    y = r * .2126 + g * .7152 + b * .0722
+    z = (r * .0193 + g * .1192 + b * .9505) / 1.08883
+    f = lambda v: v ** (1 / 3) if v > 0.008856 else 7.787 * v + 16 / 116  # noqa: E731
+    return 116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))
+
+
+def _real_state_borders() -> dict[str, set[str]]:
+    """Bordering states from the real india-states.geojson: two states border
+    when they have vertices in the same 0.05° grid cell."""
+    import math
+    names = {"Andaman and Nicobar": "AN", "Dadra and Nagar Haveli and Daman and Diu": "DNH"}
+    names.update({n: a for a, n in _ALL_36 if n not in names})
+    geo = json.loads((REPO_ROOT / "geo" / "india-states.geojson").read_text(encoding="utf-8"))
+    cells: dict[tuple[int, int], set[str]] = {}
+    for f in geo["features"]:
+        abbr = names[f["properties"]["NAME_1"]]
+        g = f["geometry"]
+        rings = g["coordinates"] if g["type"] == "Polygon" else [r for poly in g["coordinates"] for r in poly]
+        for ring in rings:
+            for x, y in ring:
+                cells.setdefault((math.floor(x / 0.05), math.floor(y / 0.05)), set()).add(abbr)
+    borders: dict[str, set[str]] = {}
+    for group in cells.values():
+        for a in group:
+            borders.setdefault(a, set()).update(group - {a})
+    return borders
+
+
+def _state_colours(page: Page) -> dict[str, str]:
+    return dict(page.eval_on_selector_all(
+        "#map-svg .ad-state", "els => els.map(e => [e.dataset.abbr, e.dataset.color])"))
+
+
+class TestStateColours:
+    """Eight muted colours, assigned deterministically and evenly."""
+
+    def test_palette_balance_and_rendered_fill(self, page: Page, base_url: str):
         _open_map(page, base_url)  # real geometry
-        colours = dict(page.eval_on_selector_all(
-            "#map-svg .ad-state", "els => els.map(e => [e.dataset.abbr, e.dataset.color])"))
-        assert len(colours) == 36 and all(colours.values()), colours
-        assert len(set(colours.values())) >= 8, f"expected a vibrant mix, got {set(colours.values())}"
-        borders = self._real_state_borders()
+        colours = _state_colours(page)
+        assert len(colours) == 36
+        assert set(colours.values()) == set(_PALETTE), set(colours.values())
+        from collections import Counter
+        uses = Counter(colours.values())
+        assert all(4 <= n <= 5 for n in uses.values()), f"uneven distribution: {uses}"
+        fills = dict(page.eval_on_selector_all(
+            "#map-svg .ad-state", "els => els.map(e => [e.dataset.abbr, getComputedStyle(e).fill])"))
+        wrong = {a: (fills[a], _rgb(_PALETTE[c])) for a, c in colours.items() if fills[a] != _rgb(_PALETTE[c])}
+        assert not wrong, f"rendered fill differs from the design token: {wrong}"
+
+    def test_neighbours_are_distinguishable(self, page: Page, base_url: str):
+        import math
+        _open_map(page, base_url)
+        colours = _state_colours(page)
+        borders = _real_state_borders()
         assert sum(len(v) for v in borders.values()) > 50, "border detection found too few borders"
-        clashes = sorted({tuple(sorted((a, b))) for a, nbrs in borders.items() for b in nbrs
-                          if colours.get(a) == colours.get(b)})
-        assert not clashes, f"bordering states share a colour: {clashes}"
+        pairs = {tuple(sorted((a, b))) for a, nbrs in borders.items() for b in nbrs}
+        same = sorted(p for p in pairs if colours[p[0]] == colours[p[1]])
+        assert not same, f"bordering states share a colour: {same}"
+        weakest = min(pairs, key=lambda p: math.dist(_lab(_PALETTE[colours[p[0]]]), _lab(_PALETTE[colours[p[1]]])))
+        d = math.dist(_lab(_PALETTE[colours[weakest[0]]]), _lab(_PALETTE[colours[weakest[1]]]))
+        assert d >= 30, f"{weakest} use near-identical colours (ΔE {d:.1f})"
 
-    def test_glass_fill_and_sheen(self, page: Page, base_url: str, all_36_states_fixture):
+    def test_colours_are_deterministic(self, page: Page, base_url: str):
         _open_map(page, base_url)
-        fills = page.eval_on_selector_all("#map-svg .ad-state", """els => els.map(e => ({
-            abbr: e.dataset.abbr, color: e.dataset.color, fill: e.style.fill,
-            empty: e.classList.contains('empty-state') }))""")
-        for f in fills:
-            kind = "frost" if f["empty"] else "glass"
-            assert f["fill"] == f'url("#{kind}-{f["color"]}")', f
-        # MH has vacancies (glass); Arunachal has none (frosted)
-        by = {f["abbr"]: f for f in fills}
-        assert not by["MH"]["empty"] and by["AR"]["empty"]
-        expect(page.locator("#map-svg .ad-sheen")).to_have_count(36)
-        assert page.locator("#map-svg defs #glass-sheen").count() == 1
+        first = _state_colours(page)
+        page.reload()
+        expect(page.locator("#map-svg .ad-state")).to_have_count(36, timeout=15000)
+        assert _state_colours(page) == first
 
-    def test_districts_take_their_state_colour(self, page: Page, base_url: str, all_36_states_fixture):
+    def test_districts_take_state_colour_or_neutral(self, page: Page, base_url: str, all_36_states_fixture):
         _open_map(page, base_url)
-        colour = page.locator("#map-svg [data-abbr='MH'].ad-state").get_attribute("data-color")
-        _svg_state_click(page, "MH")
-        _expect_state(page, "MH")
-        pune = page.locator("#map-svg [data-district='Pune'].ad-district")
-        assert pune.evaluate("e => e.style.fill") == f'url("#glass-{colour}")'
+        colour = page.locator("#map-svg [data-abbr='UK'].ad-state").get_attribute("data-color")
+        _svg_state_click(page, "UK")
+        _expect_state(page, "UK")
+        fill = lambda d: page.locator(f"#map-svg [data-district='{d}'].ad-district").evaluate(  # noqa: E731
+            "e => getComputedStyle(e).fill")
+        assert fill("Dehradun") == _rgb(_PALETTE[colour])   # has a vacancy
+        assert fill("Nainital") == "rgb(42, 52, 67)"         # none: neutral surface
+
+    def test_hover_and_keyboard_focus_outline(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        outline = page.locator("#map-outline")
+        mh = page.locator("#map-svg [data-abbr='MH'].ad-state")
+        mh.hover()
+        expect(outline).to_have_class("ad-outline ad-outline-hover")
+        assert outline.get_attribute("data-for") == "MH"
+        assert outline.get_attribute("d") == mh.get_attribute("d")
+        page.mouse.move(2, 2)
+        expect(outline).to_have_class("ad-outline")
+        page.keyboard.press("Tab")
+        page.locator("#map-svg [data-abbr='KA'].ad-state").focus()
+        expect(outline).to_have_class("ad-outline ad-outline-focus")
+        expect(outline).to_have_css("stroke", "rgb(230, 239, 255)")  # after the 200ms transition
+
+    def test_borders_solid_after_draw_in(self, page: Page, base_url: str, all_36_states_fixture):
+        """Non-scaling strokes keep a 1.2px border at any zoom; the draw-in
+        dash pattern must be gone afterwards or zooming in leaves gaps."""
+        _open_map(page, base_url)
+        expect(page.locator("#map-svg .ad-state.drawn")).to_have_count(36, timeout=10000)
+        dashes = page.eval_on_selector_all("#map-svg .ad-state", "els => [...new Set(els.map(e => getComputedStyle(e).strokeDasharray))]")
+        assert dashes == ["none"], dashes
+        assert page.locator("#map-svg [data-abbr='MH'].ad-state").evaluate(
+            "e => getComputedStyle(e).vectorEffect") == "non-scaling-stroke"
 
     def test_clicked_state_has_no_focus_rectangle(self, page: Page, base_url: str, all_36_states_fixture):
         _open_map(page, base_url)
         mh = page.locator("#map-svg [data-abbr='MH'].ad-state")
         mh.focus()
         assert mh.evaluate("e => getComputedStyle(e).outlineStyle") == "none"
+
+    def test_label_hierarchy_without_outlines(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        style = lambda sel: page.locator(sel).first.evaluate(  # noqa: E731
+            "e => { const s = getComputedStyle(e); return [parseFloat(s.fontSize), parseInt(s.fontWeight), s.stroke]; }")
+        abbr_size, abbr_weight, abbr_stroke = style("#map-labels .ad-state-label")
+        count_size, count_weight, count_stroke = style("#map-labels .ad-state-count:not(.empty)")
+        assert abbr_size < count_size
+        assert abbr_weight == 500 and count_weight >= 600
+        assert abbr_stroke == "none" and count_stroke == "none", "labels must not carry heavy outlines"
 
 
 class TestGesturesAfterDelhi:

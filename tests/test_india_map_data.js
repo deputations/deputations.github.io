@@ -129,11 +129,10 @@ assert(js.includes('window.innerWidth < 768'), 'Mobile breakpoint check');
 section('C06: neighbor-dim CSS exists');
 assert(css.includes('.neighbor-dim'), 'CSS has .neighbor-dim rule for spotlight hover');
 
-section('C06: Particle suspension on mobile');
-assert(js.includes('window.innerWidth < 768'), 'Particle init checks mobile breakpoint');
-assert(js.includes('Skip entirely on mobile'), 'Skip comment present');
-// Resize handler stops particles on desktop->mobile
-assert(js.includes('stopParticles()') && js.includes("addEventListener('resize'"), 'Resize handler stops particles on mobile transition');
+section('C06: No decorative particle layer (removed in the Apple-style redesign)');
+assert(!js.includes('particleCanvas') && !js.includes('__mapParticleState'), 'Particle background removed');
+assert(!js.includes('spawnVortex'), 'Click burst removed');
+assert(js.includes("addEventListener('resize', syncMobileFilters)"), 'Resize still keeps the mobile filter drawer in sync');
 
 section('C09: Tooltip uses getFiltered for filtered tooltip counts');
 // Verify showTooltip uses getFiltered and activeMapFilter (C21)
