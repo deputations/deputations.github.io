@@ -231,6 +231,31 @@
     labels.id = 'map-labels';
     svg.appendChild(labels);
 
+    // Gestures live on the element, so every rebuilt SVG (e.g. after the
+    // Delhi image map replaced it) gets wheel / pinch / drag again.
+    svg.style.touchAction = 'none';
+    svg.addEventListener('wheel', onWheelZoom, { passive: false });
+    svg.addEventListener('touchstart', onTouchStart, { passive: false });
+    svg.addEventListener('touchmove', onTouchMove, { passive: false });
+    svg.addEventListener('touchend', onTouchEnd);
+    svg.addEventListener('touchcancel', onTouchEnd);
+    svg.addEventListener('pointerdown', onPointerDown);
+    svg.addEventListener('pointermove', onPointerMove);
+    svg.addEventListener('pointerup', onPointerUp);
+    svg.addEventListener('pointercancel', onPointerUp);
+
+    return svg;
+  }
+
+  // Returns #map-svg, rebuilding it if the Delhi image map replaced it.
+  function ensureMapSvg() {
+    const existing = document.getElementById('map-svg');
+    if (existing) return existing;
+    const wrap = document.getElementById('mapSvgWrap');
+    if (!wrap) return null;
+    wrap.innerHTML = '';
+    const svg = buildSvg();
+    wrap.appendChild(svg);
     return svg;
   }
 
@@ -707,7 +732,7 @@
       return;
     }
 
-    const mapSvg = document.getElementById('map-svg');
+    const mapSvg = ensureMapSvg();
     const g = mapSvg?.querySelector('#map-group');
     const labelsG = mapSvg?.querySelector('#map-labels');
     if (!g) return;
@@ -943,10 +968,18 @@
   // UI half of leaving a district: back to the state view. Idempotent.
   function leaveDistrictView() {
     if (viewMode !== 'district') return;
+    const closedDistrict = selectedDistrict;
     viewMode = 'state';
     selectedDistrict = null;
     // Delhi swapped its image map for a district photo — put the map back
-    if (selectedAbbr === 'DL') renderDelhiImageMap('DL', ABBR_TO_NAME.DL, getData());
+    // and return focus to the hotspot that opened the district (the modal's
+    // own trigger was inside the photo view, which no longer exists).
+    if (selectedAbbr === 'DL') {
+      renderDelhiImageMap('DL', ABBR_TO_NAME.DL, getData());
+      const hotspot = Array.from(document.querySelectorAll('.ad-delhi-hotspot'))
+        .find(b => b.dataset.district === closedDistrict);
+      if (hotspot) hotspot.focus();
+    }
   }
 
   // User closed the district (Escape, close button, backdrop, Delhi overview).
@@ -1105,13 +1138,7 @@
     selectedDistrict = null;
     // Close district modal if open (can survive after a back-navigation)
     closeModalForRoute();
-    const mapArea = document.getElementById('mapSvgWrap');
-    const needRebuild = !document.getElementById('map-svg');
-    if (needRebuild && mapArea) {
-      mapArea.innerHTML = '';
-      mapArea.appendChild(buildSvg());
-    }
-    const svg = document.getElementById('map-svg');
+    const svg = ensureMapSvg();
     if (svg) {
       const vb = svg.viewBox.baseVal;
       await animateViewBox(svg, { x: vb.x, y: vb.y, w: vb.width, h: vb.height }, { x: 0, y: 0, w: 1000, h: 800 }, 400);
@@ -1254,21 +1281,6 @@
         announce(`Filter: ${btn.textContent}`);
       });
     });
-
-    // Wire gesture controls
-    const mapSvgEl = document.getElementById('map-svg');
-    if (mapSvgEl) {
-      mapSvgEl.style.touchAction = 'none';
-      mapSvgEl.addEventListener('wheel', onWheelZoom, { passive: false });
-      mapSvgEl.addEventListener('touchstart', onTouchStart, { passive: false });
-      mapSvgEl.addEventListener('touchmove', onTouchMove, { passive: false });
-      mapSvgEl.addEventListener('touchend', onTouchEnd);
-      mapSvgEl.addEventListener('touchcancel', onTouchEnd);
-      mapSvgEl.addEventListener('pointerdown', onPointerDown);
-      mapSvgEl.addEventListener('pointermove', onPointerMove);
-      mapSvgEl.addEventListener('pointerup', onPointerUp);
-      mapSvgEl.addEventListener('pointercancel', onPointerUp);
-    }
 
     // Filter toggle button (mobile)
     document.getElementById('mapFiltersToggle')?.addEventListener('click', onFiltersToggle);

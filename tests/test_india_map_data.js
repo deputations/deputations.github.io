@@ -145,8 +145,8 @@ section('C10: Delhi selectedDistrict declared');
 assert(js.includes('let selectedDistrict'), 'selectedDistrict is module-level let');
 assert(js.includes('selectedDistrict = null'), 'selectedDistrict initialised to null');
 assert(js.includes('selectedDistrict = districtName'), 'showDelhiDistrict assigns to selectedDistrict');
-// Rebuild SVG on Delhi→national return
-assert(js.includes('needRebuild = !document.getElementById') && js.includes('buildSvg()'), 'goBack rebuilds SVG when Delhi replaced it');
+// Rebuild SVG on Delhi→national return (behaviour: TestGesturesAfterDelhi)
+assert(js.includes('function ensureMapSvg()') && js.includes('const svg = ensureMapSvg();'), 'goToNational rebuilds SVG when Delhi replaced it');
 
 section('C12: Data source coherence — RPC removed from visible counts');
 assert(window.IndiaMapData.load.toString().includes('JSON'), 'JSON loads first (canonical)');

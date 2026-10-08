@@ -1006,6 +1006,50 @@ class TestQAP003_DelhiRouting:
         _expect_national(page)
         assert _history_length(page) == length, "direct entry must be replaced, not pushed"
 
+    def test_delhi_escape_returns_focus_to_hotspot(self, page: Page, base_url: str, all_36_states_fixture):
+        self._open_new_delhi(page, base_url)
+        page.keyboard.press("Escape")
+        _expect_state(page, "DL")
+        expect(page.locator('.ad-delhi-hotspot[data-district="New Delhi"]')).to_be_focused()
+
+    def test_delhi_browser_back_returns_focus_to_hotspot(self, page: Page, base_url: str, all_36_states_fixture):
+        self._open_new_delhi(page, base_url)
+        page.go_back()
+        _expect_state(page, "DL")
+        expect(page.locator('.ad-delhi-hotspot[data-district="New Delhi"]')).to_be_focused()
+
+
+class TestGesturesAfterDelhi:
+    """The Delhi image map replaces the SVG; the rebuilt SVG must still zoom."""
+
+    def _wheel_zooms(self, page: Page) -> None:
+        svg = page.locator("#map-svg")
+        expect(svg).to_have_attribute("viewBox", "0 0 1000 800", timeout=10000)
+        svg.hover()
+        page.mouse.wheel(0, -300)
+        expect(svg).not_to_have_attribute("viewBox", "0 0 1000 800", timeout=3000)
+
+    def test_wheel_zoom_after_back_to_india(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        _svg_state_click(page, "DL")
+        _expect_state(page, "DL")
+        page.locator("#btn-back").click()
+        _expect_national(page)
+        self._wheel_zooms(page)
+
+    def test_wheel_zoom_after_browser_back_from_delhi_district(
+            self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        _svg_state_click(page, "DL")
+        _expect_state(page, "DL")
+        page.locator('.ad-delhi-hotspot[data-district="New Delhi"]').click()
+        _expect_district(page, "DL", "New Delhi")
+        page.go_back()
+        _expect_state(page, "DL")
+        page.go_back()
+        _expect_national(page)
+        self._wheel_zooms(page)
+
 
 # ---------------------------------------------------------------------------
 # Real GeoJSON contract — no fixtures. Fixture-only tests missed AP (28 vs 37);
