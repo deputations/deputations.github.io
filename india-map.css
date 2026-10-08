@@ -1,19 +1,27 @@
 /* ===== INDIA MAP STANDALONE PAGE ===== */
 /* Self-contained — loaded ONLY by india-map.html */
 
-/* ----- Design tokens (Apple dark / Cupertino) -----
+/* ----- Design tokens (Apple light / Cupertino, warm cream) -----
    Every colour, font and timing below comes from these. State colours are
    referenced by key from india-map-view.js (STATE_COLORS → --map-c-<key>). */
 body.map-entry {
-  --map-bg: #151A23;
-  --map-surface: #222A37;
-  --map-surface-raised: #2A3443;
-  --map-border: #303A49;
-  --map-hairline: rgba(255, 255, 255, 0.07);
-  --map-text: #F5F7FA;
-  --map-text-2: #AAB4C3;
-  --map-select: #E6EFFF;
-  --map-accent: #79A9E7;
+  --map-bg: #F7F3EC;                 /* cream base under the gradient */
+  --map-surface: #FFFFFF;
+  --map-surface-raised: #F2ECE2;     /* hover / active control */
+  --map-neutral: #E6E0D5;            /* districts without vacancies */
+  --map-border: rgba(255, 255, 255, 0.95);  /* state borders: white hairlines */
+  --map-hairline: rgba(29, 36, 51, 0.08);
+  --map-text: #1D2433;
+  --map-text-2: #5E6878;
+  --map-select: #1D2433;             /* selection / keyboard-focus ring */
+  --map-accent: #3A6FD8;             /* links */
+  --map-shadow: 0 1px 2px rgba(29, 36, 51, 0.05), 0 8px 24px rgba(29, 36, 51, 0.08);
+  /* Warm cream with a soft peach glow top-left and a cool mist glow
+     bottom-right — modern, light, never busy */
+  --map-backdrop:
+    radial-gradient(1100px 760px at 12% 8%, rgba(255, 222, 190, 0.55), transparent 62%),
+    radial-gradient(1000px 720px at 88% 92%, rgba(196, 214, 238, 0.5), transparent 62%),
+    linear-gradient(160deg, #FCFAF6 0%, #F4EEE4 100%);
 
   --map-c-powder: #79A9E7;
   --map-c-sage: #77BFAF;
@@ -28,21 +36,25 @@ body.map-entry {
   --map-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
   --map-dur: 200ms;
 
-  background: var(--map-bg);
+  /* colour + multi-layer image must be separate properties: a colour
+     before the first of several layers makes the shorthand invalid */
+  background-color: var(--map-bg);
+  background-image: var(--map-backdrop);
+  background-attachment: fixed;
 }
 
 /* Neutralize home page layout */
 body.map-entry { margin: 0; padding: 0; }
-body.map-entry .top-nav { background: rgba(21, 26, 35, 0.86); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--map-hairline); }
+body.map-entry .top-nav { background: rgba(252, 250, 246, 0.78); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--map-hairline); }
 body.map-entry .top-nav .nav-links a { color: var(--map-text-2); font-family: var(--map-font); }
-body.map-entry .top-nav .nav-links a.active { color: var(--map-text); background: var(--map-surface); border-radius: 8px; }
+body.map-entry .top-nav .nav-links a.active { color: var(--map-text); background: var(--map-surface); border-radius: 8px; box-shadow: 0 1px 2px rgba(29, 36, 51, 0.08); }
 body.map-entry .bg-shapes { display: none !important; }
 body.map-entry .app-container { max-width: none; margin: 0; padding: 0; }
 body.map-entry .scroll-progress { display: none; }
 
 body.map-active .app-container { overflow: hidden; }
-#map-view { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: var(--map-bg); position: relative; font-family: var(--map-font); color: var(--map-text); }
-.map-container { position: relative; flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--map-bg); }
+#map-view { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: transparent; position: relative; font-family: var(--map-font); color: var(--map-text); }
+.map-container { position: relative; flex: 1; display: flex; flex-direction: column; overflow: hidden; background: transparent; }
 #mapSvgWrap { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; min-height: 0; }
 #mapSvgWrap svg { width: 100%; height: 100%; max-height: 72vh; }
 
@@ -60,12 +72,12 @@ body.map-active .app-container { overflow: hidden; }
 #map-svg.ad-zooming { pointer-events: none; }
 .map-title h2 { font-family: var(--map-font); font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: var(--map-text); margin: 0; }
 .map-subtitle { font-size: 12px; color: var(--map-text-2); margin: 0; }
-.map-counter { display: flex; flex-direction: column; align-items: center; padding: 8px 16px; border-radius: 12px; background: var(--map-surface); border: 1px solid var(--map-hairline); }
+.map-counter { display: flex; flex-direction: column; align-items: center; padding: 8px 16px; border-radius: 12px; background: var(--map-surface); border: 1px solid var(--map-hairline); box-shadow: var(--map-shadow); }
 .map-counter-label { font-size: 10px; font-weight: 500; color: var(--map-text-2); text-transform: uppercase; letter-spacing: 0.06em; }
 .map-counter-value { font-family: var(--map-font); font-size: 22px; font-weight: 600; color: var(--map-text); font-variant-numeric: tabular-nums; }
 
 /* ----- Tooltip: minimal floating panel ----- */
-.map-tooltip { position: fixed; z-index: 100; padding: 10px 14px; border-radius: 12px; background: rgba(34, 42, 55, 0.94); border: 1px solid var(--map-hairline); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); pointer-events: none; opacity: 0; transform: translateY(4px); transition: opacity 180ms var(--map-ease), transform 200ms var(--map-ease); max-width: 240px; font-family: var(--map-font); }
+.map-tooltip { position: fixed; z-index: 100; padding: 10px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.94); border: 1px solid var(--map-hairline); box-shadow: var(--map-shadow); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); pointer-events: none; opacity: 0; transform: translateY(4px); transition: opacity 180ms var(--map-ease), transform 200ms var(--map-ease); max-width: 240px; font-family: var(--map-font); }
 .map-tooltip.visible { opacity: 1; transform: translateY(0); }
 .map-tooltip-name { font-size: 13px; font-weight: 600; color: var(--map-text); }
 .map-tooltip-count { font-size: 12px; font-weight: 500; color: var(--map-text); margin-top: 2px; font-variant-numeric: tabular-nums; }
@@ -78,10 +90,15 @@ body.map-active .app-container { overflow: hidden; }
 .map-filter-toggle.open { background: var(--map-surface-raised); color: var(--map-text); }
 .map-filter-btn { padding: 6px 14px; border-radius: 8px; border: 0; background: transparent; color: var(--map-text-2); font-size: 13px; font-weight: 500; font-family: var(--map-font); cursor: pointer; transition: background var(--map-dur) var(--map-ease), color var(--map-dur) var(--map-ease); }
 .map-filter-btn:hover { color: var(--map-text); }
-.map-filter-btn.active { background: var(--map-surface-raised); color: var(--map-text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); }
+.map-filter-btn.active { background: var(--map-surface-raised); color: var(--map-text); box-shadow: 0 1px 2px rgba(29, 36, 51, 0.1); }
 .map-zoom-controls { display: flex; gap: 4px; }
 .map-zoom-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--map-hairline); background: var(--map-surface); color: var(--map-text-2); font-size: 15px; cursor: pointer; transition: background var(--map-dur) var(--map-ease), color var(--map-dur) var(--map-ease); display: flex; align-items: center; justify-content: center; font-family: var(--map-font); }
 .map-zoom-btn:hover { background: var(--map-surface-raised); color: var(--map-text); }
+
+/* A very soft lift for the map on the light backdrop; dropped during the
+   cinematic zoom so every frame stays cheap */
+#map-group { filter: drop-shadow(0 4px 12px rgba(29, 36, 51, 0.08)); }
+#map-svg.ad-zooming #map-group { filter: none; }
 
 /* ----- States: flat fills, hairline borders -----
    The fill is set inline as var(--map-c-<key>). Strokes don't scale with
@@ -94,7 +111,7 @@ body.map-active .app-container { overflow: hidden; }
   cursor: pointer;
   transition: filter var(--map-dur) var(--map-ease), opacity var(--map-dur) var(--map-ease);
 }
-.ad-state:hover { filter: brightness(1.1); }
+.ad-state:hover { filter: brightness(1.04) saturate(1.12); }
 /* Spotlight: other states recede slightly while one is hovered */
 .ad-state.neighbor-dim { opacity: 0.82; }
 /* No vacancies: same colour, a touch quieter, so states with vacancies lead
@@ -112,13 +129,12 @@ body.map-active .app-container { overflow: hidden; }
 /* Outline layer: one path above all shapes, so a highlight is never hidden
    under a neighbour's border */
 .ad-outline { fill: none; stroke: transparent; stroke-width: 1.5; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; transition: stroke var(--map-dur) var(--map-ease); }
-.ad-outline-hover { stroke: rgba(230, 239, 255, 0.6); }
+.ad-outline-hover { stroke: rgba(29, 36, 51, 0.4); }
 .ad-outline-focus, .ad-outline-selected { stroke: var(--map-select); stroke-width: 2; }
 
-/* Labels: abbreviation small/medium, count larger/semibold; a soft shadow
-   only, so they read on every state colour */
-#map-labels { filter: drop-shadow(0 0.5px 1px rgba(12, 16, 24, 0.6)); }
-.ad-state-label { font-family: var(--map-font); font-size: 10px; font-weight: 500; letter-spacing: 0.02em; fill: var(--map-text); fill-opacity: 0.9; pointer-events: none; text-anchor: middle; }
+/* Labels: abbreviation small/medium, count larger/semibold, in dark ink —
+   5.5–7.3:1 on every state colour, so no outline or shadow is needed */
+.ad-state-label { font-family: var(--map-font); font-size: 10px; font-weight: 500; letter-spacing: 0.02em; fill: var(--map-text); fill-opacity: 0.78; pointer-events: none; text-anchor: middle; }
 .ad-state-count { font-family: var(--map-font); font-size: 13.5px; font-weight: 600; fill: var(--map-text); pointer-events: none; text-anchor: middle; font-variant-numeric: tabular-nums; }
 
 /* ----- Districts (inside a state): the state's colour ----- */
@@ -130,12 +146,12 @@ body.map-active .app-container { overflow: hidden; }
   cursor: pointer;
   transition: filter var(--map-dur) var(--map-ease), fill-opacity var(--map-dur) var(--map-ease);
 }
-.ad-district:hover { filter: brightness(1.1); }
+.ad-district:hover { filter: brightness(1.04) saturate(1.12); }
 /* Districts without vacancies use the neutral surface (set by the view);
    only districts with vacancies carry the state colour */
 /* Count badge sits on the district centroid — let clicks reach the path */
 .ad-count-badge { pointer-events: none; font-family: var(--map-font); font-size: 14px; font-weight: 600; fill: var(--map-text); text-anchor: middle; font-variant-numeric: tabular-nums; }
-.ad-district-label { font-family: var(--map-font); font-size: 9px; font-weight: 500; fill: var(--map-text); fill-opacity: 0.88; text-anchor: middle; pointer-events: none; opacity: 0; transition: opacity 0.4s ease; }
+.ad-district-label { font-family: var(--map-font); font-size: 9px; font-weight: 500; fill: var(--map-text); fill-opacity: 0.72; text-anchor: middle; pointer-events: none; opacity: 0; transition: opacity 0.4s ease; }
 .ad-district-label.visible { opacity: 1; }
 
 /* Live insert: one quiet ring that grows and fades */
@@ -161,18 +177,18 @@ body.map-active .app-container { overflow: hidden; }
 body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
 
 /* ----- Listings panel (district / state vacancies) ----- */
-.map-modal { position: fixed; inset: 0; margin: auto; height: fit-content; width: min(560px, calc(100vw - 32px)); max-height: min(72vh, 640px); padding: 0; border: 1px solid var(--map-hairline); border-radius: 16px; background: var(--map-surface); color: var(--map-text); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5); font-family: var(--map-font); overflow: hidden; }
+.map-modal { position: fixed; inset: 0; margin: auto; height: fit-content; width: min(560px, calc(100vw - 32px)); max-height: min(72vh, 640px); padding: 0; border: 1px solid var(--map-hairline); border-radius: 16px; background: var(--map-surface); color: var(--map-text); box-shadow: 0 24px 60px rgba(29, 36, 51, 0.18); font-family: var(--map-font); overflow: hidden; }
 .map-modal[open] { display: flex; flex-direction: column; }
-.map-modal::backdrop { background: rgba(10, 13, 18, 0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
-.map-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--map-border); flex-shrink: 0; }
+.map-modal::backdrop { background: rgba(29, 36, 51, 0.22); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.map-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--map-hairline); flex-shrink: 0; }
 .map-modal-header h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: var(--map-text); }
-.map-modal-close { width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.08); color: var(--map-text-2); font-size: 18px; line-height: 1; cursor: pointer; transition: background var(--map-dur) var(--map-ease), color var(--map-dur) var(--map-ease); }
-.map-modal-close:hover { background: rgba(255, 255, 255, 0.14); color: var(--map-text); }
+.map-modal-close { width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; border: 0; background: rgba(29, 36, 51, 0.06); color: var(--map-text-2); font-size: 18px; line-height: 1; cursor: pointer; transition: background var(--map-dur) var(--map-ease), color var(--map-dur) var(--map-ease); }
+.map-modal-close:hover { background: rgba(29, 36, 51, 0.1); color: var(--map-text); }
 .map-modal-body { padding: 12px 16px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-.ad-listing-card { background: var(--map-bg); border: 1px solid var(--map-border); border-radius: 12px; padding: 12px 14px; }
+.ad-listing-card { background: #FBF9F5; border: 1px solid var(--map-hairline); border-radius: 12px; padding: 12px 14px; }
 .ad-listing-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .ad-listing-title { font-size: 14px; font-weight: 600; color: var(--map-text); line-height: 1.35; }
-.ad-listing-badge { flex-shrink: 0; font-size: 11px; font-weight: 500; color: var(--map-text-2); background: rgba(255, 255, 255, 0.06); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.ad-listing-badge { flex-shrink: 0; font-size: 11px; font-weight: 500; color: var(--map-text-2); background: rgba(29, 36, 51, 0.06); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
 .ad-listing-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: 12px; color: var(--map-text-2); line-height: 1.4; }
 .ad-listing-card-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--map-text-2); }
 .ad-listing-link { color: var(--map-accent); text-decoration: none; font-weight: 500; }
@@ -195,7 +211,7 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
   width: 100%;
   height: auto;
   border-radius: 14px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--map-shadow);
   pointer-events: none;
   transition: opacity 400ms ease;
 }
@@ -233,8 +249,8 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
   font-family: var(--map-font);
   font-size: 13px;
   font-weight: 600;
-  color: var(--map-text);
-  background: rgba(21, 26, 35, 0.82);
+  color: #FFFFFF;
+  background: rgba(29, 36, 51, 0.82);
   padding: 2px 9px;
   border-radius: 999px;
   pointer-events: none;
@@ -250,8 +266,9 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
 .ad-delhi-back-btn {
   position: absolute;
   top: 12px; left: 12px;
-  background: rgba(34, 42, 55, 0.94);
+  background: rgba(255, 255, 255, 0.94);
   color: var(--map-text);
+  box-shadow: var(--map-shadow);
   border: 1px solid var(--map-hairline);
   border-radius: 10px;
   padding: 6px 12px;

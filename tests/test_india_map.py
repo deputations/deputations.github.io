@@ -765,9 +765,15 @@ class TestNoDecorations:
         page.wait_for_timeout(2500)
         assert page.locator("#map-svg .ad-ripple").count() == 0
 
-    def test_dark_background(self, page: Page, base_url: str, all_36_states_fixture):
+    def test_light_cream_background(self, page: Page, base_url: str, all_36_states_fixture):
+        """Cream base with a soft gradient on the page; the map view itself is
+        transparent so the gradient shows through."""
         _open_map(page, base_url)
-        assert page.locator("#map-view").evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(21, 26, 35)"
+        body = page.locator("body").evaluate(
+            "e => { const s = getComputedStyle(e); return [s.backgroundColor, s.backgroundImage]; }")
+        assert body[0] == "rgb(247, 243, 236)", body
+        assert body[1].count("gradient(") == 3, body[1]
+        assert page.locator("#map-view").evaluate("e => getComputedStyle(e).backgroundColor") == "rgba(0, 0, 0, 0)"
 
 
 # ---------------------------------------------------------------------------
@@ -1224,7 +1230,7 @@ class TestStateColours:
         fill = lambda d: page.locator(f"#map-svg [data-district='{d}'].ad-district").evaluate(  # noqa: E731
             "e => getComputedStyle(e).fill")
         assert fill("Dehradun") == _rgb(_PALETTE[colour])   # has a vacancy
-        assert fill("Nainital") == "rgb(42, 52, 67)"         # none: neutral surface
+        assert fill("Nainital") == "rgb(230, 224, 213)"      # none: neutral tone
 
     def test_hover_and_keyboard_focus_outline(self, page: Page, base_url: str, all_36_states_fixture):
         _open_map(page, base_url)
@@ -1239,7 +1245,7 @@ class TestStateColours:
         page.keyboard.press("Tab")
         page.locator("#map-svg [data-abbr='KA'].ad-state").focus()
         expect(outline).to_have_class("ad-outline ad-outline-focus")
-        expect(outline).to_have_css("stroke", "rgb(230, 239, 255)")  # after the 200ms transition
+        expect(outline).to_have_css("stroke", "rgb(29, 36, 51)")  # after the 200ms transition
 
     def test_borders_solid_after_draw_in(self, page: Page, base_url: str, all_36_states_fixture):
         """Non-scaling strokes keep a 1.2px border at any zoom; the draw-in
@@ -1266,6 +1272,9 @@ class TestStateColours:
         assert abbr_size < count_size
         assert abbr_weight == 500 and count_weight >= 600
         assert abbr_stroke == "none" and count_stroke == "none", "labels must not carry heavy outlines"
+        # Dark ink on the light theme: 5.5–7.3:1 against every state colour
+        ink = page.locator("#map-labels .ad-state-count:not(.empty)").first.evaluate("e => getComputedStyle(e).fill")
+        assert ink == "rgb(29, 36, 51)", ink
 
 
 class TestGesturesAfterDelhi:
