@@ -6584,3 +6584,56 @@ focus:          India Map Phase 1B corrections C17-C24
 - All C01-C24 tickets from tech-lead review are now addressed (C01-C07 in aa0fc96, C09-C16 in b35d2cc, C17-C24 in 0d81029).
 - C08 was already merged in 85efa96 (P0/P1 repairs).
 - Ready for tech-lead final review + merge to main.
+
+## session shq-2026-10-08-001
+```
+started:        2026-10-03
+ended:          2026-10-08
+model:          not recorded (model ids are not written to repo files from this environment)
+driver:         relay
+branch:         phase-1b
+starting_head:  6d8b7c8
+ending_head:    a96b638
+focus:          India Map Phase 1B — VIKAS final correction pass after 6d8b7c8, then follow-ups
+```
+
+### inbound context read
+- shq-2026-09-08-001 (previous phase-1b block — note: it has no `## session ... end` line; left as-is per the append-only rule)
+- VIKAS directives: push/correction gate after 2982ac5; final Phase 1B correction after 6d8b7c8
+- GitHub Actions run 37153023124 (red on 6d8b7c8: TestStateClick::test_state_click_drills)
+
+### work done
+- **d3ebbd4 — VIKAS final correction pass**
+  - `renderState()` still read the removed `ABBR_TO_CODE` → ReferenceError on every non-Delhi drill, so `?state=XX` was never pushed (the CI failure).
+  - One resolver: `IndiaMapData.getDistrictCodes(abbr)` (data layer, always returns an array). Codes match `geo/india-districts-all.geojson`: AP 37 (was 28), DNH 26 only (no st_code 25 exists), UK 05. View uses one helper, `districtFeaturesFor()`, for both zoom and render.
+  - Blank-`district` sentinel features dropped; same-name fragments merged into one district path (`groupDistricts()`). Real data: CH and LD each had a duplicate.
+  - `renderState()` resets the viewBox after re-projecting (district view was cropped by the national zoom).
+  - Routing: one navigation layer writes history. User closes an in-app district → `history.back()` once; closes a direct district link → `replaceState` to the state route; browser Back with the modal open closes it via the `routeClosingModal` guard with no history write. Delhi hotspots use `navigateToDistrict()`; `showDelhiDistrict()` and dead `onDistrictClick()` (each had its own `pushState`) removed. `navigateToState()` pushes only if the drill completed. `window._navigateToState` test hook removed.
+  - CSS: `.map-back-btn[hidden] { display: none }` ("Back to India" was visible on the national view); `.ad-count-badge` is click-through.
+  - Tests: real-click/keyboard journeys replace synthetic `pushState` tests and `window.selectedDistrict`/`viewMode` reads; asserts on URL, modal, Back button, district DOM, `history.length`. New `TestDistrictGeoContract` / `TestRealGeoDrill` run on the real GeoJSON. Node: resolver + real-GeoJSON contract; summary moved to end of file (C20–C23 were previously uncounted and could not fail the run).
+  - CI run 37156799861: 114 passed, 0 failed, 1 skipped; `scripts/verify_admin.py` all passed.
+- **a96b638 — follow-ups**
+  - Gestures: only init attached wheel/touch/pointer listeners, so zoom/pan died after Delhi replaced and `goToNational()` rebuilt `#map-svg`. `buildSvg()` now wires them on every SVG; `ensureMapSvg()` rebuilds for `goToNational()` and `renderState()`.
+  - Focus: closing a Delhi district re-rendered the image map and focus fell to `<body>`; `leaveDistrictView()` now focuses the closed district's hotspot.
+  - Tests: Delhi Escape / Browser Back focus checks; `TestGesturesAfterDelhi` (wheel zoom after Back to India and after Browser Back). All four fail on d3ebbd4.
+- PR #3 description rewritten to describe the current branch.
+
+### decisions
+- DNH resolves to `['26']` only — VIKAS withdrew the `25 + 26` instruction after the GeoJSON blob was checked.
+- The abbr → st_code table lives in `india-map-data.js` (Node-testable, single source); the view never keeps its own copy.
+- Playwright state fixture is a non-overlapping 6×6 grid, not real-world boxes: real boxes overlap (UP covers UK's centre), so real clicks hit the wrong state.
+- Protected files untouched: `index.html`, `app.js`, `style.css`, `config.js`, `enrich.js`.
+
+### handoff state
+- `phase-1b` at a96b638 (PR #3). Waiting on VIKAS code review. CI for a96b638: see PR #3 checks.
+- Not merged; Phase 2 not started; SUDHIR not contacted (all per VIKAS).
+- Known, not in scope: the homepage nav still has no India Map link (needs a change to protected `index.html` — owner decision).
+
+### gotchas for next session
+- Playwright in the cloud sandbox: pip `playwright` must match the preinstalled browser (`playwright==1.56.0` ↔ `/opt/pw-browsers/chromium-1194`); do not run `playwright install`.
+- In that sandbox, contact / defex / watchlist / semantic-search tests fail for environment reasons (they fail on unmodified code too). CI is authoritative.
+- `<dialog>` `close` fires asynchronously. Only set `routeClosingModal` when the dialog is actually open, or the flag sticks and swallows the next user close.
+- Any element with a `display` rule that is toggled via `hidden` needs a matching `[hidden] { display: none }`.
+- Keep the Node test summary/exit as the last statement in `tests/test_india_map_data.js`.
+
+## session shq-2026-10-08-001 end
