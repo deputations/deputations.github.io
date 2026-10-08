@@ -326,6 +326,38 @@ const dnhNames = realGeo.features
 assert(JSON.stringify(dnhNames) === JSON.stringify(['Dadra and Nagar Haveli', 'Daman', 'Diu']),
   `DNH 26 holds Dadra and Nagar Haveli, Daman, Diu (got: ${JSON.stringify(dnhNames)})`);
 
+section('C27: City → district resolution (aliases, candidates, state scope)');
+{
+  const D = window.IndiaMapData;
+  D.reset();
+  const add = (id, state, city, extra = {}) => D.recordNewVacancy(Object.assign({
+    Vacancy_ID: id, Location_State: state, Location_City: city, Last_Date_To_Apply: '2099-01-01',
+  }, extra));
+  add('A1', 'Karnataka', 'Bengaluru');                 // alias
+  add('A2', 'Uttarakhand', 'Srinagar (Pauri Garhwal)'); // inside parentheses
+  add('A3', 'Maharashtra', 'DRTs Mumbai');              // DRT prefix
+  add('A4', 'Kerala', 'Kakkanad, Cochin');              // comma part + alias
+  add('A5', 'Bihar', 'Aurangabad');                     // direct, Bihar's own Aurangabad
+  add('A6', 'Maharashtra', 'Chatrapati Sambhajinagar'); // alias to MH Aurangabad
+  add('A7', 'Delhi', 'Delhi');                          // generic Delhi: no district
+  add('A8', 'Delhi', 'New Delhi');                      // Delhi rule
+  add('A9', 'Telangana', 'Hyderabad (NSTI Vidyanagar)');// before parentheses
+  add('A10', 'Goa', 'Goa');                             // ambiguous: no district
+  const ids = (abbr, d) => D.getListingsForDistrict(abbr, d).map(v => v.id).sort().join(',');
+  assert(ids('KA', 'Bengaluru Urban') === 'A1', `Bengaluru → Bengaluru Urban (got: ${ids('KA', 'Bengaluru Urban')})`);
+  assert(ids('UK', 'Pauri Garhwal') === 'A2', `"Srinagar (Pauri Garhwal)" → Pauri Garhwal (got: ${ids('UK', 'Pauri Garhwal')})`);
+  assert(ids('MH', 'Mumbai') === 'A3', `"DRTs Mumbai" → Mumbai (got: ${ids('MH', 'Mumbai')})`);
+  assert(ids('KL', 'Ernakulam') === 'A4', `"Kakkanad, Cochin" → Ernakulam (got: ${ids('KL', 'Ernakulam')})`);
+  assert(ids('BR', 'Aurangabad') === 'A5', `BR Aurangabad stays in Bihar (got: ${ids('BR', 'Aurangabad')})`);
+  assert(ids('MH', 'Aurangabad') === 'A6', `MH Chatrapati Sambhajinagar → MH Aurangabad only (got: ${ids('MH', 'Aurangabad')})`);
+  assert(ids('DL', 'New Delhi') === 'A8', `only "New Delhi" maps to the New Delhi district (got: ${ids('DL', 'New Delhi')})`);
+  assert(['North', 'Central', 'South', 'West', 'East'].every(d => ids('DL', d) === ''), 'generic "Delhi" matches no Delhi district');
+  assert(ids('TS', 'Hyderabad') === 'A9', `"Hyderabad (NSTI Vidyanagar)" → Hyderabad (got: ${ids('TS', 'Hyderabad')})`);
+  assert(ids('GA', 'North Goa') === '' && ids('GA', 'South Goa') === '', '"Goa" is not guessed into a district');
+  assert(D.getFiltered('GA', {}).length === 1, 'an unplaced vacancy still counts for its state');
+  D.reset();
+}
+
 // ---- Summary ----
 console.log(`\n${'='.repeat(50)}`);
 console.log(`Results: ${passed} passed, ${failed} failed`);

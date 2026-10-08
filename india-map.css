@@ -21,6 +21,12 @@ body.map-active .app-container { overflow: hidden; }
 /* display:flex above would otherwise override the hidden attribute */
 .map-back-btn[hidden] { display: none; }
 .map-back-btn:hover { background: rgba(148,163,184,0.16); color: #f8fafc; }
+.map-state-list-btn { display: flex; flex-direction: column; align-items: center; gap: 1px; background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.3); color: #22d3ee; padding: 7px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; font-family: "Plus Jakarta Sans", system-ui, sans-serif; transition: background 0.2s, color 0.2s; }
+.map-state-list-btn:hover { background: rgba(34,211,238,0.2); color: #f8fafc; }
+.map-state-list-btn[hidden] { display: none; }
+.map-state-list-note { font-size: 10px; font-weight: 500; color: #94a3b8; }
+/* No hover tooltips from states sliding under a still cursor mid-zoom */
+#map-svg.ad-zooming { pointer-events: none; }
 .map-title h2 { font-family: "Sora", sans-serif; font-size: 18px; font-weight: 700; color: #f8fafc; margin: 0; }
 .map-subtitle { font-size: 11px; color: #64748b; margin: 0; }
 .map-counter { display: flex; flex-direction: column; align-items: center; padding: 8px 16px; border-radius: 12px; background: rgba(15,23,42,0.75); border: 1px solid rgba(34,211,238,0.2); }
@@ -84,8 +90,8 @@ body.map-active .app-container { overflow: hidden; }
 .ad-district:hover { fill: var(--ad-accent); stroke: var(--ad-accent-bright); }
 .ad-district.empty-state { fill: var(--ad-polygon-fill-zero); }
 /* Count badge sits on the district centroid — let clicks reach the path */
-.ad-count-badge { pointer-events: none; }
-.ad-district-label { font-family: var(--font-body); font-size: 9px; fill: var(--ad-text-muted); pointer-events: none; opacity: 0; transition: opacity 0.4s ease; }
+.ad-count-badge { pointer-events: none; font-family: "Sora", sans-serif; font-size: 14px; font-weight: 800; fill: var(--ad-accent); text-anchor: middle; paint-order: stroke; stroke: #0f172a; stroke-width: 3px; }
+.ad-district-label { font-family: var(--font-body); font-size: 9px; fill: #cbd5e1; text-anchor: middle; paint-order: stroke; stroke: #0f172a; stroke-width: 2px; pointer-events: none; opacity: 0; transition: opacity 0.4s ease; }
 .ad-district-label.visible { opacity: 1; }
 
 /* Draw-in animation */

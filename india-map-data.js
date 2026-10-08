@@ -72,7 +72,88 @@ window.IndiaMapData = (() => {
     return 'General';
   }
 
+  // ----- City → district resolution -----
+  // Location_City is free text; the map's districts come from
+  // geo/india-districts-all.geojson. A vacancy matches a district when any
+  // candidate taken from its city (the whole string, the parts inside or
+  // before parentheses, the parts between commas, minus a "DRT"/"DRTs"/"DRAT"
+  // prefix) equals the district name after normKey(), either directly or via
+  // the alias table below. Aliases are scoped by state so "Aurangabad" (BR vs
+  // MH) or "Bilaspur" (CG vs HP) never cross state lines. Keys are normKey()'d
+  // city names; values are district names exactly as the GeoJSON spells them.
+  const CITY_DISTRICT_ALIASES = {
+    AN: { srivijayapuram: 'South Andaman', portblair: 'South Andaman' },
+    AP: { mangalagiri: 'Guntur', amaravati: 'Guntur', vijayawada: 'Krishna',
+          vishakhapatnam: 'Visakhapatnam', vizag: 'Visakhapatnam',
+          tirupati: 'Chittoor', nellore: 'S.P.S. Nellore', kadapa: 'Y.S.R. Kadapa',
+          rajahmundry: 'East Godavari', rajamahendravaram: 'East Godavari',
+          kakinada: 'East Godavari', anantapuramu: 'Anantapur' },
+    AR: { itanagar: 'Papum Pare', jote: 'Papum Pare', pasighat: 'East Siang' },
+    AS: { guwahati: 'Kamrup Metropolitan', dispur: 'Kamrup Metropolitan',
+          silchar: 'Cachar', biswanathchariali: 'Biswanath', tezpur: 'Sonitpur' },
+    GA: { panaji: 'North Goa', panjim: 'North Goa', vascodagama: 'South Goa',
+          margao: 'South Goa', madgaon: 'South Goa' },
+    GJ: { gandhidham: 'Kutch', baroda: 'Vadodara' },
+    HR: { hissar: 'Hisar', gurgaon: 'Gurugram', manesar: 'Gurugram', kundli: 'Sonipat' },
+    JH: { jamshedpur: 'East Singhbhum' },
+    KA: { bengaluru: 'Bengaluru Urban', bangalore: 'Bengaluru Urban',
+          hubli: 'Dharwad', hubballi: 'Dharwad', mysore: 'Mysuru',
+          mangalore: 'Dakshina Kannada', mangaluru: 'Dakshina Kannada',
+          belgaum: 'Belagavi', gulbarga: 'Kalaburagi' },
+    KL: { kochi: 'Ernakulam', cochin: 'Ernakulam', ernakulum: 'Ernakulam',
+          kakkanad: 'Ernakulam', calicut: 'Kozhikode', trivandrum: 'Thiruvananthapuram',
+          trichur: 'Thrissur' },
+    MH: { chatrapatisambhajinagar: 'Aurangabad', chhatrapatisambhajinagar: 'Aurangabad',
+          sambhajinagar: 'Aurangabad', kamptee: 'Nagpur', navimumbai: 'Thane',
+          bombay: 'Mumbai', poona: 'Pune', nasik: 'Nashik' },
+    ML: { shillong: 'East Khasi Hills', umsaw: 'Ribhoi', umiam: 'Ribhoi', tura: 'West Garo Hills' },
+    MP: { budni: 'Sehore', mhow: 'Indore', narmadapuram: 'Hoshangabad' },
+    OD: { bhubaneswar: 'Khordha', bhubaneshwar: 'Khordha', gopalpur: 'Ganjam',
+          rourkela: 'Sundargarh' },
+    PB: { mohali: 'S.A.S. Nagar', banur: 'S.A.S. Nagar', ropar: 'Rupnagar' },
+    TR: { agartala: 'West Tripura' },
+    TS: { secunderabad: 'Hyderabad', bibinagar: 'Yadadri Bhuvanagiri' },
+    UK: { rishikesh: 'Dehradun', mussoorie: 'Dehradun', srinagargarhwal: 'Pauri Garhwal',
+          roorkee: 'Haridwar', tanakpur: 'Champawat', gopeshwar: 'Chamoli',
+          haldwani: 'Nainital', rudrapur: 'Udham Singh Nagar' },
+    UP: { kanpur: 'Kanpur Nagar', noida: 'Gautam Buddha Nagar',
+          greaternoida: 'Gautam Buddha Nagar', allahabad: 'Prayagraj', faizabad: 'Ayodhya' },
+    WB: { falta: 'South 24 Parganas', siliguri: 'Darjeeling', kharagpur: 'Paschim Medinipur' },
+  };
+
+  function normKey(s) {
+    return String(s || '').toLowerCase().replace(/[^a-z]/g, '');
+  }
+
+  function cityCandidates(city) {
+    const s = String(city || '').replace(/^\s*(drts?|drat)\s+/i, '').trim();
+    if (!s) return [];
+    return [s, ...s.split(/[(),]/).map(p => p.trim()).filter(Boolean)];
+  }
+
+  // normKey()'d district names this vacancy can match. An explicit district
+  // (enriched data or the Delhi rule) is authoritative; otherwise every
+  // city candidate is offered, plus its alias when the state has one.
+  function districtKeysFor(abbr, district, city) {
+    if (district) return [normKey(district)];
+    const aliases = CITY_DISTRICT_ALIASES[abbr] || {};
+    const keys = [];
+    for (const c of cityCandidates(city)) {
+      const k = normKey(c);
+      if (!k) continue;
+      if (aliases[k]) keys.push(normKey(aliases[k]));
+      keys.push(k);
+    }
+    return Array.from(new Set(keys));
+  }
+
   function normaliseVacancy(v) {
+    const out = buildVacancy(v);
+    if (out) out.districtKeys = districtKeysFor(out.state_abbr, out.district, out.city);
+    return out;
+  }
+
+  function buildVacancy(v) {
     if (!v || typeof v !== 'object') return null;
     const rawState = v.Location_State || '';
     // Trust an already-resolved abbreviation only if it's a known valid one;
@@ -104,6 +185,7 @@ window.IndiaMapData = (() => {
         return '';
       })(),
       location_scope: v.location_scope || '',
+      districtKeys: [],
       notificationLink: v.Official_Notification_Link || '',
     };
   }
@@ -218,23 +300,18 @@ window.IndiaMapData = (() => {
 
   function getListingsForDistrict(stateAbbr, districtName) {
     if (!stateAbbr || !districtName) return [];
-    const key = String(stateAbbr) + '|' + String(districtName).toLowerCase();
-    const count = districtCounts[key] || 0;
-    if (count === 0) return [];
-    // BLOCKER 5: depend on normalized state_abbr + district, NOT location_scope
-    // Bundled production JSON may not contain location_scope; rely on what was
-    // emitted into districtCounts at recomputeCounts() time.
-    // Exclude nationwide/multi_state records because they should never have a
-    // concrete district; generic "Delhi" stays district-unknown.
-    const targetDistrict = String(districtName).toLowerCase();
+    const target = normKey(districtName);
+    if (!target) return [];
+    const seen = new Set();
     return allVacancies.filter(v => {
       if (!isActive(v)) return false;
       if (v.state_abbr !== stateAbbr) return false;
-      // Exclude nationwide/multi_state records (they have no concrete district)
+      // Nationwide / multi-state records never belong to one district
       if (v.location_scope === 'nationwide' || v.location_scope === 'multi_state') return false;
-      // Match on the normalized district
-      if (!v.district) return false;
-      return String(v.district).toLowerCase() === targetDistrict;
+      if (!(v.districtKeys || []).includes(target)) return false;
+      if (seen.has(v.id)) return false;
+      seen.add(v.id);
+      return true;
     });
   }
 
