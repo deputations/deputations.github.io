@@ -66,3 +66,4 @@ og-*
 # to GitHub Actions separately. Never committed.
 tests/_artifacts/
 tests/.hypothesis/
+serve.js
