@@ -366,13 +366,21 @@ def fetch_supabase_approved():
     if not supabase_ready(url, key):
         return None
     endpoint = f"{url.rstrip('/')}/rest/v1/vacancies"
-    params = {"status": "eq.approved", "select": "*"}
     headers = {"apikey": key, "Authorization": f"Bearer {key}"}
     try:
-        resp = requests.get(endpoint, params=params, headers=headers, timeout=20)
-        resp.raise_for_status()
-        rows = resp.json()
-        return rows if isinstance(rows, list) else None
+        # Paged — Supabase caps each response at 1000 rows.
+        rows: list = []
+        while True:
+            params = {"status": "eq.approved", "select": "*", "order": "id.asc",
+                      "limit": 1000, "offset": len(rows)}
+            resp = requests.get(endpoint, params=params, headers=headers, timeout=20)
+            resp.raise_for_status()
+            page = resp.json()
+            if not isinstance(page, list):
+                return None
+            rows.extend(page)
+            if len(page) < 1000:
+                return rows
     except Exception as exc:  # noqa: BLE001 — any failure → fall back to JSON
         print(f"[whatsapp_feed] Supabase fetch failed ({exc}); using JSON fallback.",
               file=sys.stderr)

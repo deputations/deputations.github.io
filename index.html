@@ -74,7 +74,7 @@
   >
 
   <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
-  <link rel="stylesheet" href="style.css?v=ms73">
+  <link rel="stylesheet" href="style.css?v=ms74">
   <link rel="stylesheet" href="navbar.css?v=7">
   <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the script below to revert) -->
   <link rel="stylesheet" href="home-flourish.css?v=4">
@@ -238,7 +238,7 @@
 
         <div class="filter-group">
           <label id="filterLevelLbl">Pay Level</label>
-          <div class="ms ss" id="filterLevelSS">
+          <div class="ms" id="filterLevelMS">
             <button type="button" class="ms-trigger" id="filterLevelBtn"
                     aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterLevelLbl">
               <span class="ms-trigger-label">All Levels</span>
@@ -247,8 +247,29 @@
                 <path d="m6 9 6 6 6-6"/>
               </svg>
             </button>
-            <div class="ms-panel ss-panel" id="filterLevelPanel" hidden>
-              <ul class="ms-list ss-list" id="filterLevelList" role="listbox" aria-label="Select pay level"></ul>
+            <div class="ms-panel" id="filterLevelPanel" hidden role="dialog" aria-label="Select pay levels">
+              <header class="ms-panel-head">
+                <div class="ms-search-wrap">
+                  <svg class="ms-search-icon" viewBox="0 0 24 24" aria-hidden="true"
+                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+                  </svg>
+                  <input type="search" class="ms-search" placeholder="Search levels…" aria-label="Search pay levels">
+                </div>
+                <button type="button" class="ms-close" data-ms-done aria-label="Close">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              </header>
+              <p class="ms-hint">Pick one or more levels · click again to deselect</p>
+              <ul class="ms-list" id="filterLevelList" role="listbox" aria-multiselectable="true" aria-label="Select pay levels"></ul>
+              <div class="ms-empty" hidden>No matches</div>
+              <footer class="ms-panel-foot">
+                <span class="ms-count" data-ms-count>0 selected</span>
+                <div class="ms-foot-actions">
+                  <button type="button" class="ms-action" data-ms-none>Clear all</button>
+                  <button type="button" class="ms-action ms-action--primary" data-ms-done>Done</button>
+                </div>
+              </footer>
             </div>
           </div>
         </div>
@@ -263,6 +284,44 @@
             </button>
             <div class="ms-panel ss-panel" id="filterMinistryPanel" hidden>
               <ul class="ms-list ss-list" id="filterMinistryList" role="listbox" aria-label="Select ministry"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label id="filterOrganisationLbl">Organisation</label>
+          <div class="ms" id="filterOrganisationMS">
+            <button type="button" class="ms-trigger" id="filterOrganisationBtn"
+                    aria-haspopup="listbox" aria-expanded="false" aria-labelledby="filterOrganisationLbl">
+              <span class="ms-trigger-label">All Organisations</span>
+              <svg class="ms-caret" viewBox="0 0 24 24" aria-hidden="true"
+                   fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m6 9 6 6 6-6"/>
+              </svg>
+            </button>
+            <div class="ms-panel" id="filterOrganisationPanel" hidden role="dialog" aria-label="Select organisations">
+              <header class="ms-panel-head">
+                <div class="ms-search-wrap">
+                  <svg class="ms-search-icon" viewBox="0 0 24 24" aria-hidden="true"
+                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+                  </svg>
+                  <input type="search" class="ms-search" placeholder="Search name or short form…" aria-label="Search organisations">
+                </div>
+                <button type="button" class="ms-close" data-ms-done aria-label="Close">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              </header>
+              <p class="ms-hint">Pick one or more organisations · click again to deselect</p>
+              <ul class="ms-list" id="filterOrganisationList" role="listbox" aria-multiselectable="true" aria-label="Select organisations"></ul>
+              <div class="ms-empty" hidden>No matches</div>
+              <footer class="ms-panel-foot">
+                <span class="ms-count" data-ms-count>0 selected</span>
+                <div class="ms-foot-actions">
+                  <button type="button" class="ms-action" data-ms-none>Clear all</button>
+                  <button type="button" class="ms-action ms-action--primary" data-ms-done>Done</button>
+                </div>
+              </footer>
             </div>
           </div>
         </div>
@@ -457,9 +516,9 @@
     </div>
   </dialog>
 
-  <script src="config.js?v=sb4"></script>
-  <script src="enrich.js?v=sb15"></script>
-  <script src="app.js?v=ms78"></script>
+  <script src="config.js?v=sb5"></script>
+  <script src="enrich.js?v=sb16"></script>
+  <script src="app.js?v=ms79"></script>
   <!-- vacancy push alerts (review P1-3); no-op unless Push is supported + VAPID configured -->
   <script defer src="push-client.js?v=1"></script>
   <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the stylesheet above to revert) -->

@@ -45,6 +45,11 @@ function createMultiSelect(root, opts = {}) {
   const placeholder    = opts.placeholder || 'All';
   const singularPattern = opts.singularPattern || ((v) => v);
   const multiPattern    = opts.multiPattern    || ((n) => `${n} selected`);
+  // Optional: an option's displayed label (HTML) and the text the panel's search
+  // box matches against, when they differ from the raw value (e.g. Organisation:
+  // value = full name, label = "Full Name (ACR)" / "ACR" by screen width).
+  const labelHTML  = opts.labelHTML  || null;
+  const searchText = opts.searchText || ((v) => v);
   const changeListeners = [];
 
   let items = [];
@@ -62,7 +67,7 @@ function createMultiSelect(root, opts = {}) {
 
   function renderList(filter = '') {
     const f = filter.trim().toLowerCase();
-    const visible = f ? items.filter(i => i.toLowerCase().includes(f)) : items;
+    const visible = f ? items.filter(i => String(searchText(i)).toLowerCase().includes(f)) : items;
     if (!visible.length) {
       list.innerHTML = '';
       empty.hidden = false;
@@ -74,7 +79,7 @@ function createMultiSelect(root, opts = {}) {
           <span class="ms-opt-check" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
           </span>
-          <span class="ms-opt-label">${esc(v)}</span>${countHTML(v)}
+          <span class="ms-opt-label">${labelHTML ? labelHTML(v) : esc(v)}</span>${countHTML(v)}
         </button></li>`).join('');
     }
     syncCount();
@@ -88,11 +93,19 @@ function createMultiSelect(root, opts = {}) {
   }
 
   function syncTrigger() {
+    label.removeAttribute('title');
     if (!selected.size) {
       label.textContent = placeholder;
       trigger.classList.remove('ms-trigger--active');
     } else if (selected.size === 1) {
-      label.textContent = singularPattern([...selected][0]);
+      const only = [...selected][0];
+      if (labelHTML) {
+        label.innerHTML = labelHTML(only);
+        // the trigger truncates long labels — keep the full one on hover
+        label.title = (label.firstElementChild || label).textContent;
+      } else {
+        label.textContent = singularPattern(only);
+      }
       trigger.classList.add('ms-trigger--active');
     } else {
       label.textContent = multiPattern(selected.size);
@@ -153,7 +166,7 @@ function createMultiSelect(root, opts = {}) {
       countMap = counts || {};
       // drop selections that are no longer present
       [...selected].forEach(v => { if (!items.includes(v)) selected.delete(v); });
-      renderList(); syncTrigger();
+      renderList(search.value); syncTrigger();   // keep any text typed in the open panel
     },
     get values() { return [...selected]; },
     setValues(arr) {
@@ -290,12 +303,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterExperience = createSingleSelect(document.getElementById('filterExperienceSS'), {
       placeholder: 'Any',
     });
-    const filterLevel = createSingleSelect(document.getElementById('filterLevelSS'), {
+    const filterLevel = createMultiSelect(document.getElementById('filterLevelMS'), {
       placeholder: 'All Levels',
-      countFormat: (n) => `${n} ${n === 1 ? 'vacancy' : 'vacancies'}`,
+      singularPattern: (v) => v,
+      multiPattern: (n) => `${n} levels`,
     });
     const filterMinistry = createSingleSelect(document.getElementById('filterMinistrySS'), {
       placeholder: 'All Ministries',
+    });
+    // Organisation: one option per organisation, however its name was typed —
+    // "Central Water Commission" and "Central Water Commission (CWC)" are the
+    // same option (see orgKey()). The option value is that key; it's shown as
+    // "Full Name (ACR)" on desktop and just the short form on mobile (both are
+    // rendered, CSS picks one by width — see .org-full / .org-short).
+    // orgIndex is rebuilt from the data in populateFilters().
+    let orgIndex = { names: {}, short: {} };
+    const orgFullLabel = (key) => {
+        const name = orgIndex.names[key] || key;
+        return (window.DepEnrich && window.DepEnrich.withAcronym) ? window.DepEnrich.withAcronym(name) : name;
+    };
+    const orgLabelHTML = (key) => {
+        const full = orgFullLabel(key);
+        const short = orgIndex.short[key];
+        if (!short || short === full) return escapeHtml(full);
+        return `<span class="org-full">${escapeHtml(full)}</span><span class="org-short">${escapeHtml(short)}</span>`;
+    };
+    const filterOrganisation = createMultiSelect(document.getElementById('filterOrganisationMS'), {
+      placeholder: 'All Organisations',
+      multiPattern: (n) => `${n} organisations`,
+      labelHTML: orgLabelHTML,
+      searchText: (key) => `${orgFullLabel(key)} ${orgIndex.short[key] || ''}`,
     });
     const filterOrgType = createSingleSelect(document.getElementById('filterOrgTypeSS'), {
       placeholder: 'All Types',
@@ -550,15 +587,9 @@ function fetchVacancies() {
     if (window.SUPABASE_READY && window.SUPABASE_READY()) {
         sbPromise = window.ensureSupabaseAvailable().then(available => {
             if (!available) return null;
-            const url = `${window.SUPABASE_URL}/rest/v1/vacancies?status=eq.approved&select=*`;
+            // Paged: a single request stops at Supabase's 1000-row cap.
             return Promise.race([
-                fetch(url, {
-                    headers: {
-                        apikey: window.SUPABASE_ANON_KEY,
-                        Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`,
-                    },
-                }).then(res => (res.ok ? res.json() : null))
-                  .catch(() => null),
+                window.fetchAllApprovedVacancies(),
                 new Promise(resolve => setTimeout(() => resolve(null), 4000)),
             ]);
         });
@@ -608,10 +639,10 @@ function fetchVacancies() {
             console.log('📡 Source: Supabase live + JSON merged',
                 sbRows.length, 'live,', json.length, 'json,',
                 sbOnly.length, 'sb-only enriched');
-            return recomputeStatus(merged);
+            return disambiguateDuplicateIds(recomputeStatus(merged));
         }
         console.log('📄 Source: data/vacancies.json (Supabase unavailable / empty)');
-        return recomputeStatus(json);
+        return disambiguateDuplicateIds(recomputeStatus(json));
     });
 }
 
@@ -620,6 +651,42 @@ function fetchVacancies() {
 // may have passed and rows that were "Active" then are now expired. Recompute
 // Status from last_date_to_apply for every row so the active filter and the
 // KPI cards always reflect reality.
+// Safety net for duplicate Vacancy_IDs. IDs are meant to be unique, but the
+// ingest pipeline numbers rows per upload, so two different vacancies can end
+// up sharing one (e.g. HAFW-2026-L11-046: an expired "Executive Engineer
+// (AC and R)" and an active "Executive Engineer (Civil)"). Everything here —
+// row/card clicks, the modal, ?v= permalinks, bookmarks — looks vacancies up
+// by ID and takes the FIRST match, so clicking the active row opened the
+// expired one. Within each group of rows sharing an ID, the one most likely
+// meant keeps the plain ID: Active first, then the newest notification, then
+// the latest closing date. The others get "<ID>~2", "~3"… so every row is
+// reachable and opens itself. A no-op once IDs are unique at the source.
+function disambiguateDuplicateIds(rows) {
+    const groups = new Map();
+    rows.forEach(r => {
+        const id = String(r.Vacancy_ID || '').trim();
+        if (!id) return;
+        const g = groups.get(id);
+        if (g) g.push(r); else groups.set(id, [r]);
+    });
+    const dupIds = [];
+    groups.forEach((group, id) => {
+        if (group.length < 2) return;
+        dupIds.push(id);
+        group.sort((a, b) =>
+            ((b.Status === 'Active') - (a.Status === 'Active')) ||
+            String(b.Notification_Date || '').localeCompare(String(a.Notification_Date || '')) ||
+            String(b.Last_Date_To_Apply || '').localeCompare(String(a.Last_Date_To_Apply || '')));
+        group.forEach((r, i) => {
+            if (i === 0) return;
+            r.Shared_Vacancy_ID = id;
+            r.Vacancy_ID = `${id}~${i + 1}`;
+        });
+    });
+    if (dupIds.length) console.warn('⚠️ Duplicate Vacancy_IDs made unique on the client:', dupIds.join(', '));
+    return rows;
+}
+
 function recomputeStatus(rows) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -654,12 +721,17 @@ function loadMeta() {
         .catch(() => null);
 }
 
-// "Updated <date>" chip in the results bar — the daily data-refresh date from
-// meta.generated_at_utc. Self-contained (no dependency on the nested date
-// helpers) so it can run from the top-level load flow.
+// "Updated <date>" in the footer — when a vacancy users can see was last
+// added or edited. Read only from the static data/meta.json: the daily build
+// (which runs off the NIC network) records the newest updated_at of the
+// approved rows as vacancies_updated_at_utc, so no Supabase call is needed
+// here. Deliberately never the build time (generated_at_utc): a rebuild with
+// no row changes must not move the date. Missing value → footer stays hidden.
+// Self-contained (no dependency on the nested date helpers) so it can run
+// from the top-level load flow.
 function setDataUpdated(meta) {
-    if (!meta || !meta.generated_at_utc) return;
-    const dt = new Date(meta.generated_at_utc);
+    if (!meta || !meta.vacancies_updated_at_utc) return;
+    const dt = new Date(meta.vacancies_updated_at_utc);
     if (Number.isNaN(dt.getTime())) return;
     const text = 'Updated ' + dt.toLocaleDateString('en-IN', {
         day: '2-digit', month: 'short', year: 'numeric'
@@ -790,11 +862,19 @@ function hydrateFiltersFromUrl() {
         setIfPresent('search', searchPost);
         setIfPresent('myPayLevel', filterMyPayLevel);
         setIfPresent('experience', filterExperience);
-        setIfPresent('level', filterLevel);
         setIfPresent('ministry', filterMinistry);
         setIfPresent('orgType', filterOrgType);
         setIfPresent('region', filterRegion);
-        // multi-select: ?location=a,b,c
+        // multi-selects: ?level=Level-10,Level-11  ?org=<name>&org=<name>  ?location=a,b,c
+        // (organisation names contain commas — "AIIMS, Patna" — so one param each)
+        if (params.has('level')) {
+          const arr = (params.get('level') || '').split(',').map(s => s.trim()).filter(Boolean);
+          if (arr.length) filterLevel.__pendingValues = arr;
+        }
+        if (params.has('org')) {
+          const arr = params.getAll('org').map(orgKey).filter(Boolean);
+          if (arr.length) filterOrganisation.__pendingValues = [...new Set(arr)];
+        }
         if (params.has('location')) {
           const arr = (params.get('location') || '').split(',').map(s => s.trim()).filter(Boolean);
           if (arr.length) filterLocation.__pendingValues = arr;
@@ -1523,46 +1603,71 @@ function renderTable(data) {
   `;
 }
     
+    // Faceted filter counts. Each dropdown's "(N)" is the number of vacancies
+    // that match EVERY OTHER active filter (search, quick chips, status, the
+    // other dropdowns…) plus that option — i.e. exactly what the list would show
+    // if you picked it. So a filter used alone counts across everything, and
+    // once something is selected (e.g. Level-10 → 21) every other dropdown only
+    // counts within those rows and drops options that would yield nothing.
+    // A dropdown's own selection is excluded from its own counts, so you can
+    // still switch Level-10 → Level-11 and see the right numbers.
+    //
+    // Called once after load and again on every renderDashboard(). A dropdown is
+    // only rebuilt when its option list actually changed, so an open panel keeps
+    // its scroll position / search text while you click inside it.
     function populateFilters() {
-        // Counts everywhere are based on the ACTIVE subset, so each "(N)" matches
-        // what you see when that option is picked (the list defaults to Active).
-        // These are a fixed property of the dataset (they don't change as the user
-        // changes filters), so we tally them ONCE here — in a single pass — rather
-        // than recomputing per filter change.
-        const activeRows = [];
-        const levelCounts = {}, ministryCounts = {}, locationCounts = {}, orgTypeCounts = {}, regionCounts = {};
-        let inactiveCount = 0;
-        rawData.forEach(i => {
-            const st = safe(i.Status);
-            if (st === 'Active') {
-                activeRows.push(i);
-                const lv = safe(i.Level_Text);   if (lv)  levelCounts[lv]    = (levelCounts[lv]    || 0) + 1;
-                const mn = safe(i.Ministry);      if (mn)  ministryCounts[mn] = (ministryCounts[mn] || 0) + 1;
-                const loc = formatLocation(i);    if (loc) locationCounts[loc] = (locationCounts[loc] || 0) + 1;
-                const ot = safe(i.Organisation_Type); if (ot) orgTypeCounts[ot] = (orgTypeCounts[ot] || 0) + 1;
-                const rg = safe(i.Region);        if (rg)  regionCounts[rg]   = (regionCounts[rg]   || 0) + 1;
-            } else if (st === 'Inactive') {
-                inactiveCount++;
-            }
+        if (!filterStatus.value && !filterStatus.__defaulted) {
+            filterStatus.value = 'Active';
+            filterStatus.__defaulted = true;
+        }
+        [filterLevel, filterOrganisation, filterLocation].forEach(ctl => {
+            if (!ctl.__pendingValues) return;
+            // ?level= / ?org= / ?location= from the URL: make sure those options
+            // exist (counts filled in below) before applying them.
+            ctl.populate(ctl.__pendingValues, {});
+            ctl.setValues(ctl.__pendingValues);
+            delete ctl.__pendingValues;
         });
+
+        const rowsExcluding = (facet) => getFilteredData({ applyKpiFilter: true, exclude: facet });
+        const tally = (rows, keyFn) => {
+            const counts = {};
+            rows.forEach(r => { const k = keyFn(r); if (k) counts[k] = (counts[k] || 0) + 1; });
+            return counts;
+        };
+        // Options with ≥1 match, plus whatever is currently selected (shown as
+        // "(0)") so a selection never silently disappears from its dropdown.
+        const withSelected = (counts, selected) => {
+            [].concat(selected || []).forEach(v => { if (v && !(v in counts)) counts[v] = 0; });
+            return counts;
+        };
+        // Rebuild a dropdown only when its options changed (see note above).
+        const setItems = (ctl, items, extra) => {
+            const sig = JSON.stringify(extra === undefined ? items : [items, extra]);
+            if (ctl.__optionsSig === sig) return;
+            ctl.__optionsSig = sig;
+            if (extra === undefined) ctl.populate(items); else ctl.populate(items, extra);
+        };
+
         const isEligibleFn = (window.DepEnrich && window.DepEnrich.isEligible)
             ? window.DepEnrich.isEligible : null;
 
-        // MY PAY LEVEL — all grades 18…1 (13A between 14 & 13); "(N)" = active
+        // MY PAY LEVEL — all grades 18…1 (13A between 14 & 13); "(N)" = matching
         // vacancies you'd be eligible for at that level (experience-independent).
+        // Every grade stays listed: it describes the user, not the data.
+        const myLevelRows = rowsExcluding('myPayLevel');
         const myLevelValues = [];
         for (let i = 18; i >= 1; i--) { myLevelValues.push(String(i)); if (i === 14) myLevelValues.push('13A'); }
-        const myPayLevelItems = [{ value: '', name: 'Any Level', count: null }].concat(
+        setItems(filterMyPayLevel, [{ value: '', name: 'Any Level', count: null }].concat(
             myLevelValues.map(v => ({
                 value: v,
                 name: `Level ${v}`,
-                count: isEligibleFn ? activeRows.filter(it => isEligibleFn(it, v, '')).length : null,
+                count: isEligibleFn ? myLevelRows.filter(it => isEligibleFn(it, v, '')).length : null,
             }))
-        );
-        filterMyPayLevel.populate(myPayLevelItems);
+        ));
 
         // MY YEARS OF EXPERIENCE — themed look, no count (only meaningful with a level).
-        if (filterExperience) {
+        if (filterExperience && !filterExperience.__optionsSig) {
             const expItems = [{ value: '', name: 'Any', count: null }];
             for (let y = 0; y <= 10; y++) {
                 expItems.push({
@@ -1571,11 +1676,13 @@ function renderTable(data) {
                     count: null,
                 });
             }
-            filterExperience.populate(expItems);
+            setItems(filterExperience, expItems);
             syncExperienceState();
         }
 
-        // PAY LEVEL — active vacancies per level, high → low, only levels with ≥1 active.
+        // PAY LEVEL (multi-select) — high → low.
+        const levelCounts = withSelected(
+            tally(rowsExcluding('level'), i => safe(i.Level_Text)), filterLevel.values);
         const levels = Object.keys(levelCounts).sort((a, b) => {
             const va = parseLevelValue(a), vb = parseLevelValue(b);
             if (va == null && vb == null) return a.localeCompare(b);
@@ -1584,50 +1691,59 @@ function renderTable(data) {
             if (vb !== va) return vb - va;            // higher pay level first
             return a.localeCompare(b);
         });
-        filterLevel.populate([{ value: '', name: 'All Levels', count: null }].concat(
-            levels.map(value => ({ value, name: value, count: levelCounts[value] }))
-        ));
+        setItems(filterLevel, levels, levelCounts);
 
-        // MINISTRY — active vacancies per ministry (only ministries with ≥1 active).
+        // MINISTRY — A → Z.
+        const ministryCounts = withSelected(
+            tally(rowsExcluding('ministry'), i => safe(i.Ministry)), filterMinistry.value);
         const ministries = Object.keys(ministryCounts).sort((a, b) => a.localeCompare(b));
-        filterMinistry.populate([{ value: '', name: 'All Ministries', count: null }].concat(
+        setItems(filterMinistry, [{ value: '', name: 'All Ministries', count: null }].concat(
             ministries.map(m => ({ value: m, name: m, count: ministryCounts[m] }))
         ));
 
-        // ORGANISATION TYPE — active vacancies per type, most common first.
+        // ORGANISATION (multi-select) — A → Z by full name.
+        if (orgIndex.forRows !== rawData) orgIndex = buildOrgIndex(rawData);
+        const orgCounts = withSelected(
+            tally(rowsExcluding('organisation'), i => orgKey(i.Organisation)), filterOrganisation.values);
+        const orgs = Object.keys(orgCounts).sort((a, b) => orgFullLabel(a).localeCompare(orgFullLabel(b)));
+        setItems(filterOrganisation, orgs, orgCounts);
+
+        // ORGANISATION TYPE — most common first.
+        const orgTypeCounts = withSelected(
+            tally(rowsExcluding('orgType'), i => safe(i.Organisation_Type)), filterOrgType.value);
         const orgTypes = Object.keys(orgTypeCounts).sort((a, b) =>
             (orgTypeCounts[b] - orgTypeCounts[a]) || a.localeCompare(b));
-        filterOrgType.populate([{ value: '', name: 'All Types', count: null }].concat(
+        setItems(filterOrgType, [{ value: '', name: 'All Types', count: null }].concat(
             orgTypes.map(t => ({ value: t, name: t, count: orgTypeCounts[t] }))
         ));
 
-        // REGION — derived client-side from the location's state (enrich.js). Shown
-        // in a fixed geographic order; only regions with ≥1 active vacancy appear.
+        // REGION — derived client-side from the location's state (enrich.js),
+        // shown in a fixed geographic order.
         const REGION_ORDER = ['North', 'South', 'East', 'West', 'Central', 'NorthEast'];
         const REGION_LABEL = { NorthEast: 'North-East' };
+        const regionCounts = withSelected(
+            tally(rowsExcluding('region'), i => safe(i.Region)), filterRegion.value);
         const regions = Object.keys(regionCounts).sort((a, b) => {
             const ia = REGION_ORDER.indexOf(a), ib = REGION_ORDER.indexOf(b);
             return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
         });
-        filterRegion.populate([{ value: '', name: 'All Regions', count: null }].concat(
+        setItems(filterRegion, [{ value: '', name: 'All Regions', count: null }].concat(
             regions.map(r => ({ value: r, name: REGION_LABEL[r] || r, count: regionCounts[r] }))
         ));
 
-        // STATUS — count per status. Preserve the default "Active" selection.
-        filterStatus.populate([
+        // STATUS — always lists All / Active / Inactive.
+        const statusCounts = tally(rowsExcluding('status'), i => safe(i.Status));
+        setItems(filterStatus, [
             { value: '', name: 'All', count: null },
-            { value: 'Active', name: 'Active', count: activeRows.length },
-            { value: 'Inactive', name: 'Inactive', count: inactiveCount },
+            { value: 'Active', name: 'Active', count: statusCounts.Active || 0 },
+            { value: 'Inactive', name: 'Inactive', count: statusCounts.Inactive || 0 },
         ]);
-        if (!filterStatus.value) filterStatus.value = 'Active';
 
-        // LOCATION — active vacancies per location (gradient "(N)" on each option).
+        // LOCATION (multi-select) — A → Z, gradient "(N)" on each option.
+        const locationCounts = withSelected(
+            tally(rowsExcluding('location'), i => formatLocation(i)), filterLocation.values);
         const locations = Object.keys(locationCounts).sort((a, b) => a.localeCompare(b));
-        filterLocation.populate(locations, locationCounts);
-        if (filterLocation.__pendingValues) {
-            filterLocation.setValues(filterLocation.__pendingValues);
-            delete filterLocation.__pendingValues;
-        }
+        setItems(filterLocation, locations, locationCounts);
     }
 
     function buildSearchSuggestions() {
@@ -1713,6 +1829,7 @@ function renderTable(data) {
     filterExperience,
     filterLevel,
     filterMinistry,
+    filterOrganisation,
     filterOrgType,
     filterRegion,
     filterLocation,
@@ -1742,8 +1859,9 @@ function renderTable(data) {
     searchPost.value = '';
     filterMyPayLevel.value = '';
     if (filterExperience) filterExperience.value = '';
-    filterLevel.value = '';
+    filterLevel.setValues([]);
     filterMinistry.value = '';
+    filterOrganisation.setValues([]);
     filterOrgType.value = '';
     filterRegion.value = '';
     filterLocation.setValues([]);
@@ -1790,7 +1908,14 @@ function renderTable(data) {
     if (filterName === 'search') searchPost.value = '';
     if (filterName === 'myPayLevel') filterMyPayLevel.value = '';
     if (filterName === 'experience' && filterExperience) filterExperience.value = '';
-    if (filterName === 'level') filterLevel.value = '';
+    if (filterName && filterName.startsWith('level:')) {
+      const v = filterName.slice('level:'.length);
+      filterLevel.setValues(filterLevel.values.filter(x => x !== v));
+    }
+    if (filterName && filterName.startsWith('org:')) {
+      const v = filterName.slice('org:'.length);
+      filterOrganisation.setValues(filterOrganisation.values.filter(x => x !== v));
+    }
     if (filterName === 'ministry') filterMinistry.value = '';
     if (filterName === 'orgType') filterOrgType.value = '';
     if (filterName === 'region') filterRegion.value = '';
@@ -1992,6 +2117,7 @@ kpiGrid.addEventListener('click', (e) => {
 
    function renderDashboard(resetPageIfNeeded = true) {
   syncExperienceState();
+  populateFilters();   // faceted "(N)" counts follow the current selections
   // KPI cards summarise the whole set regardless of the Status dropdown:
   // "Total Vacancies" = all (Status: All); "Active Vacancies" / "Ministries"
   // = the active subset of them.
@@ -2124,17 +2250,38 @@ function applyUrlParameters() {
   }
 }
 
-    function getFilteredData({ applyKpiFilter = true, applyStatusFilter = true } = {}) {
+    // Search hits memoised per query: populateFilters() runs getFilteredData()
+    // once per dropdown on every render, and fuzzy-matching every row each time
+    // would multiply the cost of a keystroke. Reset whenever the query changes.
+    let searchMemo = { query: null, hits: new WeakMap() };
+    function matchesSearchCached(item, query, textFn) {
+        if (searchMemo.query !== query) searchMemo = { query, hits: new WeakMap() };
+        let hit = searchMemo.hits.get(item);
+        if (hit === undefined) {
+            hit = fuzzyIncludes(query, textFn());
+            searchMemo.hits.set(item, hit);
+        }
+        return hit;
+    }
+
+    // `exclude` names one dropdown whose selection is ignored ('myPayLevel',
+    // 'level', 'ministry', 'organisation', 'orgType', 'region', 'location',
+    // 'status') — used by
+    // populateFilters() to compute that dropdown's faceted counts.
+    function getFilteredData({ applyKpiFilter = true, applyStatusFilter = true, exclude = '' } = {}) {
   const search = searchPost.value.trim().toLowerCase();
-  const myPayLevel = filterMyPayLevel.value;
+  const myPayLevel = exclude === 'myPayLevel' ? '' : filterMyPayLevel.value;
   const myYears = filterExperience ? filterExperience.value : '';
-  const level = filterLevel.value;
-  const ministry = filterMinistry.value;
-  const orgType = filterOrgType.value;
-  const region = filterRegion.value;
-  const locations = filterLocation.values;
+  const levels = exclude === 'level' ? [] : filterLevel.values;
+  const levelSet = levels.length ? new Set(levels) : null;
+  const orgs = exclude === 'organisation' ? [] : filterOrganisation.values;
+  const orgSet = orgs.length ? new Set(orgs) : null;
+  const ministry = exclude === 'ministry' ? '' : filterMinistry.value;
+  const orgType = exclude === 'orgType' ? '' : filterOrgType.value;
+  const region = exclude === 'region' ? '' : filterRegion.value;
+  const locations = exclude === 'location' ? [] : filterLocation.values;
   const locationSet = locations.length ? new Set(locations) : null;
-  const status = filterStatus.value;
+  const status = exclude === 'status' ? '' : filterStatus.value;
 
   return rawData.filter(item => {
     const itemStatus = safe(item.Status);
@@ -2153,7 +2300,7 @@ function applyUrlParameters() {
     // Supabase-only path, since JSON rows take backfillDerived, which doesn't
     // set it. Both legacy keys are kept: harmless when absent, live if the
     // Sheets path ever returns.
-    const searchableText = [
+    const searchableText = () => [
       item.Post_Name,
       item.Organisation,
       item.Department_Organisation,
@@ -2171,8 +2318,9 @@ function applyUrlParameters() {
       item.search_text
     ].map(safe).join(' ').toLowerCase();
 
-    if (search && !fuzzyIncludes(search, searchableText)) return false;
-    if (level && itemLevel !== level) return false;
+    if (search && !matchesSearchCached(item, search, searchableText)) return false;
+    if (levelSet && !levelSet.has(itemLevel)) return false;
+    if (orgSet && !orgSet.has(orgKey(item.Organisation))) return false;
     if (ministry && itemMinistry !== ministry) return false;
     if (orgType && safe(item.Organisation_Type) !== orgType) return false;
     if (region && safe(item.Region) !== region) return false;
@@ -2452,8 +2600,13 @@ function maybeShowBookmarkIntroToast() {
   if (searchPost.value.trim()) chips.push(makeChip('search', `Search: ${escapeHtml(searchPost.value.trim())}`));
   if (filterMyPayLevel.value) chips.push(makeChip('myPayLevel', `My Pay Level: Level ${filterMyPayLevel.value}`));
   if (filterExperience && filterExperience.value) chips.push(makeChip('experience', `Experience: ${filterExperience.value === '10' ? '10+' : escapeHtml(filterExperience.value)} yr`));
-  if (filterLevel.value) chips.push(makeChip('level', `Pay Level: ${escapeHtml(filterLevel.value)}`));
+  filterLevel.values.forEach(lv => {
+    chips.push(makeChip(`level:${lv}`, `Pay Level: ${escapeHtml(lv)}`));
+  });
   if (filterMinistry.value) chips.push(makeChip('ministry', `Ministry: ${escapeHtml(filterMinistry.value)}`));
+  filterOrganisation.values.forEach(org => {
+    chips.push(makeChip(`org:${org}`, `Organisation: ${escapeHtml(orgIndex.short[org] || orgFullLabel(org))}`));
+  });
   if (filterOrgType.value) chips.push(makeChip('orgType', `Type: ${escapeHtml(filterOrgType.value)}`));
   if (filterRegion.value) chips.push(makeChip('region', `Region: ${escapeHtml(filterRegion.value === 'NorthEast' ? 'North-East' : filterRegion.value)}`));
   filterLocation.values.forEach(loc => {
@@ -2475,8 +2628,9 @@ function maybeShowBookmarkIntroToast() {
 function countHiddenActiveFilters() {
   let n = 0;
   if (filterExperience && filterExperience.value) n++;
-  if (filterLevel.value) n++;
+  if (filterLevel.values.length) n++;
   if (filterMinistry.value) n++;
+  if (filterOrganisation.values.length) n++;
   if (filterOrgType.value) n++;
   if (filterRegion.value) n++;
   if (filterLocation.values.length) n++;
@@ -3495,6 +3649,85 @@ function syncCardSortUI() {
         const f = window.DepEnrich && window.DepEnrich.acronymFor;
         if (!f) return '';
         return f(safe(item.Organisation)) || f(safe(item.Department)) || '';
+    }
+
+    // Matching key for an organisation name, so spellings of the same body
+    // collapse into one filter option:
+    //   "Central Water Commission (CWC)"                ┐
+    //   "Central Water Commission"                      ┘→ "central water commission"
+    //   "Footwear Design & Development Institute"       ┐
+    //   "Footwear Design and Development Institute (FDDI)" ┘→ same key
+    //   "AIIMS, Rishikesh" / "AIIMS Rishikesh"           → same key
+    // A bracket is dropped only when it is a short form (its first word is in
+    // capitals: "(CWC)", "(AIIMS Nagpur)", "(SPM-NIWAS)"); descriptive brackets
+    // such as "(Handicrafts)" or "(Storage and Research Division)" stay part of
+    // the key, so genuinely different offices remain separate options.
+    const orgKeyMemo = new Map();
+    function orgKey(name) {
+        const raw = safe(name);
+        if (!raw) return '';
+        let key = orgKeyMemo.get(raw);
+        if (key === undefined) {
+            key = raw
+                .replace(/\(([^()]*)\)/g, (m, inner) =>
+                    isShortFormWord(inner.trim().split(/\s+/)[0]) ? ' ' : ` ${inner} `)
+                .toLowerCase()
+                .replace(/&/g, ' and ')
+                .replace(/[^a-z0-9]+/g, ' ')
+                .trim();
+            orgKeyMemo.set(raw, key);
+        }
+        return key;
+    }
+    function isShortFormWord(w) {
+        return !!w && /^[A-Z0-9][A-Z0-9&.\-]*$/.test(w) && /[A-Z]/.test(w);
+    }
+
+    // Per organisation key: the name to display and its short (mobile) label.
+    //  • Display name: among the spellings in the data, prefer one that carries
+    //    its official short form in brackets (so "(CFQCTI)" wins over an
+    //    auto-built acronym), then the most frequent, then the longest.
+    //  • Short label: "IIT Goa" → "IITG"; an explicit bracket is used whole and
+    //    text after it is kept ("AIIMS Nagpur", "AIIMS, Jodhpur") so campuses
+    //    differ. Organisations with no short
+    //    form, or one shared with another organisation (IIT Goa / IIT
+    //    Gandhinagar → "IITG"), get none and show their full name instead, so
+    //    the list is never ambiguous.
+    function buildOrgIndex(rows) {
+        const acronymFor = window.DepEnrich && window.DepEnrich.acronymFor;
+        const variants = {};   // key → { name → row count }
+        rows.forEach(r => {
+            const name = safe(r.Organisation);
+            const key = orgKey(name);
+            if (!key) return;
+            const v = variants[key] || (variants[key] = {});
+            v[name] = (v[name] || 0) + 1;
+        });
+        const hasShortForm = (n) => {
+            const m = n.match(/\(([^()]*)\)/);
+            return !!m && isShortFormWord(m[1].trim().split(/\s+/)[0]);
+        };
+        const names = {}, shortOf = {};
+        Object.keys(variants).forEach(key => {
+            const counts = variants[key];
+            const name = Object.keys(counts).sort((a, b) =>
+                (hasShortForm(b) - hasShortForm(a)) || (counts[b] - counts[a]) || (b.length - a.length))[0];
+            names[key] = name;
+            const acr = acronymFor ? acronymFor(name) : '';
+            if (!acr) return;
+            // An explicit bracket that starts with the acronym is used whole
+            // ("(AIIMS Nagpur)" → "AIIMS Nagpur"), plus any text after it.
+            const m = name.match(/^(.*?)\(\s*([^()]+?)\s*\)\s*(.*)$/);
+            const explicit = m && m[2].startsWith(acr) ? m : null;
+            const base = explicit ? explicit[2] : acr;
+            const tail = explicit ? explicit[3].trim() : '';
+            shortOf[key] = tail ? `${base}${tail.startsWith(',') ? '' : ' '}${tail}` : base;
+        });
+        const uses = {};
+        Object.values(shortOf).forEach(sh => { uses[sh] = (uses[sh] || 0) + 1; });
+        const short = {};
+        Object.keys(shortOf).forEach(key => { if (uses[shortOf[key]] === 1) short[key] = shortOf[key]; });
+        return { names, short, forRows: rows };
     }
 
     function formatLocation(item) {

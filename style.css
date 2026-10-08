@@ -645,6 +645,23 @@ body {
   /* let long location labels truncate inside their column instead of forcing it wider */
   #filterLocationList .ms-opt { min-width: 0; }
   #filterLocationList .ms-opt-label { min-width: 0; }
+
+  /* Organisation: full names are long — a wider single-column panel. */
+  #filterOrganisationPanel {
+    right: auto;
+    width: min(560px, 52vw);
+    z-index: 95;
+  }
+}
+
+/* Organisation filter labels: "Full Name (ACR)" on desktop, just the short
+   form on mobile. Both are rendered; the viewport picks one. */
+.org-short { display: none; }
+/* Long names wrap instead of truncating, so the "(ACR)" at the end stays visible. */
+#filterOrganisationList .ms-opt-label { white-space: normal; line-height: 1.3; }
+@media (max-width: 768px) {
+  .org-full { display: none; }
+  .org-short { display: inline; }
 }
 
 /* Selected = glow */
@@ -2388,6 +2405,21 @@ select:disabled {
 
   .filters-sidebar.collapsed > :not(.mobile-filter-toggle) {
     display: none !important;
+  }
+
+  /* Light theme: the dark navy gradient above paired with the light theme's
+     near-black --text-primary made the label unreadable. Use a light surface. */
+  [data-theme="light"] .mobile-filter-toggle {
+    background: linear-gradient(145deg, #ffffff, #eef6fb);
+    border-color: rgba(14, 165, 233, 0.30);
+    color: var(--text-primary);
+  }
+
+  [data-theme="light"] .mobile-filter-toggle:hover {
+    border-color: rgba(14, 165, 233, 0.50);
+    box-shadow:
+      0 0 0 1px rgba(14, 165, 233, 0.12),
+      0 8px 24px rgba(15, 23, 42, 0.12);
   }
 }
 

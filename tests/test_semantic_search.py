@@ -268,6 +268,18 @@ def test_semantic_search_renders_ranked_matches(page, base_url: str):
     # bottom edge, where the fixed visit-counter widget lives and where a late
     # layout shift moved the click onto the NEXT row — on CI that silently
     # opened nothing, because the row below carried a different vacancy.
+    #
+    # Wait for the dashboard's dataset first. The ranked rows come from the
+    # stubbed (instant) Edge Function reply, so they can render while
+    # data/vacancies.json is still loading — and openVacancyModal() can only
+    # resolve an id once that data is in, so a click before then opens nothing
+    # (the row just reports it can't be found). "Loading vacancies..." also
+    # contains "vacancies", hence the explicit exclusion.
+    page.wait_for_function(
+        "() => { const t = document.getElementById('resultsCount')?.textContent || '';"
+        "  return /vacancies/.test(t) && !/loading/i.test(t); }",
+        timeout=15000,
+    )
     first.evaluate("el => el.scrollIntoView({ block: 'center' })")
     page.wait_for_timeout(200)
     first.click()

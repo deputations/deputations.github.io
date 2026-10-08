@@ -170,16 +170,9 @@
       sbPromise = window.ensureSupabaseAvailable()
         .then(available => {
           if (!available) return null;
-          const url = `${window.SUPABASE_URL}/rest/v1/vacancies?status=eq.approved&select=*`;
+          // Paged: a single request stops at Supabase's 1000-row cap.
           return Promise.race([
-            fetch(url, {
-              headers: {
-                apikey: window.SUPABASE_ANON_KEY,
-                Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`
-              }
-            })
-              .then(res => (res.ok ? res.json() : null))
-              .catch(() => null),
+            window.fetchAllApprovedVacancies(),
             new Promise(resolve => setTimeout(() => resolve(null), 4000))
           ]);
         })

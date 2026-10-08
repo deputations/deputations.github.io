@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -87,10 +87,29 @@ def parse_level_value(value: Any) -> int | None:
     return int(match.group(1))
 
 
+_ISO_DATE_RX = re.compile(r"^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ].*)?$")
+
+
 def parse_date(value: Any) -> str:
+    """Normalise a date to ISO yyyy-mm-dd.
+
+    ISO input (what Supabase stores) is read as year-month-day, explicitly.
+    It must NOT go through dateutil with dayfirst=True: that swaps month and
+    day on ISO strings whenever the day is <= 12 ("2026-10-05" → 10 May), so
+    every date on the 1st–12th of a month came out wrong in
+    data/vacancies.json — and validate_and_fix_row_dates() then "repaired" the
+    resulting impossible orderings by swapping ND and LD, turning open
+    vacancies into expired ones. Only non-ISO input (the legacy Google Sheet's
+    DD-MM-YYYY / free text) uses the day-first fuzzy parser."""
     text = safe_str(value)
     if not text:
         return ""
+    m = _ISO_DATE_RX.match(text)
+    if m:
+        try:
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3))).isoformat()
+        except ValueError:
+            return text
     try:
         dt = date_parser.parse(text, dayfirst=True, fuzzy=True)
         return dt.date().isoformat()
@@ -422,26 +441,39 @@ SUPABASE_TO_TITLE_MAP: dict[str, str] = {
 }
 
 
-def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> list[dict[str, str]]:
+def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> tuple[list[dict[str, str]], str | None]:
     """Read approved vacancies from Supabase REST. RLS already limits anon to
     status='approved' rows, so the anon key works. Returns rows in Title_Case
     shape (mapped from snake_case) plus a synthetic 'DRAFT / APPROVED' column
-    set to 'Approved ✅' so transform_rows() accepts them."""
+    set to 'Approved ✅' so transform_rows() accepts them, together with the
+    newest updated_at among those rows — i.e. when a live vacancy was last
+    added or edited (the footer's "Updated" date)."""
     api = supabase_url.rstrip("/") + "/rest/v1/vacancies"
-    qs = "status=eq.approved&select=*&limit=1000"
-    req = urllib.request.Request(
-        api + "?" + qs,
-        headers={
-            "apikey": supabase_anon_key,
-            "Authorization": "Bearer " + supabase_anon_key,
-            "Accept-Profile": "public",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        body = resp.read().decode("utf-8")
-    sb_rows = json.loads(body) if body else []
-    if not isinstance(sb_rows, list):
-        raise RuntimeError(f"Supabase returned non-list payload: {type(sb_rows).__name__}")
+    # Page through the table: Supabase returns at most 1000 rows per request,
+    # so a single `limit=1000` call silently dropped every approved vacancy
+    # past the first 1000. Ordered by id so pages never overlap or skip.
+    page_size = 1000
+    sb_rows: list[dict[str, Any]] = []
+    offset = 0
+    while True:
+        qs = f"status=eq.approved&select=*&order=id.asc&limit={page_size}&offset={offset}"
+        req = urllib.request.Request(
+            api + "?" + qs,
+            headers={
+                "apikey": supabase_anon_key,
+                "Authorization": "Bearer " + supabase_anon_key,
+                "Accept-Profile": "public",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            body = resp.read().decode("utf-8")
+        page = json.loads(body) if body else []
+        if not isinstance(page, list):
+            raise RuntimeError(f"Supabase returned non-list payload: {type(page).__name__}")
+        sb_rows.extend(page)
+        if len(page) < page_size:
+            break
+        offset += page_size
 
     mapped: list[dict[str, str]] = []
     for sb_row in sb_rows:
@@ -455,7 +487,39 @@ def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> list[dict[
         # infer_status() recomputes from days_left instead.
         row["Status"] = ""
         mapped.append(row)
-    return mapped
+    return mapped, latest_updated_at(sb_rows)
+
+
+def latest_updated_at(sb_rows: list[dict[str, Any]]) -> str | None:
+    """Newest updated_at (falling back to created_at) across raw Supabase rows,
+    as a UTC ISO-8601 string, or None when no row carries a parseable one."""
+    latest: datetime | None = None
+    for sb_row in sb_rows:
+        raw = sb_row.get("updated_at") or sb_row.get("created_at")
+        if not raw:
+            continue
+        try:
+            dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        if latest is None or dt > latest:
+            latest = dt
+    if latest is None:
+        return None
+    return latest.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def previous_vacancies_updated_at() -> str | None:
+    """vacancies_updated_at_utc from the meta.json currently on disk (the last
+    published build), or None if absent/unreadable."""
+    try:
+        with OUTPUT_META.open(encoding="utf-8") as f:
+            value = json.load(f).get("vacancies_updated_at_utc")
+    except (OSError, ValueError, AttributeError):
+        return None
+    return value if isinstance(value, str) and value else None
 
 
 def validate_required_columns(rows: list[dict[str, str]]) -> None:
@@ -562,7 +626,29 @@ def transform_rows(rows: list[dict[str, str]]) -> tuple[list[dict[str, Any]], in
             safe_str(x.get("Post_Name", "")).lower(),
         )
     )
-    return transformed
+    return transformed, date_fixes
+
+
+def warn_duplicate_vacancy_ids(vacancies: list[dict[str, Any]]) -> None:
+    """Flag Vacancy_IDs shared by more than one vacancy. The ID is the public
+    key for ?v= links, bookmarks, push alerts and reports, so a shared one
+    makes the site open the wrong vacancy (the website copes via app.js
+    disambiguateDuplicateIds, and migration 0024 renumbers clashes in the DB,
+    but a new one should still be noticed). Emits GitHub Actions warnings;
+    never fails the build."""
+    rows_by_id: dict[str, list[dict[str, Any]]] = {}
+    for v in vacancies:
+        vid = safe_str(v.get("Vacancy_ID", "")).strip()
+        if vid:
+            rows_by_id.setdefault(vid, []).append(v)
+    dups = {vid: rs for vid, rs in rows_by_id.items() if len(rs) > 1}
+    if not dups:
+        return
+    print(f"::warning::{len(dups)} Vacancy_ID(s) shared by more than one vacancy "
+          "— apply supabase/migrations/0024_unique_vacancy_id.sql")
+    for vid, rs in sorted(dups.items()):
+        posts = "; ".join(f"{safe_str(r.get('Post_Name', ''))} (closes {r.get('Last_Date_To_Apply') or '?'})" for r in rs)
+        print(f"::warning::Duplicate Vacancy_ID {vid}: {posts}")
 
 
 def build_filters(vacancies: list[dict[str, Any]]) -> dict[str, Any]:
@@ -614,9 +700,13 @@ def build_stats(vacancies: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def build_meta(vacancies: list[dict[str, Any]], filters: dict[str, Any], stats: dict[str, Any], source: str = "supabase_rest_api_via_anon_key") -> dict[str, Any]:
+def build_meta(vacancies: list[dict[str, Any]], filters: dict[str, Any], stats: dict[str, Any], source: str = "supabase_rest_api_via_anon_key", vacancies_updated_at: str | None = None) -> dict[str, Any]:
     return {
         "generated_at_utc": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        # When a user-visible vacancy was last added or edited (newest
+        # Supabase updated_at). Never the build time: a rebuild with no row
+        # changes must not move the footer's "Updated" date.
+        "vacancies_updated_at_utc": vacancies_updated_at,
         "record_count": len(vacancies),
         "active_count": stats["active_vacancies"],
         "inactive_count": stats["inactive_vacancies"],
@@ -743,12 +833,14 @@ def main() -> None:
 
     rows: list[dict[str, str]] = []
     source_used = "(none)"
+    vacancies_updated_at: str | None = None
 
     if supabase_url and supabase_anon_key:
         try:
-            sb_rows = fetch_supabase_rows(supabase_url, supabase_anon_key)
+            sb_rows, sb_updated_at = fetch_supabase_rows(supabase_url, supabase_anon_key)
             if sb_rows:
                 rows = sb_rows
+                vacancies_updated_at = sb_updated_at
                 source_used = f"Supabase ({len(sb_rows)} approved rows)"
             else:
                 print("Supabase returned 0 approved rows — falling back to Google Sheet.")
@@ -771,6 +863,7 @@ def main() -> None:
         validate_required_columns(rows)
 
     vacancies, date_fixes = transform_rows(rows)
+    warn_duplicate_vacancy_ids(vacancies)
     assert_no_credentials(vacancies)
     filters = build_filters(vacancies)
     stats = build_stats(vacancies)
@@ -779,7 +872,12 @@ def main() -> None:
         if source_used.startswith("Supabase")
         else "private_google_sheet_via_sheets_api"
     )
-    meta = build_meta(vacancies, filters, stats, source=meta_source)
+    if not vacancies_updated_at:
+        # No row timestamps this run (Sheet fallback): keep the last known
+        # value rather than substituting the build time.
+        vacancies_updated_at = previous_vacancies_updated_at()
+    meta = build_meta(vacancies, filters, stats, source=meta_source,
+                      vacancies_updated_at=vacancies_updated_at)
 
     write_json(OUTPUT_VACANCIES, vacancies)
     write_json(OUTPUT_FILTERS, filters)
