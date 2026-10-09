@@ -20,6 +20,8 @@
   let lastFocusedState = null;
   let announceTimer = null;
   let activeMapFilter = 'all'; // C21: explicit filter state
+  let introPending = false;    // first national render plays the tricolour intro
+  let ledGeneration = 0;       // bumped by clearMap: drops stale intro / border work
 
   function announce(msg) {
     const el = document.getElementById('mapAnnounce');
@@ -231,6 +233,12 @@
     g.id = 'map-group';
     svg.appendChild(g);
 
+    // Lit "LED strip" state borders (see buildLeds)
+    const leds = document.createElementNS(ns, 'g');
+    leds.id = 'map-leds';
+    leds.setAttribute('aria-hidden', 'true');
+    svg.appendChild(leds);
+
     // One outline path above every shape (see .ad-outline in the CSS)
     const outline = document.createElementNS(ns, 'path');
     outline.id = 'map-outline';
@@ -382,12 +390,16 @@
     setOutline(null);
     setSpotlight(null);
     document.getElementById('map-lift')?.removeAttribute('d');
+    ledGeneration++;
     const old = document.getElementById('map-svg');
     if (old) {
       const g = old.querySelector('#map-group');
       const lg = old.querySelector('#map-labels');
+      const leds = old.querySelector('#map-leds');
       if (g) g.innerHTML = '';
       if (lg) lg.innerHTML = '';
+      if (leds) leds.innerHTML = '';
+      old.classList.remove('ad-intro');
     }
     // Also clear any Delhi image-map content from the SVG wrapper
     const wrap = document.getElementById('mapSvgWrap');
@@ -411,6 +423,14 @@
 
     computeProjection(features);
 
+    // First load only: states start hidden under the tricolour (see
+    // playTricolourIntro). Back to India / deep links use the quick draw-in.
+    const intro = introPending;
+    introPending = false;
+    mapSvg.classList.toggle('ad-intro', intro);
+    const lg = ledGeneration;
+
+    const labelStates = [];
     features.forEach((feat, idx) => {
       const name = feat.properties.NAME_1;
       const abbr = STATE_ABBR[name];
@@ -457,42 +477,12 @@
       });
 
       g.appendChild(path);
-
-      // Label
-      const [clon, clat] = centroid(feat.geometry);
-      const [cx, cy] = project(clon, clat);
-      if (!isFinite(cx) || !isFinite(cy) || cx < 0 || cx > 1000 || cy < 0 || cy > 800) return;
-
-      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      label.setAttribute('x', cx);
-      label.setAttribute('y', cy - 5);
-      label.setAttribute('class', 'ad-state-label');
-      label.setAttribute('data-for', abbr);
-      label.style.setProperty('--ad-delay', `${600 + idx * 20}ms`);
-      label.textContent = abbr;
-      labelsG.appendChild(label);
-
-      if (count > 0) {
-        const num = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        num.setAttribute('x', cx);
-        num.setAttribute('y', cy + 9);
-        num.setAttribute('class', 'ad-state-count');
-        num.setAttribute('data-for', abbr);
-        num.style.setProperty('--ad-delay', `${900 + idx * 20}ms`);
-        num.textContent = count;
-        labelsG.appendChild(num);
-      } else {
-        // Always render a count text (possibly empty) so filter can address it
-        const num = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        num.setAttribute('x', cx);
-        num.setAttribute('y', cy + 9);
-        num.setAttribute('class', 'ad-state-count empty');
-        num.setAttribute('data-for', abbr);
-        num.style.setProperty('--ad-delay', `${900 + idx * 20}ms`);
-        num.textContent = '';
-        labelsG.appendChild(num);
-      }
+      labelStates.push({ abbr, name, count, path });
     });
+
+    // Full state names, each fitted inside its own borders (see
+    // layoutStateLabels)
+    layoutStateLabels(labelStates, labelsG);
 
     // Trigger draw-in for all paths after the SVG is in the DOM
     requestAnimationFrame(() => {
@@ -508,6 +498,16 @@
           document.dispatchEvent(new CustomEvent('map:drawInComplete'));
         }
       }
+
+      if (intro) {
+        paths.forEach(p => { p.style.strokeDasharray = ''; p.classList.add('drawn'); });
+        // The chakra turns over Nagpur's Zero Mile, India's geographic centre
+        playTricolourIntro(Array.from(paths), lg, INTRO, () =>
+          document.dispatchEvent(new CustomEvent('map:drawInComplete')), project(79.0806, 21.1497));
+        return;
+      }
+      // Lit borders draw in step with the state borders below
+      buildLeds(Array.from(paths), lg, useReducedMotion ? null : (i) => i * 30);
 
       // After its draw-in a border goes back to solid: with non-scaling
       // strokes, a dash sized in user units would leave gaps once zoomed in.
@@ -542,6 +542,730 @@
     });
 
     updateCounter(data);
+  }
+
+  // ----- Lit borders -----
+  // Every border ends up lit as a thin gold line under a soft glow. Each
+  // shape's own outline lights up first (drawn in step with the draw-in, or
+  // by the intro's electricity); once all are lit they are swapped for one
+  // border network with each border drawn once, so shared borders match
+  // coastlines, and the light stays still.
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, cls, parent) {
+    const e = document.createElementNS(SVG_NS, tag);
+    if (cls) e.setAttribute('class', cls);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function ledPath(d, cls, parent) {
+    const e = svgEl('path', cls, parent);
+    e.setAttribute('d', d);
+    return e;
+  }
+
+  // A projected path's rings as [[x, y], ...] (see projectRing)
+  function parseRings(d) {
+    return String(d).split('M').map(sub => sub.replace(/Z/g, '').split('L')
+      .map(s => s.trim()).filter(Boolean)
+      .map(s => s.split(',').map(Number)))
+      .filter(r => r.length > 1);
+  }
+
+  // delayFor(i) → ms before shape i's border lights (in step with its
+  // draw-in); null → lit at once (reduced motion); omitted → the caller
+  // animates (the intro) and calls settleBorders when done. `lg` is the
+  // ledGeneration of the render that asked, so stale work is dropped.
+  function buildLeds(paths, lg, delayFor) {
+    const leds = document.getElementById('map-leds');
+    if (!leds) return [];
+    leds.innerHTML = '';
+    leds.classList.remove('lit');
+    const coreG = svgEl('g', '', leds);
+    const items = paths.map(p => {
+      let len = 0;
+      try { len = p.getTotalLength(); } catch (e) { /* not rendered */ }
+      if (!isFinite(len) || len <= 0) len = 1500;
+      return { p, len, core: ledPath(p.getAttribute('d'), 'ad-led-core', coreG) };
+    });
+    if (delayFor === undefined) return items;
+    if (delayFor === null) { settleBorders(paths, lg); return items; }
+    Promise.all(items.map((it, i) =>
+      drawLed(it, delayFor(i), 2000, 'cubic-bezier(0.22, 0.61, 0.36, 1)')))
+      .then(() => settleBorders(paths, lg));
+    return items;
+  }
+
+  // Lights a border from its start point all the way round
+  function drawLed(it, delay, duration, easing) {
+    it.core.style.strokeDasharray = `${it.len} ${it.len}`;
+    return it.core.animate([{ strokeDashoffset: it.len }, { strokeDashoffset: 0 }],
+      { delay, duration, easing, fill: 'both' }).finished.catch(() => {});
+  }
+
+  function settleBorders(paths, lg) {
+    const leds = document.getElementById('map-leds');
+    if (!leds || lg !== ledGeneration || !paths.length || !paths[0].isConnected) return;
+    const d = borderEdges(paths).network();
+    leds.innerHTML = '';
+    ledPath(d, 'ad-net-glow', leds);
+    ledPath(d, 'ad-net-core', leds);
+    requestAnimationFrame(() => leds.classList.add('lit'));
+  }
+
+  // The shapes' outlines as one graph of unique edges. network() chains
+  // them into polylines between junctions (each border once); outer() is
+  // the edges only one shape uses: the outline of the whole.
+  function borderEdges(paths) {
+    const adj = new Map();
+    const count = new Map();
+    const pos = new Map();
+    const edgeKey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+    paths.forEach(p => parseRings(p.getAttribute('d')).forEach(ring => {
+      const keys = ring.map(([x, y]) => { const k = `${x},${y}`; pos.set(k, [x, y]); return k; });
+      for (let i = 0; i < keys.length; i++) {
+        const a = keys[i], b = keys[(i + 1) % keys.length];
+        if (a === b) continue;
+        const k = edgeKey(a, b);
+        if (count.has(k)) { count.set(k, count.get(k) + 1); continue; }
+        count.set(k, 1);
+        if (!adj.has(a)) adj.set(a, []);
+        if (!adj.has(b)) adj.set(b, []);
+        adj.get(a).push(b);
+        adj.get(b).push(a);
+      }
+    }));
+    return {
+      network() {
+        const used = new Set();
+        const out = [];
+        const walk = (from, next) => {
+          const chain = [from];
+          let prev = from, cur = next;
+          used.add(edgeKey(prev, cur));
+          for (;;) {
+            chain.push(cur);
+            const nbrs = adj.get(cur);
+            if (nbrs.length !== 2 || cur === from) break;
+            const nxt = nbrs.find(n => n !== prev && !used.has(edgeKey(cur, n)));
+            if (!nxt) break;
+            used.add(edgeKey(cur, nxt));
+            prev = cur; cur = nxt;
+          }
+          out.push(`M ${chain.join(' L ')} `);
+        };
+        // Chains between junctions first, then the closed loops left over
+        adj.forEach((nbrs, n) => {
+          if (nbrs.length !== 2) nbrs.forEach(m => { if (!used.has(edgeKey(n, m))) walk(n, m); });
+        });
+        adj.forEach((nbrs, n) => nbrs.forEach(m => { if (!used.has(edgeKey(n, m))) walk(n, m); }));
+        return out.join('');
+      },
+      outer() {
+        const edges = [];
+        count.forEach((c, k) => {
+          if (c !== 1) return;
+          const [a, b] = k.split('|');
+          edges.push([...pos.get(a), ...pos.get(b)]);
+        });
+        return edges;
+      },
+    };
+  }
+
+  // Centre of area (holes aside) of the shapes together
+  function areaCentre(paths) {
+    let A = 0, X = 0, Y = 0;
+    paths.forEach(p => parseRings(p.getAttribute('d')).forEach(r => {
+      let a = 0, cx = 0, cy = 0;
+      for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+        const f = r[j][0] * r[i][1] - r[i][0] * r[j][1];
+        a += f; cx += (r[j][0] + r[i][0]) * f; cy += (r[j][1] + r[i][1]) * f;
+      }
+      if (!a) return;
+      const w = Math.abs(a) / 2;
+      A += w; X += (cx / (3 * a)) * w; Y += (cy / (3 * a)) * w;
+    }));
+    return A ? [X / A, Y / A] : null;
+  }
+
+  // The chakra's circle, up to rMax and never crossing the outline: on
+  // `prefer` (the shape's centre) when a wheel of a good size fits there,
+  // otherwise at the nearest spot where it fits best
+  function placeChakra(paths, box, rMax, prefer) {
+    const edges = borderEdges(paths).outer();
+    const inside = (x, y) => {
+      let c = false;
+      for (const [ax, ay, bx, by] of edges) {
+        if ((ay > y) !== (by > y) && x < ((bx - ax) * (y - ay)) / (by - ay) + ax) c = !c;
+      }
+      return c;
+    };
+    const room = (x, y) => {
+      let best = Infinity;
+      for (const [ax, ay, bx, by] of edges) {
+        const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+        let t = l2 ? ((x - ax) * dx + (y - ay) * dy) / l2 : 0;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const ex = x - ax - t * dx, ey = y - ay - t * dy;
+        best = Math.min(best, ex * ex + ey * ey);
+      }
+      return Math.sqrt(best);
+    };
+    const [cx, cy] = prefer || [box.x + box.w / 2, box.y + box.h / 2];
+    if (inside(cx, cy)) {
+      const fit = Math.min(room(cx, cy), rMax);
+      if (fit >= rMax * 0.75) return { cx, cy, r: fit * 0.9 };
+    }
+    const step = Math.max(box.w, box.h) / 24;
+    const spots = [];
+    for (let x = box.x + step / 2; x < box.x + box.w; x += step) {
+      for (let y = box.y + step / 2; y < box.y + box.h; y += step) {
+        if (inside(x, y)) spots.push({ x, y, fit: Math.min(room(x, y), rMax), off: Math.hypot(x - cx, y - cy) });
+      }
+    }
+    if (!spots.length) return null;
+    const most = Math.max(...spots.map(s => s.fit));
+    const pick = spots.filter(s => s.fit >= most * 0.97).sort((a, b) => a.off - b.off)[0];
+    return { cx: pick.x, cy: pick.y, r: pick.fit * 0.9 };
+  }
+
+  // ----- Intro: faded tricolour, then electricity lights every border -----
+  // The shape (all of India, or a state on drill-in) appears as one faded
+  // tricolour silhouette with no inner borders and a navy 3D Ashoka Chakra
+  // turning at its centre. Then, rippling out from the chakra, golden
+  // electricity runs once round each inner shape (state or district),
+  // leaving its border lit, and that shape's colour fades in over the flag.
+  const INTRO = { flagIn: 700, start: 1400, stagger: 45, run: 1500, fill: 700 };
+  function stateIntroTiming(n) {
+    return { flagIn: 450, start: 750, stagger: Math.min(45, 1300 / Math.max(1, n)), run: 1100, fill: 600 };
+  }
+  // The spark's crackle: broken dashes (ending on a dash) ahead of the head
+  const CRACKLE = [3, 2, 5, 1, 2, 3, 6, 2, 1, 2, 4];
+
+  // `centre`: where the chakra should turn (default: the shape's centre)
+  function playTricolourIntro(paths, lg, T, onDone, centre) {
+    const svg = document.getElementById('map-svg');
+    const g = svg?.querySelector('#map-group');
+    const labelsG = svg?.querySelector('#map-labels');
+    const leds = svg?.querySelector('#map-leds');
+    if (!svg || !g || !leds || !paths.length) {
+      svg?.classList.remove('ad-intro');
+      buildLeds(paths, lg, null);
+      onDone();
+      return;
+    }
+
+    // The shape's box: the flag's bands run top to bottom across it
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    const boxes = paths.map(p => {
+      const b = p.getBBox();
+      x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y);
+      x1 = Math.max(x1, b.x + b.width); y1 = Math.max(y1, b.y + b.height);
+      return b;
+    });
+    const box = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+
+    const defs = svg.querySelector('defs');
+    defs.querySelector('#ad-tricolour')?.remove();
+    const grad = svgEl('linearGradient', '', defs);
+    grad.id = 'ad-tricolour';
+    grad.setAttribute('gradientUnits', 'userSpaceOnUse');
+    grad.setAttribute('x1', 0); grad.setAttribute('y1', y0);
+    grad.setAttribute('x2', 0); grad.setAttribute('y2', y1);
+    [[0, '#FFC48E'], [0.31, '#FFC48E'], [0.355, '#FFFFFF'],
+     [0.645, '#FFFFFF'], [0.69, '#9FD199'], [1, '#9FD199']].forEach(([o, c]) => {
+      const s = svgEl('stop', '', grad);
+      s.setAttribute('offset', o);
+      s.setAttribute('stop-color', c);
+    });
+
+    // One silhouette: each shape filled and stroked with the flag, so no
+    // seam between neighbours shows
+    const flag = svgEl('g', 'ad-intro-flag');
+    paths.forEach(p => {
+      const s = ledPath(p.getAttribute('d'), '', flag);
+      s.setAttribute('fill', 'url(#ad-tricolour)');
+      s.setAttribute('stroke', 'url(#ad-tricolour)');
+    });
+    g.insertBefore(flag, g.firstChild);
+    flag.animate([{ opacity: 0 }, { opacity: 1 }],
+      { duration: T.flagIn, easing: 'ease-out', fill: 'backwards' });
+
+    const spot = placeChakra(paths, box, Math.min(box.w, box.h / 3) * 0.375, centre || areaCentre(paths));
+    const mid = spot ? [spot.cx, spot.cy] : [x0 + box.w / 2, y0 + box.h / 2];
+
+    const items = buildLeds(paths, lg);
+    const order = items
+      .map((it, i) => {
+        const b = boxes[i];
+        return { it, dist: Math.hypot(b.x + b.width / 2 - mid[0], b.y + b.height / 2 - mid[1]) };
+      })
+      .sort((a, b) => a.dist - b.dist);
+
+    const zap = svgEl('g', 'ad-zap', leds);
+    // The chakra sits above everything, and starts vanishing the moment
+    // the first shape starts to appear
+    const chakra = spot ? buildChakra(svg, spot.cx, spot.cy, spot.r) : null;
+    if (chakra) {
+      leds.appendChild(chakra);
+      chakra.animate([{ opacity: 0 }, { opacity: 1 }],
+        { duration: T.flagIn, easing: 'ease-out', fill: 'backwards' });
+      chakra.animate([{ opacity: 1 }, { opacity: 0 }],
+        { delay: T.start, duration: 500, easing: 'ease-in', fill: 'forwards' });
+    }
+    const ease = 'cubic-bezier(0.45, 0.05, 0.35, 1)';
+    const crackleLen = CRACKLE.reduce((a, b) => a + b, 0);
+    order.forEach(({ it }, rank) => {
+      const t0 = T.start + rank * T.stagger;
+      drawLed(it, t0, T.run, ease);
+      // The electricity: a flickering golden tail, a crackle of broken
+      // sparks, and a white-hot head, all riding the lit edge
+      const d = it.p.getAttribute('d');
+      [['ad-zap-tail', Math.min(120, it.len * 0.3), null],
+       ['ad-zap-crackle', crackleLen, CRACKLE],
+       ['ad-zap-head', Math.min(12, it.len * 0.05), null]].forEach(([cls, seg, pattern]) => {
+        const el = ledPath(d, cls, zap);
+        el.style.strokeDasharray = `${pattern ? pattern.join(' ') : seg} ${it.len + seg}`;
+        el.animate([{ strokeDashoffset: seg }, { strokeDashoffset: seg - it.len }],
+          { delay: t0, duration: T.run, easing: ease, fill: 'both' });
+        el.animate([{ opacity: 0 }, { opacity: 1, offset: 0.04 }, { opacity: 1, offset: 0.88 }, { opacity: 0 }],
+          { delay: t0, duration: T.run, fill: 'both' });
+      });
+      // Colour and labels arrive once the spark is most of the way round
+      // (.ad-state.empty-state rests at 0.75 in the CSS; districts at 1)
+      const fo = it.p.matches('.ad-state.empty-state') ? 0.75 : 1;
+      it.p.animate([{ fillOpacity: 0, strokeOpacity: 0 }, { fillOpacity: fo, strokeOpacity: 1 }],
+        { delay: t0 + T.run * 0.55, duration: T.fill, easing: 'ease-out', fill: 'both' });
+      const key = it.p.dataset.district || it.p.dataset.abbr;
+      labelsG?.querySelectorAll(`[data-for="${CSS.escape(key)}"]`).forEach(el =>
+        el.animate([{ opacity: 0 }, { opacity: 1 }],
+          { delay: t0 + T.run * 0.8, duration: 450, easing: 'ease-out', fill: 'both' }));
+    });
+
+    const end = T.start + (order.length - 1) * T.stagger + T.run;
+    flag.animate([{ opacity: 1 }, { opacity: 0 }], { delay: end - 600, duration: 600, fill: 'forwards' });
+
+    setTimeout(() => {
+      // Superseded by another render (e.g. Back pressed mid-intro)
+      if (lg !== ledGeneration || !flag.isConnected) return;
+      svg.classList.remove('ad-intro');
+      paths.forEach(p => p.getAnimations().forEach(a => a.cancel()));
+      labelsG?.querySelectorAll('[data-for]').forEach(el => el.getAnimations().forEach(a => a.cancel()));
+      flag.remove();
+      chakra?.remove();
+      settleBorders(paths, lg);
+      onDone();
+    }, end + 150);
+  }
+
+  // Ashoka Chakra in navy, made 3D: a darker copy beneath for the wheel's
+  // thickness, and the face lit by a fixed light (an SVG lighting filter)
+  // while the wheel turns under it, so its highlights move like metal
+  function buildChakra(svg, cx, cy, r) {
+    const defs = svg.querySelector('defs');
+    defs.querySelector('#ad-chakra-3d')?.remove();
+    const f = svgEl('filter', '', defs);
+    f.id = 'ad-chakra-3d';
+    [['x', '-30%'], ['y', '-30%'], ['width', '160%'], ['height', '160%']].forEach(([a, v]) => f.setAttribute(a, v));
+    f.innerHTML = `
+      <feGaussianBlur in="SourceAlpha" stdDeviation="${(r * 0.025).toFixed(2)}" result="bump"/>
+      <feSpecularLighting in="bump" surfaceScale="${(r * 0.06).toFixed(2)}" specularConstant="1.15"
+          specularExponent="20" lighting-color="#E4ECFF" result="spec">
+        <feDistantLight azimuth="235" elevation="40"/>
+      </feSpecularLighting>
+      <feComposite in="spec" in2="SourceAlpha" operator="in" result="shine"/>
+      <feComposite in="SourceGraphic" in2="shine" operator="arithmetic" k2="1" k3="0.9" result="lit"/>
+      <feDropShadow in="lit" dx="${(r * 0.03).toFixed(2)}" dy="${(r * 0.07).toFixed(2)}"
+          stdDeviation="${(r * 0.05).toFixed(2)}" flood-color="#0B163F" flood-opacity="0.4"/>`;
+
+    const c = svgEl('g', 'ad-chakra');
+    c.setAttribute('aria-hidden', 'true');
+    const wheel = (cls, dy) => {
+      const shift = svgEl('g', '', c);
+      if (dy) shift.setAttribute('transform', `translate(0 ${dy.toFixed(2)})`);
+      const w = svgEl('g', `ad-chakra-wheel ${cls}`, shift);
+      const circle = (rad, stroke, fill) => {
+        const e = svgEl('circle', '', w);
+        e.setAttribute('cx', cx); e.setAttribute('cy', cy); e.setAttribute('r', rad.toFixed(2));
+        if (stroke) e.setAttribute('stroke-width', stroke.toFixed(2));
+        if (fill) e.setAttribute('class', 'fill');
+        return e;
+      };
+      circle(r * 0.955, r * 0.09);   // rim
+      circle(r * 0.15, 0, true);     // hub
+      circle(r * 0.24, r * 0.035);   // hub ring
+      // 24 tapered spokes, and a bead on the rim between each pair
+      let spokes = '';
+      for (let k = 0; k < 24; k++) {
+        const a = (k * Math.PI) / 12, half = Math.PI / 80;
+        const pt = (rad, ang) => `${(cx + Math.cos(ang) * rad).toFixed(2)},${(cy + Math.sin(ang) * rad).toFixed(2)}`;
+        spokes += `M ${pt(r * 0.2, a)} L ${pt(r * 0.52, a - half)} L ${pt(r * 0.9, a)} L ${pt(r * 0.52, a + half)} Z `;
+        const bead = circle(r * 0.028, 0, true);
+        bead.setAttribute('cx', (cx + Math.cos(a + Math.PI / 24) * r * 0.86).toFixed(2));
+        bead.setAttribute('cy', (cy + Math.sin(a + Math.PI / 24) * r * 0.86).toFixed(2));
+      }
+      ledPath(spokes, 'fill', w);
+      return w;
+    };
+    wheel('back', r * 0.05);
+    const front = wheel('front', 0);
+    front.parentNode.setAttribute('filter', 'url(#ad-chakra-3d)');
+    return c;
+  }
+
+  // ----- State names -----
+  // Each state's full name, with its vacancy count beneath, is fitted inside
+  // its own borders: the largest size that fits at the roomiest spots,
+  // trying one to three lines and, for long narrow states, a tilt. Areas too
+  // small for a readable name get a tag just outside, with a leader line.
+  const LABEL = { max: 15, min: 6.5, lineH: 1.12, countScale: 1.25, padX: 0.3, padY: 0.12, tag: 8.5 };
+  const LABEL_NAMES = {
+    JK: 'Jammu & Kashmir',
+    AN: 'Andaman & Nicobar Islands',
+    DNH: 'Dadra & Nagar Haveli and Daman & Diu',
+  };
+  const LABEL_TILTS = [-30, 30, -55, 55, -80, 80];
+  const labelFitCache = new Map();
+
+  // A state's shape for label fitting: flat coordinate arrays per ring plus
+  // bounding boxes, so the many point/edge tests below can skip whole rings
+  function labelShape(d) {
+    const rings = parseRings(d).map(r => {
+      const n = r.length, xs = new Float64Array(n), ys = new Float64Array(n);
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (let i = 0; i < n; i++) {
+        const x = r[i][0], y = r[i][1];
+        xs[i] = x; ys[i] = y;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      }
+      return { n, xs, ys, x0, y0, x1, y1 };
+    });
+    const b = rings.reduce((a, r) => ({
+      x0: Math.min(a.x0, r.x0), y0: Math.min(a.y0, r.y0), x1: Math.max(a.x1, r.x1), y1: Math.max(a.y1, r.y1),
+    }), { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity });
+    return { rings, ...b, w: b.x1 - b.x0, h: b.y1 - b.y0 };
+  }
+
+  // Even-odd: a ring whose box misses the point can't change the answer
+  function inShape(sh, x, y) {
+    if (x < sh.x0 || x > sh.x1 || y < sh.y0 || y > sh.y1) return false;
+    let inside = false;
+    for (const r of sh.rings) {
+      if (x < r.x0 || x > r.x1 || y < r.y0 || y > r.y1) continue;
+      const xs = r.xs, ys = r.ys;
+      for (let i = 0, j = r.n - 1; i < r.n; j = i++) {
+        if ((ys[i] > y) !== (ys[j] > y) && x < ((xs[j] - xs[i]) * (y - ys[i])) / (ys[j] - ys[i]) + xs[i]) inside = !inside;
+      }
+    }
+    return inside;
+  }
+  function edgeDist(sh, x, y) {
+    let best = Infinity;
+    for (const r of sh.rings) {
+      const xs = r.xs, ys = r.ys;
+      for (let i = 0, j = r.n - 1; i < r.n; j = i++) {
+        const ax = xs[j], ay = ys[j], dx = xs[i] - ax, dy = ys[i] - ay, l2 = dx * dx + dy * dy;
+        let t = l2 ? ((x - ax) * dx + (y - ay) * dy) / l2 : 0;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const ex = x - ax - t * dx, ey = y - ay - t * dy, d2 = ex * ex + ey * ey;
+        if (d2 < best) best = d2;
+      }
+    }
+    return Math.sqrt(best);
+  }
+  // Does segment a→b cross any edge of the shape?
+  function crossesShape(sh, ax, ay, bx, by) {
+    const sx0 = Math.min(ax, bx), sx1 = Math.max(ax, bx), sy0 = Math.min(ay, by), sy1 = Math.max(ay, by);
+    const ux = bx - ax, uy = by - ay;
+    for (const r of sh.rings) {
+      if (sx1 < r.x0 || sx0 > r.x1 || sy1 < r.y0 || sy0 > r.y1) continue;
+      const xs = r.xs, ys = r.ys;
+      for (let i = 0, j = r.n - 1; i < r.n; j = i++) {
+        const cx = xs[j], cy = ys[j], dx = xs[i], dy = ys[i];
+        if ((cx < sx0 && dx < sx0) || (cx > sx1 && dx > sx1) || (cy < sy0 && dy < sy0) || (cy > sy1 && dy > sy1)) continue;
+        const s1 = ux * (cy - ay) - uy * (cx - ax), s2 = ux * (dy - ay) - uy * (dx - ax);
+        if ((s1 > 0) === (s2 > 0)) continue;
+        const vx = dx - cx, vy = dy - cy;
+        const s3 = vx * (ay - cy) - vy * (ax - cx), s4 = vx * (by - cy) - vy * (bx - cx);
+        if ((s3 > 0) !== (s4 > 0)) return true;
+      }
+    }
+    return false;
+  }
+  // Inside points on a grid, roomiest (farthest from the border) first
+  function roomiestPoints(sh, n) {
+    const step = Math.max(sh.w, sh.h) / 18;
+    if (!(step > 0)) return [];
+    const pts = [];
+    for (let x = sh.x0 + step / 2; x < sh.x1; x += step) {
+      for (let y = sh.y0 + step / 2; y < sh.y1; y += step) {
+        if (inShape(sh, x, y)) pts.push([x, y, edgeDist(sh, x, y)]);
+      }
+    }
+    return pts.sort((p, q) => q[2] - p[2]).slice(0, n);
+  }
+
+  function layoutStateLabels(states, labelsG) {
+    if (!labelsG || !states.length) return;
+    // Text widths at font-size 1, in the labels' own font
+    const probe = svgEl('text', '', labelsG);
+    probe.style.fontSize = '100px';
+    const widths = new Map();
+    const textW = (text, cls) => {
+      const k = `${cls}|${text}`;
+      if (!widths.has(k)) {
+        probe.setAttribute('class', cls);
+        probe.textContent = text;
+        widths.set(k, probe.getComputedTextLength() / 100);
+      }
+      return widths.get(k);
+    };
+
+    const shapes = new Map(states.map(st => [st.abbr, labelShape(st.path.getAttribute('d'))]));
+    const placed = [];
+    const tags = [];
+    states.forEach(st => {
+      const name = LABEL_NAMES[st.abbr] || st.name;
+      const key = `${st.abbr}|${name}|${st.count}`;
+      if (!labelFitCache.has(key)) labelFitCache.set(key, fitLabel(name, st.count, shapes.get(st.abbr), textW));
+      const fit = labelFitCache.get(key);
+      if (fit) {
+        drawFittedLabel(st, fit, labelsG);
+        placed.push(fit.box);
+      } else {
+        tags.push({ st, name });
+      }
+    });
+    tags.forEach(({ st, name }) => drawTagLabel(st, name, shapes, placed, labelsG, textW));
+    probe.remove();
+  }
+
+  function fitLabel(name, count, sh, textW) {
+    const countStr = count > 0 ? String(count) : '';
+    const widest = lines => Math.max(...lines.map(l => textW(l, 'ad-state-label')));
+
+    // One line, plus the most balanced two- and three-line breaks
+    const words = name.split(' ');
+    const two = [], three = [];
+    for (let i = 1; i < words.length; i++) {
+      two.push([words.slice(0, i).join(' '), words.slice(i).join(' ')]);
+      for (let j = i + 1; j < words.length; j++) {
+        three.push([words.slice(0, i).join(' '), words.slice(i, j).join(' '), words.slice(j).join(' ')]);
+      }
+    }
+    const splits = [[name]];
+    [two, three].forEach(c => { if (c.length) splits.push(c.reduce((a, b) => (widest(a) <= widest(b) ? a : b))); });
+
+    // Each block's size at font-size 1 (scaled by the size being tried)
+    const cw = countStr ? textW(countStr, 'ad-state-count') * LABEL.countScale : 0;
+    const blocks = splits.map(lines => ({
+      lines,
+      w: Math.max(widest(lines), cw) + 2 * LABEL.padX,
+      h: lines.length * LABEL.lineH + (countStr ? LABEL.countScale * 1.05 : 0) + 2 * LABEL.padY,
+      weight: [1, 0.96, 0.9][lines.length - 1],
+    }));
+
+    const corners = (x, y, rad, blk, s) => {
+      const hw = (blk.w * s) / 2, hh = (blk.h * s) / 2, c = Math.cos(rad), sn = Math.sin(rad);
+      return [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]].map(([u, v]) => [x + u * c - v * sn, y + u * sn + v * c]);
+    };
+    const fits = (x, y, rad, blk, s) => {
+      const k = corners(x, y, rad, blk, s);
+      for (const [px, py] of k) if (!inShape(sh, px, py)) return false;
+      for (let i = 0; i < 4; i++) {
+        const [ax, ay] = k[i], [bx, by] = k[(i + 1) % 4];
+        if (crossesShape(sh, ax, ay, bx, by)) return false;
+      }
+      return true;
+    };
+
+    // Largest size above `floor` that fits here, or 0
+    const sizeAt = (x, y, rad, blk, floor) => {
+      let lo = Math.max(LABEL.min, floor + 0.01);
+      if (lo > LABEL.max || !fits(x, y, rad, blk, lo)) return 0;
+      let hi = LABEL.max;
+      if (fits(x, y, rad, blk, hi)) return hi;
+      for (let k = 0; k < 6; k++) { const m = (lo + hi) / 2; if (fits(x, y, rad, blk, m)) lo = m; else hi = m; }
+      return lo;
+    };
+
+    const spots = roomiestPoints(sh, 12);
+    const found = [];
+    let bestScore = 0;
+    const tryAt = (x, y, deg, blk) => {
+      // Upright reads best: the steeper the tilt, the bigger it must fit
+      const weight = blk.weight * (1 - 0.0055 * Math.abs(deg));
+      const rad = (deg * Math.PI) / 180;
+      const size = sizeAt(x, y, rad, blk, bestScore / weight);
+      if (!size) return;
+      bestScore = Math.max(bestScore, size * weight);
+      found.push({ x, y, deg, rad, blk, weight, s: size, score: size * weight });
+    };
+    spots.forEach(([x, y]) => blocks.forEach(blk => tryAt(x, y, 0, blk)));
+    spots.forEach(([x, y]) => blocks.forEach(blk => LABEL_TILTS.forEach(deg => tryAt(x, y, deg, blk))));
+    if (!found.length) return null;
+
+    // Slide the few best placements around while the name can grow
+    let best = null;
+    found.sort((a, b) => b.score - a.score).slice(0, 4).forEach(f => {
+      let cur = f, step = Math.max(sh.w, sh.h) / 30, guard = 40;
+      while (step > 0.4 && guard-- > 0) {
+        let moved = false;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
+          const x = cur.x + dx * step, y = cur.y + dy * step;
+          const size = sizeAt(x, y, cur.rad, cur.blk, cur.s);
+          if (size > cur.s) { cur = { ...cur, x, y, s: size, score: size * cur.weight }; moved = true; break; }
+        }
+        if (!moved) step /= 2;
+      }
+      if (!best || cur.score > best.score) best = cur;
+    });
+
+    const k = corners(best.x, best.y, best.rad, best.blk, best.s);
+    const xs = k.map(p => p[0]), ys = k.map(p => p[1]);
+    return {
+      x: best.x, y: best.y, deg: best.deg, s: best.s, lines: best.blk.lines, h: best.blk.h, countStr,
+      box: { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) },
+    };
+  }
+
+  function drawFittedLabel(st, fit, labelsG) {
+    const s = fit.s;
+    const g = svgEl('g', 'ad-label-block', labelsG);
+    g.setAttribute('transform',
+      `translate(${fit.x.toFixed(1)} ${fit.y.toFixed(1)})${fit.deg ? ` rotate(${fit.deg})` : ''}`);
+    // Lines are centred on their line box; 0.35em drops the baseline so the
+    // letters sit in the middle of it
+    const top = (-fit.h / 2 + LABEL.padY) * s;
+    const name = svgEl('text', 'ad-state-label', g);
+    name.setAttribute('data-for', st.abbr);
+    name.style.fontSize = `${s.toFixed(2)}px`;
+    fit.lines.forEach((line, i) => {
+      const t = svgEl('tspan', '', name);
+      t.setAttribute('x', 0);
+      t.setAttribute('y', (top + (i + 0.5) * LABEL.lineH * s + 0.35 * s).toFixed(2));
+      t.textContent = line;
+    });
+    // Always drawn (empty when 0) so the filters and live updates can set it
+    const cs = s * LABEL.countScale;
+    const num = svgEl('text', `ad-state-count${fit.countStr ? '' : ' empty'}`, g);
+    num.setAttribute('data-for', st.abbr);
+    num.setAttribute('x', 0);
+    num.setAttribute('y', (top + fit.lines.length * LABEL.lineH * s + 0.525 * cs + 0.35 * cs).toFixed(2));
+    num.style.fontSize = `${cs.toFixed(2)}px`;
+    num.textContent = fit.countStr;
+  }
+
+  // Tags placed by hand: Chandigarh's out west of Punjab (beyond India's
+  // border); Sikkim's just above the state and Meghalaya's just below it
+  const TAG_PLACE = { CH: { westOf: 'PB' }, SK: { side: 'above' }, ML: { side: 'below' } };
+
+  // A tag beside an area too small to hold its name: out at sea if
+  // possible, never over another label, joined to the area by a leader
+  function drawTagLabel(st, name, shapes, placed, labelsG, textW) {
+    // Point at the area's largest piece (Puducherry, Lakshadweep and the
+    // islands are scattered; their overall box centre is elsewhere)
+    const whole = shapes.get(st.abbr);
+    const ringArea = r => {
+      let a = 0;
+      for (let i = 0, j = r.n - 1; i < r.n; j = i++) a += (r.xs[j] + r.xs[i]) * (r.ys[j] - r.ys[i]);
+      return Math.abs(a / 2);
+    };
+    const main = whole.rings.reduce((p, q) => (ringArea(q) > ringArea(p) ? q : p));
+    const b = { rings: [main], x0: main.x0, y0: main.y0, x1: main.x1, y1: main.y1, w: main.x1 - main.x0, h: main.y1 - main.y0 };
+    const spot = roomiestPoints(b, 1)[0];
+    const [ax, ay] = spot ? spot : [(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2];
+    const s = LABEL.tag;
+    const countStr = st.count > 0 ? String(st.count) : '';
+    const padX = s * 0.6, gap = countStr ? s * 0.5 : 0;
+    const W = textW(name, 'ad-state-label') * s + gap + (countStr ? textW(countStr, 'ad-state-count') * s : 0) + 2 * padX;
+    const H = s * 1.7;
+
+    const overlaps = (box) => placed.some(p =>
+      box.x < p.x + p.w + 2 && p.x < box.x + box.w + 2 && box.y < p.y + p.h + 2 && p.y < box.y + box.h + 2);
+    const onLand = (box) => {
+      for (const fx of [0, 0.5, 1]) {
+        for (const fy of [0, 0.5, 1]) {
+          const px = box.x + fx * box.w, py = box.y + fy * box.h;
+          for (const sh of shapes.values()) if (inShape(sh, px, py)) return true;
+        }
+      }
+      return false;
+    };
+    // Liang–Barsky: does the leader from the area to this point cut a label?
+    const cutsLabel = (ex, ey) => placed.some(p => {
+      let t0 = 0, t1 = 1;
+      const dx = ex - ax, dy = ey - ay;
+      for (const [q, v] of [[-dx, ax - p.x], [dx, p.x + p.w - ax], [-dy, ay - p.y], [dy, p.y + p.h - ay]]) {
+        if (q === 0) { if (v < 0) return false; continue; }
+        const t = v / q;
+        if (q < 0) { if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; }
+      }
+      return t0 < t1;
+    });
+    let box = null;
+    const hint = TAG_PLACE[st.abbr];
+    if (hint?.westOf && shapes.get(hint.westOf)) {
+      box = { x: shapes.get(hint.westOf).x0 - 8 - W, y: ay - H / 2, w: W, h: H };
+    } else if (hint?.side) {
+      // Far enough off the state for the leader to show
+      box = { x: (b.x0 + b.x1) / 2 - W / 2, y: hint.side === 'above' ? b.y0 - 12 - H : b.y1 + 12, w: W, h: H };
+    }
+    search:
+    for (const [sea, clean] of box ? [] :  [[true, true], [false, true], [false, false]]) {
+      for (const r of [8, 16, 26, 38, 52, 68, 86]) {
+        for (const deg of [180, 0, 210, 150, 330, 30, 240, 120, 300, 60, 270, 90]) {
+          const ux = Math.cos((deg * Math.PI) / 180), uy = Math.sin((deg * Math.PI) / 180);
+          // Start just past the area's own box in this direction
+          const reach = Math.abs(ux) * (ux > 0 ? b.x1 - ax : ax - b.x0) + Math.abs(uy) * (uy > 0 ? b.y1 - ay : ay - b.y0);
+          const cx = ax + ux * (reach + r + W / 2), cy = ay + uy * (reach + r + H / 2);
+          const cand = { x: cx - W / 2, y: cy - H / 2, w: W, h: H };
+          if (cand.x < 4 || cand.y < 4 || cand.x + W > 996 || cand.y + H > 796) continue;
+          if (overlaps(cand) || (sea && onLand(cand))) continue;
+          if (clean && cutsLabel(Math.max(cand.x, Math.min(ax, cand.x + W)), Math.max(cand.y, Math.min(ay, cand.y + H)))) continue;
+          box = cand;
+          break search;
+        }
+      }
+    }
+    if (!box) return;
+    placed.push(box);
+
+    const nx = Math.max(box.x, Math.min(ax, box.x + box.w));
+    const ny = Math.max(box.y, Math.min(ay, box.y + box.h));
+    const leader = svgEl('line', 'ad-tag-leader', labelsG);
+    leader.setAttribute('data-for', st.abbr);
+    [['x1', ax], ['y1', ay], ['x2', nx], ['y2', ny]].forEach(([a, v]) => leader.setAttribute(a, v.toFixed(1)));
+    const dot = svgEl('circle', 'ad-tag-dot', labelsG);
+    dot.setAttribute('data-for', st.abbr);
+    dot.setAttribute('cx', ax.toFixed(1)); dot.setAttribute('cy', ay.toFixed(1)); dot.setAttribute('r', 1.6);
+
+    const tag = svgEl('g', 'ad-tag', labelsG);
+    tag.setAttribute('data-for', st.abbr);
+    const pill = svgEl('rect', 'ad-tag-pill', tag);
+    [['x', box.x], ['y', box.y], ['width', W], ['height', H], ['rx', H / 2]]
+      .forEach(([a, v]) => pill.setAttribute(a, v.toFixed(1)));
+    const baseline = (box.y + H / 2 + 0.35 * s).toFixed(1);
+    const nm = svgEl('text', 'ad-state-label ad-tag-name', tag);
+    nm.setAttribute('x', (box.x + padX).toFixed(1));
+    nm.setAttribute('y', baseline);
+    nm.style.fontSize = `${s}px`;
+    nm.textContent = name;
+    const num = svgEl('text', `ad-state-count ad-tag-count${countStr ? '' : ' empty'}`, tag);
+    num.setAttribute('data-for', st.abbr);
+    num.setAttribute('x', (box.x + W - padX).toFixed(1));
+    num.setAttribute('y', baseline);
+    num.style.fontSize = `${s}px`;
+    num.textContent = countStr;
+
+    // The area itself is hard to hit, so the tag opens it too
+    tag.addEventListener('click', () => navigateToState(st.abbr));
+    tag.addEventListener('mouseenter', (e) => { showTooltip(e, st.abbr, st.name, st.count); setSpotlight(st.path); });
+    tag.addEventListener('mousemove', moveTooltip);
+    tag.addEventListener('mouseleave', () => {
+      hideTooltip();
+      if (st.path.classList.contains('is-spot')) setSpotlight(null);
+    });
   }
 
   // One subtle ring when a live insert lands on a state (realtime only)
@@ -855,6 +1579,7 @@
         badge.setAttribute('x', cx);
         badge.setAttribute('y', cy - 6);
         badge.setAttribute('class', 'ad-count-badge');
+        badge.setAttribute('data-for', geoName);
         badge.textContent = count;
         badge.style.setProperty('--ad-delay', `${500 + idx * 15}ms`);
         labelsG.appendChild(badge);
@@ -864,6 +1589,7 @@
       label.setAttribute('x', cx);
       label.setAttribute('y', cy + 4);
       label.setAttribute('class', 'ad-district-label');
+      label.setAttribute('data-for', geoName);
       label.textContent = geoName;
       label.style.setProperty('--ad-delay', `${550 + idx * 15}ms`);
       labelsG.appendChild(label);
@@ -872,6 +1598,18 @@
     // District names and counts fade in (the CSS starts them at opacity 0)
     requestAnimationFrame(() => labelsG.querySelectorAll('.ad-district-label')
       .forEach(l => l.classList.add('visible')));
+
+    // The same entrance as all of India: the state in faded tricolour with
+    // the chakra, then electricity lights each district's border
+    const paths = Array.from(g.querySelectorAll('.ad-district'));
+    const lg = ledGeneration;
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    mapSvg.classList.toggle('ad-intro', !reduced);
+    requestAnimationFrame(() => {
+      if (lg !== ledGeneration) return;
+      if (reduced) buildLeds(paths, lg, null);
+      else playTricolourIntro(paths, lg, stateIntroTiming(paths.length), () => {});
+    });
   }
 
   function getDistrictCount(abbr, districtName) {
@@ -1339,6 +2077,17 @@
       try { await IndiaMapData.load(); } catch (e) { console.error('[map] data load failed:', e); }
     }
 
+    const urlParams = new URLSearchParams(location.search);
+    const deepState = urlParams.get('state');
+    const deepDistrict = urlParams.get('district'); // already decoded
+    const deepAbbr = deepState ? deepState.toUpperCase() : '';
+    const isDeepLink = !!(deepAbbr && ABBR_TO_NAME[deepAbbr]);
+
+    // The tricolour intro plays on a plain visit only: a deep link goes
+    // straight to its state, and reduced motion gets the map at once
+    introPending = !isDeepLink &&
+      !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
     // BLOCKER 1 + 9: render national map BEFORE deep-link so draw-in can complete
     // Deep-link must use replace=true so initial load produces exactly one history entry
     const initData = getData();
@@ -1350,11 +2099,7 @@
     // Deep-link handler: support both state and district.
     // Direct entry: hasMapParent=false — replace, never push, so the deep
     // link is exactly one history entry and in-app Back stays on the page.
-    const urlParams = new URLSearchParams(location.search);
-    const deepState = urlParams.get('state');
-    const deepDistrict = urlParams.get('district'); // already decoded
-    const deepAbbr = deepState ? deepState.toUpperCase() : '';
-    if (deepAbbr && ABBR_TO_NAME[deepAbbr]) {
+    if (isDeepLink) {
       history.replaceState(
         makeRoute(deepDistrict ? 'district' : 'state', deepAbbr, deepDistrict || null, false),
         '', deepDistrict ? districtUrl(deepAbbr, deepDistrict) : stateUrl(deepAbbr)
