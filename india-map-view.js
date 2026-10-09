@@ -957,7 +957,8 @@
         count = window.IndiaMapData?.getStateCount?.(abbr) || 0;
       }
       filteredTotal += count;
-      p.style.opacity = visible ? '1' : '0.12';
+      // '' rather than '1' so the hover spotlight can still fade it
+      p.style.opacity = visible ? '' : '0.12';
       p.setAttribute('aria-label', `${ABBR_TO_NAME[abbr] || abbr}: ${count} vacancies`);
       // Update count label from the shared #map-labels group
       if (labelsG) {
