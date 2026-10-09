@@ -438,6 +438,9 @@
       // shows a "pending verification" hint on them, so it has to survive the
       // mapping rather than staying an admin-only field.
       Admin_Verified: row.admin_verified === true,
+      // 0025: no fixed last date — open until filled; last_date_to_apply holds
+      // an indicative date the site marks with "*".
+      Open_Until_Filled: row.open_until_filled === true,
       // pipeline/provenance (handy for the admin review UI)
       _status: row.status,
       _confidence: row.confidence,

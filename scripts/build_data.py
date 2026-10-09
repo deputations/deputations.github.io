@@ -438,6 +438,10 @@ SUPABASE_TO_TITLE_MAP: dict[str, str] = {
     # "pending verification" hint on those, so the flag has to reach the
     # bundled JSON too — NIC users are served from that file, not from the API.
     "admin_verified":            "Admin_Verified",
+    # 0025_open_until_filled.sql: the notification has no last date — the post
+    # stays open until filled. last_date_to_apply then holds an indicative date
+    # (e.g. 2026-12-31) that the site marks with "*" and explains.
+    "open_until_filled":         "Open_Until_Filled",
 }
 
 
@@ -532,6 +536,13 @@ def validate_required_columns(rows: list[dict[str, str]]) -> None:
         raise RuntimeError(f"Missing required columns: {', '.join(missing)}")
 
 
+def coerce_flag(raw: Any) -> bool:
+    """Normalise an optional boolean column (absent / "False" → False)."""
+    if isinstance(raw, bool):
+        return raw
+    return safe_str(raw).strip().lower() in ("true", "1", "yes")
+
+
 def coerce_admin_verified(raw: Any) -> bool:
     """Normalise the two-stage-approval flag to a real bool for the JSON.
 
@@ -614,6 +625,7 @@ def transform_rows(rows: list[dict[str, str]]) -> tuple[list[dict[str, Any]], in
         item["expired_flag"] = expired_flag
         item["closing_soon"] = closing_soon
         item["Admin_Verified"] = coerce_admin_verified(row.get("Admin_Verified"))
+        item["Open_Until_Filled"] = coerce_flag(row.get("Open_Until_Filled"))
         item["search_text"] = build_search_text(row)
         item["completeness_score"] = compute_completeness_score(row)
         item["data_quality_flag"] = compute_data_quality_flag(item["completeness_score"])
