@@ -126,8 +126,10 @@ assert(html.includes('aria-expanded'), 'Has aria-expanded for accessibility');
 assert(js.includes('syncMobileFilters'), 'JS has syncMobileFilters() function');
 assert(js.includes('window.innerWidth < 768'), 'Mobile breakpoint check');
 
-section('C06: neighbor-dim CSS exists');
-assert(css.includes('.neighbor-dim'), 'CSS has .neighbor-dim rule for spotlight hover');
+section('C06: Hover spotlight (hovered state lifts, others fade)');
+assert(css.includes('.has-spotlight .ad-state:not(.is-spot)'), 'CSS fades the states that are not hovered');
+assert(css.includes('.ad-lift.on') && css.includes('--lift-scale'), 'CSS grows the hovered state on the lift layer');
+assert(js.includes("lift.id = 'map-lift'") && js.includes('function setSpotlight'), 'JS builds the lift layer and spotlight');
 
 section('C06: No decorative particle layer (removed in the Apple-style redesign)');
 assert(!js.includes('particleCanvas') && !js.includes('__mapParticleState'), 'Particle background removed');

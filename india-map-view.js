@@ -238,6 +238,14 @@
     outline.setAttribute('aria-hidden', 'true');
     svg.appendChild(outline);
 
+    // Hovered state, redrawn on top of its neighbours so it can grow
+    // (see setSpotlight / .ad-lift)
+    const lift = document.createElementNS(ns, 'path');
+    lift.id = 'map-lift';
+    lift.setAttribute('class', 'ad-lift');
+    lift.setAttribute('aria-hidden', 'true');
+    svg.appendChild(lift);
+
     const labels = document.createElementNS(ns, 'g');
     labels.id = 'map-labels';
     svg.appendChild(labels);
@@ -318,18 +326,62 @@
     const o = document.getElementById('map-outline');
     if (o && o.classList.contains(`ad-outline-${kind}`)) setOutline(null);
   }
-  function wireOutline(path) {
-    path.addEventListener('mouseenter', () => setOutline(path, 'hover'));
-    path.addEventListener('mouseleave', () => clearOutline('hover'));
+  function wireOutline(path, { hover = true } = {}) {
+    if (hover) {
+      path.addEventListener('mouseenter', () => setOutline(path, 'hover'));
+      path.addEventListener('mouseleave', () => clearOutline('hover'));
+    }
     path.addEventListener('focus', () => { if (path.matches(':focus-visible')) setOutline(path, 'focus'); });
     path.addEventListener('blur', () => clearOutline('focus'));
   }
 
+  // National-map hover: the hovered state grows a little and darkens on the
+  // lift layer (above every shape, below the labels); every other state and
+  // its labels fade back. setSpotlight(null) eases it all back.
+  function setSpotlight(path) {
+    const svg = document.getElementById('map-svg');
+    const lift = document.getElementById('map-lift');
+    if (!svg || !lift) return;
+    svg.querySelectorAll('.is-spot').forEach(el => el.classList.remove('is-spot'));
+    if (!path || !path.isConnected) {
+      svg.classList.remove('has-spotlight');
+      lift.classList.remove('on');
+      return;
+    }
+    const abbr = path.dataset.abbr;
+    path.classList.add('is-spot');
+    svg.querySelectorAll(`#map-labels [data-for="${abbr}"]`).forEach(el => el.classList.add('is-spot'));
+    svg.classList.add('has-spotlight');
+
+    // Small states grow proportionally more, so Goa or Delhi visibly lift
+    // while Rajasthan doesn't swallow its neighbours
+    let scale = 1.05;
+    try {
+      const b = path.getBBox();
+      const size = Math.max(b.width, b.height);
+      if (size > 0) scale = 1 + Math.min(0.2, Math.max(0.05, 10 / size));
+    } catch (e) { /* not rendered */ }
+
+    // Snap back to scale(1) first, so the grow plays for every new state
+    // instead of morphing from the previous one
+    lift.style.transition = 'none';
+    lift.classList.remove('on');
+    lift.setAttribute('d', path.getAttribute('d'));
+    lift.style.fill = path.style.fill;
+    lift.style.setProperty('--lift-scale', scale);
+    lift.classList.toggle('empty-state', path.classList.contains('empty-state'));
+    lift.getBoundingClientRect();
+    lift.style.transition = '';
+    lift.classList.add('on');
+  }
+
   function clearMap() {
-    // Paths are about to be removed without a mouseleave — drop any tooltip
-    // and outline
+    // Paths are about to be removed without a mouseleave — drop any tooltip,
+    // outline and hover spotlight
     hideTooltip();
     setOutline(null);
+    setSpotlight(null);
+    document.getElementById('map-lift')?.removeAttribute('d');
     const old = document.getElementById('map-svg');
     if (old) {
       const g = old.querySelector('#map-group');
@@ -386,22 +438,19 @@
       path.dataset.color = stateColor(abbr);
       path.style.fill = stateFill(abbr);
 
-      // Hover spotlight (dims neighbours)
+      // Hover spotlight: this state grows and darkens, the rest fade
       path.addEventListener('mouseenter', (e) => {
         showTooltip(e, abbr, name, count);
-        path.classList.add('ad-gpu');
         announce(`${name}: ${count} vacanc${count !== 1 ? 'ies' : 'y'}`);
-        document.querySelectorAll('#map-svg .ad-state').forEach(s => {
-          if (s !== path) s.classList.add('neighbor-dim');
-        });
+        setSpotlight(path);
       });
       path.addEventListener('mousemove', moveTooltip);
       path.addEventListener('mouseleave', () => {
         hideTooltip();
-        path.classList.remove('ad-gpu');
-        document.querySelectorAll('#map-svg .ad-state').forEach(s => s.classList.remove('neighbor-dim'));
+        if (path.classList.contains('is-spot')) setSpotlight(null);
       });
-      wireOutline(path);
+      // The lifted copy draws its own ring, so no hover outline here
+      wireOutline(path, { hover: false });
       path.addEventListener('click', () => navigateToState(abbr));
       path.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigateToState(abbr); }
@@ -418,6 +467,7 @@
       label.setAttribute('x', cx);
       label.setAttribute('y', cy - 5);
       label.setAttribute('class', 'ad-state-label');
+      label.setAttribute('data-for', abbr);
       label.style.setProperty('--ad-delay', `${600 + idx * 20}ms`);
       label.textContent = abbr;
       labelsG.appendChild(label);
@@ -521,7 +571,9 @@
     const gen = ++renderGeneration; // (J) render navigation generation
     // The national paths are about to be replaced, so their mouseleave will
     // never fire — clear the hover tooltip now or it sticks over the new view.
+    // The lifted state eases back to its true size before the zoom lands.
     hideTooltip();
+    setSpotlight(null);
 
     // Delhi uses the image map; every other state needs district GeoJSON
     if (abbr !== 'DL') {
@@ -1127,11 +1179,15 @@
     }
   }
 
+  // Each card opens its vacancy on the home page (/?v=<Vacancy_ID>). The title
+  // link is stretched over the whole card; the Notification link sits above it.
   function listingCardsHtml(listings) {
     return listings.map((l, i) => `
-        <div class="ad-listing-card visible" style="animation-delay:${i * 60}ms">
+        <div class="ad-listing-card visible${l.id ? ' is-linked' : ''}" style="animation-delay:${i * 60}ms">
           <div class="ad-listing-card-header">
-            <div class="ad-listing-title">${esc(l.title)}</div>
+            ${l.id
+              ? `<a class="ad-listing-title ad-listing-open" href="/?v=${encodeURIComponent(l.id)}">${esc(l.title)}</a>`
+              : `<div class="ad-listing-title">${esc(l.title)}</div>`}
             ${l.level ? `<span class="ad-listing-badge">${esc(l.level)}</span>` : ''}
           </div>
           <div class="ad-listing-meta">
@@ -1617,7 +1673,7 @@
   // ===== End of realtime additions =====
 
   // ===== GPU acceleration class =====
-  // .ad-gpu is toggled per-element on hover (in renderNational / renderState)
+  // .ad-gpu is toggled per-element on hover (in renderState)
   // to avoid 36+ elements always carrying will-change.
 
   // ===== Auto-init on standalone page load =====
