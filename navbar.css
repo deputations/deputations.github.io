@@ -62,14 +62,28 @@
   white-space: nowrap;
   transition: color .2s ease;
 }
-/* Dark theme (default): light multi-colour on dark navy. */
-.nav-brand-name .nv2-pre,
-.nav-brand-name .nv2-post {
+/* "A V² product" — the words either side of the V² mark, in one place for
+   every page (the link's aria-label carries its accessible name). */
+.nav-brand:has(.nav-brand-v2) { gap: .4rem; }
+.nav-brand:has(.nav-brand-v2)::before,
+.nav-brand:has(.nav-brand-v2)::after {
+  font-family: "Sora", "Plus Jakarta Sans", sans-serif;
+  font-size: .98rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  /* Dark theme (default): light multi-colour on dark navy. */
   background-image: linear-gradient(135deg, #22d3ee 0%, #a78bfa 50%, #f0abfc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
+.nav-brand:has(.nav-brand-v2)::before { content: "A"; }
+.nav-brand:has(.nav-brand-v2)::after { content: "product"; }
 /* Light theme: dark multi-colour on near-white. */
-[data-theme="light"] .nav-brand-name .nv2-pre,
-[data-theme="light"] .nav-brand-name .nv2-post {
+[data-theme="light"] .nav-brand:has(.nav-brand-v2)::before,
+[data-theme="light"] .nav-brand:has(.nav-brand-v2)::after {
   background-image: linear-gradient(135deg, #0e7490 0%, #6d28d9 50%, #be185d 100%);
 }
 
@@ -173,6 +187,9 @@ html[data-theme="light"] .top-nav a:not(.nav-brand).active,
   .nav-links::-webkit-scrollbar { display: none; }
 
   .nav-brand { padding: .25rem; gap: .5rem; }
+  .nav-brand:has(.nav-brand-v2) { gap: .3rem; }
+  .nav-brand:has(.nav-brand-v2)::before,
+  .nav-brand:has(.nav-brand-v2)::after { font-size: .84rem; }
   .nav-brand-name { display: none; }
   .nav-brand-mark { width: 30px; height: 30px; }
 
@@ -181,6 +198,25 @@ html[data-theme="light"] .top-nav a:not(.nav-brand).active,
     padding: .55rem .85rem;
     font-size: .88rem;
   }
+}
+
+/* ---- above 768px the like / dislike pill (site-widgets.js) floats over the
+   right end of the nav: keep the links clear of it ---- */
+@media (min-width: 769px) {
+  .top-nav:has(.nav-links) { padding-right: 150px; }
+}
+/* narrow desktops: tighter pills, and the row scrolls if it still runs out of room */
+@media (min-width: 861px) and (max-width: 1180px) {
+  .nav-links {
+    gap: .2rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 20px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 20px), transparent 100%);
+    padding: 4px 10px 4px 6px;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .top-nav a:not(.nav-brand) { padding: .6rem .78rem; font-size: .88rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

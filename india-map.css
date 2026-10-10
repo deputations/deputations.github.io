@@ -46,10 +46,9 @@ body.map-entry {
 /* Neutralize home page layout */
 /* The page is exactly one screen: the nav, then the map filling the rest */
 body.map-entry { margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
+/* The nav itself is the shared one (navbar.css, light theme), as on every page */
 body.map-entry .top-nav { flex-shrink: 0; }
-body.map-entry .top-nav { background: rgba(252, 250, 246, 0.78); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--map-hairline); }
-body.map-entry .top-nav .nav-links a { color: var(--map-text-2); font-family: var(--map-font); }
-body.map-entry .top-nav .nav-links a.active { color: var(--map-text); background: var(--map-surface); border-radius: 8px; box-shadow: 0 1px 2px rgba(29, 36, 51, 0.08); }
+.map-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 body.map-entry .bg-shapes { display: none !important; }
 body.map-entry .app-container { max-width: none; margin: 0; padding: 0; }
 body.map-entry .scroll-progress { display: none; }
@@ -456,4 +455,15 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
   .ad-state, .ad-district, .ad-outline, .ad-lift, .map-tooltip,
   #map-svg .ad-state-label, #map-svg .ad-state-count { transition: none; }
   .ad-chakra-wheel, .ad-zap-tail, .ad-zap-crackle, .ad-current-tail, .ad-current-crackle { animation: none; }
+}
+
+/* ----- Shared site widgets (site-widgets.js) on a one-screen map ----- */
+@media (max-width: 768px) {
+  /* The like / dislike pill floats just under the nav: start the map's overlays below it */
+  body.map-entry .map-header { padding-top: 52px; }
+}
+@media (max-width: 640px) {
+  /* On phones the visitor count and footer sit in the page flow; keep the map's screen for the map */
+  body.map-entry .sw-counter { display: none !important; }
+  body.map-entry .sw-footer { margin: 4px auto 6px; font-size: .68rem; gap: 0 8px; line-height: 1.4; }
 }
