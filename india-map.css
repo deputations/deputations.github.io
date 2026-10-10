@@ -44,7 +44,9 @@ body.map-entry {
 }
 
 /* Neutralize home page layout */
-body.map-entry { margin: 0; padding: 0; }
+/* The page is exactly one screen: the nav, then the map filling the rest */
+body.map-entry { margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
+body.map-entry .top-nav { flex-shrink: 0; }
 body.map-entry .top-nav { background: rgba(252, 250, 246, 0.78); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--map-hairline); }
 body.map-entry .top-nav .nav-links a { color: var(--map-text-2); font-family: var(--map-font); }
 body.map-entry .top-nav .nav-links a.active { color: var(--map-text); background: var(--map-surface); border-radius: 8px; box-shadow: 0 1px 2px rgba(29, 36, 51, 0.08); }
@@ -53,13 +55,16 @@ body.map-entry .app-container { max-width: none; margin: 0; padding: 0; }
 body.map-entry .scroll-progress { display: none; }
 
 body.map-active .app-container { overflow: hidden; }
-#map-view { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: transparent; position: relative; font-family: var(--map-font); color: var(--map-text); }
+#map-view { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; width: 100%; background: transparent; position: relative; font-family: var(--map-font); color: var(--map-text); }
 .map-container { position: relative; flex: 1; display: flex; flex-direction: column; overflow: hidden; background: transparent; }
-#mapSvgWrap { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; min-height: 0; }
-#mapSvgWrap svg { width: 100%; height: 100%; max-height: 72vh; }
+/* A size container, so the Delhi photo views can size to it (cqw / cqh) */
+#mapSvgWrap { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; min-height: 0; container-type: size; }
+#mapSvgWrap svg { width: 100%; height: 100%; }
 
-/* ----- Header ----- */
-.map-header { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; gap: 16px; flex-shrink: 0; }
+/* ----- Header: floats over the map so the map gets the full height -----
+   Only its buttons and the counter take clicks; the map shows through */
+.map-header { position: absolute; top: 0; left: 0; right: 0; z-index: 3; display: flex; align-items: flex-start; padding: 14px 20px; gap: 12px; pointer-events: none; }
+.map-header > * { pointer-events: auto; }
 .map-back-btn { display: flex; align-items: center; gap: 6px; background: var(--map-surface); border: 1px solid var(--map-hairline); color: var(--map-text-2); padding: 7px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 500; font-family: var(--map-font); transition: background var(--map-dur) var(--map-ease), color var(--map-dur) var(--map-ease); }
 /* display:flex above would otherwise override the hidden attribute */
 .map-back-btn[hidden] { display: none; }
@@ -70,11 +75,34 @@ body.map-active .app-container { overflow: hidden; }
 .map-state-list-note { font-size: 11px; font-weight: 400; color: var(--map-text-2); }
 /* No hover tooltips from states sliding under a still cursor mid-zoom */
 #map-svg.ad-zooming { pointer-events: none; }
-.map-title h2 { font-family: var(--map-font); font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: var(--map-text); margin: 0; }
-.map-subtitle { font-size: 12px; color: var(--map-text-2); margin: 0; }
-.map-counter { display: flex; flex-direction: column; align-items: center; padding: 8px 16px; border-radius: 12px; background: var(--map-surface); border: 1px solid var(--map-hairline); box-shadow: var(--map-shadow); }
+.map-counter { margin-left: auto; display: flex; flex-direction: column; align-items: center; padding: 8px 16px; border-radius: 12px; background: var(--map-surface); border: 1px solid var(--map-hairline); box-shadow: var(--map-shadow); }
 .map-counter-label { font-size: 10px; font-weight: 500; color: var(--map-text-2); text-transform: uppercase; letter-spacing: 0.06em; }
 .map-counter-value { font-family: var(--map-font); font-size: 22px; font-weight: 600; color: var(--map-text); font-variant-numeric: tabular-nums; }
+
+/* ----- State title: the open state's name, large, beside it -----
+   Placed and sized by showStateTitle / placeStateTitle; decodes in while
+   the state loads. Monospace for the small "readout" lines, the site font
+   for the name; gold (#8A5A0B, 5:1 on the cream) and ink only. */
+.map-state-title { position: absolute; z-index: 2; margin: 0; pointer-events: none; font-family: var(--map-font); font-weight: 400; color: var(--map-text); text-align: left; }
+.map-state-title[hidden] { display: none; }
+.map-state-title.align-right { text-align: right; }
+.map-state-title.compact .mst-stats { display: none; }
+.mst-over, .mst-stats { display: block; min-height: 1.4em; font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace; font-size: 12px; line-height: 1.4; text-transform: uppercase; white-space: nowrap; }
+.mst-over { font-weight: 600; letter-spacing: 0.18em; color: #8A5A0B; }
+.mst-stats { margin-top: 10px; font-weight: 500; letter-spacing: 0.14em; color: var(--map-text-2); font-variant-numeric: tabular-nums; }
+.mst-name { position: relative; display: block; margin-top: 10px; font-weight: 700; line-height: 0.98; letter-spacing: -0.02em; }
+.mst-line { display: block; white-space: nowrap; }
+.mst-ch { display: inline-block; text-align: center; letter-spacing: 0; }
+.mst-ch.scr { color: #B7791F; font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace; font-weight: 600; font-size: 0.82em; }
+.mst-scan { position: absolute; top: -8%; bottom: -8%; left: 0; width: 2px; border-radius: 2px; background: #FFC567; box-shadow: 0 0 10px 2px rgba(255, 176, 50, 0.7), 0 0 28px 6px rgba(255, 176, 50, 0.25); opacity: 0; }
+.mst-rule { display: block; height: 2px; margin-top: 14px; border-radius: 2px; background: linear-gradient(90deg, #E39B2F, rgba(227, 155, 47, 0)); transform-origin: left center; }
+.align-right .mst-rule { background: linear-gradient(270deg, #E39B2F, rgba(227, 155, 47, 0)); transform-origin: right center; }
+/* HUD corner brackets around the title while it decodes */
+.mst-corner { position: absolute; width: 14px; height: 14px; border: 0 solid #E39B2F; opacity: 0; }
+.mst-corner.tl { top: -10px; left: -14px; border-top-width: 1.5px; border-left-width: 1.5px; }
+.mst-corner.tr { top: -10px; right: -14px; border-top-width: 1.5px; border-right-width: 1.5px; }
+.mst-corner.bl { bottom: -10px; left: -14px; border-bottom-width: 1.5px; border-left-width: 1.5px; }
+.mst-corner.br { bottom: -10px; right: -14px; border-bottom-width: 1.5px; border-right-width: 1.5px; }
 
 /* ----- Tooltip: minimal floating panel ----- */
 .map-tooltip { position: fixed; z-index: 100; padding: 10px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.94); border: 1px solid var(--map-hairline); box-shadow: var(--map-shadow); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); pointer-events: none; opacity: 0; transform: translateY(4px); transition: opacity 180ms var(--map-ease), transform 200ms var(--map-ease); max-width: 240px; font-family: var(--map-font); }
@@ -83,8 +111,9 @@ body.map-active .app-container { overflow: hidden; }
 .map-tooltip-count { font-size: 12px; font-weight: 500; color: var(--map-text); margin-top: 2px; font-variant-numeric: tabular-nums; }
 .map-tooltip-meta { font-size: 11px; color: var(--map-text-2); margin-top: 2px; }
 
-/* ----- Controls: segmented filter + zoom ----- */
-.map-controls { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 8px 20px; gap: 12px; flex-shrink: 0; }
+/* ----- Controls: segmented filter + zoom, floating at the map's foot ----- */
+.map-controls { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; justify-content: space-between; align-items: flex-end; padding: 14px 20px; gap: 12px; pointer-events: none; }
+.map-controls > * { pointer-events: auto; }
 .map-filters { display: flex; gap: 2px; flex-wrap: wrap; align-items: center; padding: 3px; background: var(--map-surface); border: 1px solid var(--map-hairline); border-radius: 10px; }
 .map-filter-toggle { display: none; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--map-hairline); background: var(--map-surface); color: var(--map-text-2); cursor: pointer; }
 .map-filter-toggle.open { background: var(--map-surface-raised); color: var(--map-text); }
@@ -97,7 +126,23 @@ body.map-active .app-container { overflow: hidden; }
 
 /* A very soft lift for the map on the light backdrop; dropped during the
    cinematic zoom so every frame stays cheap */
-#map-group { filter: drop-shadow(0 4px 12px rgba(29, 36, 51, 0.08)); }
+#map-group { filter: drop-shadow(0 10px 16px rgba(29, 36, 51, 0.14)); }
+
+/* ----- A little 3D (buildRelief): side walls under the outer edge in a
+   darker shade of each shape's colour, and a faint top-left sheen. Walls
+   are neutral sandstone under the intro's tricolour, and fade with their
+   state on hover and with the category filters. */
+.ad-walls, .ad-sheen { pointer-events: none; }
+.ad-wall {
+  --wall-color: color-mix(in srgb, var(--wall-intro, var(--wall-base)) var(--wall-mix), #1D2433);
+  fill: var(--wall-color);
+  stroke: var(--wall-color);
+  stroke-width: 0.6;
+  stroke-linejoin: round;
+  transition: fill 700ms var(--map-ease), stroke 700ms var(--map-ease), opacity var(--map-dur) var(--map-ease);
+}
+#map-svg.ad-intro .ad-wall { --wall-intro: #E2D5BD; }
+#map-svg.has-spotlight .ad-wall:not(.is-spot) { opacity: 0.38; }
 #map-svg.ad-zooming #map-group { filter: none; }
 
 /* ----- States: flat fills, hairline borders -----
@@ -160,7 +205,8 @@ body.map-active .app-container { overflow: hidden; }
 .ad-intro-flag { filter: drop-shadow(0 0 1px rgba(29, 36, 51, 0.3)); }
 .ad-intro-flag > path { stroke-width: 1.2; stroke-linejoin: round; }
 /* Navy 3D chakra (see buildChakra): the back wheel is the darker edge */
-.ad-chakra { pointer-events: none; }
+/* Zooms out from its own centre (see playTricolourIntro) */
+.ad-chakra { pointer-events: none; transform-box: fill-box; transform-origin: center; }
 .ad-chakra-wheel { transform-box: fill-box; transform-origin: center; animation: ad-chakra-spin 16s linear infinite; }
 .ad-chakra-wheel circle { fill: none; stroke: #1B2F8A; }
 .ad-chakra-wheel .fill { fill: #1B2F8A; stroke: none; }
@@ -186,6 +232,15 @@ body.map-active .app-container { overflow: hidden; }
 .ad-zap-tail { stroke: #FFC23D; stroke-width: 2.2; animation: ad-zap-flicker 0.19s steps(1, end) infinite; }
 .ad-zap-crackle { stroke: #FFF2C8; stroke-width: 1.9; animation: ad-zap-flicker 0.13s steps(1, end) infinite reverse; }
 .ad-zap-head { stroke: #FFFFFF; stroke-width: 3.2; }
+/* The black current that runs round a state's outer border while it
+   loads, drawing the black line that stays as the state's border */
+.ad-current { filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 5px rgba(20, 24, 40, 0.45)); }
+.ad-current path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.ad-current-tail { stroke: #1D2433; stroke-opacity: 0.75; stroke-width: 2.4; animation: ad-zap-flicker 0.17s steps(1, end) infinite; }
+.ad-current-crackle { stroke: #0B0F1A; stroke-width: 2; animation: ad-zap-flicker 0.11s steps(1, end) infinite reverse; }
+.ad-current-head { stroke: #000000; stroke-width: 3.4; }
+.ad-current-line { stroke: #111827; stroke-width: 1.8; }
+.ad-state-outline { fill: none; stroke: #111827; stroke-width: 1.6; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 @keyframes ad-zap-flicker {
   0% { stroke-opacity: 1; } 20% { stroke-opacity: 0.45; } 40% { stroke-opacity: 0.9; }
   60% { stroke-opacity: 0.3; } 80% { stroke-opacity: 1; } 100% { stroke-opacity: 0.6; }
@@ -271,14 +326,18 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
 .ad-listing-card.is-linked .ad-listing-link { position: relative; z-index: 1; }
 
 /* --- Delhi image-map drill-down --- */
-.ad-delhi-map-wrap {
+/* Both Delhi views (photos are 1472×1344) are as large as the map area
+   allows, leaving 68px clear above and below for the floating header and
+   controls and 16px at the sides */
+.ad-delhi-map-wrap, .ad-delhi-district-view {
   position: relative;
-  width: 100%;
-  max-width: 720px;
-  margin: 16px auto;
+  height: min(calc(100cqh - 136px), calc((100cqw - 32px) * 1344 / 1472));
+  aspect-ratio: 1472 / 1344;
+  margin: 0 auto;
+}
+.ad-delhi-map-wrap {
   user-select: none;
   z-index: 2;
-  aspect-ratio: 1472 / 1344;
 }
 .ad-delhi-map-img {
   position: relative;
@@ -333,12 +392,7 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
   margin-top: 2px;
   font-variant-numeric: tabular-nums;
 }
-.ad-delhi-district-view {
-  position: relative;
-  width: 100%;
-  max-width: 720px;
-  margin: 16px auto;
-}
+.ad-delhi-district-img { display: block; width: 100%; height: 100%; border-radius: 14px; box-shadow: var(--map-shadow); }
 .ad-delhi-back-btn {
   position: absolute;
   top: 12px; left: 12px;
@@ -370,7 +424,7 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
 
 /* Mobile (<768px): toggle becomes visible, filters collapse by default */
 @media (max-width: 767px) {
-  .map-filter-toggle { display: flex; }
+  .map-filter-toggle { display: flex; position: absolute; left: 16px; bottom: 14px; z-index: 4; }
   .map-header { padding: 10px 16px; gap: 10px; flex-wrap: wrap; }
   .map-filters {
     display: none;
@@ -387,15 +441,19 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
     padding: 10px 14px;
     font-size: 14px;
   }
+  /* Zoom at the bottom right (the filter toggle sits bottom left); the
+     open filter list stacks above them */
   .map-controls {
     flex-direction: column;
-    align-items: stretch;
-    padding: 8px 16px;
+    align-items: flex-end;
+    padding: 14px 16px;
+    gap: 8px;
   }
+  .map-controls .map-zoom-controls { min-height: 44px; align-items: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ad-state, .ad-district, .ad-outline, .ad-lift, .map-tooltip,
   #map-svg .ad-state-label, #map-svg .ad-state-count { transition: none; }
-  .ad-chakra-wheel, .ad-zap-tail, .ad-zap-crackle { animation: none; }
+  .ad-chakra-wheel, .ad-zap-tail, .ad-zap-crackle, .ad-current-tail, .ad-current-crackle { animation: none; }
 }

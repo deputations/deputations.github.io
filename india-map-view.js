@@ -77,7 +77,84 @@
   const ABBR_TO_NAME = Object.fromEntries(Object.entries(STATE_ABBR).map(([k,v]) => [v,k]));
 
   // ----- Projection (from prototype; handles Ladakh's high latitude) -----
-  function computeProjection(features) {
+  // `fill`: the share of the 1000×800 canvas the shapes may span. All of
+  // India takes nearly the full height; a state keeps a margin (cinematicZoom
+  // assumes 0.92 to land where renderState draws).
+  const NATIONAL_FILL = 0.97;
+
+  // ----- Home view: fitted to what is drawn, so the map fills any screen -----
+  // The viewBox wraps the drawn shapes (and, nationally, their name tags)
+  // with a small margin; preserveAspectRatio 'meet' then scales that to the
+  // map area, so India fills the height of a laptop or widescreen and the
+  // width of a phone or portrait tablet. Reset and Back to India return here.
+  const VIEW_PAD = 0.02;   // of the box's longer side, on every edge
+  let homeView = { x: 0, y: 0, w: 1000, h: 800 };
+  let nationalHome = null;
+  function padBox(b) {
+    const w = Math.max(b.width, 30), h = Math.max(b.height, 24);
+    const pad = VIEW_PAD * Math.max(w, h);
+    return { x: b.x + b.width / 2 - w / 2 - pad, y: b.y + b.height / 2 - h / 2 - pad, w: w + 2 * pad, h: h + 2 * pad };
+  }
+  function contentView(els) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    els.forEach(el => {
+      let b = null;
+      try { b = el && el.getBBox(); } catch (e) { /* not rendered */ }
+      if (!b || !(b.width > 0 && b.height > 0)) return;
+      x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y);
+      x1 = Math.max(x1, b.x + b.width); y1 = Math.max(y1, b.y + b.height);
+    });
+    if (!isFinite(x0)) return { x: 0, y: 0, w: 1000, h: 800 };
+    return padBox({ x: x0, y: y0, width: x1 - x0, height: y1 - y0 });
+  }
+  function setView(svg, v) {
+    const vb = svg.viewBox.baseVal;
+    vb.x = v.x; vb.y = v.y; vb.width = v.w; vb.height = v.h;
+  }
+
+  // ----- State view layout: the state, and its name beside it -----
+  // Landscape map areas give the name a column on the right, under the
+  // vacancy counter and aligned to its right edge; the state is framed in
+  // the space left of it. Portrait areas keep the state as it is and set
+  // the name in the free band above or below it (see placeStateTitle).
+  // edge: kept clear above and below the state for the floating buttons
+  const TITLE = { pad: 20, gap: 32, below: 28, edge: 60, minCol: 260, maxCol: 620, colShare: 0.3 };
+  function mapAreaRect(el) {
+    const area = document.getElementById('mapContainer')?.getBoundingClientRect();
+    const r = el && !el.hidden ? el.getBoundingClientRect() : null;
+    if (!area || !r || !r.width) return null;
+    return { left: r.left - area.left, top: r.top - area.top, right: r.right - area.left, bottom: r.bottom - area.top };
+  }
+  function stateLayout() {
+    const wrap = document.getElementById('mapSvgWrap')?.getBoundingClientRect();
+    if (!wrap || !wrap.width) return null;
+    const W = wrap.width, H = wrap.height;
+    const counter = mapAreaRect(document.getElementById('mapCounter'));
+    const zoom = mapAreaRect(document.querySelector('.map-zoom-controls'));
+    const top = (counter ? counter.bottom : 60) + TITLE.below;
+    const foot = (zoom ? zoom.top : H - 60) - 16;
+    if (W / H >= 1.05 && W >= 700) {
+      const col = Math.round(Math.min(TITLE.maxCol, Math.max(TITLE.minCol, W * TITLE.colShare)));
+      return {
+        mode: 'side', W, H,
+        title: { right: TITLE.pad, top, width: col - TITLE.pad, height: Math.max(80, foot - top) },
+        map: { x: 0, y: TITLE.edge, w: W - col - TITLE.gap, h: H - 2 * TITLE.edge },
+      };
+    }
+    return { mode: 'band', W, H, map: { x: 0, y: 0, w: W, h: H } };
+  }
+  // The viewBox that shows `box` as large as it fits in the layout's map
+  // region, centred there. Used for the state's home view and as the end of
+  // the zoom into it, so the two meet exactly.
+  function stateViewBox(box, layout) {
+    if (!layout) return box;
+    const m = layout.map;
+    const sc = Math.min(m.w / box.w, m.h / box.h);
+    const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+    return { x: cx - (m.x + m.w / 2) / sc, y: cy - (m.y + m.h / 2) / sc, w: layout.W / sc, h: layout.H / sc };
+  }
+  let stateContent = null;   // the open state's drawn box, for re-framing on resize
+  function computeProjection(features, fill = 0.92) {
     let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
     features.forEach(f => {
       if (!f.geometry) return;
@@ -91,7 +168,7 @@
     const lonRange = (maxLon - minLon) || 1;
     const latRange = (maxLat - minLat) || 1;
     const mapW = 1000, mapH = 800;
-    const scale = Math.min(mapW / lonRange, mapH / latRange) * 0.92;
+    const scale = Math.min(mapW / lonRange, mapH / latRange) * fill;
     const offsetX = (mapW - lonRange * scale) / 2;
     const offsetY = mapH - (mapH - latRange * scale) / 2;
     currentProjection = { minLon, maxLon, minLat, maxLat, scale, offsetX, offsetY };
@@ -168,7 +245,8 @@
     if (districtsPromise) return districtsPromise;
 
     // Check sessionStorage cache first (24h TTL)
-    const cacheKey = 'india-districts-geo';
+    // Bump with the file's ?v= whenever geo/india-districts-all.geojson changes
+    const cacheKey = 'india-districts-geo-v2';
     try {
       const cached = sessionStorage.getItem(cacheKey);
       if (cached) {
@@ -180,7 +258,7 @@
       }
     } catch (e) { /* sessionStorage unavailable — fall through to fetch */ }
 
-    districtsPromise = fetch('geo/india-districts-all.geojson')
+    districtsPromise = fetch('geo/india-districts-all.geojson?v=2')
       .then(r => r.ok ? r.json() : null)
       .then(g => {
         districtsGeo = g;
@@ -358,7 +436,7 @@
     }
     const abbr = path.dataset.abbr;
     path.classList.add('is-spot');
-    svg.querySelectorAll(`#map-labels [data-for="${abbr}"]`).forEach(el => el.classList.add('is-spot'));
+    svg.querySelectorAll(`#map-labels [data-for="${abbr}"], .ad-wall[data-for="${abbr}"]`).forEach(el => el.classList.add('is-spot'));
     svg.classList.add('has-spotlight');
 
     // Small states grow proportionally more, so Goa or Delhi visibly lift
@@ -391,6 +469,8 @@
     setSpotlight(null);
     document.getElementById('map-lift')?.removeAttribute('d');
     ledGeneration++;
+    hideStateTitle();
+    stateContent = null;
     const old = document.getElementById('map-svg');
     if (old) {
       const g = old.querySelector('#map-group');
@@ -421,7 +501,7 @@
     const features = (window._indiaGeoData?.features) || [];
     if (!features.length) return;
 
-    computeProjection(features);
+    computeProjection(features, NATIONAL_FILL);
 
     // First load only: states start hidden under the tricolour (see
     // playTricolourIntro). Back to India / deep links use the quick draw-in.
@@ -483,6 +563,9 @@
     // Full state names, each fitted inside its own borders (see
     // layoutStateLabels)
     layoutStateLabels(labelStates, labelsG);
+    homeView = nationalHome = contentView([g, labelsG]);
+    setView(mapSvg, homeView);
+    buildRelief(labelStates.map(st => st.path), g, p => stateFill(p.dataset.abbr), p => p.dataset.abbr);
 
     // Trigger draw-in for all paths after the SVG is in the DOM
     requestAnimationFrame(() => {
@@ -501,9 +584,10 @@
 
       if (intro) {
         paths.forEach(p => { p.style.strokeDasharray = ''; p.classList.add('drawn'); });
-        // The chakra turns over Nagpur's Zero Mile, India's geographic centre
+        // The chakra sits a little west of the white band's centre
         playTricolourIntro(Array.from(paths), lg, INTRO, () =>
-          document.dispatchEvent(new CustomEvent('map:drawInComplete')), project(79.0806, 21.1497));
+          document.dispatchEvent(new CustomEvent('map:drawInComplete')),
+          { chakraNudge: -0.03, seed: p => p.dataset.abbr === 'DL' });
         return;
       }
       // Lit borders draw in step with the state borders below
@@ -605,21 +689,51 @@
   function settleBorders(paths, lg) {
     const leds = document.getElementById('map-leds');
     if (!leds || lg !== ledGeneration || !paths.length || !paths[0].isConnected) return;
-    const d = borderEdges(paths).network();
+    const edges = borderEdges(paths);
+    const d = edges.network();
     leds.innerHTML = '';
     ledPath(d, 'ad-net-glow', leds);
     ledPath(d, 'ad-net-core', leds);
+    // In a state, its outer border is black (drawn by the intro's current)
+    if (paths[0].classList.contains('ad-district')) ledPath(edges.outline().join(''), 'ad-state-outline', leds);
     requestAnimationFrame(() => leds.classList.add('lit'));
   }
 
   // The shapes' outlines as one graph of unique edges. network() chains
   // them into polylines between junctions (each border once); outer() is
-  // the edges only one shape uses: the outline of the whole.
+  // the edges only one shape uses (the outline of the whole) and outline()
+  // those same edges chained, one path per stretch of outline.
   function borderEdges(paths) {
     const adj = new Map();
     const count = new Map();
     const pos = new Map();
     const edgeKey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+    // Polylines through a graph of point keys, broken at junctions: the
+    // chains between junctions first, then the closed loops left over
+    const chainUp = (graph) => {
+      const used = new Set();
+      const out = [];
+      const walk = (from, next) => {
+        const chain = [from];
+        let prev = from, cur = next;
+        used.add(edgeKey(prev, cur));
+        for (;;) {
+          chain.push(cur);
+          const nbrs = graph.get(cur);
+          if (nbrs.length !== 2 || cur === from) break;
+          const nxt = nbrs.find(n => n !== prev && !used.has(edgeKey(cur, n)));
+          if (!nxt) break;
+          used.add(edgeKey(cur, nxt));
+          prev = cur; cur = nxt;
+        }
+        out.push(`M ${chain.join(' L ')} `);
+      };
+      graph.forEach((nbrs, n) => {
+        if (nbrs.length !== 2) nbrs.forEach(m => { if (!used.has(edgeKey(n, m))) walk(n, m); });
+      });
+      graph.forEach((nbrs, n) => nbrs.forEach(m => { if (!used.has(edgeKey(n, m))) walk(n, m); }));
+      return out;
+    };
     paths.forEach(p => parseRings(p.getAttribute('d')).forEach(ring => {
       const keys = ring.map(([x, y]) => { const k = `${x},${y}`; pos.set(k, [x, y]); return k; });
       for (let i = 0; i < keys.length; i++) {
@@ -635,30 +749,18 @@
       }
     }));
     return {
-      network() {
-        const used = new Set();
-        const out = [];
-        const walk = (from, next) => {
-          const chain = [from];
-          let prev = from, cur = next;
-          used.add(edgeKey(prev, cur));
-          for (;;) {
-            chain.push(cur);
-            const nbrs = adj.get(cur);
-            if (nbrs.length !== 2 || cur === from) break;
-            const nxt = nbrs.find(n => n !== prev && !used.has(edgeKey(cur, n)));
-            if (!nxt) break;
-            used.add(edgeKey(cur, nxt));
-            prev = cur; cur = nxt;
-          }
-          out.push(`M ${chain.join(' L ')} `);
-        };
-        // Chains between junctions first, then the closed loops left over
-        adj.forEach((nbrs, n) => {
-          if (nbrs.length !== 2) nbrs.forEach(m => { if (!used.has(edgeKey(n, m))) walk(n, m); });
+      network() { return chainUp(adj).join(''); },
+      outline() {
+        const outerAdj = new Map();
+        count.forEach((c, k) => {
+          if (c !== 1) return;
+          const [a, b] = k.split('|');
+          if (!outerAdj.has(a)) outerAdj.set(a, []);
+          if (!outerAdj.has(b)) outerAdj.set(b, []);
+          outerAdj.get(a).push(b);
+          outerAdj.get(b).push(a);
         });
-        adj.forEach((nbrs, n) => nbrs.forEach(m => { if (!used.has(edgeKey(n, m))) walk(n, m); }));
-        return out.join('');
+        return chainUp(outerAdj);
       },
       outer() {
         const edges = [];
@@ -672,26 +774,12 @@
     };
   }
 
-  // Centre of area (holes aside) of the shapes together
-  function areaCentre(paths) {
-    let A = 0, X = 0, Y = 0;
-    paths.forEach(p => parseRings(p.getAttribute('d')).forEach(r => {
-      let a = 0, cx = 0, cy = 0;
-      for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
-        const f = r[j][0] * r[i][1] - r[i][0] * r[j][1];
-        a += f; cx += (r[j][0] + r[i][0]) * f; cy += (r[j][1] + r[i][1]) * f;
-      }
-      if (!a) return;
-      const w = Math.abs(a) / 2;
-      A += w; X += (cx / (3 * a)) * w; Y += (cy / (3 * a)) * w;
-    }));
-    return A ? [X / A, Y / A] : null;
-  }
-
-  // The chakra's circle, up to rMax and never crossing the outline: on
-  // `prefer` (the shape's centre) when a wheel of a good size fits there,
-  // otherwise at the nearest spot where it fits best
-  function placeChakra(paths, box, rMax, prefer) {
+  // The chakra's circle, up to rMax and never crossing the outline. It sits
+  // in the middle of the flag's white band (half-way down the shape's box,
+  // so equidistant from the saffron and green) and half-way across the land
+  // along that line, moved by nudgeX × the box's width. Where a wheel of a
+  // good size doesn't fit there, it takes the nearest spot where one does.
+  function placeChakra(paths, box, rMax, nudgeX = 0) {
     const edges = borderEdges(paths).outer();
     const inside = (x, y) => {
       let c = false;
@@ -711,7 +799,13 @@
       }
       return Math.sqrt(best);
     };
-    const [cx, cy] = prefer || [box.x + box.w / 2, box.y + box.h / 2];
+    // Half-way down, and half-way between the first and last coast on it
+    const cy = box.y + box.h / 2;
+    const xs = [];
+    for (const [ax, ay, bx, by] of edges) {
+      if ((ay > cy) !== (by > cy)) xs.push(ax + ((cy - ay) * (bx - ax)) / (by - ay));
+    }
+    const cx = (xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : box.x + box.w / 2) + nudgeX * box.w;
     if (inside(cx, cy)) {
       const fit = Math.min(room(cx, cy), rMax);
       if (fit >= rMax * 0.75) return { cx, cy, r: fit * 0.9 };
@@ -729,21 +823,164 @@
     return { cx: pick.x, cy: pick.y, r: pick.fit * 0.9 };
   }
 
+  // ----- A little 3D: the map as a raised slab -----
+  // Each stretch of outline on the map's outer edge that faces down the
+  // screen gets a side wall: quads hanging `depth` below the edge, in a
+  // darker shade of the shape's own colour. Lit from the top left, walls
+  // turned left are a little lighter and walls turned right a little darker.
+  // Inner borders get none (they would sit under the neighbour). A faint
+  // sheen over the top face finishes the relief. Both are static, so
+  // nothing here redraws per frame.
+  const WALL_SHADE = [78, 68, 56];   // % of the shape's colour (rest is ink): lit, front, shaded
+
+  function buildRelief(paths, g, baseOf, keyOf) {
+    g.querySelector('.ad-walls')?.remove();
+    g.querySelector('.ad-sheen')?.remove();
+    if (!paths.length) return;
+    const shapes = paths.map(p => parseRings(p.getAttribute('d')));
+    const edgeKey = (ax, ay, bx, by) => {
+      const a = `${ax},${ay}`, b = `${bx},${by}`;
+      return a < b ? `${a}|${b}` : `${b}|${a}`;
+    };
+    const count = new Map();
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    shapes.forEach(rings => rings.forEach(r => r.forEach(([x, y], j) => {
+      x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+      const [nx, ny] = r[(j + 1) % r.length];
+      if (nx === x && ny === y) return;
+      const k = edgeKey(x, y, nx, ny);
+      count.set(k, (count.get(k) || 0) + 1);
+    })));
+    // A few screen pixels at any zoom the view opens at
+    const depth = 0.009 * Math.max(x1 - x0, y1 - y0);
+    const f = v => v.toFixed(1);
+
+    const walls = svgEl('g', 'ad-walls');
+    walls.setAttribute('aria-hidden', 'true');
+    g.insertBefore(walls, g.firstChild);
+    paths.forEach((p, i) => {
+      const quads = ['', '', ''];
+      shapes[i].forEach(r => {
+        // Ring orientation decides which side of an edge is outside
+        let area = 0;
+        for (let j = 0; j < r.length; j++) {
+          const [ax, ay] = r[j], [bx, by] = r[(j + 1) % r.length];
+          area += ax * by - bx * ay;
+        }
+        const sgn = area >= 0 ? 1 : -1;
+        for (let j = 0; j < r.length; j++) {
+          const [ax, ay] = r[j], [bx, by] = r[(j + 1) % r.length];
+          if ((ax === bx && ay === by) || count.get(edgeKey(ax, ay, bx, by)) !== 1) continue;
+          const len = Math.hypot(bx - ax, by - ay);
+          const nx = (sgn * (by - ay)) / len, ny = (sgn * (ax - bx)) / len;
+          if (ny <= 0.05) continue;   // faces up the screen: hidden under the top face
+          const shade = nx < -0.35 ? 0 : nx > 0.35 ? 2 : 1;
+          quads[shade] += `M${f(ax)},${f(ay)}L${f(bx)},${f(by)}L${f(bx)},${f(by + depth)}L${f(ax)},${f(ay + depth)}Z`;
+        }
+      });
+      quads.forEach((d, shade) => {
+        if (!d) return;
+        const w = ledPath(d, 'ad-wall', walls);
+        w.style.setProperty('--wall-base', baseOf(p));
+        w.style.setProperty('--wall-mix', `${WALL_SHADE[shade]}%`);
+        const key = keyOf(p);
+        if (key) w.setAttribute('data-for', key);
+      });
+    });
+
+    // The sheen: every shape at once under one top-left → bottom-right wash
+    const svg = g.ownerSVGElement;
+    const defs = svg && svg.querySelector('defs');
+    if (defs && !defs.querySelector('#ad-sheen-grad')) {
+      const grad = svgEl('linearGradient', '', defs);
+      grad.id = 'ad-sheen-grad';
+      [['x1', 0], ['y1', 0], ['x2', 1], ['y2', 1]].forEach(([a, v]) => grad.setAttribute(a, v));
+      [[0, '#FFFFFF', 0.2], [0.5, '#FFFFFF', 0], [1, '#1D2433', 0.07]].forEach(([o, c, a]) => {
+        const s = svgEl('stop', '', grad);
+        s.setAttribute('offset', o);
+        s.setAttribute('stop-color', c);
+        s.setAttribute('stop-opacity', a);
+      });
+    }
+    const sheen = ledPath(paths.map(p => p.getAttribute('d')).join(' '), 'ad-sheen', g);
+    sheen.setAttribute('fill', 'url(#ad-sheen-grad)');
+    sheen.setAttribute('aria-hidden', 'true');
+  }
+
   // ----- Intro: faded tricolour, then electricity lights every border -----
   // The shape (all of India, or a state on drill-in) appears as one faded
   // tricolour silhouette with no inner borders and a navy 3D Ashoka Chakra
-  // turning at its centre. Then, rippling out from the chakra, golden
-  // electricity runs once round each inner shape (state or district),
-  // leaving its border lit, and that shape's colour fades in over the flag.
-  const INTRO = { flagIn: 700, start: 1400, stagger: 45, run: 1500, fill: 700 };
-  function stateIntroTiming(n) {
-    return { flagIn: 450, start: 750, stagger: Math.min(45, 1300 / Math.max(1, n)), run: 1100, fill: 600 };
+  // turning at its centre. Then golden electricity spreads out from a seed
+  // (Delhi, or the state's capital district) neighbour by neighbour: the
+  // seed, then every shape bordering it, then every shape bordering those,
+  // and so on. It runs once round each shape's border, leaving it lit, and
+  // the shape's colour fades in over the flag.
+  // waveGap: between one ring of neighbours and the next; inWave: the small
+  // stagger inside a ring, nearest the seed first
+  const INTRO = { flagIn: 700, start: 1400, waveGap: 700, inWave: 40, run: 1200, fill: 700 };
+  const STATE_INTRO = { flagIn: 450, start: 1100, waveGap: 450, inWave: 25, run: 1000, fill: 600 };
+  // The district a state's wave starts from: the capital's. Haryana and
+  // Punjab's capital, Chandigarh, is a territory of its own, so theirs start
+  // next to it (Panchkula; S.A.S. Nagar, i.e. Mohali); Andhra Pradesh's
+  // capital Amaravati is in Guntur. Without a match, the most central one.
+  const CAPITAL_DISTRICT = {
+    AN: 'South Andaman', AP: 'Guntur', AR: 'Papum Pare', AS: 'Kamrup Metropolitan',
+    BR: 'Patna', CH: 'Chandigarh', CG: 'Raipur', DNH: 'Daman', GA: 'North Goa',
+    GJ: 'Gandhinagar', HR: 'Panchkula', HP: 'Shimla', JK: 'Srinagar', JH: 'Ranchi',
+    KA: 'Bengaluru Urban', KL: 'Thiruvananthapuram', LA: 'Leh', LD: 'Lakshadweep',
+    MP: 'Bhopal', MH: 'Mumbai', MN: 'Imphal West', ML: 'East Khasi Hills', MZ: 'Aizawl',
+    NL: 'Kohima', OD: 'Khordha', PB: 'S.A.S. Nagar', PY: 'Puducherry', RJ: 'Jaipur',
+    SK: 'East Sikkim', TN: 'Chennai', TS: 'Hyderabad', TR: 'West Tripura',
+    UK: 'Dehradun', UP: 'Lucknow', WB: 'Kolkata',
+  };
+
+  // Each shape's wave: 0 for the seed, 1 for its neighbours (shapes sharing
+  // a border edge), and so on; shapes with no land neighbour (islands) get
+  // one more wave after the last. dist: from the seed, for order in a wave.
+  function revealWaves(paths, isSeed, mid, boxes) {
+    const owners = new Map();
+    paths.forEach((p, i) => parseRings(p.getAttribute('d')).forEach(r => {
+      for (let j = 0; j < r.length; j++) {
+        const [ax, ay] = r[j], [bx, by] = r[(j + 1) % r.length];
+        if (ax === bx && ay === by) continue;
+        const a = `${ax},${ay}`, b = `${bx},${by}`;
+        const k = a < b ? `${a}|${b}` : `${b}|${a}`;
+        const o = owners.get(k);
+        if (!o) owners.set(k, [i]);
+        else if (!o.includes(i)) o.push(i);
+      }
+    }));
+    const nbrs = paths.map(() => new Set());
+    owners.forEach(o => o.forEach(i => o.forEach(j => { if (i !== j) nbrs[i].add(j); })));
+    const centre = i => [boxes[i].x + boxes[i].width / 2, boxes[i].y + boxes[i].height / 2];
+    let seed = isSeed ? paths.findIndex(isSeed) : -1;
+    if (seed < 0) {
+      let best = Infinity;
+      paths.forEach((_, i) => {
+        const [x, y] = centre(i), d = Math.hypot(x - mid[0], y - mid[1]);
+        if (d < best) { best = d; seed = i; }
+      });
+    }
+    const wave = paths.map(() => -1);
+    wave[seed] = 0;
+    for (const queue = [seed]; queue.length;) {
+      const i = queue.shift();
+      nbrs[i].forEach(j => { if (wave[j] < 0) { wave[j] = wave[i] + 1; queue.push(j); } });
+    }
+    const last = Math.max(...wave);
+    wave.forEach((w, i) => { if (w < 0) wave[i] = last + 1; });
+    const [sx, sy] = centre(seed);
+    return { wave, dist: paths.map((_, i) => { const [x, y] = centre(i); return Math.hypot(x - sx, y - sy); }) };
   }
   // The spark's crackle: broken dashes (ending on a dash) ahead of the head
   const CRACKLE = [3, 2, 5, 1, 2, 3, 6, 2, 1, 2, 4];
+  const CRACKLE_LEN = CRACKLE.reduce((a, b) => a + b, 0);
 
-  // `centre`: where the chakra should turn (default: the shape's centre)
-  function playTricolourIntro(paths, lg, T, onDone, centre) {
+  // opts.chakraNudge: shifts the chakra across by this share of the shape's
+  // width (see placeChakra). opts.outlineCurrent: a black current runs round
+  // the shape's outer border while it loads (a state's drill-in).
+  // opts.seed(path): true for the shape the electricity spreads out from.
+  function playTricolourIntro(paths, lg, T, onDone, opts = {}) {
     const svg = document.getElementById('map-svg');
     const g = svg?.querySelector('#map-group');
     const labelsG = svg?.querySelector('#map-labels');
@@ -787,36 +1024,71 @@
       s.setAttribute('fill', 'url(#ad-tricolour)');
       s.setAttribute('stroke', 'url(#ad-tricolour)');
     });
-    g.insertBefore(flag, g.firstChild);
+    const walls = g.querySelector('.ad-walls');
+    g.insertBefore(flag, walls ? walls.nextSibling : g.firstChild);
     flag.animate([{ opacity: 0 }, { opacity: 1 }],
       { duration: T.flagIn, easing: 'ease-out', fill: 'backwards' });
 
-    const spot = placeChakra(paths, box, Math.min(box.w, box.h / 3) * 0.375, centre || areaCentre(paths));
+    const spot = placeChakra(paths, box, Math.min(box.w, box.h / 3) * 0.375, opts.chakraNudge || 0);
     const mid = spot ? [spot.cx, spot.cy] : [x0 + box.w / 2, y0 + box.h / 2];
 
     const items = buildLeds(paths, lg);
+    const { wave, dist } = revealWaves(paths, opts.seed, mid, boxes);
     const order = items
-      .map((it, i) => {
-        const b = boxes[i];
-        return { it, dist: Math.hypot(b.x + b.width / 2 - mid[0], b.y + b.height / 2 - mid[1]) };
-      })
-      .sort((a, b) => a.dist - b.dist);
+      .map((it, i) => ({ it, wave: wave[i], dist: dist[i] }))
+      .sort((a, b) => a.wave - b.wave || a.dist - b.dist);
+    // Each shape starts on its wave's turn, nearest the seed first
+    const inRing = new Map();
+    order.forEach(o => {
+      const k = inRing.get(o.wave) || 0;
+      inRing.set(o.wave, k + 1);
+      o.t0 = T.start + o.wave * T.waveGap + Math.min(k * T.inWave, T.waveGap * 0.6);
+    });
 
     const zap = svgEl('g', 'ad-zap', leds);
-    // The chakra sits above everything, and starts vanishing the moment
-    // the first shape starts to appear
+    const end = Math.max(...order.map(o => o.t0)) + T.run;
+
+    // A black current runs once round the outer border across the whole
+    // load, drawing a black line behind it that stays as the state's border
+    // (settleBorders keeps it): per stretch of outline, the line plus a
+    // tail, a crackle and a head riding its leading edge
+    if (opts.outlineCurrent) {
+      const current = svgEl('g', 'ad-current', leds);
+      const lap = { delay: T.flagIn, duration: Math.max(600, end - T.flagIn - 200), easing: 'cubic-bezier(0.37, 0, 0.63, 1)', fill: 'both' };
+      borderEdges(paths).outline().forEach(d => {
+        const line = ledPath(d, 'ad-current-line', current);
+        let len = 0;
+        try { len = line.getTotalLength(); } catch (e) { /* not rendered */ }
+        if (!(len > 0)) { line.remove(); return; }
+        line.style.strokeDasharray = `${len} ${len}`;
+        line.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], lap);
+        [['ad-current-tail', Math.min(160, len * 0.25), null],
+         ['ad-current-crackle', CRACKLE_LEN, CRACKLE],
+         ['ad-current-head', Math.min(14, len * 0.05), null]].forEach(([cls, seg, pattern]) => {
+          const el = ledPath(d, cls, current);
+          el.style.strokeDasharray = `${pattern ? pattern.join(' ') : seg} ${len + seg}`;
+          el.animate([{ strokeDashoffset: seg }, { strokeDashoffset: seg - len }], lap);
+          el.animate([{ opacity: 0 }, { opacity: 1, offset: 0.03 }, { opacity: 1, offset: 0.95 }, { opacity: 0 }],
+            { delay: lap.delay, duration: lap.duration, fill: 'both' });
+        });
+      });
+    }
+
+    // The chakra sits above everything, then zooms out towards the viewer,
+    // swelling far past the map's edges as it fades, gone just as the first
+    // shape starts to appear
     const chakra = spot ? buildChakra(svg, spot.cx, spot.cy, spot.r) : null;
     if (chakra) {
       leds.appendChild(chakra);
       chakra.animate([{ opacity: 0 }, { opacity: 1 }],
         { duration: T.flagIn, easing: 'ease-out', fill: 'backwards' });
-      chakra.animate([{ opacity: 1 }, { opacity: 0 }],
-        { delay: T.start, duration: 500, easing: 'ease-in', fill: 'forwards' });
+      const zoomOut = Math.min(500, T.start - T.flagIn);
+      chakra.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(7)' }],
+        { delay: T.start - zoomOut, duration: zoomOut, easing: 'cubic-bezier(0.55, 0, 0.75, 0.2)', fill: 'forwards' });
     }
     const ease = 'cubic-bezier(0.45, 0.05, 0.35, 1)';
-    const crackleLen = CRACKLE.reduce((a, b) => a + b, 0);
-    order.forEach(({ it }, rank) => {
-      const t0 = T.start + rank * T.stagger;
+    const crackleLen = CRACKLE_LEN;
+    order.forEach(({ it, t0 }) => {
       drawLed(it, t0, T.run, ease);
       // The electricity: a flickering golden tail, a crackle of broken
       // sparks, and a white-hot head, all riding the lit edge
@@ -842,7 +1114,6 @@
           { delay: t0 + T.run * 0.8, duration: 450, easing: 'ease-out', fill: 'both' }));
     });
 
-    const end = T.start + (order.length - 1) * T.stagger + T.run;
     flag.animate([{ opacity: 1 }, { opacity: 0 }], { delay: end - 600, duration: 600, fill: 'forwards' });
 
     setTimeout(() => {
@@ -1352,16 +1623,10 @@
     const box = stateBox(abbr, sel);
     if (!box) return;
 
-    // Fit the state the way renderState() will (computeProjection() fills
-    // 92% of the 1000×800 canvas), so the hand-off to the district view
-    // lands where the zoom ended instead of jumping.
-    const w = Math.max(box.width / 0.92, (box.height / 0.92) * 1.25, 30);
-    const h = w * 0.8;
-    const target = {
-      x: box.x + box.width / 2 - w / 2,
-      y: box.y + box.height / 2 - h / 2,
-      w, h,
-    };
+    // End on the state framed the way renderState() frames its districts
+    // (padBox of what is drawn, placed by stateViewBox), so the hand-off to
+    // the district view lands where the zoom ended instead of jumping.
+    const target = stateViewBox(padBox(box), stateLayout());
     // No hover tooltips from states sliding under a still cursor mid-zoom
     svg.classList.add('ad-zooming');
     try {
@@ -1509,6 +1774,240 @@
     document.getElementById('delhiBackBtn').addEventListener('click', closeDistrict);
   }
 
+  // ----- State title: the open state's name, large, beside it -----
+  // A small monospace line (state or union territory, and its districts),
+  // the name sized to fill its space, a gold rule and the vacancy count.
+  // Once the state has fully loaded (one animation at a time) it decodes in:
+  // corner brackets lock on, the small line types itself, each letter of
+  // the name cycles through random characters before settling while a gold
+  // scan line sweeps across, then the rule draws and the count ticks up.
+  // Letters sit in fixed-width boxes while they cycle, so nothing shifts.
+  const UNION_TERRITORIES = new Set(['AN', 'CH', 'DNH', 'DL', 'JK', 'LA', 'LD', 'PY']);
+  const SCRAMBLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>/#%&*+=';
+  const TITLE_LINE_H = 0.98;     // the name's line height, in ems
+  // px above and below the name: small line, rule and count; in a portrait
+  // band the count is dropped (.compact) so a short band still fits a name
+  const TITLE_EXTRA = { side: 86, band: 46 };
+  let titleRun = 0;              // bumped to stop a reveal in progress
+  const TITLE_REVEAL = 1800;     // ms the decode takes
+
+  function hideStateTitle() {
+    titleRun++;
+    const el = document.getElementById('mapStateTitle');
+    if (el) { el.hidden = true; el.innerHTML = ''; el.className = 'map-state-title'; }
+  }
+
+  // The largest size the name fits at in width × height, on one to three
+  // balanced lines (fewer lines win a near tie)
+  function fitTitleName(name, family, width, height, max, extra) {
+    const ctx = fitTitleName.ctx || (fitTitleName.ctx = document.createElement('canvas').getContext('2d'));
+    ctx.font = `700 100px ${family}`;
+    const w = t => ctx.measureText(t).width / 100 - 0.02 * t.length;   // -0.02em tracking
+    const words = name.split(' ');
+    const options = [[name]];
+    const widest = lines => Math.max(...lines.map(w));
+    const two = [], three = [];
+    for (let i = 1; i < words.length; i++) {
+      two.push([words.slice(0, i).join(' '), words.slice(i).join(' ')]);
+      for (let j = i + 1; j < words.length; j++) {
+        three.push([words.slice(0, i).join(' '), words.slice(i, j).join(' '), words.slice(j).join(' ')]);
+      }
+    }
+    // Never a line that is only a joining word ("&", "and")
+    const lone = lines => lines.some(l => /^(&|and|of|the)$/i.test(l));
+    [two, three].forEach(c => {
+      const ok = c.filter(lines => !lone(lines));
+      if (ok.length) options.push(ok.reduce((a, b) => (widest(a) <= widest(b) ? a : b)));
+    });
+    let best = null;
+    options.forEach(lines => {
+      const size = Math.min(width / widest(lines), (height - extra) / (lines.length * TITLE_LINE_H), max);
+      const score = size * [1, 0.94, 0.88][lines.length - 1];
+      if (!best || score > best.score) best = { lines, size, score, charW: ch => Math.max(0, w(ch)) };
+    });
+    return best && best.size >= 14 ? best : null;
+  }
+
+  // Positions the title for the current layout and sizes its name; returns
+  // the fit, or null when there's no room for it
+  function placeStateTitle(el, name) {
+    const layout = stateLayout();
+    if (!layout) return null;
+    const nameEl = el.querySelector('.mst-name');
+    const family = getComputedStyle(nameEl).fontFamily;
+    let box, align;
+    if (layout.mode === 'side') {
+      box = layout.title;
+      align = 'right';
+      el.style.left = '';
+      el.style.right = `${box.right}px`;
+    } else {
+      // Portrait: the larger free band above or below the state
+      const area = document.getElementById('mapContainer').getBoundingClientRect();
+      const g = document.getElementById('map-group')?.getBoundingClientRect();
+      if (!g || !g.height) return null;
+      const head = Math.max(...['btn-back', 'stateListBtn', 'mapCounter']
+        .map(id => mapAreaRect(document.getElementById(id))).filter(Boolean).map(r => r.bottom), 0);
+      const foot = Math.min(...['mapFiltersToggle', 'mapFilters']
+        .map(id => mapAreaRect(document.getElementById(id))).filter(Boolean).map(r => r.top), layout.H);
+      const mapTop = g.top - area.top, mapBottom = g.bottom - area.top;
+      const above = mapTop - head - 24, below = foot - mapBottom - 24;
+      box = above >= below
+        ? { top: head + 12, height: above, width: layout.W - 2 * TITLE.pad }
+        : { top: mapBottom + 12, height: below, width: layout.W - 2 * TITLE.pad };
+      align = 'left';
+      el.style.right = '';
+      el.style.left = `${TITLE.pad}px`;
+    }
+    const max = layout.mode === 'side' ? Math.min(140, layout.H * 0.16) : 56;
+    const fit = fitTitleName(name, family, box.width, box.height, max, TITLE_EXTRA[layout.mode]);
+    if (!fit) return null;
+    el.style.top = `${box.top}px`;
+    el.style.width = `${box.width}px`;
+    el.classList.toggle('align-right', align === 'right');
+    el.classList.toggle('compact', layout.mode === 'band');
+    nameEl.style.fontSize = `${fit.size.toFixed(1)}px`;
+    return fit;
+  }
+
+  // The name's lines as plain text (kerned), keeping the scan line element
+  function setTitleLines(nameEl, lines) {
+    nameEl.querySelectorAll('.mst-line').forEach(l => l.remove());
+    lines.forEach(line => {
+      const l = document.createElement('span');
+      l.className = 'mst-line';
+      l.textContent = line;
+      nameEl.appendChild(l);
+    });
+  }
+
+  function showStateTitle(abbr, info, lg) {
+    const el = document.getElementById('mapStateTitle');
+    if (!el || abbr === 'DL') return;
+    const run = ++titleRun;
+    const name = LABEL_NAMES[abbr] || ABBR_TO_NAME[abbr] || abbr;
+    const kind = UNION_TERRITORIES.has(abbr) ? 'Union territory' : 'State';
+    const over = `${kind} · ${info.districts} district${info.districts !== 1 ? 's' : ''}`;
+    const stats = n => `${n} active vacanc${n !== 1 ? 'ies' : 'y'}`;
+    el.setAttribute('aria-label', `${name}: ${stats(info.vacancies)}`);
+    el.innerHTML = `
+      <span class="mst-over" aria-hidden="true"></span>
+      <span class="mst-name" aria-hidden="true"><span class="mst-scan"></span></span>
+      <span class="mst-rule" aria-hidden="true"></span>
+      <span class="mst-stats" aria-hidden="true"></span>
+      <span class="mst-corner tl"></span><span class="mst-corner tr"></span>
+      <span class="mst-corner bl"></span><span class="mst-corner br"></span>`;
+    el.className = 'map-state-title';
+    el.dataset.name = name;
+    el.style.visibility = 'hidden';
+    el.hidden = false;
+
+    // Placed straight away but kept hidden; reveal() starts the decode
+    let fit = null, wanted = false, played = false;
+    const play = () => {
+      if (played || !fit || run !== titleRun) return;
+      played = true;
+      el.style.visibility = '';
+      const overEl = el.querySelector('.mst-over');
+      const nameEl = el.querySelector('.mst-name');
+      const ruleEl = el.querySelector('.mst-rule');
+      const statsEl = el.querySelector('.mst-stats');
+      const D = info.duration;
+
+      const finish = () => {
+        overEl.textContent = over;
+        statsEl.textContent = stats(info.vacancies);
+        setTitleLines(nameEl, fit.lines);
+        el.classList.add('done');
+      };
+      if (!D) { finish(); return; }
+
+      // Letters in fixed-width boxes while they cycle
+      const chars = [];
+      fit.lines.forEach(line => {
+        const l = document.createElement('span');
+        l.className = 'mst-line';
+        [...line].forEach(ch => {
+          const c = document.createElement('span');
+          c.className = 'mst-ch';
+          c.style.width = `${(fit.charW(ch) * fit.size).toFixed(2)}px`;
+          c.dataset.ch = ch;
+          if (ch !== ' ') chars.push(c);
+          else c.textContent = ' ';
+          l.appendChild(c);
+        });
+        nameEl.appendChild(l);
+      });
+
+      const n = chars.length;
+      const starts = chars.map((_, i) => 0.08 * D + (n > 1 ? i / (n - 1) : 0) * 0.58 * D);
+      const lockAfter = Math.max(180, 0.14 * D);
+      const ease = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+      el.querySelectorAll('.mst-corner').forEach(c => {
+        c.animate([{ opacity: 0, transform: 'scale(1.8)' }, { opacity: 1, transform: 'scale(1)' }],
+          { duration: 320, easing: ease, fill: 'both' });
+        c.animate([{ opacity: 1 }, { opacity: 0 }], { delay: D - 300, duration: 300, fill: 'forwards' });
+      });
+      el.querySelector('.mst-scan').animate([
+        { transform: 'translateX(0)', opacity: 0 }, { opacity: 1, offset: 0.08 },
+        { opacity: 1, offset: 0.9 }, { transform: `translateX(${nameEl.offsetWidth}px)`, opacity: 0 },
+      ], { delay: 0.08 * D, duration: 0.7 * D, easing: 'cubic-bezier(0.45, 0.05, 0.55, 0.95)', fill: 'both' });
+      ruleEl.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }],
+        { delay: 0.72 * D, duration: 0.2 * D, easing: ease, fill: 'both' });
+
+      const t0 = performance.now();
+      let tick = 0;
+      const frame = (now) => {
+        if (run !== titleRun) return;
+        const t = now - t0;
+        tick++;
+        const typed = Math.min(over.length, Math.floor((t / (0.25 * D)) * over.length));
+        overEl.textContent = over.slice(0, typed) + (typed < over.length ? '_' : '');
+        chars.forEach((c, i) => {
+          if (t < starts[i] || c.classList.contains('done')) return;
+          if (t >= starts[i] + lockAfter) {
+            c.textContent = c.dataset.ch;
+            c.classList.remove('scr');
+            c.classList.add('done');
+          } else {
+            c.classList.add('scr');
+            if (tick % 2 === 0 || !c.textContent) c.textContent = SCRAMBLE[Math.floor(Math.random() * SCRAMBLE.length)];
+          }
+        });
+        const p = Math.max(0, Math.min(1, (t - 0.6 * D) / (0.4 * D)));
+        statsEl.textContent = t < 0.6 * D ? '' : stats(Math.round((1 - Math.pow(1 - p, 3)) * info.vacancies));
+        if (t < D) requestAnimationFrame(frame);
+        else finish();
+      };
+      requestAnimationFrame(frame);
+    };
+
+    // After this frame: the Back button and state list button are showing
+    // by then, so the layout measures the header as it will stay
+    requestAnimationFrame(() => {
+      if (run !== titleRun || lg !== ledGeneration) return;
+      fit = placeStateTitle(el, name);
+      if (!fit) { hideStateTitle(); return; }
+      if (wanted) play();
+    });
+    return { reveal() { wanted = true; play(); } };
+  }
+
+  // Keeps the open state framed beside its title when the window resizes
+  function onStateResize() {
+    if (!stateContent || (viewMode !== 'state' && viewMode !== 'district')) return;
+    const svg = document.getElementById('map-svg');
+    if (!svg) return;
+    homeView = stateViewBox(stateContent, stateLayout());
+    setView(svg, homeView);
+    const el = document.getElementById('mapStateTitle');
+    if (el && !el.hidden && el.classList.contains('done')) {
+      const fit = placeStateTitle(el, el.dataset.name);
+      if (fit) setTitleLines(el.querySelector('.mst-name'), fit.lines);
+      else el.style.visibility = 'hidden';
+    }
+  }
+
   function renderState(abbr, name) {
     clearMap();
 
@@ -1527,9 +2026,8 @@
     const feats = districtFeaturesFor(abbr);
     if (!feats.length) { updateStateListButton(abbr, name, []); return; }
 
-    // Re-project so the state's districts fill the full 1000×800 canvas,
-    // then reset the viewBox: cinematicZoom() left it zoomed on the national
-    // projection, which would crop the re-projected district view.
+    // Re-project the state's districts onto the 1000×800 canvas; the view is
+    // fitted to them once drawn (below), replacing the national zoom.
     computeProjection(feats);
     mapSvg.setAttribute('viewBox', '0 0 1000 800');
 
@@ -1566,13 +2064,15 @@
       wireOutline(path);
       g.appendChild(path);
 
-      // Label at the centroid of all fragments combined
-      const [clon, clat] = centroid({
+      // Name and count at the district's roomiest point, well inside it even
+      // for odd shapes; the average of its border points drifts towards
+      // detailed stretches (it put neighbours' names on top of each other)
+      const spot = roomiestPoints(labelShape(`${d} Z`), 1)[0];
+      const [cx, cy] = spot || project(...centroid({
         type: 'MultiPolygon',
         coordinates: parts.flatMap(f => f.geometry.type === 'MultiPolygon'
           ? f.geometry.coordinates : [f.geometry.coordinates]),
-      });
-      const [cx, cy] = project(clon, clat);
+      }));
 
       if (count > 0) {
         const badge = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -1595,6 +2095,12 @@
       labelsG.appendChild(label);
     });
 
+    // Framed on the districts alone, the way cinematicZoom() framed the state
+    stateContent = contentView([g]);
+    homeView = stateViewBox(stateContent, stateLayout());
+    setView(mapSvg, homeView);
+    buildRelief(Array.from(g.querySelectorAll('.ad-district')), g, p => p.style.fill, () => null);
+
     // District names and counts fade in (the CSS starts them at opacity 0)
     requestAnimationFrame(() => labelsG.querySelectorAll('.ad-district-label')
       .forEach(l => l.classList.add('visible')));
@@ -1605,10 +2111,18 @@
     const lg = ledGeneration;
     const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     mapSvg.classList.toggle('ad-intro', !reduced);
+    // The state's name beside it: placed now, decoded in only once the
+    // state has fully loaded, so the two animations don't run together
+    const title = showStateTitle(abbr, {
+      districts: groups.length,
+      vacancies: stateListings(abbr).length,
+      duration: reduced ? 0 : TITLE_REVEAL,
+    }, lg);
     requestAnimationFrame(() => {
       if (lg !== ledGeneration) return;
-      if (reduced) buildLeds(paths, lg, null);
-      else playTricolourIntro(paths, lg, stateIntroTiming(paths.length), () => {});
+      if (reduced) { buildLeds(paths, lg, null); title?.reveal(); }
+      else playTricolourIntro(paths, lg, STATE_INTRO, () => title?.reveal(),
+        { outlineCurrent: true, seed: p => p.dataset.district === CAPITAL_DISTRICT[abbr] });
     });
   }
 
@@ -1697,6 +2211,7 @@
       filteredTotal += count;
       // '' rather than '1' so the hover spotlight can still fade it
       p.style.opacity = visible ? '' : '0.12';
+      document.querySelectorAll(`#map-svg .ad-wall[data-for="${abbr}"]`).forEach(w => { w.style.opacity = p.style.opacity; });
       p.setAttribute('aria-label', `${ABBR_TO_NAME[abbr] || abbr}: ${count} vacancies`);
       // Update count label from the shared #map-labels group
       if (labelsG) {
@@ -1734,8 +2249,7 @@
   function zoomReset() {
     const svg = document.getElementById('map-svg');
     if (!svg) return;
-    const vb = svg.viewBox.baseVal;
-    vb.x = 0; vb.y = 0; vb.width = 1000; vb.height = 800;
+    setView(svg, homeView);
   }
 
   // ===== Navigation layer (the only code that mutates history) =====
@@ -2015,7 +2529,8 @@
     const svg = ensureMapSvg();
     if (svg) {
       const vb = svg.viewBox.baseVal;
-      await animateViewBox(svg, { x: vb.x, y: vb.y, w: vb.width, h: vb.height }, { x: 0, y: 0, w: 1000, h: 800 }, 400);
+      await animateViewBox(svg, { x: vb.x, y: vb.y, w: vb.width, h: vb.height },
+        nationalHome || { x: 0, y: 0, w: 1000, h: 800 }, 400);
     }
     if (gen !== renderGeneration) return;
     selectedAbbr = null;
@@ -2166,6 +2681,11 @@
 
     // Keep the mobile filter drawer in sync with the viewport (C24)
     window.addEventListener('resize', syncMobileFilters);
+    let stateResizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(stateResizeTimer);
+      stateResizeTimer = setTimeout(onStateResize, 150);
+    });
     syncMobileFilters();
   };
 

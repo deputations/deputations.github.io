@@ -35,10 +35,6 @@
           <span>‹</span>
           <span>Back to India</span>
         </button>
-        <div class="map-title">
-          <h2>Explore India</h2>
-          <p class="map-subtitle" id="mapSubtitle">Interactive vacancy map</p>
-        </div>
         <button id="stateListBtn" class="map-state-list-btn" type="button" hidden></button>
         <div class="map-counter" id="mapCounter">
           <span class="map-counter-label">Active Vacancies</span>
@@ -46,6 +42,8 @@
         </div>
       </div>
       <div class="map-svg-wrap" id="mapSvgWrap"></div>
+      <!-- The open state's name, beside the state (see showStateTitle) -->
+      <h2 class="map-state-title" id="mapStateTitle" hidden></h2>
       <div class="map-tooltip" id="mapTooltip" hidden>
         <div class="map-tooltip-name" id="mapTooltipName"></div>
         <div class="map-tooltip-count" id="mapTooltipCount"></div>
