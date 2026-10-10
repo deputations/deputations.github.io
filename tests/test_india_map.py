@@ -187,7 +187,7 @@ def _inject_fixtures(page: Page, vacancies: list[dict], states: list[dict], dist
 
     page.route("**/data/vacancies.json", on_vacancies)
     page.route("**/geo/india-states.geojson", on_states)
-    page.route("**/geo/india-districts-all.geojson", on_districts)
+    page.route("**/geo/india-districts-all.geojson*", on_districts)  # the view adds ?v=
 
 
 # Distinct, NON-overlapping bbox per state: a 6×6 grid over lon 68–98 /
@@ -1132,7 +1132,10 @@ class TestDrillTransition:
         assert not off, f"{abbr} centre left the view on {len(off)} frame(s), e.g. {off[0]}"
         last = frames[-1]
         assert last["w"] < 1000 / 1.5, f"{abbr}: zoom did not zoom in (last frame {last})"
-        assert abs(last["x"] + last["w"] / 2 - cx) < last["w"] * 0.1, f"{abbr}: zoom ended off-centre ({last})"
+        # On a landscape map the state ends left of centre: the right-hand
+        # column is kept for its name (see stateLayout); vertically centred
+        across = (cx - last["x"]) / last["w"]
+        assert 0.15 < across < 0.55, f"{abbr}: zoom ended outside the state's column ({across:.2f}, {last})"
         assert abs(last["y"] + last["h"] / 2 - cy) < last["h"] * 0.1, f"{abbr}: zoom ended off-centre ({last})"
 
 
@@ -1233,15 +1236,20 @@ class TestStateColours:
         assert fill("Nainital") == "rgb(230, 224, 213)"      # none: neutral tone
 
     def test_hover_and_keyboard_focus_outline(self, page: Page, base_url: str, all_36_states_fixture):
+        """Hover lifts the state (a copy on the lift layer draws its own
+        ring, see setSpotlight); keyboard focus uses the outline ring."""
         _open_map(page, base_url)
         outline = page.locator("#map-outline")
+        lift = page.locator("#map-lift")
         mh = page.locator("#map-svg [data-abbr='MH'].ad-state")
         mh.hover()
-        expect(outline).to_have_class("ad-outline ad-outline-hover")
-        assert outline.get_attribute("data-for") == "MH"
-        assert outline.get_attribute("d") == mh.get_attribute("d")
+        expect(lift).to_have_class("ad-lift on")
+        assert lift.get_attribute("d") == mh.get_attribute("d")
+        expect(page.locator("#map-svg")).to_have_class(re.compile(r"\bhas-spotlight\b"))
+        expect(outline).to_have_class("ad-outline")  # no hover ring under the lift
         page.mouse.move(2, 2)
-        expect(outline).to_have_class("ad-outline")
+        expect(lift).to_have_class("ad-lift")
+        expect(page.locator("#map-svg")).not_to_have_class(re.compile(r"\bhas-spotlight\b"))
         page.keyboard.press("Tab")
         page.locator("#map-svg [data-abbr='KA'].ad-state").focus()
         expect(outline).to_have_class("ad-outline ad-outline-focus")
@@ -1265,27 +1273,65 @@ class TestStateColours:
 
     def test_label_hierarchy_without_outlines(self, page: Page, base_url: str, all_36_states_fixture):
         _open_map(page, base_url)
-        style = lambda sel: page.locator(sel).first.evaluate(  # noqa: E731
+        # Full state names, fitted inside each state (see layoutStateLabels):
+        # sizes vary by state, so compare a name with its own count
+        block = page.locator("#map-labels .ad-label-block").filter(
+            has=page.locator(".ad-state-count:not(.empty)")).first
+        style = lambda sel: block.locator(sel).evaluate(  # noqa: E731
             "e => { const s = getComputedStyle(e); return [parseFloat(s.fontSize), parseInt(s.fontWeight), s.stroke]; }")
-        abbr_size, abbr_weight, abbr_stroke = style("#map-labels .ad-state-label")
-        count_size, count_weight, count_stroke = style("#map-labels .ad-state-count:not(.empty)")
-        assert abbr_size < count_size
-        assert abbr_weight == 500 and count_weight >= 600
-        assert abbr_stroke == "none" and count_stroke == "none", "labels must not carry heavy outlines"
+        name_size, name_weight, name_stroke = style(".ad-state-label")
+        count_size, count_weight, count_stroke = style(".ad-state-count")
+        assert name_size < count_size
+        assert 500 <= name_weight < count_weight
+        assert name_stroke == "none" and count_stroke == "none", "labels must not carry heavy outlines"
         # Dark ink on the light theme: 5.5–7.3:1 against every state colour
         ink = page.locator("#map-labels .ad-state-count:not(.empty)").first.evaluate("e => getComputedStyle(e).fill")
         assert ink == "rgb(29, 36, 51)", ink
+
+
+class TestStateTitle:
+    """The open state's name, large, in the column right of the state."""
+
+    def test_name_beside_the_state_under_the_counter(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        _svg_state_click(page, "MH")
+        _expect_state(page, "MH")
+        title = page.locator("#mapStateTitle")
+        expect(title).to_have_class(re.compile(r"\bdone\b"), timeout=10000)
+        expect(title.locator(".mst-name")).to_have_text("Maharashtra")
+        expect(title.locator(".mst-over")).to_have_text(re.compile(r"State · \d+ districts?"))
+        expect(title).to_have_attribute("aria-label", re.compile(r"^Maharashtra: \d+ active vacanc"))
+        box = page.evaluate("""() => {
+            const r = s => document.querySelector(s).getBoundingClientRect();
+            const t = r('#mapStateTitle'), c = r('#mapCounter'), m = r('#map-group');
+            return { tRight: t.right, cRight: c.right, tTop: t.top, cBottom: c.bottom, tLeft: t.left, mRight: m.right };
+        }""")
+        assert abs(box["tRight"] - box["cRight"]) < 1.5, box   # right edge aligned with the counter
+        assert box["tTop"] > box["cBottom"], box                 # below the counter
+        assert box["tLeft"] >= box["mRight"], box                # clear of the state
+
+    def test_name_goes_with_the_state(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        _svg_state_click(page, "MH")
+        _expect_state(page, "MH")
+        expect(page.locator("#mapStateTitle")).to_be_visible(timeout=10000)
+        page.locator("#btn-back").click()
+        _expect_national(page)
+        expect(page.locator("#mapStateTitle")).to_be_hidden()
 
 
 class TestGesturesAfterDelhi:
     """The Delhi image map replaces the SVG; the rebuilt SVG must still zoom."""
 
     def _wheel_zooms(self, page: Page) -> None:
+        # The national view is fitted to the drawn map (homeView), so zoom
+        # from whatever it settled on once the states have drawn in
         svg = page.locator("#map-svg")
-        expect(svg).to_have_attribute("viewBox", "0 0 1000 800", timeout=10000)
+        expect(page.locator("#map-svg .ad-state.drawn")).to_have_count(36, timeout=10000)
+        home = svg.get_attribute("viewBox")
         svg.hover()
         page.mouse.wheel(0, -300)
-        expect(svg).not_to_have_attribute("viewBox", "0 0 1000 800", timeout=3000)
+        expect(svg).not_to_have_attribute("viewBox", home, timeout=3000)
 
     def test_wheel_zoom_after_back_to_india(self, page: Page, base_url: str, all_36_states_fixture):
         _open_map(page, base_url)
