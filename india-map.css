@@ -111,9 +111,28 @@ body.map-active .app-container { overflow: hidden; }
   cursor: pointer;
   transition: filter var(--map-dur) var(--map-ease), opacity var(--map-dur) var(--map-ease);
 }
-.ad-state:hover { filter: brightness(1.04) saturate(1.12); }
-/* Spotlight: other states recede slightly while one is hovered */
-.ad-state.neighbor-dim { opacity: 0.82; }
+.ad-state:hover { filter: brightness(0.86) saturate(1.2); }
+/* Hover spotlight: every other state, and its labels, fades back */
+#map-svg.has-spotlight .ad-state:not(.is-spot) { opacity: 0.38; }
+#map-svg :is(.ad-state-label, .ad-state-count, .ad-tag, .ad-tag-leader, .ad-tag-dot) { transition: opacity var(--map-dur) var(--map-ease); }
+#map-svg.has-spotlight #map-labels :is(.ad-state-label, .ad-state-count, .ad-tag, .ad-tag-leader, .ad-tag-dot):not(.is-spot) { opacity: 0.35; }
+/* The hovered state, redrawn above its neighbours: grows a little about its
+   own centre, darkens, and lifts off the map on a soft shadow */
+.ad-lift {
+  pointer-events: none;
+  opacity: 0;
+  stroke: var(--map-border);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1);
+  filter: brightness(0.86) saturate(1.2) drop-shadow(0 6px 10px rgba(29, 36, 51, 0.28));
+  transition: transform 220ms var(--map-ease), opacity 160ms var(--map-ease);
+}
+.ad-lift.on { opacity: 1; transform: scale(var(--lift-scale, 1.05)); }
+.ad-lift.empty-state { fill-opacity: 0.75; }
 /* No vacancies: same colour, a touch quieter, so states with vacancies lead
    while small UTs (Goa, DNH, Lakshadweep) stay clearly visible */
 .ad-state.empty-state { fill-opacity: 0.75; }
@@ -132,10 +151,59 @@ body.map-active .app-container { overflow: hidden; }
 .ad-outline-hover { stroke: rgba(29, 36, 51, 0.4); }
 .ad-outline-focus, .ad-outline-selected { stroke: var(--map-select); stroke-width: 2; }
 
-/* Labels: abbreviation small/medium, count larger/semibold, in dark ink —
-   5.5–7.3:1 on every state colour, so no outline or shadow is needed */
-.ad-state-label { font-family: var(--map-font); font-size: 10px; font-weight: 500; letter-spacing: 0.02em; fill: var(--map-text); fill-opacity: 0.78; pointer-events: none; text-anchor: middle; }
-.ad-state-count { font-family: var(--map-font); font-size: 13.5px; font-weight: 600; fill: var(--map-text); pointer-events: none; text-anchor: middle; font-variant-numeric: tabular-nums; }
+/* ----- First-load intro: faded tricolour India, then states light up -----
+   States and labels wait hidden under the flag; the view animates each one
+   in (playTricolourIntro) and drops .ad-intro when done. */
+#map-svg.ad-intro { pointer-events: none; }
+#map-svg.ad-intro :is(.ad-state, .ad-district) { fill-opacity: 0; stroke-opacity: 0; }
+#map-svg.ad-intro #map-labels [data-for] { opacity: 0; }
+.ad-intro-flag { filter: drop-shadow(0 0 1px rgba(29, 36, 51, 0.3)); }
+.ad-intro-flag > path { stroke-width: 1.2; stroke-linejoin: round; }
+/* Navy 3D chakra (see buildChakra): the back wheel is the darker edge */
+.ad-chakra { pointer-events: none; }
+.ad-chakra-wheel { transform-box: fill-box; transform-origin: center; animation: ad-chakra-spin 16s linear infinite; }
+.ad-chakra-wheel circle { fill: none; stroke: #1B2F8A; }
+.ad-chakra-wheel .fill { fill: #1B2F8A; stroke: none; }
+.ad-chakra-wheel.back circle { stroke: #0A1550; }
+.ad-chakra-wheel.back .fill { fill: #0A1550; }
+@keyframes ad-chakra-spin { to { transform: rotate(360deg); } }
+
+/* ----- Lit borders -----
+   A thin gold line under a soft glow on every border; drawn once per
+   border after the draw-in, and still once lit. */
+#map-leds { pointer-events: none; transition: opacity var(--map-dur) var(--map-ease); }
+#map-svg.has-spotlight #map-leds { opacity: 0.3; }
+.ad-led-core { fill: none; stroke: #E39B2F; stroke-width: 1.25; stroke-linejoin: round; }
+.ad-net-core { fill: none; stroke: #E39B2F; stroke-width: 1; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.ad-net-glow { fill: none; stroke: #FFC567; stroke-opacity: 0.4; stroke-width: 3.4; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+#map-leds .ad-net-glow { opacity: 0; transition: opacity 900ms var(--map-ease); }
+#map-leds.lit .ad-net-glow { opacity: 1; }
+
+/* The electricity that runs round each border during the intro: a
+   flickering golden tail, a crackle of broken sparks, and a white-hot head */
+.ad-zap { filter: drop-shadow(0 0 1px #FFF6DA) drop-shadow(0 0 3px rgba(255, 190, 60, 1)) drop-shadow(0 0 7px rgba(255, 145, 20, 0.6)); }
+.ad-zap path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.ad-zap-tail { stroke: #FFC23D; stroke-width: 2.2; animation: ad-zap-flicker 0.19s steps(1, end) infinite; }
+.ad-zap-crackle { stroke: #FFF2C8; stroke-width: 1.9; animation: ad-zap-flicker 0.13s steps(1, end) infinite reverse; }
+.ad-zap-head { stroke: #FFFFFF; stroke-width: 3.2; }
+@keyframes ad-zap-flicker {
+  0% { stroke-opacity: 1; } 20% { stroke-opacity: 0.45; } 40% { stroke-opacity: 0.9; }
+  60% { stroke-opacity: 0.3; } 80% { stroke-opacity: 1; } 100% { stroke-opacity: 0.6; }
+}
+
+/* Labels: each state's full name, fitted inside its borders by the view
+   (sizes are set inline), with the vacancy count beneath it. Dark ink is
+   5.5–7.3:1 on every state colour, so no outline or shadow is needed. */
+.ad-state-label { font-family: var(--map-font); font-size: 10px; font-weight: 600; letter-spacing: 0; fill: var(--map-text); fill-opacity: 0.82; pointer-events: none; text-anchor: middle; }
+.ad-state-count { font-family: var(--map-font); font-size: 13.5px; font-weight: 700; fill: var(--map-text); pointer-events: none; text-anchor: middle; font-variant-numeric: tabular-nums; }
+/* Areas too small for their name: a tag outside, joined by a leader */
+.ad-tag { cursor: pointer; }
+.ad-tag-pill { fill: rgba(255, 255, 255, 0.92); stroke: rgba(29, 36, 51, 0.14); stroke-width: 0.6; vector-effect: non-scaling-stroke; transition: fill var(--map-dur) var(--map-ease), stroke var(--map-dur) var(--map-ease); }
+.ad-tag:hover .ad-tag-pill { fill: #FFFFFF; stroke: rgba(29, 36, 51, 0.32); }
+.ad-tag-name { text-anchor: start; }
+.ad-tag-count { text-anchor: end; }
+.ad-tag-leader { stroke: rgba(29, 36, 51, 0.45); stroke-width: 0.8; vector-effect: non-scaling-stroke; pointer-events: none; }
+.ad-tag-dot { fill: var(--map-text); fill-opacity: 0.7; pointer-events: none; }
 
 /* ----- Districts (inside a state): the state's colour ----- */
 .ad-district {
@@ -193,6 +261,14 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
 .ad-listing-card-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--map-text-2); }
 .ad-listing-link { color: var(--map-accent); text-decoration: none; font-weight: 500; }
 .ad-listing-link:hover { text-decoration: underline; }
+/* Whole card opens the vacancy: the title link's ::after covers the card */
+.ad-listing-card.is-linked { position: relative; cursor: pointer; transition: border-color var(--map-dur) var(--map-ease), box-shadow var(--map-dur) var(--map-ease), background var(--map-dur) var(--map-ease); }
+.ad-listing-card.is-linked:hover { background: #FFFFFF; border-color: rgba(58, 111, 216, 0.35); box-shadow: 0 4px 14px rgba(29, 36, 51, 0.08); }
+.ad-listing-open { text-decoration: none; outline: none; }
+.ad-listing-open::after { content: ""; position: absolute; inset: 0; border-radius: 12px; }
+.ad-listing-card.is-linked:hover .ad-listing-open { color: var(--map-accent); }
+.ad-listing-card.is-linked:has(.ad-listing-open:focus-visible) { outline: 2px solid var(--map-accent); outline-offset: 2px; }
+.ad-listing-card.is-linked .ad-listing-link { position: relative; z-index: 1; }
 
 /* --- Delhi image-map drill-down --- */
 .ad-delhi-map-wrap {
@@ -319,5 +395,7 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ad-state, .ad-district, .ad-outline, .map-tooltip { transition: none; }
+  .ad-state, .ad-district, .ad-outline, .ad-lift, .map-tooltip,
+  #map-svg .ad-state-label, #map-svg .ad-state-count { transition: none; }
+  .ad-chakra-wheel, .ad-zap-tail, .ad-zap-crackle { animation: none; }
 }

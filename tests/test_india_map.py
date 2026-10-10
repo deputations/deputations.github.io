@@ -1233,15 +1233,20 @@ class TestStateColours:
         assert fill("Nainital") == "rgb(230, 224, 213)"      # none: neutral tone
 
     def test_hover_and_keyboard_focus_outline(self, page: Page, base_url: str, all_36_states_fixture):
+        """Hover lifts the state (a copy on the lift layer draws its own
+        ring, see setSpotlight); keyboard focus uses the outline ring."""
         _open_map(page, base_url)
         outline = page.locator("#map-outline")
+        lift = page.locator("#map-lift")
         mh = page.locator("#map-svg [data-abbr='MH'].ad-state")
         mh.hover()
-        expect(outline).to_have_class("ad-outline ad-outline-hover")
-        assert outline.get_attribute("data-for") == "MH"
-        assert outline.get_attribute("d") == mh.get_attribute("d")
+        expect(lift).to_have_class("ad-lift on")
+        assert lift.get_attribute("d") == mh.get_attribute("d")
+        expect(page.locator("#map-svg")).to_have_class(re.compile(r"\bhas-spotlight\b"))
+        expect(outline).to_have_class("ad-outline")  # no hover ring under the lift
         page.mouse.move(2, 2)
-        expect(outline).to_have_class("ad-outline")
+        expect(lift).to_have_class("ad-lift")
+        expect(page.locator("#map-svg")).not_to_have_class(re.compile(r"\bhas-spotlight\b"))
         page.keyboard.press("Tab")
         page.locator("#map-svg [data-abbr='KA'].ad-state").focus()
         expect(outline).to_have_class("ad-outline ad-outline-focus")
@@ -1265,13 +1270,17 @@ class TestStateColours:
 
     def test_label_hierarchy_without_outlines(self, page: Page, base_url: str, all_36_states_fixture):
         _open_map(page, base_url)
-        style = lambda sel: page.locator(sel).first.evaluate(  # noqa: E731
+        # Full state names, fitted inside each state (see layoutStateLabels):
+        # sizes vary by state, so compare a name with its own count
+        block = page.locator("#map-labels .ad-label-block").filter(
+            has=page.locator(".ad-state-count:not(.empty)")).first
+        style = lambda sel: block.locator(sel).evaluate(  # noqa: E731
             "e => { const s = getComputedStyle(e); return [parseFloat(s.fontSize), parseInt(s.fontWeight), s.stroke]; }")
-        abbr_size, abbr_weight, abbr_stroke = style("#map-labels .ad-state-label")
-        count_size, count_weight, count_stroke = style("#map-labels .ad-state-count:not(.empty)")
-        assert abbr_size < count_size
-        assert abbr_weight == 500 and count_weight >= 600
-        assert abbr_stroke == "none" and count_stroke == "none", "labels must not carry heavy outlines"
+        name_size, name_weight, name_stroke = style(".ad-state-label")
+        count_size, count_weight, count_stroke = style(".ad-state-count")
+        assert name_size < count_size
+        assert 500 <= name_weight < count_weight
+        assert name_stroke == "none" and count_stroke == "none", "labels must not carry heavy outlines"
         # Dark ink on the light theme: 5.5–7.3:1 against every state colour
         ink = page.locator("#map-labels .ad-state-count:not(.empty)").first.evaluate("e => getComputedStyle(e).fill")
         assert ink == "rgb(29, 36, 51)", ink
