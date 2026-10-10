@@ -6637,3 +6637,71 @@ focus:          India Map Phase 1B — VIKAS final correction pass after 6d8b7c8
 - Keep the Node test summary/exit as the last statement in `tests/test_india_map_data.js`.
 
 ## session shq-2026-10-08-001 end
+
+## session shq-2026-10-11-001
+```
+started:        2026-10-09
+ended:          2026-10-11
+model:          claude-opus-5-5
+driver:         solo
+branch:         claude/map-hover-spotlight-clickable-cards (PR #17; worked locally on claude/map-tricolour-intro and pushed to it)
+starting_head:  d6a6dcd
+ending_head:    6d2aad9 (main, PR #17 merged)
+focus:          India map: full-screen fitted map, tricolour intro, state title, 3D relief, full names, Gujarat data fix
+```
+
+### inbound context read
+- shq-2026-10-08-001 (last block). Phase 1B shipped after that; this session started from main at d6a6dcd (#16, light cream theme).
+- india-map.html / india-map-view.js / india-map-data.js / india-map.css, tests/test_india_map.py, tests/test_india_map_data.js.
+
+### owner's brief (in order asked; every item was shown to and accepted by the owner)
+1. Vacancy cards in the district modal clickable -> open the vacancy (`/?v=<Vacancy_ID>`).
+2. Hover a state: it grows a little and darkens, the others fade.
+3. Intro: India in faded tricolour first, then states appear with gold "electricity" running round each border; borders stay lit (still, no running beads).
+4. Full state names fitted inside each state; tiny areas get a tag outside with a leader (Chandigarh west of Punjab, Sikkim above, Meghalaya below).
+5. Chakra: navy, 3D, centred in the flag's white band, fully on land; it grows past the map ("zoom out") and fades before anything loads.
+6. Same intro on drilling into a state, plus a black current round the state's outer border that leaves a black state border.
+7. Map fills the screen (like sarvalinks.com): no "Explore India" heading, counter / buttons / filters float over the map; size adapts to any display.
+8. State page: the state's name large on the right under the counter, decoded in AFTER the state has loaded (owner: one animation at a time).
+9. A little 3D for India and state maps.
+10. Electricity spreads neighbour by neighbour: from Delhi nationally, from the capital's district in a state.
+11. Fix Gujarat borders (Vav-Tharad) and the overlapping district names.
+
+### work done (all in PR #17, merged as 6d2aad9; live on alldeputations.com, Pages build 6d2aad9)
+Everything below is in `india-map-view.js` unless noted. Section headers in the file match these names.
+- **Clickable cards** — `listingCardsHtml()`: title link stretched over the card (`.ad-listing-open::after`), Notification link above it (z-index 1).
+- **Hover spotlight** — `setSpotlight()`: copies the state into `#map-lift` (above everything, below labels), scales it about its own centre (small states up to 1.2x, big ~1.05x), darkens it; `#map-svg.has-spotlight` fades other states, labels, tags and walls. `applyFilter()` now clears inline opacity ('' not '1') so the fade still works after a category filter.
+- **Lit borders** — `buildLeds()` / `drawLed()` / `settleBorders()` / `borderEdges()`: each shape's outline lights up, then all are swapped for one border network (each border drawn once). In a state view `settleBorders()` also draws the black `.ad-state-outline`.
+- **Intro** — `playTricolourIntro(paths, lg, T, onDone, opts)`, timings `INTRO` (national) and `STATE_INTRO`. Tricolour gradient over a silhouette, `buildChakra()` (lighting filter `#ad-chakra-3d`, back wheel for thickness) placed by `placeChakra()` (white-band centre line, mid-way between the first and last coast, `chakraNudge` -0.03 nationally; never crosses the outline). Order: `revealWaves()` BFS over shared border edges from `opts.seed` (Delhi; `CAPITAL_DISTRICT[abbr]` in a state; most central shape if no match), islands last; `T.waveGap` between rings, `T.inWave` inside a ring. Gold "zap" = tail + crackle + head dashes riding the lit edge. State view: `opts.outlineCurrent` draws the black current round `borderEdges(...).outline()` across the whole load. Skipped for deep links and reduced motion (`introPending`).
+- **Generation guard** — `ledGeneration` is bumped by `clearMap()`; every async intro / border / title step checks it, so a render that is superseded drops its work.
+- **State names** — `layoutStateLabels()` -> `fitLabel()` (largest size at the roomiest grid points, 1-3 lines, tilts with a penalty, local slide refinement; cached in `labelFitCache`), else `drawTagLabel()` (sea first, never over a label, leader not crossing a label; `TAG_PLACE` hand placements). Geometry helpers: `labelShape`, `inShape`, `edgeDist`, `crossesShape`, `roomiestPoints`. `LABEL_NAMES` holds display names (J&K, A&N, DNH).
+- **District labels** — at `roomiestPoints()` of the district (was the vertex average, which put neighbours' names on top of each other).
+- **Layout / fitted views** — `NATIONAL_FILL` 0.97; `contentView()` + `padBox()` -> `homeView` (national: India + labels). State view: `stateLayout()` (side column on landscape, band on portrait) and `stateViewBox()`; `cinematicZoom()` targets the same `stateViewBox(padBox(stateBox))` so the hand-off doesn't jump. `zoomReset()` / Back to India return to `homeView` / `nationalHome`. `onStateResize()` re-frames on window resize.
+- **State title** — `showStateTitle()` returns `{ reveal() }`; `renderState()` passes `title.reveal` as the intro's `onDone`. `placeStateTitle()` / `fitTitleName()` size the name (`TITLE`, `TITLE_EXTRA`); decode lasts `TITLE_REVEAL` (1800ms); letters sit in fixed-width spans while scrambling, replaced by plain text when done (`.done`). Not shown for Delhi (photo map has its own heading).
+- **3D relief** — `buildRelief()`: side-wall quads under down-facing outer edges, per shape, shade by facing (`WALL_SHADE`), colour via CSS `color-mix` on `--wall-base` (neutral `--wall-intro` while `.ad-intro`); `.ad-sheen` gradient overlay. Walls carry `data-for` so spotlight and filters fade them.
+- **CSS** (`india-map.css`) — body is a one-screen flex column; `.map-header` / `.map-controls` absolutely positioned overlays; `#mapSvgWrap` is a size container (Delhi photo views use cqw/cqh); styles for all of the above. `india-map.html`: heading removed, `#mapStateTitle` added, asset versions `p1b6`.
+- **Data** (`geo/india-districts-all.geojson`) — Gujarat rebuilt as one consistent set of shapes (Vav-Tharad, `year: update2025`, came from another source: overlaps/gaps with Banaskantha, Patan, Kutch and a 37 km² hole near Deesa). Method: node all Gujarat boundaries (shapely `unary_union` + `polygonize`), give each face to the district containing it (newest year wins overlaps), fill enclosed gaps into the longest-bordering neighbour, rebuild per district. Duplicate Chandigarh and Lakshadweep features dropped. No other feature changed; a scan finds no mismatched inner borders in any state. View fetches `?v=2`, sessionStorage key `india-districts-geo-v2`.
+- **Tests** — `tests/test_india_map.py`: hover test checks the lift; label test compares a name with its own count; wheel-zoom test reads the fitted home view; zoom test expects the state left of centre (title column); district route glob allows `?v=`; new `TestStateTitle`. `tests/test_india_map_data.js` C06 checks the spotlight. Final: 94 smoke + 177 Node pass.
+
+### decisions (mine, flagged to the owner)
+- Kept the light cream theme, system font and existing palette; ui-ux-pro-max's suggested palette/fonts were not adopted (consistency).
+- 3D is a static relief (walls + sheen), not a CSS perspective tilt: a tilt would skew labels and break `getScreenCTM`-based zoom/pan and the layout maths.
+- Outside-tag style (white pill + leader + dot) used for every tag, including Sikkim and Meghalaya.
+- Merged PR #17 while its smoke check was still running (owner asked to merge; repo has auto-merge disabled). Local map suite was green.
+
+### handoff state
+- main = 6d2aad9, deployed. Post-merge "Smoke tests" run 38084027793 was in progress at handoff — check it first.
+- `india-map-view.js` is now ~2950 lines; feature sections are headed `// ----- <name> -----`.
+- Not done / ideas raised but not built: Back to India uses the quick draw-in, not the full intro; Delhi has no state title; intros pause map clicks (~7 s nationally, ~3-6 s per state; Back still works); some small states' names fit only at small sizes (readable when zoomed).
+
+### gotchas for next session
+- Local Python 3.12 (`C:\Users\vivek\AppData\Local\Programs\Python\Python312`) has no stdlib (`Lib` missing) — `python` fails. Use `py -3.13`. Run tests from a venv outside the repo, e.g. `py -3.13 -m venv %TEMP%\claude\smoke-venv`, install `pytest pytest-xdist playwright` (+ `shapely` for geometry work), `python -m playwright install chromium`, then `python -I -m pytest tests/test_india_map.py -n 3`. That temp venv got wiped once mid-session — recreate it if missing.
+- Running the whole suite with `-n 6` on this machine produces timeout/setup failures in unrelated pages; run files one at a time to confirm. Occasionally parallel workers clash on the preferred port 8780 (WinError 10013) — just re-run.
+- Local preview: `.claude/launch.json` (gitignored) runs `npx http-server . -p 8765 -c-1` (the `.` matters: http-server defaults to `./public`).
+- The app's Browser pane throttles rendering when not focused (rAF stops, screenshots time out or show stale frames). For visuals, use headless Playwright screenshots at fixed viewports. For animation frames, clear pending timeouts and pause/seek every animation: `document.getAnimations().forEach(a => { a.pause(); a.currentTime = T; })`.
+- Neighbouring shapes must share identical border vertices: the lit network, the black outline, the 3D walls and the reveal waves all key edges by exact projected coordinates. Any new district data needs the same consistency check (one-sided edges inside a state = mismatch).
+- `.ad-intro` hides shapes and labels until the intro removes it; WAAPI `fill: 'both'` animations are cancelled at the end — anything new that animates during the intro must follow the same pattern.
+- When writing JS through bash heredocs or `node -e`, backticks and `${}` get eaten by the shell; write edit scripts with the file tool instead.
+- Bump `?v=` on `india-map.css` / `india-map-view.js` in `india-map.html` whenever they change after a deploy, and the geojson `?v=` + cache key when the district file changes.
+
+## session shq-2026-10-11-001 end
