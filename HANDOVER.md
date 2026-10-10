@@ -6781,6 +6781,12 @@ focus:          Prepare /india-map.html for integration into the main site
 - Kept the map as its own page linked from the nav, not the Sept plan's SPA view inside index.html: the map is now ~3000 lines with its own full-screen layout, light theme and routing; folding it into index.html would couple it to app.js and the dark dashboard for no user-visible gain.
 - Map stays light-only while the rest of the site defaults to dark — flagged to the owner.
 
+### follow-up in the same PR (owner's brief, site chrome)
+- Footer (`site-widgets.js` `buildDisclaimer`): "Source: Employment News & official circulars" removed; the Disclaimer link now reads "About AD.com" (still opens the Declaration & Disclaimer modal).
+- Nav corner reads "A [V² mark] product": `navbar.css` `::before` / `::after` on `.nav-brand:has(.nav-brand-v2)` (gradient text, smaller under 860px). Replaces the orphaned `.nv2-pre/.nv2-post` rules (their markup was dropped in v7.3.4). The map page's brand now has the same aria-label as the others ("About this project"), since site-widgets.js opens the About popup from it.
+- About popup (`buildAboutProject`): opens with "Hi, this is <strong>Vivek Vishal</strong>." instead of the "fascinated by technology" paragraph; the word-by-word reveal (TYPE_PACE_MS, `.sw-type-w`, `data-typing`) is removed — the essay shows at once.
+- Versions: `site-widgets.js?v=31`, `navbar.css?v=9` on every page. Tests: three new ones at the end of `tests/test_index.py`.
+
 ### handoff state / not done
 - Homepage has no in-page call to action for the map (nav link only).
 - The site theme toggle does not apply on the map page.

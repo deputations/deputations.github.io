@@ -186,3 +186,38 @@ def test_footer_shows_canonical_domain(page, base_url: str):
 
     assert "alldeputations.com" in footer, f"canonical domain missing from footer: {footer!r}"
     assert "github.io" not in footer, f"stale Pages domain still in footer: {footer!r}"
+
+
+def test_footer_links_and_no_source_line(page, base_url: str):
+    """Footer: the disclaimer link reads 'About AD.com'; the 'Source:' line is gone."""
+    page.goto(f"{base_url}/index.html")
+    page.wait_for_selector(".sw-footer")
+    footer = page.locator(".sw-footer").text_content() or ""
+    assert "Source:" not in footer, footer
+    disc = page.locator(".sw-footer .disc")
+    assert disc.text_content() == "About AD.com"
+    disc.click()
+    assert page.locator(".sw-modal:not(.sw-about).open").count() == 1
+
+
+def test_brand_reads_a_v2_product(page, base_url: str):
+    """Nav corner reads 'A [V² mark] product' (navbar.css pseudo-elements)."""
+    page.goto(f"{base_url}/index.html")
+    words = page.locator(".top-nav .nav-brand").evaluate(
+        "e => [getComputedStyle(e, '::before').content, getComputedStyle(e, '::after').content]")
+    assert words == ['"A"', '"product"'], words
+
+
+def test_about_popup_opens_fully_with_greeting(page, base_url: str):
+    """Logo popup shows the whole essay at once and opens with the greeting."""
+    page.goto(f"{base_url}/index.html")
+    page.wait_for_selector(".sw-about", state="attached")
+    page.locator(".top-nav .nav-brand").click()
+    about = page.locator(".sw-about.open")
+    assert about.count() == 1
+    first = about.locator(".bd p").first.inner_text()
+    assert first.startswith("Hi, this is Vivek Vishal"), first
+    assert "fascinated by technology" not in (about.text_content() or "")
+    assert about.locator(".sw-type-w").count() == 0
+    last = about.locator(".sw-about-prose").last
+    assert last.evaluate("e => getComputedStyle(e).opacity") == "1"
