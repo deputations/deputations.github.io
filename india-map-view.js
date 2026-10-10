@@ -1095,7 +1095,8 @@
       `${unique.length} Vacanc${unique.length !== 1 ? 'ies' : 'y'} in ${districtName}`;
     if (modalBody) {
       modalBody.innerHTML = unique.map((l, i) => `
-        <div class="ad-listing-card visible" style="animation-delay:${i * 60}ms">
+        <a class="ad-listing-card visible" href="/?v=${encodeURIComponent(l.id)}"
+           style="animation-delay:${i * 60}ms" title="View full details">
           <div class="ad-listing-card-header">
             <div class="ad-listing-title">${esc(l.title)}</div>
             ${l.level ? `<span class="ad-listing-badge">${esc(l.level)}</span>` : ''}
@@ -1107,9 +1108,9 @@
           </div>
           <div class="ad-listing-card-footer">
             ${l.closingDate ? `<span class="ad-listing-close-date">Closes ${esc(l.closingDate)}</span>` : ''}
-            ${l.notificationLink ? `<a href="${esc(l.notificationLink)}" target="_blank" rel="noopener" class="ad-listing-link">Notification</a>` : ''}
+            ${l.notificationLink ? `<a href="${esc(l.notificationLink)}" target="_blank" rel="noopener" class="ad-listing-link" data-vac-link="1">Notification</a>` : ''}
           </div>
-        </div>`).join('') || '<p style="color:var(--text-muted); text-align:center; padding:20px;">No vacancies found.</p>';
+        </a>`).join('') || '<p style="color:var(--text-muted); text-align:center; padding:20px;">No vacancies found.</p>';
     }
     if (modal) {
       modal._districtTrigger = districtTrigger;
@@ -1268,6 +1269,10 @@
         onModalClosedByUser();
       });
     }
+    // C25: prevent card inner links (Notification) from triggering card navigation
+    modal?.addEventListener('click', (e) => {
+      if (e.target.closest('[data-vac-link="1"]')) e.stopPropagation();
+    });
 
     document.querySelectorAll('.map-filter-btn').forEach(btn => {
       btn.addEventListener('click', () => {

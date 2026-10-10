@@ -235,3 +235,86 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
     align-items: stretch;
   }
 }
+
+/* ===== District vacancy listing cards (C25: clickable) ===== */
+.ad-listing-card {
+  display: block;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  background: rgba(30, 35, 48, 0.9);
+  border: 1px solid var(--ad-border);
+  border-radius: 12px;
+  color: var(--ad-text);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+.ad-listing-card:hover {
+  background: rgba(34, 211, 238, 0.08);
+  border-color: rgba(34, 211, 238, 0.3);
+  transform: translateY(-1px);
+}
+.ad-listing-card:focus {
+  outline: 2px solid var(--ad-accent);
+  outline-offset: 2px;
+}
+.ad-listing-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.ad-listing-title {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #f8fafc;
+  line-height: 1.4;
+}
+.ad-listing-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(34, 211, 238, 0.12);
+  color: #22d3ee;
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  white-space: nowrap;
+}
+.ad-listing-meta {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.ad-listing-meta span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ad-listing-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ad-listing-close-date {
+  font-size: 11px;
+  color: #f5a721;
+  font-weight: 500;
+}
+.ad-listing-link {
+  font-size: 11px;
+  color: #22d3ee;
+  text-decoration: none;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(34, 211, 238, 0.08);
+  transition: background 0.15s;
+}
+.ad-listing-link:hover {
+  background: rgba(34, 211, 238, 0.18);
+}
