@@ -1,15 +1,15 @@
 {
-  "generated_at_utc": "2026-10-09T10:50:48Z",
-  "vacancies_updated_at_utc": "2026-10-03T20:05:58Z",
-  "record_count": 1270,
-  "active_count": 186,
-  "inactive_count": 803,
-  "closing_soon_count": 76,
+  "generated_at_utc": "2026-10-10T10:04:59Z",
+  "vacancies_updated_at_utc": "2026-10-09T17:29:13Z",
+  "record_count": 1398,
+  "active_count": 287,
+  "inactive_count": 815,
+  "closing_soon_count": 81,
   "source": "supabase_rest_api_via_anon_key",
   "filter_counts": {
-    "levels": 18,
-    "ministries": 53,
-    "locations": 165,
+    "levels": 23,
+    "ministries": 58,
+    "locations": 177,
     "statuses": 3
   }
 }
