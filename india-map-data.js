@@ -20,15 +20,20 @@ window.IndiaMapData = (() => {
 
   // ----- Active-date check (mirrors app.js recomputeStatus) -----
   // The JSON's Status was computed at dump time and several days may have
-  // passed since. Recompute from Last_Date_To_Apply at load time.
+  // passed since. Recompute at load time, with exactly the dashboard's rule:
+  // active with a valid last date today or later; with no (or an
+  // unreadable) last date, active only while the notification is recent
+  // (UNDATED_ACTIVE_DAYS). Counting every undated row made the map show
+  // ~300 more active vacancies than the dashboard, most of them long closed.
+  const UNDATED_ACTIVE_DAYS = 60;   // keep in step with app.js
   function isActive(v) {
-    const iso = String(v.Last_Date_To_Apply || v.last_date_to_apply || v.closingDate || '').trim();
-    if (!iso) return true;
-    const d = new Date(iso + 'T00:00:00');
-    if (isNaN(d.getTime())) return true;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return d >= today;
+    const iso = String(v.Last_Date_To_Apply || v.last_date_to_apply || v.closingDate || '').trim();
+    const d = iso ? new Date(iso + 'T00:00:00') : null;
+    if (d && !isNaN(d.getTime())) return d >= today;
+    const n = new Date(String(v.Notification_Date || v.notification_date || v.notificationDate || '').trim() + 'T00:00:00');
+    return !isNaN(n.getTime()) && Math.round((today - n) / 86400000) <= UNDATED_ACTIVE_DAYS;
   }
 
   // Derive state abbreviation from Location_State name.
@@ -170,7 +175,9 @@ window.IndiaMapData = (() => {
       city: v.Location_City || '',
       stateName: rawState,
       state_abbr: abbr,
-      closingDate: v.Last_Date_To_Apply || '',
+      // Both spellings: realtime rows arrive from Supabase in snake_case
+      closingDate: v.Last_Date_To_Apply || v.last_date_to_apply || '',
+      notificationDate: v.Notification_Date || v.notification_date || '',   // isActive() uses it when there's no closing date
       category: deriveCategory(v),
       functionalArea: v.Functional_Area || '',
       district: (() => {
@@ -293,6 +300,19 @@ window.IndiaMapData = (() => {
   function getStateCounts() { return stateCounts; }
   function getDistrictCounts() { return districtCounts; }
   function getTotal() { return Object.values(stateCounts).reduce((s, c) => s + c, 0); }
+  // Every active vacancy, the way the dashboard's "Active Vacancies" counts:
+  // nationwide, multi-state and ones with no mappable state included (the
+  // state counts leave those out). Optionally one category only.
+  function getActiveTotal(category) {
+    const seen = new Set(); // same dedup contract as recomputeCounts
+    let n = 0;
+    allVacancies.forEach(v => {
+      if (!isActive(v) || seen.has(v.id)) return;
+      seen.add(v.id);
+      if (!category || v.category === category) n++;
+    });
+    return n;
+  }
   function getSource() { return source; }
   function getAllVacancies() { return allVacancies; }
   function getNationwideCount() { return nationwideCount; }
@@ -405,7 +425,7 @@ window.IndiaMapData = (() => {
 
   return {
     load, isActive,
-    getStateCount, getStateCounts, getTotal, getSource, getAllVacancies,
+    getStateCount, getStateCounts, getTotal, getActiveTotal, getSource, getAllVacancies,
     getNationwideCount, getMultiStateCount,
     getDistrictCounts, getDistrictCodes,
     getListingsForDistrict, getFiltered, normaliseVacancy, deriveCategory,

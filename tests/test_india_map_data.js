@@ -75,7 +75,17 @@ assert(norm3.category === 'General', `deriveCategory returns General (got: ${nor
 section('C02: isActive — date normalization with both field names');
 assert(window.IndiaMapData.isActive({ Last_Date_To_Apply: '2099-01-01' }) === true, 'Future date is active');
 assert(window.IndiaMapData.isActive({ Last_Date_To_Apply: '2000-01-01' }) === false, 'Past date is inactive');
-assert(window.IndiaMapData.isActive({}) === true, 'No date defaults to active');
+// Same rule as the dashboard (app.js recomputeStatus): with no (or an
+// unreadable) last date, active only while the notification is recent
+const isoDaysAgo = n => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
+assert(window.IndiaMapData.isActive({}) === false, 'No dates at all is not active');
+assert(window.IndiaMapData.isActive({ Notification_Date: isoDaysAgo(10) }) === true, 'Undated, notified 10 days ago: active');
+assert(window.IndiaMapData.isActive({ Notification_Date: isoDaysAgo(60) }) === true, 'Undated, notified 60 days ago: active');
+assert(window.IndiaMapData.isActive({ Notification_Date: isoDaysAgo(61) }) === false, 'Undated, notified 61 days ago: not active');
+assert(window.IndiaMapData.isActive({ Last_Date_To_Apply: 'soon', Notification_Date: isoDaysAgo(200) }) === false, 'Unreadable date, old notification: not active');
+assert(window.IndiaMapData.isActive({ Last_Date_To_Apply: '2000-01-01', Notification_Date: isoDaysAgo(5) }) === false, 'A past last date wins over a recent notification');
+assert(window.IndiaMapData.isActive(window.IndiaMapData.normaliseVacancy({ Vacancy_ID: 'U1', Location_State: 'Bihar', Notification_Date: isoDaysAgo(3) })) === true,
+  'The notification date survives normalisation');
 assert(window.IndiaMapData.isActive({ closingDate: '2027-06-15' }) === true, 'Normalized closingDate field works');
 
 section('C03: getFiltered — dedup and category filtering');
@@ -253,6 +263,25 @@ window.IndiaMapData.recordNewVacancy({
 });
 assert(window.IndiaMapData.getNationwideCount() === 1, 'Nationwide count stays 1 (no negative)');
 assert(window.IndiaMapData.getStateCount('MH') === 0, 'State MH stays 0 after nationwide dedup');
+
+// ===== Active total: the counter matches the dashboard =====
+section('Active total — every active vacancy, as the dashboard counts');
+window.IndiaMapData.reset();
+[
+  { Vacancy_ID: 'T1', Location_State: 'Maharashtra', Last_Date_To_Apply: '2099-01-01', Functional_Area: 'Finance' },
+  { Vacancy_ID: 'T2', Location_State: 'Kerala', Last_Date_To_Apply: '2099-01-01', Functional_Area: 'Teaching', Post_Name: 'Professor' },
+  { Vacancy_ID: 'T3', Location_State: 'Multiple', Last_Date_To_Apply: '2099-01-01', location_scope: 'nationwide' },
+  { Vacancy_ID: 'T4', Location_State: 'Atlantis', Last_Date_To_Apply: '2099-01-01' },
+  { Vacancy_ID: 'T5', Location_State: 'Bihar', Last_Date_To_Apply: '2000-01-01' },
+  { Vacancy_ID: 'T6', Location_State: 'Bihar', Last_Date_To_Apply: '', Notification_Date: '2001-01-01' },
+  { Vacancy_ID: 'T7', Location_State: 'Bihar', Last_Date_To_Apply: '', Notification_Date: isoDaysAgo(5) },
+].forEach(v => window.IndiaMapData.recordNewVacancy(v));
+assert(window.IndiaMapData.getActiveTotal() === 5,
+  `Active total counts nationwide, unplaced and recent undated rows, not expired or old undated (got: ${window.IndiaMapData.getActiveTotal()})`);
+assert(window.IndiaMapData.getTotal() === 3, `State counts cover only placed rows (got: ${window.IndiaMapData.getTotal()})`);
+assert(window.IndiaMapData.getActiveTotal('Education') === window.IndiaMapData.getAllVacancies()
+  .filter(v => window.IndiaMapData.isActive(v) && v.category === 'Education').length,
+  'Active total by category counts that category only');
 
 // ===== C23: State-ID adapter correctness =====
 section('C23: State adapter — known abbreviations');
