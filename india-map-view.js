@@ -2174,6 +2174,10 @@
   }
 
   // ----- Counter -----
+  // "Active Vacancies" counts every active vacancy, as the dashboard does:
+  // nationwide and multi-state ones and ones with no mappable state too.
+  // The state labels only count vacancies placed in that state, so they
+  // add up to less.
   function updateCounter(data) {
     const v = document.getElementById('mapCounterValue');
     if (v) v.textContent = (data?.nationalCount || 0).toLocaleString();
@@ -2182,7 +2186,7 @@
   function getData() {
     const sc = window.IndiaMapData?.getStateCounts?.() || {};
     return {
-      nationalCount: Object.values(sc).reduce((s, c) => s + c, 0),
+      nationalCount: window.IndiaMapData?.getActiveTotal?.() || 0,
       stateCounts: sc,
     };
   }
@@ -2192,7 +2196,6 @@
     activeMapFilter = type; // C21: store filter state for tooltip consistency
     const paths = document.querySelectorAll('#map-svg .ad-state');
     const labelsG = document.querySelector('#map-svg #map-labels');
-    let filteredTotal = 0;
     paths.forEach(p => {
       const abbr = p.dataset.abbr;
       let visible = true;
@@ -2208,7 +2211,6 @@
       } else {
         count = window.IndiaMapData?.getStateCount?.(abbr) || 0;
       }
-      filteredTotal += count;
       // '' rather than '1' so the hover spotlight can still fade it
       p.style.opacity = visible ? '' : '0.12';
       document.querySelectorAll(`#map-svg .ad-wall[data-for="${abbr}"]`).forEach(w => { w.style.opacity = p.style.opacity; });
@@ -2222,9 +2224,11 @@
         }
       }
     });
-    // Update header counter
+    // Update header counter: every active vacancy in the chosen category,
+    // not just the ones placed in a state (see updateCounter)
+    const category = { functional: 'Functional', education: 'Education' }[type];
     const counter = document.getElementById('mapCounterValue');
-    if (counter) counter.textContent = filteredTotal.toLocaleString();
+    if (counter) counter.textContent = (window.IndiaMapData?.getActiveTotal?.(category) || 0).toLocaleString();
   }
 
   function zoomIn() {
@@ -2923,7 +2927,7 @@
 
     var totalEl = document.getElementById('mapCounterValue');
     if (totalEl) {
-      totalEl.textContent = (IndiaMapData.getTotal ? IndiaMapData.getTotal() : 0).toLocaleString();
+      totalEl.textContent = (IndiaMapData.getActiveTotal ? IndiaMapData.getActiveTotal() : 0).toLocaleString();
     }
   }
 

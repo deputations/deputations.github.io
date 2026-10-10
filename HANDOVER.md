@@ -6705,3 +6705,45 @@ Everything below is in `india-map-view.js` unless noted. Section headers in the 
 - Bump `?v=` on `india-map.css` / `india-map-view.js` in `india-map.html` whenever they change after a deploy, and the geojson `?v=` + cache key when the district file changes.
 
 ## session shq-2026-10-11-001 end
+
+## session shq-2026-10-11-001-cont1
+```
+started:        2026-10-11
+ended:          2026-10-11
+model:          claude-opus-5-5
+driver:         solo
+branch:         claude/active-vacancy-count
+starting_head:  360ee48
+ending_head:    <see the PR merge commit on main>
+focus:          Map vs dashboard active-vacancy counts (map showed 419, dashboard 286)
+```
+
+### inbound context read
+- shq-2026-10-11-001 (block above).
+
+### owner's brief
+- The map's "Active Vacancies" (419) didn't match the dashboard's (286 active, 1,398 total).
+- Owner's question: shouldn't the undated vacancies count if they are displayed? Asked with the data below; owner chose "count recent ones as active".
+
+### findings
+- data/vacancies.json had 1,398 rows: 286 with a last date today or later, 816 past, 296 with no Last_Date_To_Apply.
+- Dashboard (app.js `recomputeStatus`): no valid last date -> Status "Unknown" (not Active, not Inactive; visible only under Status "All").
+- Map (india-map-data.js `isActive`): no or unreadable date -> active. Also the map counter summed state counts only, so nationwide / multi-state / unplaced vacancies were left out.
+- The 296 undated rows by notification age: 7 within 30 days, 11 at 61-90, 16 at 91-180, 225 older than 180 days, 37 with no notification date.
+
+### work done
+- **Shared rule, both pages:** active = a valid last date today or later; with no (or an unreadable) last date, active only while Notification_Date is within `UNDATED_ACTIVE_DAYS` (60). Defined in `app.js` (`recomputeStatus`, sets Status "Active" with an empty Days_Left) and `india-map-data.js` (`isActive`); keep the two in step.
+- **Map data layer:** normalised vacancies now carry `notificationDate`; `closingDate` / `notificationDate` also read snake_case keys (Supabase realtime rows). New `IndiaMapData.getActiveTotal(category?)`: every active vacancy (deduped by id), including nationwide, multi-state and unplaced ones.
+- **Map counter:** `getData()`, `applyFilter()` and the realtime handler use `getActiveTotal()`, so it equals the dashboard's "Active Vacancies". State labels still count only vacancies placed in that state (they add up to less).
+- **Versions:** index.html `app.js?v=ms80` (only that line changed in index.html); india-map.html `india-map-data.js?v=p1b3`, `india-map-view.js?v=p1b7`. The service worker is stale-while-revalidate, so without a new ?v= returning visitors see the old file for one visit.
+- **Tests:** tests/test_india_map_data.js covers the undated rule (10 / 60 / 61 days, unreadable date, past date wins, normalisation keeps the date) and `getActiveTotal` (nationwide and unplaced counted, expired and old undated not). 186 Node pass; 94 map smoke pass; dashboard smoke files pass (test_region_filter::test_pay_level_counts_differ_per_level flaked once in a batch run, passes alone with and without the change).
+- With the data on 2026-10-11: dashboard and map both show 293 active (286 dated + 7 recent undated); state labels sum to 189; Functional 208, Education 15.
+
+### decisions
+- 60 days chosen as the usual deputation application window (calls generally allow 45-60 days). Owner approved changing app.js for this.
+
+### gotchas for next session
+- `scripts/build_data.py` still writes Status "Unknown" for undated rows in the JSON; both pages recompute Status client-side, so that field is not what they display. If anything else reads the JSON's Status (feeds, alerts), it will not apply the 60-day rule.
+- Working copies here are CRLF (`core.autocrlf=true`); string-replace edit scripts must normalise line endings first.
+
+## session shq-2026-10-11-001-cont1 end

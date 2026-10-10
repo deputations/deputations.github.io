@@ -687,6 +687,12 @@ function disambiguateDuplicateIds(rows) {
     return rows;
 }
 
+// A vacancy with no last date to apply counts as Active while its
+// notification is recent: deputation calls usually allow 45–60 days, so
+// older undated ones are almost certainly closed (they stay "Unknown").
+// Keep in step with india-map-data.js#isActive.
+const UNDATED_ACTIVE_DAYS = 60;
+
 function recomputeStatus(rows) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -694,12 +700,13 @@ function recomputeStatus(rows) {
         const iso = String(r.Last_Date_To_Apply || '').trim();
         let status = 'Unknown';
         let daysLeft = '';
-        if (iso) {
-            const d = new Date(iso + 'T00:00:00');
-            if (!isNaN(d.getTime())) {
-                daysLeft = Math.round((d - today) / 86400000);
-                status = daysLeft >= 0 ? 'Active' : 'Inactive';
-            }
+        const d = iso ? new Date(iso + 'T00:00:00') : null;
+        if (d && !isNaN(d.getTime())) {
+            daysLeft = Math.round((d - today) / 86400000);
+            status = daysLeft >= 0 ? 'Active' : 'Inactive';
+        } else {
+            const n = new Date(String(r.Notification_Date || '').trim() + 'T00:00:00');
+            if (!isNaN(n.getTime()) && Math.round((today - n) / 86400000) <= UNDATED_ACTIVE_DAYS) status = 'Active';
         }
         return { ...r, Status: status, Days_Left: daysLeft };
     });
