@@ -6754,10 +6754,10 @@ started:        2026-10-10
 ended:          2026-10-10
 model:          claude-opus-5-5
 driver:         solo
-branch:         claude/beautiful-allen-13etna
+branch:         claude/beautiful-allen-13etna (PR #19, not merged at handoff — waiting on the owner's go-ahead)
 starting_head:  cd61aba
-ending_head:    <see the PR merge commit on main>
-focus:          Prepare /india-map.html for integration into the main site
+ending_head:    85772e7 on the branch (f1576fa map integration, 85772e7 site chrome); main unchanged at cd61aba
+focus:          Prepare /india-map.html for integration into the main site; header / footer / About popup changes
 ```
 
 ### inbound context read
@@ -6788,6 +6788,7 @@ focus:          Prepare /india-map.html for integration into the main site
 - Versions: `site-widgets.js?v=31`, `navbar.css?v=9` on every page. Tests: three new ones at the end of `tests/test_index.py`.
 
 ### handoff state / not done
+- PR #19 is open (draft), CI green on f1576fa; merging it puts the India Map nav link AND the header / footer / About changes live together. Re-check CI on the latest head before merging.
 - Homepage has no in-page call to action for the map (nav link only).
 - The site theme toggle does not apply on the map page.
 
