@@ -1,12 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<!-- The map has one (light) look, so the shared nav and widgets are pinned
+     to their light theme here instead of following the site's theme toggle. -->
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>India Map — Central Deputation Vacancies | Deputations</title>
-  <link rel="canonical" href="https://alldeputations.com/india-map">
+  <meta name="description" content="Interactive map of active Central Government deputation vacancies by state and district — tap a state to see its districts and open each vacancy.">
+  <link rel="canonical" href="https://alldeputations.com/india-map.html">
+
+  <!-- identity -->
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#F7F3EC">
+
+  <!-- link previews — shared site card -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Deputations">
+  <meta property="og:title" content="India Map — Deputations">
+  <meta property="og:description" content="Active Central deputation vacancies on an interactive map of India, by state and district.">
+  <meta property="og:url" content="https://alldeputations.com/india-map.html">
+  <meta property="og:image" content="https://alldeputations.com/assets/brand/og-home.png?v=2">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="India Map — Deputations">
+  <meta name="twitter:description" content="Active Central deputation vacancies on an interactive map of India, by state and district.">
+  <meta name="twitter:image" content="https://alldeputations.com/assets/brand/og-home.png?v=2">
+
   <link rel="stylesheet" href="/style.css?v=ms74">
-  <link rel="stylesheet" href="/india-map.css?v=p1b6">
+  <link rel="stylesheet" href="/navbar.css?v=8">
+  <link rel="stylesheet" href="/india-map.css?v=p1b8">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Unbounded:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,7 +44,7 @@
     </a>
     <div class="nav-links">
       <a href="/index.html">Home</a>
-      <a href="/india-map" class="active">India Map</a>
+      <a href="/india-map.html" class="active" aria-current="page">India Map</a>
       <a href="/rules.html">Rules</a>
       <a href="/faq.html">FAQs</a>
       <a href="/defex.html">DeFeX</a>
@@ -29,6 +55,7 @@
   </nav>
 
   <main id="map-view">
+    <h1 class="map-sr-only">India Map — active Central deputation vacancies</h1>
     <div class="map-container" id="mapContainer">
       <div class="map-header">
         <button id="btn-back" class="map-back-btn" aria-label="Back to India" hidden>
@@ -49,7 +76,7 @@
         <div class="map-tooltip-count" id="mapTooltipCount"></div>
         <div class="map-tooltip-meta" id="mapTooltipMeta"></div>
       </div>
-      <div id="mapAnnounce" aria-live="polite" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)"></div>
+      <div id="mapAnnounce" aria-live="polite" class="map-sr-only"></div>
       <button id="mapFiltersToggle" class="map-filter-toggle" aria-label="Toggle filters" aria-expanded="false" hidden>
         <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2"/></svg>
       </button>
@@ -80,6 +107,8 @@
   <script src="/config.js?v=sb5"></script>
   <script src="/enrich.js?v=sb16"></script>
   <script src="/india-map-data.js?v=p1b3"></script>
-  <script src="/india-map-view.js?v=p1b7"></script>
+  <script src="/india-map-view.js?v=p1b8"></script>
+  <!-- shared site chrome: mobile menu, feedback, visitor count, offline cache -->
+  <script defer src="/site-widgets.js?v=30"></script>
 </body>
 </html>

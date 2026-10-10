@@ -183,6 +183,25 @@ html[data-theme="light"] .top-nav a:not(.nav-brand).active,
   }
 }
 
+/* ---- above 768px the like / dislike pill (site-widgets.js) floats over the
+   right end of the nav: keep the links clear of it ---- */
+@media (min-width: 769px) {
+  .top-nav:has(.nav-links) { padding-right: 150px; }
+}
+/* narrow desktops: tighter pills, and the row scrolls if it still runs out of room */
+@media (min-width: 861px) and (max-width: 1180px) {
+  .nav-links {
+    gap: .2rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 20px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 20px), transparent 100%);
+    padding: 4px 10px 4px 6px;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .top-nav a:not(.nav-brand) { padding: .6rem .78rem; font-size: .88rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .top-nav a:not(.nav-brand) { transition: none; }
 }

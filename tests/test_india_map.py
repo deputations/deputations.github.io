@@ -1426,3 +1426,90 @@ class TestRealGeoDrill:
         _expect_state(page, "CH")
         names = _district_names(page)
         assert len(names) == len(set(names)) == 1, names
+
+
+# ---------------------------------------------------------------------------
+# Site integration: every public page links to the map, and the map page
+# carries the shared site chrome (nav styles, mobile menu, widgets, metadata)
+# ---------------------------------------------------------------------------
+
+_PUBLIC_PAGES = ["index.html", "india-map.html", "rules.html", "faq.html", "defex.html",
+                 "report-vacancy.html", "contact.html", "my-deputation.html",
+                 "upcoming-projects.html"]
+
+
+def _boxes_overlap(a: dict, b: dict) -> bool:
+    return (a["x"] < b["x"] + b["width"] and b["x"] < a["x"] + a["width"]
+            and a["y"] < b["y"] + b["height"] and b["y"] < a["y"] + a["height"])
+
+
+class TestSiteIntegration:
+    @pytest.mark.parametrize("name", _PUBLIC_PAGES)
+    def test_nav_links_to_map_after_home(self, name):
+        # Read the markup itself: upcoming-projects.html redirects to the home page on load
+        html = (REPO_ROOT / name).read_text(encoding="utf-8")
+        nav = re.search(r'<div class="nav-links">(.*?)</div>', html, re.S)
+        assert nav, name
+        links = re.findall(r'<a href="([^"]+)"([^>]*)>([^<]+)</a>', nav.group(1))
+        assert [href for href, _, _ in links[:2]] == ["/index.html", "/india-map.html"], links
+        assert links[1][2] == "India Map", links
+        assert ('class="active"' in links[1][1]) == (name == "india-map.html"), links
+
+    def test_map_page_metadata(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        head = page.evaluate("""() => ({
+            description: document.querySelector('meta[name=description]')?.content || '',
+            ogTitle: document.querySelector('meta[property="og:title"]')?.content || '',
+            canonical: document.querySelector('link[rel=canonical]')?.href || '',
+            manifest: !!document.querySelector('link[rel=manifest]'),
+            icon: !!document.querySelector('link[rel=icon]'),
+            h1: document.querySelector('h1')?.textContent || '',
+            theme: document.documentElement.dataset.theme,
+        })""")
+        assert "vacancies" in head["description"], head
+        assert head["ogTitle"].startswith("India Map"), head
+        assert head["canonical"] == "https://alldeputations.com/india-map.html", head
+        assert head["manifest"] and head["icon"], head
+        assert "India Map" in head["h1"], head
+        assert head["theme"] == "light", head
+
+    def test_map_in_sitemap(self):
+        sitemap = (REPO_ROOT / "sitemap.xml").read_text(encoding="utf-8")
+        assert "<loc>https://alldeputations.com/india-map.html</loc>" in sitemap
+
+    def test_mobile_menu_lists_map(self, page: Page, base_url: str, all_36_states_fixture):
+        page.set_viewport_size({"width": 390, "height": 812})
+        _open_map(page, base_url)
+        page.click(".sw-menu-btn")
+        sheet = page.locator(".sw-sheet.open nav a")
+        expect(sheet.first).to_be_visible()
+        assert "India Map" in sheet.all_inner_texts()
+
+    def test_mobile_feedback_pill_clears_counter(self, page: Page, base_url: str, all_36_states_fixture):
+        page.set_viewport_size({"width": 390, "height": 812})
+        _open_map(page, base_url)
+        expect(page.locator(".sw-fb")).to_be_visible()
+        fb = page.locator(".sw-fb").bounding_box()
+        counter = page.locator("#mapCounter").bounding_box()
+        assert not _boxes_overlap(fb, counter), (fb, counter)
+
+    @pytest.mark.parametrize("width", [900, 1024, 1280])
+    @pytest.mark.parametrize("name", ["index.html", "india-map.html"])
+    def test_nav_links_clear_feedback_pill(self, page: Page, base_url: str, name, width):
+        page.set_viewport_size({"width": width, "height": 800})
+        page.goto(f"{base_url}/{name}", wait_until="domcontentloaded")
+        expect(page.locator(".sw-fb")).to_be_visible()
+        links = page.locator(".top-nav .nav-links").bounding_box()
+        fb = page.locator(".sw-fb").bounding_box()
+        assert links["x"] + links["width"] <= fb["x"], (links, fb)
+
+
+class TestDelhiImages:
+    def test_district_images_exist_and_are_small(self):
+        src = (REPO_ROOT / "india-map-view.js").read_text(encoding="utf-8")
+        images = re.findall(r"image: '([^']+)'", src)
+        assert len(images) == 11, images
+        for name in images:
+            path = REPO_ROOT / "img" / "delhi" / name
+            assert path.is_file(), name
+            assert path.stat().st_size < 400_000, f"{name}: {path.stat().st_size} bytes"

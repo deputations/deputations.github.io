@@ -6747,3 +6747,42 @@ focus:          Map vs dashboard active-vacancy counts (map showed 419, dashboar
 - Working copies here are CRLF (`core.autocrlf=true`); string-replace edit scripts must normalise line endings first.
 
 ## session shq-2026-10-11-001-cont1 end
+
+## session shq-2026-10-10-001
+```
+started:        2026-10-10
+ended:          2026-10-10
+model:          claude-opus-5-5
+driver:         solo
+branch:         claude/beautiful-allen-13etna
+starting_head:  cd61aba
+ending_head:    <see the PR merge commit on main>
+focus:          Prepare /india-map.html for integration into the main site
+```
+
+### inbound context read
+- shq-2026-10-11-001 and -cont1 (blocks above); INDIA-MAP-INTEGRATION-PLAN.md (Sept plan: SPA inside index.html — superseded, see decisions).
+
+### owner's brief
+- "prepare https://alldeputations.com/india-map.html page for integration to the main site".
+
+### work done
+- **Nav link on every public page** — `<a href="/india-map.html">India Map</a>` right after Home in index, rules, faq, defex, report-vacancy, contact, my-deputation, upcoming-projects (redirect page, kept in step) and `astro/src/components/Navbar.astro`. The mobile hamburger sheet (site-widgets.js) clones `.nav-links`, so it lists the map too. `.html` URLs (not `/india-map`) because `npx http-server` has no extensionless fallback.
+- **Map page joins the shared chrome** (`india-map.html`): loads `navbar.css` and `site-widgets.js` (mobile menu, like/dislike, visitor count, disclaimer footer, service-worker registration); `<html data-theme="light">` pins the shared nav/widgets to their light theme (the map has one look; the site toggle is ignored here). Own nav overrides removed from `india-map.css`.
+- **Head metadata**: description, canonical `/india-map.html`, icons, manifest, theme-color, OG/Twitter card (shared og-home.png); visually hidden `<h1>` (`.map-sr-only`, also used by `#mapAnnounce`).
+- **Widget layout on the one-screen map** (`india-map.css`, end of file): <=768px the like/dislike pill floats under the nav, so `.map-header` gets 52px top padding; <=640px the in-flow visitor counter is hidden and the footer is compact.
+- **navbar.css**: >768px the pill sits over the right end of the nav; the 8-link row ran under it at ~769-1100px. Now `.top-nav:has(.nav-links)` reserves 150px on the right, and 861-1180px uses tighter pills + the scroll row with edge fade. `navbar.css?v=8` on every page (they were on v4/v6/v7 — same file).
+- **Delhi images**: the 10 district PNGs (opaque, 1.25 MB each) converted to WebP q86 (~81 KB each, 12.5 MB -> 0.8 MB, mean abs diff < 1/255); `DELHI_DISTRICTS` image names updated. PNG originals kept in `img/delhi/` (unreferenced).
+- **sitemap.xml**: india-map.html entry.
+- **Versions**: india-map.css `p1b8`, india-map-view.js `p1b8`.
+- **Tests** (`tests/test_india_map.py`): `TestSiteIntegration` (nav link after Home on every page — reads markup, since upcoming-projects redirects; metadata; sitemap; mobile menu lists the map; pill clears the counter on phones; links clear the pill at 900/1024/1280 on index + map) and `TestDelhiImages`. 114 map smoke + 186 Node pass. Other page files pass except 5 that fail identically on unmodified main in this sandbox (index search debounce, 3 defex leaderboard, contact submit) — external network, not this change.
+
+### decisions
+- Kept the map as its own page linked from the nav, not the Sept plan's SPA view inside index.html: the map is now ~3000 lines with its own full-screen layout, light theme and routing; folding it into index.html would couple it to app.js and the dark dashboard for no user-visible gain.
+- Map stays light-only while the rest of the site defaults to dark — flagged to the owner.
+
+### handoff state / not done
+- Homepage has no in-page call to action for the map (nav link only).
+- The site theme toggle does not apply on the map page.
+
+## session shq-2026-10-10-001 end
