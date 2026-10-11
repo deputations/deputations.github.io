@@ -6793,3 +6793,55 @@ focus:          Prepare /india-map.html for integration into the main site; head
 - The site theme toggle does not apply on the map page.
 
 ## session shq-2026-10-10-001 end
+
+## session shq-2026-10-11-002
+```
+started:        2026-10-11
+ended:          2026-10-11
+model:          claude-opus-5-5
+driver:         solo
+branch:         claude/beautiful-allen-13etna (new PR after #19 merged)
+starting_head:  1147d2b (main, PR #19 merged and deployed)
+ending_head:    <see the PR merge commit on main>
+focus:          India map shows every active vacancy (Functional / Education buttons removed); phone nav centring fix; default location rule site-wide (notification → organisation → New Delhi; extraction uses the office address; future State rows → state capital)
+```
+
+### inbound context read
+- shq-2026-10-10-001 (block above).
+
+### owner's brief
+- "what is the logic behind this bifurcation ... show all active deputations on the map" (the All / Functional / Education buttons).
+
+### findings
+- The split was a keyword guess in `india-map-data.js` `deriveCategory()`: Education if post name or Functional_Area contains teach / faculty / professor / institute / university / college / school / …; Functional if it contains account / admin / officer / assistant / engineer / …; otherwise "General", which no button showed on its own. On data/vacancies.json: 1,023 Functional, 198 Education, 177 General — "institute" and "officer" match most posts, so the buckets meant little.
+
+### work done
+- **Map**: buttons, mobile filter drawer and their code removed (`india-map.html`, `india-map-view.js` `applyFilter` / `activeMapFilter` / `syncMobileFilters` / `onFiltersToggle`, CSS). Counter, labels and tooltips always count every active vacancy. Tooltip no longer shows the "N Functional · N Education · N General" line (`.map-tooltip-meta:empty` hides the empty line). Zoom controls sit bottom right alone (`.map-controls` justify-content: flex-end). Portrait state-title layout measures its bottom limit from `#zoomInBtn`.
+- Data layer untouched: `deriveCategory`, `category` on normalised rows and the optional `category` argument of `getFiltered` / `getActiveTotal` remain (unused by the view now).
+- **Phone nav fix** (`site-widgets.js` `enhanceNav`): `offsetLeft` of the active link is measured from `.top-nav`, so the wider "A V² product" brand made the row scroll past the current page's link (e.g. "India Map" off-screen on the map page). Now subtracts `links.offsetLeft`. `site-widgets.js?v=32` on every page.
+- Versions: india-map.css / india-map-view.js `p1b9`.
+- Tests: `TestFilters` / `TestMobileFilters` replaced by `TestAllActive` (counter = all active, no category buttons, no breakdown in tooltip); district tooltip test expects an empty meta line; `test_phone_nav_shows_current_page`; Node C06 / C08 / C09 updated; Node C28 covers the map's missing-location rules; tests/test_location_defaults.py the build step (7 unit tests). 113 map smoke + 189 Node pass.
+
+### owner's rule: default location (2026-10-11) — READ BEFORE ADDING STATE GOVERNMENT VACANCIES
+A vacancy whose post names no place of posting gets one, in this order (owner's words in quotes):
+1. **At extraction** (`supabase/functions/extract/index.ts`, BASE_RULES): "if correspondence address or office address mentioned in the advertisement is some other city, that city may be taken as location ... when specifically city is not mentioned in the post". The prompt now tells the model to use the office / correspondence address city when the post names no place, and to return "" only when the ad gives neither. **Not live until deployed:** `supabase functions deploy extract` (SETUP.md §5). Applies to new extractions only.
+2. **At build** (`scripts/location_defaults.py`, called from `build_data.py` `transform_rows` before the per-row pass, approved rows only) for rows with no Location_City AND no Location_State:
+   a. "this should align with other vacancies in the notification" — the place of the other posts of the same notification (same Official_Notification_Link, or same Ingest_Job_ID + organisation + Notification_Date), when they all name one place;
+   b. else the organisation's place, when all its located vacancies name one place (organisation names compared ignoring case, punctuation and bracketed acronyms; different spellings are NOT matched);
+   c. else **New Delhi, Delhi** — "these are only central government deputation vacancies".
+   Filled rows carry `Location_Assumed` = notification | organisation | default; location_label, delhi_ncr_flag and search_text see the filled place, so the dashboard, filters, feed and map all agree. Rows that name any place are never touched.
+3. **On the map** (`india-map-data.js`, "Missing locations"): reads `Location_Assumed`; rows that skip the build (realtime / Supabase-only, until the next cron) get the New Delhi default there. Cards show "<place> (location not stated)" with a tooltip giving the basis (`LOCATION_BASIS_NOTE` in india-map-view.js). The dashboard shows the filled place without a marker.
+- **Future — State Government vacancies:** "later when I add state government vacancies ... if their location is not mentioned default should be taken as state capital". Central rows keep New Delhi. To add: (1) a field saying which government issued the vacancy (e.g. `Govt_Level: 'State'` + issuing state) — none exists yet; (2) a STATE_CAPITAL table (abbr → city, state, and for the map the district exactly as in `geo/india-districts-all.geojson`: e.g. Amaravati → Guntur, Dispur → Kamrup Metropolitan, Bhubaneswar → Khordha — several are already in CITY_DISTRICT_ALIASES); (3) step 2c in `location_defaults.py` and `DEFAULT_LOCATION` in india-map-data.js become functions of the row (issuing state's capital for State rows); steps 2a / 2b stay as they are; (4) the extraction prompt sentence about "the site then places the post … at New Delhi"; (5) the "default" tooltip in LOCATION_BASIS_NOTE; (6) tests: tests/test_location_defaults.py and Node C28.
+- With the data on 2026-10-11 (72 approved rows with no place): 2 from their notification (Narcotics Control Bureau), 14 from their organisation (APEDA, SSB, IWAI → Noida, NHAI, ITBP, …), 56 New Delhi. The committed data/vacancies.json is rebuilt by build-data.yml on the merge (it runs on pushes touching scripts/**) and daily.
+- **Why locations go missing (owner, confirmed on the data):** "those in which location is not present is due to not locating the advertisement". 50 of the 72 unlocated rows (69%) have no Official_Notification_Link, against 149 of 1,326 located rows (11%) — without the PDF the extractor never saw the office address. The fix for such a row is to find the advertisement, add its link, and re-extract (the new prompt then reads the office / correspondence address) or set the location in the admin console. Idea not built: an admin-console view of approved rows with no link and/or no location.
+- Owner's updates on 2026-10-11: the Chennai Metro Rail link is now set (https://indianrailways.gov.in/railwayboard/uploads/irpersonel/Vacancy_Circular/2026/ — "Detailed Employment Notification No. CMRL-HR-CON-DEP-05-2026 dated 23-09-2026"; the ad names Chennai); the CCS NIAM advertisement gives its address as Jaipur. Their location fields were still empty at handoff, so the build places them at New Delhi until the location is set or the rows are re-extracted.
+- Data quality: Chennai Metro Rail Limited (5 rows) has no located row anywhere → New Delhi until the admin fills "Chennai" or the ad is re-extracted with the new prompt. CCS NIAM appears under two names ("CCS National Institute of Agricultural Marketing (CCS NIAM)" in Jaipur, "Chaudhary Charan Singh National Institute of Agricultural Marketing" unlocated ×3) → New Delhi until the name is unified in the admin console.
+
+### also in this session: city given, state missing
+- 54 active vacancies had Location_City but no Location_State (Mumbai, Hyderabad, Chennai, Kolkata, …) and were on no state. `stateFromCity()` now places them: `CITY_STATE` (major cities + every city / district in `CITY_DISTRICT_ALIASES`) → state, only when every city named in the field is known and all are in the same state; otherwise the vacancy stays unplaced (multi-state lists such as "Raipur / Agartala / Guwahati / Srinagar"). An explicit "Multiple" / "All India" state or a location_scope is never defaulted.
+- With the data on 2026-10-11 (before the build step above runs): placed in a state 189 → 284 of 293 active (47 assumed New Delhi, 46 from city); the 9 left are genuinely multi-location. Delhi's label 103 → 158. The counter is unchanged (it always counted all 293). After the rebuild a few of the 47 move to their organisation's place (e.g. IWAI → Noida).
+
+### gotchas for next session
+- Deep-link district tests (`TestDeepLink::test_deep_link_is_replaced_not_pushed`, `TestQAP002_DeepLinkBack`, `TestQAP003_DelhiRouting::test_delhi_district_deep_link`) wait 5 s (expect default) for `#modal`; with `-n 4` in this sandbox the deep-link render takes ~6 s without the RPC stub and they failed in 6 of 20 parallel runs on this branch (0 of 14 on main, 0 of 4 in an interleaved A/B where both passed every run). No code path in this change touches that flow; CI runs serially. `_expect_district` now waits 10 s for `#modal` (same as its URL check).
+
+## session shq-2026-10-11-002 end

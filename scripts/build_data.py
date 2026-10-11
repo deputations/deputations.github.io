@@ -13,6 +13,8 @@ from dateutil import parser as date_parser
 from google.auth import default
 from googleapiclient.discovery import build
 
+from location_defaults import fill_missing_locations
+
 
 DATA_DIR = Path("data")
 OUTPUT_VACANCIES = DATA_DIR / "vacancies.json"
@@ -565,6 +567,18 @@ def transform_rows(rows: list[dict[str, str]]) -> tuple[list[dict[str, Any]], in
 
     transformed: list[dict[str, Any]] = []
     date_fixes = 0
+
+    # A vacancy whose notification names no place: take the place of its
+    # notification / organisation, else New Delhi (scripts/location_defaults.py).
+    # Runs before the per-row pass so location_label, delhi_ncr_flag and
+    # search_text all see the filled location.
+    approved_rows = [
+        r for r in rows
+        if normalize_whitespace(r.get("DRAFT / APPROVED", "")).lower().startswith("approved")
+    ]
+    filled = fill_missing_locations(approved_rows)
+    if filled:
+        print(f"  location: filled {sum(filled.values())} rows with no place ({dict(filled)})")
 
     for row in rows:
         approval_status = normalize_whitespace(row.get("DRAFT / APPROVED", ""))
