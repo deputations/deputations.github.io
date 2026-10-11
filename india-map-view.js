@@ -2394,7 +2394,7 @@
             ${l.level ? `<span class="ad-listing-badge">${esc(l.level)}</span>` : ''}
           </div>
           <div class="ad-listing-meta">
-            ${l.city ? `<span>${esc(l.city)}</span>` : ''}
+            ${l.city ? `<span${l.locationAssumed ? ' title="The notification gives no location; Central Government posts are shown at New Delhi"' : ''}>${esc(l.city)}${l.locationAssumed ? ' (location not stated)' : ''}</span>` : ''}
             ${l.ministry ? `<span>${esc(l.ministry)}</span>` : ''}
             ${l.organisation ? `<span>${esc(l.organisation)}</span>` : ''}
             ${l.functionalArea ? `<span>${esc(l.functionalArea)}</span>` : ''}

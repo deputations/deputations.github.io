@@ -130,6 +130,44 @@ window.IndiaMapData = (() => {
     return String(s || '').toLowerCase().replace(/[^a-z]/g, '');
   }
 
+  // ----- Missing locations -----
+  // Every vacancy on the site is a Central Government deputation, so one with
+  // no location at all (no state, no city, no district) is placed at New Delhi
+  // and flagged locationAssumed. When State Government vacancies are added, an
+  // unlocated one must default to ITS state's capital instead — see HANDOVER
+  // (session shq-2026-10-11-002) before changing this.
+  const DEFAULT_LOCATION = { state_abbr: 'DL', district: 'New Delhi', city: 'New Delhi' };
+
+  // A city given without its state: the state, when every city named in the
+  // field lies in the same one. Covers the cities and districts in
+  // CITY_DISTRICT_ALIASES plus the major ones below.
+  const CITY_STATE = {
+    newdelhi: 'DL', delhi: 'DL', mumbai: 'MH', pune: 'MH', nagpur: 'MH',
+    hyderabad: 'TS', chennai: 'TN', madras: 'TN', kolkata: 'WB', calcutta: 'WB',
+    jaipur: 'RJ', ajmer: 'RJ', jodhpur: 'RJ', lucknow: 'UP', patna: 'BR',
+    ranchi: 'JH', raipur: 'CG', jagdalpur: 'CG', bhopal: 'MP', indore: 'MP',
+    ahmedabad: 'GJ', gandhinagar: 'GJ', chandigarh: 'CH', shimla: 'HP', solan: 'HP',
+    dehradun: 'UK', srinagar: 'JK', jammu: 'JK', leh: 'LA', goa: 'GA',
+    thiruvananthapuram: 'KL', puducherry: 'PY', pondicherry: 'PY', imphal: 'MN',
+    aizawl: 'MZ', kohima: 'NL', gangtok: 'SK', portblair: 'AN',
+  };
+  for (const [abbr, aliases] of Object.entries(CITY_DISTRICT_ALIASES)) {
+    for (const [city, district] of Object.entries(aliases)) {
+      if (!CITY_STATE[city]) CITY_STATE[city] = abbr;
+      if (!CITY_STATE[normKey(district)]) CITY_STATE[normKey(district)] = abbr;
+    }
+  }
+  function stateFromCity(city) {
+    const states = new Set();
+    for (const part of String(city || '').split(/[\/;&]|\band\b/i)) {
+      if (!normKey(part)) continue;
+      const k = cityCandidates(part).map(normKey).find(c => CITY_STATE[c]);
+      if (!k) return '';                  // an unknown city: don't guess
+      states.add(CITY_STATE[k]);
+    }
+    return states.size === 1 ? [...states][0] : '';
+  }
+
   function cityCandidates(city) {
     const s = String(city || '').replace(/^\s*(drts?|drat)\s+/i, '').trim();
     if (!s) return [];
@@ -165,15 +203,23 @@ window.IndiaMapData = (() => {
     // otherwise derive from Location_State name. Unknown strings never become state IDs.
     const VALID_ABBRS = new Set(Object.values(NAME_TO_ABBR).filter(a => a.length === 2));
     const preAbbr = v.state_abbr && VALID_ABBRS.has(v.state_abbr) ? v.state_abbr : null;
-    const abbr = preAbbr || NAME_TO_ABBR[rawState] || '';
+    const rawCity = v.Location_City || '';
+    let abbr = preAbbr || NAME_TO_ABBR[rawState] || '';
+    // No state given: infer it from the city, or use the default location
+    // when the vacancy names no place at all (see "Missing locations")
+    const noState = !String(rawState).trim() && !preAbbr;
+    if (!abbr && noState && rawCity.trim()) abbr = stateFromCity(rawCity);
+    const locationAssumed = !abbr && noState && !rawCity.trim() && !v.district && !v.location_scope;
+    if (locationAssumed) abbr = DEFAULT_LOCATION.state_abbr;
     return {
       id: v.Vacancy_ID || v.id || '',
       title: v.Post_Name || v.title || 'Untitled post',
       ministry: v.Ministry || '',
       organisation: v.Organisation || '',
       level: v.Level_Text || v.Level || '',
-      city: v.Location_City || '',
+      city: locationAssumed ? DEFAULT_LOCATION.city : rawCity,
       stateName: rawState,
+      locationAssumed,
       state_abbr: abbr,
       // Both spellings: realtime rows arrive from Supabase in snake_case
       closingDate: v.Last_Date_To_Apply || v.last_date_to_apply || '',
@@ -183,6 +229,7 @@ window.IndiaMapData = (() => {
       district: (() => {
         const d = v.district || '';
         if (d) return d;
+        if (locationAssumed) return DEFAULT_LOCATION.district;
         if (abbr === 'DL') {
           const c = String(v.Location_City || '').toLowerCase().trim();
           if (c === 'new delhi') return 'New Delhi';

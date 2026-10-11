@@ -588,7 +588,9 @@ def _expect_state(page: Page, abbr: str) -> None:
 def _expect_district(page: Page, abbr: str, district: str) -> None:
     expect(page).to_have_url(
         re.compile(rf"\?state={abbr}&district={re.escape(quote(district))}$"), timeout=10000)
-    expect(page.locator("#modal")).to_be_visible()
+    # A deep link loads the data and district shapes before the popup opens:
+    # same allowance as the URL check (5 s ran out under parallel test runs)
+    expect(page.locator("#modal")).to_be_visible(timeout=10000)
     expect(page.locator("#modalTitle")).to_contain_text(district)
 
 

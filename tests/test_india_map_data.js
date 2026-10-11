@@ -383,6 +383,34 @@ section('C27: City → district resolution (aliases, candidates, state scope)');
   D.reset();
 }
 
+section('C28: Missing locations — no place at all → New Delhi; city without state → its state');
+{
+  const D = window.IndiaMapData;
+  D.reset();
+  const add = (id, state, city, extra = {}) => D.recordNewVacancy(Object.assign({
+    Vacancy_ID: id, Location_State: state, Location_City: city, Last_Date_To_Apply: '2099-01-01',
+  }, extra));
+  add('L1', '', '');                                    // nothing given → New Delhi
+  add('L2', '', 'Mumbai');                              // city only → Maharashtra
+  add('L3', '', 'Trivandrum');                          // alias city → Kerala
+  add('L4', '', 'Raipur / Agartala / Guwahati');        // several states → not guessed
+  add('L5', '', 'Somewhere Unknown');                   // unknown city → not guessed
+  add('L6', 'Multiple', '');                            // explicit multi-state → not New Delhi
+  add('L7', '', '', { location_scope: 'nationwide' });  // scope given → not New Delhi
+  const n1 = D.normaliseVacancy({ Vacancy_ID: 'L1', Location_State: '', Location_City: '' });
+  assert(n1.state_abbr === 'DL' && n1.district === 'New Delhi' && n1.city === 'New Delhi' && n1.locationAssumed === true,
+    `no location → New Delhi, flagged (got: ${n1.state_abbr}/${n1.district}/${n1.city}/${n1.locationAssumed})`);
+  const ids = (abbr, d) => D.getListingsForDistrict(abbr, d).map(v => v.id).sort().join(',');
+  assert(ids('DL', 'New Delhi') === 'L1', `L1 sits in the New Delhi district (got: ${ids('DL', 'New Delhi')})`);
+  assert(ids('MH', 'Mumbai') === 'L2', `"Mumbai" with no state → Maharashtra / Mumbai (got: ${ids('MH', 'Mumbai')})`);
+  assert(ids('KL', 'Thiruvananthapuram') === 'L3', `"Trivandrum" with no state → Kerala (got: ${ids('KL', 'Thiruvananthapuram')})`);
+  const placed = D.getAllVacancies().filter(v => v.state_abbr).map(v => v.id).sort().join(',');
+  assert(placed === 'L1,L2,L3', `only L1–L3 are placed in a state (got: ${placed})`);
+  assert(!D.normaliseVacancy({ Location_State: 'Delhi', Location_City: '' }).locationAssumed, 'a stated location is never flagged as assumed');
+  assert(D.getActiveTotal() === 7, `the counter still counts all seven (got: ${D.getActiveTotal()})`);
+  D.reset();
+}
+
 // ---- Summary ----
 console.log(`\n${'='.repeat(50)}`);
 console.log(`Results: ${passed} passed, ${failed} failed`);

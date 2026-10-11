@@ -6803,7 +6803,7 @@ driver:         solo
 branch:         claude/beautiful-allen-13etna (new PR after #19 merged)
 starting_head:  1147d2b (main, PR #19 merged and deployed)
 ending_head:    <see the PR merge commit on main>
-focus:          India map shows every active vacancy (Functional / Education buttons removed); phone nav centring fix
+focus:          India map shows every active vacancy (Functional / Education buttons removed); phone nav centring fix; default location rule (no location → New Delhi; future State rows → state capital)
 ```
 
 ### inbound context read
@@ -6820,9 +6820,21 @@ focus:          India map shows every active vacancy (Functional / Education but
 - Data layer untouched: `deriveCategory`, `category` on normalised rows and the optional `category` argument of `getFiltered` / `getActiveTotal` remain (unused by the view now).
 - **Phone nav fix** (`site-widgets.js` `enhanceNav`): `offsetLeft` of the active link is measured from `.top-nav`, so the wider "A V² product" brand made the row scroll past the current page's link (e.g. "India Map" off-screen on the map page). Now subtracts `links.offsetLeft`. `site-widgets.js?v=32` on every page.
 - Versions: india-map.css / india-map-view.js `p1b9`.
-- Tests: `TestFilters` / `TestMobileFilters` replaced by `TestAllActive` (counter = all active, no category buttons, no breakdown in tooltip); district tooltip test expects an empty meta line; `test_phone_nav_shows_current_page`; Node C06 / C08 / C09 updated. 113 map smoke + 182 Node pass.
+- Tests: `TestFilters` / `TestMobileFilters` replaced by `TestAllActive` (counter = all active, no category buttons, no breakdown in tooltip); district tooltip test expects an empty meta line; `test_phone_nav_shows_current_page`; Node C06 / C08 / C09 updated; Node C28 covers the missing-location rules. 113 map smoke + 189 Node pass.
+
+### owner's rule: default location (2026-10-11) — READ BEFORE ADDING STATE GOVERNMENT VACANCIES
+- **Now (Central Government only):** a vacancy whose notification gives no location at all (no Location_State, no Location_City, no district, no location_scope) is treated as **New Delhi**. Owner: "these are only central government deputation vacancies".
+- **Future (State Government vacancies):** when State Government deputation vacancies are added, an unlocated one must default to **that state's capital**, not New Delhi. Central ones keep New Delhi.
+- Where it lives: `india-map-data.js`, section `// ----- Missing locations -----` — `DEFAULT_LOCATION` and the `locationAssumed` branch in `buildVacancy()`. Normalised rows carry `locationAssumed: true`; the listing card shows "New Delhi (location not stated)" with a tooltip.
+- To add the state rule: (1) the data needs a field saying which government issued the vacancy (e.g. `Govt_Level: 'State'` + issuing state) — nothing like it exists yet; (2) add a `STATE_CAPITAL` table, abbr → { city, district }, with district names exactly as in `geo/india-districts-all.geojson` (check each against the file: e.g. Amaravati lies in Guntur, Gandhinagar in Gandhinagar, Dispur in Kamrup Metropolitan, Bhubaneswar in Khordha — several are already in `CITY_DISTRICT_ALIASES`); (3) make the default a function of the vacancy — issuing state's capital for State rows, `DEFAULT_LOCATION` otherwise; (4) update the card tooltip, which currently says Central Government posts are shown at New Delhi; (5) extend Node test C28.
+- Only the map applies this rule. The dashboard (`app.js`), `scripts/build_data.py` and `data/vacancies.json` are unchanged: those vacancies still have empty location fields and an empty Location filter label there. If the rule should apply site-wide, do it in `build_data.py` (one place) rather than in each page.
+
+### also in this session: city given, state missing
+- 54 active vacancies had Location_City but no Location_State (Mumbai, Hyderabad, Chennai, Kolkata, …) and were on no state. `stateFromCity()` now places them: `CITY_STATE` (major cities + every city / district in `CITY_DISTRICT_ALIASES`) → state, only when every city named in the field is known and all are in the same state; otherwise the vacancy stays unplaced (multi-state lists such as "Raipur / Agartala / Guwahati / Srinagar"). An explicit "Multiple" / "All India" state or a location_scope is never defaulted.
+- With the data on 2026-10-11: placed in a state 189 → 284 of 293 active (47 assumed New Delhi, 46 from city); the 9 left are genuinely multi-location. Delhi's label 103 → 158. The counter is unchanged (it always counted all 293).
+- Data-quality note for the owner: 5 of the 47 unlocated rows are Chennai Metro Rail Limited and 3 are CCS National Institute of Agricultural Marketing (Jaipur) — the rule puts them at New Delhi; filling their location in the admin console fixes that.
 
 ### gotchas for next session
-- Deep-link district tests (`TestDeepLink::test_deep_link_is_replaced_not_pushed`, `TestQAP002_DeepLinkBack`, `TestQAP003_DelhiRouting::test_delhi_district_deep_link`) wait 5 s (expect default) for `#modal`; with `-n 4` in this sandbox the deep-link render takes ~6 s without the RPC stub and they failed in 6 of 20 parallel runs on this branch (0 of 14 on main, 0 of 4 in an interleaved A/B where both passed every run). No code path in this change touches that flow; CI runs serially. If it recurs, give `_expect_district` an explicit timeout rather than changing app code.
+- Deep-link district tests (`TestDeepLink::test_deep_link_is_replaced_not_pushed`, `TestQAP002_DeepLinkBack`, `TestQAP003_DelhiRouting::test_delhi_district_deep_link`) wait 5 s (expect default) for `#modal`; with `-n 4` in this sandbox the deep-link render takes ~6 s without the RPC stub and they failed in 6 of 20 parallel runs on this branch (0 of 14 on main, 0 of 4 in an interleaved A/B where both passed every run). No code path in this change touches that flow; CI runs serially. `_expect_district` now waits 10 s for `#modal` (same as its URL check).
 
 ## session shq-2026-10-11-002 end
