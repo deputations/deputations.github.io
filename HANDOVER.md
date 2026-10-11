@@ -6842,6 +6842,7 @@ A vacancy whose post names no place of posting gets one, in this order (owner's 
 - With the data on 2026-10-11 (before the build step above runs): placed in a state 189 → 284 of 293 active (47 assumed New Delhi, 46 from city); the 9 left are genuinely multi-location. Delhi's label 103 → 158. The counter is unchanged (it always counted all 293). After the rebuild a few of the 47 move to their organisation's place (e.g. IWAI → Noida).
 
 ### gotchas for next session
+- **`.gitignore` ignores `scripts/` and `*.py`**: an existing tracked .py file commits normally, but a NEW .py file is silently left out by `git add -A`. `scripts/location_defaults.py` and `tests/test_location_defaults.py` were missed this way in PR #20 and the merge's data rebuild failed (`ModuleNotFoundError: location_defaults`, run 38121392947); fixed by `git add -f` in the follow-up PR. Always `git add -f` new Python files and check `git status --ignored`.
 - Deep-link district tests (`TestDeepLink::test_deep_link_is_replaced_not_pushed`, `TestQAP002_DeepLinkBack`, `TestQAP003_DelhiRouting::test_delhi_district_deep_link`) wait 5 s (expect default) for `#modal`; with `-n 4` in this sandbox the deep-link render takes ~6 s without the RPC stub and they failed in 6 of 20 parallel runs on this branch (0 of 14 on main, 0 of 4 in an interleaved A/B where both passed every run). No code path in this change touches that flow; CI runs serially. `_expect_district` now waits 10 s for `#modal` (same as its URL check).
 
 ## session shq-2026-10-11-002 end
