@@ -425,48 +425,33 @@ class TestHover:
 
 
 # ---------------------------------------------------------------------------
-# 5. Filter All/Functional/Education
+# 5. All active vacancies, no category split (the Functional / Education
+#    buttons were a keyword guess and were removed)
 # ---------------------------------------------------------------------------
 
-class TestFilters:
-    def test_all_filter_label_count(self, page: Page, base_url: str, all_36_states_fixture):
+class TestAllActive:
+    def test_counter_counts_every_active_vacancy(self, page: Page, base_url: str, all_36_states_fixture):
         page.goto(f"{base_url}/india-map.html")
         page.wait_for_selector("#mapCounterValue", timeout=10000)
         page.wait_for_timeout(2000)
-        all_count = int(page.locator("#mapCounterValue").inner_text().replace(",", ""))
-        # 9 vacancies: M1=Education, M2=Functional, M3=General, K1=Functional,
-        # T1=Education, DL1=Functional, CG1=General, UK1=General, UK2=General
-        assert all_count == 9, f"All filter should be 9, got {all_count}"
-
-    def test_functional_filter_label_count(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector(".map-filter-btn[data-filter='functional']", timeout=10000)
-        page.wait_for_timeout(2000)
-        page.click(".map-filter-btn[data-filter='functional']")
-        page.wait_for_timeout(300)
         n = int(page.locator("#mapCounterValue").inner_text().replace(",", ""))
-        # Functional: M2, K1, DL1 = 3
-        assert n == 3, f"Functional filter should be 3, got {n}"
+        # 9 active vacancies in the fixture, whatever their post or functional area
+        assert n == 9, f"Counter should be 9, got {n}"
 
-    def test_education_filter_label_count(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector(".map-filter-btn[data-filter='education']", timeout=10000)
-        page.wait_for_timeout(2000)
-        page.click(".map-filter-btn[data-filter='education']")
-        page.wait_for_timeout(300)
-        n = int(page.locator("#mapCounterValue").inner_text().replace(",", ""))
-        # Education: M1 (Assistant Professor → professor keyword), T1 (Research Fellow → research fellow keyword) = 2
-        assert n == 2, f"Education filter should be 2, got {n}"
+    def test_no_category_buttons(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        assert page.locator(".map-filter-btn, #mapFilters, #mapFiltersToggle").count() == 0
+        for width in (390, 1280):
+            page.set_viewport_size({"width": width, "height": 800})
+            expect(page.locator("#zoomInBtn")).to_be_visible()
 
-    def test_aria_pressed(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector(".map-filter-btn", timeout=10000)
-        page.wait_for_timeout(2000)
-        page.click(".map-filter-btn[data-filter='education']")
-        page.wait_for_timeout(300)
-        active = page.locator(".map-filter-btn.active")
-        assert active.count() == 1
-        assert active.first.get_attribute("aria-pressed") == "true"
+    def test_tooltip_has_no_category_breakdown(self, page: Page, base_url: str, all_36_states_fixture):
+        _open_map(page, base_url)
+        page.wait_for_timeout(1500)
+        page.locator("#map-svg [data-abbr='MH'].ad-state").hover()
+        expect(page.locator("#mapTooltip")).to_be_visible()
+        assert page.locator("#mapTooltipMeta").inner_text() == ""
+        assert "Functional" not in page.locator("#mapTooltip").inner_text()
 
 
 # ---------------------------------------------------------------------------
@@ -708,38 +693,6 @@ class TestDelhi:
 # ---------------------------------------------------------------------------
 # 13. Mobile 390px
 # ---------------------------------------------------------------------------
-
-class TestMobileFilters:
-    def test_filter_toggle_visible(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.wait_for_selector("#map-svg .ad-state", timeout=15000)
-        page.set_viewport_size({"width": 390, "height": 812})
-        page.wait_for_timeout(500)
-        toggle = page.locator("#mapFiltersToggle")
-        assert toggle.is_visible()
-
-    def test_filter_toggle_44px(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.set_viewport_size({"width": 390, "height": 812})
-        page.wait_for_timeout(500)
-        toggle = page.locator("#mapFiltersToggle")
-        box = toggle.bounding_box()
-        assert box is not None
-        assert box["width"] >= 44 and box["height"] >= 44, f"Got {box['width']}x{box['height']}"
-
-    def test_filter_drawer_open_close(self, page: Page, base_url: str, all_36_states_fixture):
-        page.goto(f"{base_url}/india-map.html")
-        page.set_viewport_size({"width": 390, "height": 812})
-        page.wait_for_timeout(500)
-        # Open
-        page.click("#mapFiltersToggle")
-        page.wait_for_timeout(300)
-        assert page.locator(".map-filters.open").count() == 1
-        # Close
-        page.click("#mapFiltersToggle")
-        page.wait_for_timeout(300)
-        assert page.locator(".map-filters.open").count() == 0
-
 
 # ---------------------------------------------------------------------------
 # 14. No decorative clutter (replaces the particle-lifecycle checks: the
@@ -1035,14 +988,14 @@ class TestStateVacancies:
         expect(page.locator("#modalBody")).to_contain_text("Nursing Superintendent")
 
     def test_district_tooltip_uses_district_numbers(self, page: Page, base_url: str, all_36_states_fixture):
-        """A district's tooltip shows its own count and breakdown, not its state's."""
+        """A district's tooltip shows its own count, not its state's, and no category split."""
         _open_map(page, base_url)
         _svg_state_click(page, "UK")
         _expect_state(page, "UK")
         page.locator("#map-svg [data-district='Dehradun'].ad-district").hover()
         expect(page.locator("#mapTooltipName")).to_have_text("Dehradun")
         expect(page.locator("#mapTooltipCount")).to_have_text("1 vacancy")
-        expect(page.locator("#mapTooltipMeta")).to_have_text("1 General")
+        expect(page.locator("#mapTooltipMeta")).to_have_text("")
         page.locator("#map-svg [data-district='Nainital'].ad-district").hover()
         expect(page.locator("#mapTooltipName")).to_have_text("Nainital")
         expect(page.locator("#mapTooltipCount")).to_have_text("0 vacancies")
@@ -1492,6 +1445,16 @@ class TestSiteIntegration:
         fb = page.locator(".sw-fb").bounding_box()
         counter = page.locator("#mapCounter").bounding_box()
         assert not _boxes_overlap(fb, counter), (fb, counter)
+
+    @pytest.mark.parametrize("name", ["india-map.html", "faq.html", "my-deputation.html"])
+    def test_phone_nav_shows_current_page(self, page: Page, base_url: str, name):
+        """The phone nav row scrolls so the current page's link is in view."""
+        page.set_viewport_size({"width": 390, "height": 812})
+        page.goto(f"{base_url}/{name}", wait_until="load")
+        page.wait_for_timeout(800)
+        row = page.locator(".top-nav .nav-links").bounding_box()
+        link = page.locator(".top-nav .nav-links a.active").bounding_box()
+        assert link["x"] >= row["x"] - 1 and link["x"] + link["width"] <= row["x"] + row["width"] + 1, (row, link)
 
     @pytest.mark.parametrize("width", [900, 1024, 1280])
     @pytest.mark.parametrize("name", ["index.html", "india-map.html"])

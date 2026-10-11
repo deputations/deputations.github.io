@@ -19,7 +19,6 @@
   let drawGeneration = 0;    // decorative draw-in lifecycle (J)
   let lastFocusedState = null;
   let announceTimer = null;
-  let activeMapFilter = 'all'; // C21: explicit filter state
   let introPending = false;    // first national render plays the tricolour intro
   let ledGeneration = 0;       // bumped by clearMap: drops stale intro / border work
 
@@ -1848,7 +1847,7 @@
       if (!g || !g.height) return null;
       const head = Math.max(...['btn-back', 'stateListBtn', 'mapCounter']
         .map(id => mapAreaRect(document.getElementById(id))).filter(Boolean).map(r => r.bottom), 0);
-      const foot = Math.min(...['mapFiltersToggle', 'mapFilters']
+      const foot = Math.min(...['zoomInBtn']
         .map(id => mapAreaRect(document.getElementById(id))).filter(Boolean).map(r => r.top), layout.H);
       const mapTop = g.top - area.top, mapBottom = g.bottom - area.top;
       const above = mapTop - head - 24, below = foot - mapBottom - 24;
@@ -2057,7 +2056,7 @@
       });
       path.addEventListener('mouseenter', (e) => {
         path.classList.add('ad-gpu');
-        showTooltip(e, abbr, geoName, count, IndiaMapData.getListingsForDistrict(abbr, geoName));
+        showTooltip(e, abbr, geoName, count);
       });
       path.addEventListener('mousemove', moveTooltip);
       path.addEventListener('mouseleave', () => { path.classList.remove('ad-gpu'); hideTooltip(); });
@@ -2135,29 +2134,16 @@
   }
 
   // ----- Tooltip -----
-  // `listings` is given for a district; without it the tooltip describes the
-  // whole state. Count and category breakdown always come from the same set,
-  // so a district never shows its state's breakdown.
-  function showTooltip(event, abbr, name, count, listings) {
+  // Name and active-vacancy count of the state or district under the pointer.
+  function showTooltip(event, abbr, name, count) {
     const t = document.getElementById('mapTooltip');
     if (!t) return;
     const n = document.getElementById('mapTooltipName');
     const c = document.getElementById('mapTooltipCount');
     const m = document.getElementById('mapTooltipMeta');
     if (n) n.textContent = name;
-    const pool = listings || (window.IndiaMapData ? IndiaMapData.getFiltered(abbr, {}) : []);
-    // C21: tooltip count respects activeMapFilter
-    let tooltipCount = count;
-    if (activeMapFilter !== 'all') {
-      const cat = activeMapFilter === 'functional' ? 'Functional' : 'Education';
-      tooltipCount = pool.filter(v => v.category === cat).length;
-    }
-    if (c) c.textContent = `${tooltipCount} vacanc${tooltipCount !== 1 ? 'ies' : 'y'}`;
-    if (m) {
-      const cats = {};
-      pool.forEach(v => { cats[v.category] = (cats[v.category] || 0) + 1; });
-      m.textContent = Object.entries(cats).map(([k, v]) => `${v} ${k}`).join(' · ') || '';
-    }
+    if (c) c.textContent = `${count} vacanc${count !== 1 ? 'ies' : 'y'}`;
+    if (m) m.textContent = '';
     moveTooltip(event);
     t.hidden = false;
     requestAnimationFrame(() => t.classList.add('visible'));
@@ -2189,46 +2175,6 @@
       nationalCount: window.IndiaMapData?.getActiveTotal?.() || 0,
       stateCounts: sc,
     };
-  }
-
-  // ----- Filter buttons -----
-  function applyFilter(type) {
-    activeMapFilter = type; // C21: store filter state for tooltip consistency
-    const paths = document.querySelectorAll('#map-svg .ad-state');
-    const labelsG = document.querySelector('#map-svg #map-labels');
-    paths.forEach(p => {
-      const abbr = p.dataset.abbr;
-      let visible = true;
-      let count = 0;
-      if (type === 'functional') {
-        const list = window.IndiaMapData?.getFiltered?.(abbr, { category: 'Functional' }) || [];
-        count = list.length;
-        visible = count > 0;
-      } else if (type === 'education') {
-        const list = window.IndiaMapData?.getFiltered?.(abbr, { category: 'Education' }) || [];
-        count = list.length;
-        visible = count > 0;
-      } else {
-        count = window.IndiaMapData?.getStateCount?.(abbr) || 0;
-      }
-      // '' rather than '1' so the hover spotlight can still fade it
-      p.style.opacity = visible ? '' : '0.12';
-      document.querySelectorAll(`#map-svg .ad-wall[data-for="${abbr}"]`).forEach(w => { w.style.opacity = p.style.opacity; });
-      p.setAttribute('aria-label', `${ABBR_TO_NAME[abbr] || abbr}: ${count} vacancies`);
-      // Update count label from the shared #map-labels group
-      if (labelsG) {
-        const countEl = labelsG.querySelector(`text.ad-state-count[data-for="${abbr}"]`);
-        if (countEl) {
-          countEl.textContent = type === 'all' ? count : (count > 0 ? count : '');
-          countEl.style.display = (type !== 'all' && count === 0) ? 'none' : '';
-        }
-      }
-    });
-    // Update header counter: every active vacancy in the chosen category,
-    // not just the ones placed in a state (see updateCounter)
-    const category = { functional: 'Functional', education: 'Education' }[type];
-    const counter = document.getElementById('mapCounterValue');
-    if (counter) counter.textContent = (window.IndiaMapData?.getActiveTotal?.(category) || 0).toLocaleString();
   }
 
   function zoomIn() {
@@ -2667,30 +2613,11 @@
       });
     }
 
-    document.querySelectorAll('.map-filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.map-filter-btn').forEach(b => {
-          b.classList.remove('active');
-          b.setAttribute('aria-pressed', 'false');
-        });
-        btn.classList.add('active');
-        btn.setAttribute('aria-pressed', 'true');
-        applyFilter(btn.dataset.filter);
-        announce(`Filter: ${btn.textContent}`);
-      });
-    });
-
-    // Filter toggle button (mobile)
-    document.getElementById('mapFiltersToggle')?.addEventListener('click', onFiltersToggle);
-
-    // Keep the mobile filter drawer in sync with the viewport (C24)
-    window.addEventListener('resize', syncMobileFilters);
     let stateResizeTimer = null;
     window.addEventListener('resize', () => {
       clearTimeout(stateResizeTimer);
       stateResizeTimer = setTimeout(onStateResize, 150);
     });
-    syncMobileFilters();
   };
 
   // ----- Wheel zoom (centered on cursor) -----
@@ -2792,30 +2719,6 @@
       }
       panState = null;
     }
-  }
-
-  // ----- Filter toggle (mobile) -----
-  // Show/hide filter buttons and the toggle based on viewport width.
-  // Touch target = 44px minimum. Close filter panel on resize to desktop.
-  function syncMobileFilters() {
-    const btn = document.getElementById('mapFiltersToggle');
-    const filters = document.querySelector('.map-filters');
-    if (!btn || !filters) return;
-    const isMobile = window.innerWidth < 768;
-    btn.hidden = !isMobile;
-    if (!isMobile) {
-      filters.classList.remove('open');
-      btn.classList.remove('open');
-      btn.setAttribute('aria-expanded', 'false');
-    }
-  }
-  function onFiltersToggle() {
-    const btn = document.getElementById('mapFiltersToggle');
-    const filters = document.querySelector('.map-filters');
-    if (!btn || !filters) return;
-    const isOpen = filters.classList.toggle('open');
-    btn.classList.toggle('open', isOpen);
-    btn.setAttribute('aria-expanded', String(isOpen));
   }
 
   // ===== Supabase Realtime: INSERT events trigger state ripples =====

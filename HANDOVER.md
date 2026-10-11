@@ -6793,3 +6793,36 @@ focus:          Prepare /india-map.html for integration into the main site; head
 - The site theme toggle does not apply on the map page.
 
 ## session shq-2026-10-10-001 end
+
+## session shq-2026-10-11-002
+```
+started:        2026-10-11
+ended:          2026-10-11
+model:          claude-opus-5-5
+driver:         solo
+branch:         claude/beautiful-allen-13etna (new PR after #19 merged)
+starting_head:  1147d2b (main, PR #19 merged and deployed)
+ending_head:    <see the PR merge commit on main>
+focus:          India map shows every active vacancy (Functional / Education buttons removed); phone nav centring fix
+```
+
+### inbound context read
+- shq-2026-10-10-001 (block above).
+
+### owner's brief
+- "what is the logic behind this bifurcation ... show all active deputations on the map" (the All / Functional / Education buttons).
+
+### findings
+- The split was a keyword guess in `india-map-data.js` `deriveCategory()`: Education if post name or Functional_Area contains teach / faculty / professor / institute / university / college / school / …; Functional if it contains account / admin / officer / assistant / engineer / …; otherwise "General", which no button showed on its own. On data/vacancies.json: 1,023 Functional, 198 Education, 177 General — "institute" and "officer" match most posts, so the buckets meant little.
+
+### work done
+- **Map**: buttons, mobile filter drawer and their code removed (`india-map.html`, `india-map-view.js` `applyFilter` / `activeMapFilter` / `syncMobileFilters` / `onFiltersToggle`, CSS). Counter, labels and tooltips always count every active vacancy. Tooltip no longer shows the "N Functional · N Education · N General" line (`.map-tooltip-meta:empty` hides the empty line). Zoom controls sit bottom right alone (`.map-controls` justify-content: flex-end). Portrait state-title layout measures its bottom limit from `#zoomInBtn`.
+- Data layer untouched: `deriveCategory`, `category` on normalised rows and the optional `category` argument of `getFiltered` / `getActiveTotal` remain (unused by the view now).
+- **Phone nav fix** (`site-widgets.js` `enhanceNav`): `offsetLeft` of the active link is measured from `.top-nav`, so the wider "A V² product" brand made the row scroll past the current page's link (e.g. "India Map" off-screen on the map page). Now subtracts `links.offsetLeft`. `site-widgets.js?v=32` on every page.
+- Versions: india-map.css / india-map-view.js `p1b9`.
+- Tests: `TestFilters` / `TestMobileFilters` replaced by `TestAllActive` (counter = all active, no category buttons, no breakdown in tooltip); district tooltip test expects an empty meta line; `test_phone_nav_shows_current_page`; Node C06 / C08 / C09 updated. 113 map smoke + 182 Node pass.
+
+### gotchas for next session
+- Deep-link district tests (`TestDeepLink::test_deep_link_is_replaced_not_pushed`, `TestQAP002_DeepLinkBack`, `TestQAP003_DelhiRouting::test_delhi_district_deep_link`) wait 5 s (expect default) for `#modal`; with `-n 4` in this sandbox the deep-link render takes ~6 s without the RPC stub and they failed in 6 of 20 parallel runs on this branch (0 of 14 on main, 0 of 4 in an interleaved A/B where both passed every run). No code path in this change touches that flow; CI runs serially. If it recurs, give `_expect_district` an explicit timeout rather than changing app code.
+
+## session shq-2026-10-11-002 end

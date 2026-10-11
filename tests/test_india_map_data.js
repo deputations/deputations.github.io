@@ -128,13 +128,9 @@ assert(html.includes('id="modalTitle"'), 'HTML has #modalTitle');
 assert(html.includes('id="modalBody"'), 'HTML has #modalBody');
 assert(html.includes('<dialog'), 'Uses <dialog> element');
 
-section('C06: Mobile filter toggle');
-assert(html.includes('id="mapFiltersToggle"'), 'HTML has #mapFiltersToggle');
-assert(html.includes('hidden'), 'mapFiltersToggle has hidden attribute (shown by JS on mobile)');
-assert(html.includes('aria-label="Toggle filters"'), 'Has aria-label for accessibility');
-assert(html.includes('aria-expanded'), 'Has aria-expanded for accessibility');
-assert(js.includes('syncMobileFilters'), 'JS has syncMobileFilters() function');
-assert(js.includes('window.innerWidth < 768'), 'Mobile breakpoint check');
+section('C06: No category filter (the map shows every active vacancy)');
+assert(!html.includes('id="mapFiltersToggle"') && !html.includes('id="mapFilters"'), 'HTML has no category buttons or their mobile toggle');
+assert(!html.includes('data-filter='), 'No Functional / Education filter buttons');
 
 section('C06: Hover spotlight (hovered state lifts, others fade)');
 assert(css.includes('.has-spotlight .ad-state:not(.is-spot)'), 'CSS fades the states that are not hovered');
@@ -144,12 +140,11 @@ assert(js.includes("lift.id = 'map-lift'") && js.includes('function setSpotlight
 section('C06: No decorative particle layer (removed in the Apple-style redesign)');
 assert(!js.includes('particleCanvas') && !js.includes('__mapParticleState'), 'Particle background removed');
 assert(!js.includes('spawnVortex'), 'Click burst removed');
-assert(js.includes("addEventListener('resize', syncMobileFilters)"), 'Resize still keeps the mobile filter drawer in sync');
+assert(!js.includes('syncMobileFilters') && !js.includes('.map-filter-btn'), 'Category filter buttons and their mobile drawer removed');
 
-section('C09: Tooltip uses getFiltered for filtered tooltip counts');
-// Verify showTooltip uses getFiltered and activeMapFilter (C21)
-assert(js.includes('getFiltered(abbr'), 'Tooltip uses getFiltered with abbr');
-assert(js.includes('activeMapFilter'), 'Tooltip respects activeMapFilter');
+section('C09: Tooltip shows every active vacancy, with no category split');
+assert(!js.includes('activeMapFilter'), 'No category filter state left in the view');
+assert(js.includes('function showTooltip(event, abbr, name, count)'), 'Tooltip takes the count it is given');
 assert(!js.includes('getAllVacancies().filter(v =>'), 'Tooltip does not use getAllVacancies (inefficient)');
 
 section('C10: Delhi selectedDistrict declared');

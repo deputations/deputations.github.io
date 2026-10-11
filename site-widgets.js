@@ -719,8 +719,10 @@
     if (!links) return;
     var active = links.querySelector("a.active");
     if (!active) return;
-    // centre via scrollLeft (scrollIntoView would also scroll the page vertically)
-    var target = active.offsetLeft - (links.clientWidth - active.offsetWidth) / 2;
+    // centre via scrollLeft (scrollIntoView would also scroll the page vertically).
+    // offsetLeft is measured from the nav, so take off where the link row starts
+    // (the brand sits before it).
+    var target = (active.offsetLeft - links.offsetLeft) - (links.clientWidth - active.offsetWidth) / 2;
     if (links.scrollWidth > links.clientWidth + 4) {
       links.scrollLeft = Math.max(0, target);
     }

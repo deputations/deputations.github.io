@@ -109,16 +109,11 @@ body.map-active .app-container { overflow: hidden; }
 .map-tooltip-name { font-size: 13px; font-weight: 600; color: var(--map-text); }
 .map-tooltip-count { font-size: 12px; font-weight: 500; color: var(--map-text); margin-top: 2px; font-variant-numeric: tabular-nums; }
 .map-tooltip-meta { font-size: 11px; color: var(--map-text-2); margin-top: 2px; }
+.map-tooltip-meta:empty { display: none; }
 
 /* ----- Controls: segmented filter + zoom, floating at the map's foot ----- */
-.map-controls { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; justify-content: space-between; align-items: flex-end; padding: 14px 20px; gap: 12px; pointer-events: none; }
+.map-controls { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; justify-content: flex-end; align-items: flex-end; padding: 14px 20px; gap: 12px; pointer-events: none; }
 .map-controls > * { pointer-events: auto; }
-.map-filters { display: flex; gap: 2px; flex-wrap: wrap; align-items: center; padding: 3px; background: var(--map-surface); border: 1px solid var(--map-hairline); border-radius: 10px; }
-.map-filter-toggle { display: none; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--map-hairline); background: var(--map-surface); color: var(--map-text-2); cursor: pointer; }
-.map-filter-toggle.open { background: var(--map-surface-raised); color: var(--map-text); }
-.map-filter-btn { padding: 6px 14px; border-radius: 8px; border: 0; background: transparent; color: var(--map-text-2); font-size: 13px; font-weight: 500; font-family: var(--map-font); cursor: pointer; transition: background var(--map-dur) var(--map-ease), color var(--map-dur) var(--map-ease); }
-.map-filter-btn:hover { color: var(--map-text); }
-.map-filter-btn.active { background: var(--map-surface-raised); color: var(--map-text); box-shadow: 0 1px 2px rgba(29, 36, 51, 0.1); }
 .map-zoom-controls { display: flex; gap: 4px; }
 .map-zoom-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--map-hairline); background: var(--map-surface); color: var(--map-text-2); font-size: 15px; cursor: pointer; transition: background var(--map-dur) var(--map-ease), color var(--map-dur) var(--map-ease); display: flex; align-items: center; justify-content: center; font-family: var(--map-font); }
 .map-zoom-btn:hover { background: var(--map-surface-raised); color: var(--map-text); }
@@ -417,37 +412,10 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
 .map-container { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
 .map-svg-wrap { flex: 1; position: relative; overflow: hidden; }
 
-/* ===== Mobile filter drawer (C17) ===== */
-/* Default desktop: toggle hidden, filters visible as row */
-.map-filter-toggle { display: none; }
-
-/* Mobile (<768px): toggle becomes visible, filters collapse by default */
+/* ===== Phones (<768px) ===== */
 @media (max-width: 767px) {
-  .map-filter-toggle { display: flex; position: absolute; left: 16px; bottom: 14px; z-index: 4; }
   .map-header { padding: 10px 16px; gap: 10px; flex-wrap: wrap; }
-  .map-filters {
-    display: none;
-    width: 100%;
-    flex-direction: column;
-    gap: 4px;
-    padding: 6px;
-    margin-top: 4px;
-  }
-  .map-filters.open { display: flex; }
-  .map-filters .map-filter-btn {
-    width: 100%;
-    text-align: center;
-    padding: 10px 14px;
-    font-size: 14px;
-  }
-  /* Zoom at the bottom right (the filter toggle sits bottom left); the
-     open filter list stacks above them */
-  .map-controls {
-    flex-direction: column;
-    align-items: flex-end;
-    padding: 14px 16px;
-    gap: 8px;
-  }
+  .map-controls { padding: 14px 16px; }
   .map-controls .map-zoom-controls { min-height: 44px; align-items: center; }
 }
 
