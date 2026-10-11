@@ -2382,6 +2382,13 @@
     }
   }
 
+  // Why a card's place is shown when the post names none (Location_Assumed)
+  const LOCATION_BASIS_NOTE = {
+    notification: 'The post gives no location; shown where the other posts of the same notification are',
+    organisation: "The post gives no location; shown at the organisation's location",
+    default: 'The notification gives no location; Central Government posts are shown at New Delhi',
+  };
+
   // Each card opens its vacancy on the home page (/?v=<Vacancy_ID>). The title
   // link is stretched over the whole card; the Notification link sits above it.
   function listingCardsHtml(listings) {
@@ -2394,7 +2401,7 @@
             ${l.level ? `<span class="ad-listing-badge">${esc(l.level)}</span>` : ''}
           </div>
           <div class="ad-listing-meta">
-            ${l.city ? `<span${l.locationAssumed ? ' title="The notification gives no location; Central Government posts are shown at New Delhi"' : ''}>${esc(l.city)}${l.locationAssumed ? ' (location not stated)' : ''}</span>` : ''}
+            ${l.city ? `<span${l.locationAssumed ? ` title="${esc(LOCATION_BASIS_NOTE[l.locationBasis] || LOCATION_BASIS_NOTE.default)}"` : ''}>${esc(l.city)}${l.locationAssumed ? ' (location not stated)' : ''}</span>` : ''}
             ${l.ministry ? `<span>${esc(l.ministry)}</span>` : ''}
             ${l.organisation ? `<span>${esc(l.organisation)}</span>` : ''}
             ${l.functionalArea ? `<span>${esc(l.functionalArea)}</span>` : ''}

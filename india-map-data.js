@@ -132,8 +132,9 @@ window.IndiaMapData = (() => {
 
   // ----- Missing locations -----
   // Every vacancy on the site is a Central Government deputation, so one with
-  // no location at all (no state, no city, no district) is placed at New Delhi
-  // and flagged locationAssumed. When State Government vacancies are added, an
+  // no location at all is placed where the rest of its notification or its
+  // organisation is, else at New Delhi (scripts/location_defaults.py does this
+  // at build time) and flagged locationAssumed. When State Government vacancies are added, an
   // unlocated one must default to ITS state's capital instead — see HANDOVER
   // (session shq-2026-10-11-002) before changing this.
   const DEFAULT_LOCATION = { state_abbr: 'DL', district: 'New Delhi', city: 'New Delhi' };
@@ -209,17 +210,23 @@ window.IndiaMapData = (() => {
     // when the vacancy names no place at all (see "Missing locations")
     const noState = !String(rawState).trim() && !preAbbr;
     if (!abbr && noState && rawCity.trim()) abbr = stateFromCity(rawCity);
-    const locationAssumed = !abbr && noState && !rawCity.trim() && !v.district && !v.location_scope;
-    if (locationAssumed) abbr = DEFAULT_LOCATION.state_abbr;
+    // scripts/build_data.py fills these in data/vacancies.json and marks them
+    // Location_Assumed ("notification" | "organisation" | "default"); rows
+    // that skip the build (realtime / Supabase-only) get the default here.
+    const unlocated = !abbr && noState && !rawCity.trim() && !v.district && !v.location_scope;
+    if (unlocated) abbr = DEFAULT_LOCATION.state_abbr;
+    const locationBasis = v.Location_Assumed || (unlocated ? 'default' : '');
+    const locationAssumed = Boolean(locationBasis);
     return {
       id: v.Vacancy_ID || v.id || '',
       title: v.Post_Name || v.title || 'Untitled post',
       ministry: v.Ministry || '',
       organisation: v.Organisation || '',
       level: v.Level_Text || v.Level || '',
-      city: locationAssumed ? DEFAULT_LOCATION.city : rawCity,
+      city: unlocated ? DEFAULT_LOCATION.city : rawCity,
       stateName: rawState,
       locationAssumed,
+      locationBasis,
       state_abbr: abbr,
       // Both spellings: realtime rows arrive from Supabase in snake_case
       closingDate: v.Last_Date_To_Apply || v.last_date_to_apply || '',
@@ -229,7 +236,7 @@ window.IndiaMapData = (() => {
       district: (() => {
         const d = v.district || '';
         if (d) return d;
-        if (locationAssumed) return DEFAULT_LOCATION.district;
+        if (unlocated) return DEFAULT_LOCATION.district;
         if (abbr === 'DL') {
           const c = String(v.Location_City || '').toLowerCase().trim();
           if (c === 'new delhi') return 'New Delhi';

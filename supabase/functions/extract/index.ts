@@ -111,6 +111,12 @@ const BASE_RULES = `
 Return ONE row per (post × location/bench × pay level). If an advertisement
 lists a post available at several benches/cities or several levels, expand it
 into multiple rows — never collapse them.
+location_city / location_state = the place of posting of THIS post. When the
+advertisement names no place of posting for the post, use the city and state
+of the office address, or of the address applications are to be sent to
+(correspondence address), printed in the advertisement. Only when the
+advertisement gives neither, return "" for both (the site then places the post
+where the other posts of the notification are, else at New Delhi).
 Dates MUST be ISO format yyyy-mm-dd. NEVER return dd-mm-yyyy or
 dd/mm/yyyy — even if the source PDF prints the date that way. The database
 column is text with no format coercion, so a returned '06-10-2026' will be
