@@ -7,6 +7,8 @@ import unittest
 from datetime import date
 from pathlib import Path
 from unittest.mock import patch
+import gzip
+from urllib.parse import parse_qs, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import public_snapshots as snapshots
@@ -58,6 +60,43 @@ class SnapshotTests(unittest.TestCase):
                                    ('2026-10-18', 'Unknown'), ('bad', 'Unknown')]:
             self.assertEqual(snapshots.status_row(dict(Notification_Date=notified), today)['Status'], expected)
         self.assertIsNone(snapshots.iso_date('2026-02-30'))
+
+
+class ExportTests(unittest.TestCase):
+    def response(self, rows, count):
+        class Response:
+            headers = {'Content-Encoding': 'gzip', 'Content-Range': f'0-0/{count}'}
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+            def read(self, limit): return gzip.compress(json.dumps(rows).encode())[:limit]
+        return Response()
+
+    def test_export_uses_narrow_fields_and_rejects_partial_result(self):
+        import build_data
+        response = self.response([{'vacancy_id':'A', 'post_name':'Officer'}], 2)
+        with patch.object(build_data.urllib.request, 'urlopen', return_value=response) as request:
+            with self.assertRaisesRegex(RuntimeError, 'Partial export'):
+                build_data.fetch_supabase_rows('https://example.invalid', 'test-only-token')
+            req = request.call_args.args[0]
+            select = parse_qs(urlsplit(req.full_url).query)['select'][0]
+            self.assertNotIn('*', select)
+            self.assertNotIn('reviewer_notes', select)
+            self.assertIn('detailed_eligibility:raw_extraction->>detailed_eligibility', select)
+            self.assertEqual(req.get_header('Accept-encoding'), 'gzip')
+
+    def test_transfer_budget_fails_before_publication(self):
+        import build_data
+        with patch.dict('os.environ', {'SNAPSHOT_MAX_TRANSFER_BYTES':'1'}), patch.object(
+                build_data.urllib.request, 'urlopen', return_value=self.response([{'vacancy_id':'A'}], 1)):
+            with self.assertRaisesRegex(RuntimeError, 'transfer budget'):
+                build_data.fetch_supabase_rows('https://example.invalid', 'test-only-token')
+
+    def test_missing_server_credentials_fail_without_spreadsheet_fallback(self):
+        import build_data
+        with patch.dict('os.environ', {}, clear=True), patch.object(build_data, 'fetch_sheet_rows') as legacy:
+            with self.assertRaisesRegex(RuntimeError, 'server-only'):
+                build_data.main()
+            legacy.assert_not_called()
 
 
 if __name__ == '__main__':

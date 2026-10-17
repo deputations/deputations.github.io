@@ -48,8 +48,21 @@ test('optional request switch and search limiter protect upstream', async () => 
   try {
     const req = new Request('https://api.alldeputations.com/functions/v1/semantic-search',{method:'POST'});
     assert.equal((await worker.fetch(req,{DISABLE_PUBLIC_LIVE:'true'},ctx())).status,503);
-    assert.equal((await worker.fetch(req,{SEARCH_RATE_LIMITER:{limit:async()=>({success:false})}},ctx())).status,429);
+    assert.equal((await worker.fetch(req,{PUBLIC_PROXY_SECRET:'x'.repeat(64),SEARCH_RATE_LIMITER:{limit:async()=>({success:false})}},ctx())).status,429);
     assert.equal((await worker.fetch(req,{},ctx())).status,503);
+  } finally { restore(); }
+});
+
+test('search receives only the configured server token, never a caller-supplied token', async () => {
+  const restore = stubFetch(async (_, init) => {
+    assert.equal(init.headers.get('x-public-proxy-secret'),'x'.repeat(64));
+    return new Response('{}');
+  });
+  try {
+    const req = new Request('https://api.alldeputations.com/functions/v1/semantic-search', {
+      method:'POST',headers:{'x-public-proxy-secret':'forged-client-token'}});
+    assert.equal((await worker.fetch(req,{PUBLIC_PROXY_SECRET:'x'.repeat(64),
+      SEARCH_RATE_LIMITER:{limit:async()=>({success:true})}},ctx())).status,200);
   } finally { restore(); }
 });
 

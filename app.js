@@ -649,8 +649,9 @@ function loadLinkPreviews() {
 // Build metadata (data/meta.json, written by the daily build). Never rejects;
 // a missing file just leaves the "Updated on" chip hidden.
 function loadMeta() {
-    return fetch('data/meta.json')
+    return window.PublicVacancies.load().then(() => window.PublicVacancies.metadata() || fetch('data/meta.json')
         .then(res => (res.ok ? res.json() : null))
+    )
         .catch(() => null);
 }
 

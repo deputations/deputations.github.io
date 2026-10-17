@@ -27,7 +27,7 @@ function fixture(options = {}) {
       return {ok:!!paths[path], status:200, arrayBuffer:async()=>new TextEncoder().encode(body).buffer};
     }};
   vm.createContext(context); vm.runInContext(code, context);
-  return {api:context.window.PublicVacancies,calls,paths};
+  return {api:context.window.PublicVacancies,calls,paths,context};
 }
 test('startup fetches only current data; archived deep link loads one pinned shard',async()=>{
   const f=fixture();assert.equal((await f.api.load()).length,1);
@@ -49,4 +49,10 @@ test('deadline stays active until midnight Kolkata independent of browser timezo
   assert.equal(f.api.classify(row,new Date('2026-10-17T18:29:59Z')).Status,'Active');
   assert.equal(f.api.classify(row,new Date('2026-10-17T18:30:00Z')).Status,'Inactive');
   assert.equal(f.api.classify({Last_Date_To_Apply:'2026-02-30'}).Status,'Unknown');
+});
+test('map retains active status after converting snapshot rows to its internal shape',async()=>{
+  const f=fixture();
+  vm.runInContext(fs.readFileSync('india-map-data.js','utf8'),f.context);
+  await f.context.window.IndiaMapData.load();
+  assert.equal(f.context.window.IndiaMapData.getActiveTotal(),1);
 });

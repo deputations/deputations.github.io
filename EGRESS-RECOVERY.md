@@ -29,16 +29,23 @@ production change.
    policies. It also removes direct public execution of `search_vacancies`.
    Test real anonymous, non-admin, admin and service-role sessions afterward.
    Local PostgreSQL role/RLS tests passed, but do not establish live schema parity.
-7. Deploy the proxy safeguards with its rate-limit binding. BLOCK_PUBLIC_VACANCIES
+7. Configure the same randomly generated (at least 32 characters) PUBLIC_PROXY_SECRET
+   as a protected Supabase function secret and a Wrangler Worker secret. Never
+   put it in config.js, browser requests, source files or logs. Deploy the guarded
+   semantic-search function and proxy together. Missing configuration disables AI
+   search safely; keyword search remains available. Test direct invocation rejects
+   before accessing the database/Gemini, while the website proxy succeeds.
+8. Deploy the proxy safeguards with its rate-limit binding. BLOCK_PUBLIC_VACANCIES
    stops recognizable anonymous bulk reads cheaply; the database enforces access
    even for forged headers or direct requests. The semantic-search binding allows
    60 requests/minute per network per Cloudflare location. It is an abuse throttle,
    not a global budget or exact unique-person counter. Review shared-office impact.
 
-The proxy limiter does NOT cover direct calls to public Supabase Edge Functions.
-Those functions currently return bounded public results, not the full table;
-server-side function abuse controls remain a separate hardening task. No claim
-is made that public static files cannot be copied. Their advantage is that
+The guarded semantic-search function rejects direct calls without the server-only
+proxy token, closing its limiter bypass. Other public features (submissions, votes,
+push subscriptions) are separate endpoints with existing application checks; the
+search limiter does not cover them. Their ongoing usage still needs monitoring.
+No claim is made that public static files cannot be copied. Their advantage is that
 bulk copying no longer requires a live database response.
 
 ## Quota outage
@@ -60,7 +67,7 @@ and full-record polling have been retired; update checks fetch only the manifest
 
 Set proxy DISABLE_PUBLIC_LIVE=true to pause optional proxy search/counters during
 an incident. This leaves static keyword search and listings available; it does
-not itself block direct Edge Function requests. A server-side usage restriction
+not itself pause other direct Edge Function endpoints. A server-side usage restriction
 still needs to be resolved separately. Existing submission forms retain their
 input on failure and only show success after a confirmed successful response.
 
@@ -72,8 +79,8 @@ usage. Account-side automatic usage alerts are NOT configured by this change:
 their available API/permissions were not established. Check daily until that is
 connected; measure admin, embeddings, other functions and backups separately.
 
-Measured optimized export: approximately 1.28 MB of compressed response bodies
-per full export, before the exact-count validation was added. One daily run is
+Measured optimized export: approximately 1.33 MB of compressed response bodies
+per full export with exact-count validation and location-grouping identifiers. One daily run is
 roughly 40 MB/month at today's dataset size. Repeated runs, growth and other
 services are additional. The generated current shard compresses locally to about
 183 KB; the full compatibility file to about 480 KB. Those public files are served
@@ -112,7 +119,7 @@ the upstream without a limit.
 
 ## Checks
 
-- `node --test tests/test_public_data.js`
+- `node --test tests/test_public_data.js tests/test_public_proxy.cjs`
 - `node tests/test_india_map_data.js`
 - `npm ci --prefix tests/sql --ignore-scripts` then
   `node --test tests/test_vacancy_access.cjs`

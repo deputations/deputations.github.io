@@ -6,5 +6,8 @@
   "scripts": {
     "test": "node --test worker.test.js"
   },
-  "comment": "Test runner for the sb-proxy Worker. No deps — Node 18+ ships Request/Response/Headers. Run with `npm test` (from this dir) or `node --test worker.test.js`."
+  "comment": "Worker tests use Node built-ins. Wrangler is pinned as a development-only build/config validator. Run with `npm test` (from this dir) or `node --test worker.test.js`.",
+  "devDependencies": {
+    "wrangler": "4.151.1"
+  }
 }

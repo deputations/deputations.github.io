@@ -81,6 +81,9 @@ def page(context: BrowserContext, base_url: str, request: pytest.FixtureRequest)
     # Backend stub routes installed below take precedence over this guard.
     p.route('**/*', lambda route: route.continue_() if route.request.url.startswith(base_url) else route.abort())
     install_rpc_stub(p, anon_key=ANON_KEY)
+    # Existing page fixtures intentionally stub the compatibility JSON. Keep
+    # those contract tests on that path; snapshot-specific tests opt in below.
+    p.route('**/data/vacancies-manifest.json', lambda route: route.fulfill(status=404))
 
     tracing_path = ARTIFACTS / f"{request.node.name}.trace.zip"
     context.tracing.start(screenshots=True, snapshots=True, sources=False)

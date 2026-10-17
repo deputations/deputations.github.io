@@ -51,35 +51,39 @@ table_of_contents:
 - fonts: Google Fonts (Plus Jakarta Sans, Sora, Unbounded); render-blocking
 
 ### §2.2 data
-| layer | source | writer | schedule | consumer |
-|---|---|---|---|---|
-| static JSON | private Google Sheet | `scripts/build_data.py` via Sheets API | daily `35 3 * * *` (~09:05 IST) + on push to scripts/ | homepage (fallback) |
-| static DeFeX | `anonymised-deputation-data.xlsx` | `scripts/build_defex.py` | weekly Monday | defex.html |
-| live Supabase | approved rows | `extract` + `enrich` + admin review | event-driven | homepage (primary) |
-| legacy Apps Script | incoming forms | n/a | runtime fallback | contact, report-vacancy |
+Public listings use validated static snapshots, never visitor-time vacancy table
+reads. `public-data.js` loads `data/vacancies-manifest.json`, pins its immutable
+current/archive shards, verifies hashes, and recomputes dates in Asia/Kolkata.
+Archive shards load on request; saved/deep-linked records fetch only needed
+shards. `data/vacancies.json` remains the slim compatibility file for old clients,
+feeds and the Astro scaffold. `data/meta.json` records build and source timestamps.
 
-Supabase specifics:
-- `config.js` exposes `SUPABASE_URL` + anon key (public by design; RLS limits
-  anon to `status='approved'` rows)
-- Edge Functions:
-  - `submit` — public form intake (honeypot)
-  - `extract` — Gemini PDF → draft (admin-triggered)
-  - `enrich` — Gemini + Google Search grounding
-  - `gc_sources` — orphan-source cleanup
-  - `push-subscribe` + `push-notify` — web push (live as of 2026-07-09)
-- 14 SQL migrations in `supabase/migrations/`
+`build_data.py` reads an explicit public field list with a server-only service
+credential, gzip, exact counts and a 10 MB per-run transfer ceiling. It refuses
+empty, duplicate, incomplete or unexpectedly shrunken exports. No implicit legacy
+spreadsheet fallback. `.github/workflows/build-data.yml` publishes before optional
+previews/embeddings and verifies the actual host. See EGRESS-RECOVERY.md for rollout,
+backup scope, access controls and quota handling.
+
+Supabase continues to handle admin review/import, submissions, semantic search,
+feedback and push features. Migration 0025 is a separate staged production change:
+base vacancy reads become admin/service-only, and public search RPC execution is
+removed. Semantic search uses a secret-authenticated, rate-limited proxy. These
+account-side changes must be explicitly deployed; repository files alone do not
+establish live grants or secrets. The public anon key still identifies the app,
+but is no longer intended to authorize full vacancy downloads.
 
 Build actions:
-- `.github/workflows/build-data.yml` (daily; bot commits back to main)
-- `.github/workflows/build-defex.yml` (weekly Monday; has Suspect_Bribe safety gate)
-- `.github/workflows/push-notify.yml` (daily cron; x-cron-key gate)
-
-DeFeX build guard: build FAILS if `Suspect_Bribe` column leaks into public JSON.
+- `build-data.yml`: daily snapshot publication; independent optional enrichment
+- `build-defex.yml`: weekly DeFeX dataset, unchanged
+- `push-notify.yml`: daily notifications, unchanged
+- `database-backup.yml`: manual encrypted application-schema backup; requires
+  independently held recipient key and connection secret; not a full project backup
 
 ### §2.3 pages
 | file | role | data | auth |
 |---|---|---|---|
-| `index.html` | dashboard (table+card views, deep-link modal) | supabase or static | none |
+| `index.html` | dashboard (table+card views, deep-link modal) | static snapshots | none |
 | `defex.html` | DeFeX friendliness index | defex/* JSON | none |
 | `my-deputation.html` | personal cockpit (bookmarks/tracker/docs/calendar) | localStorage | none |
 | `contact.html` | feedback form | supabase `submit` | none |

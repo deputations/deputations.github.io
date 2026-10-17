@@ -6846,3 +6846,69 @@ A vacancy whose post names no place of posting gets one, in this order (owner's 
 - Deep-link district tests (`TestDeepLink::test_deep_link_is_replaced_not_pushed`, `TestQAP002_DeepLinkBack`, `TestQAP003_DelhiRouting::test_delhi_district_deep_link`) wait 5 s (expect default) for `#modal`; with `-n 4` in this sandbox the deep-link render takes ~6 s without the RPC stub and they failed in 6 of 20 parallel runs on this branch (0 of 14 on main, 0 of 4 in an interleaved A/B where both passed every run). No code path in this change touches that flow; CI runs serially. `_expect_district` now waits 10 s for `#modal` (same as its URL check).
 
 ## session shq-2026-10-11-002 end
+
+## session shq-2026-10-17-egress-containment
+```
+started:        2026-10-17
+ended:          2026-10-17
+model:          Codex
+driver:         solo (Claude advice supplied by the owner, no delegation)
+branch:         codex/reduce-supabase-egress
+starting_head:  0f51ef0; incorporated origin/main cab5141 before finalization
+focus:          Implement quota containment, public/private data boundary and outage recovery
+```
+
+### owner's brief
+Supabase reported ~19.25 GB / 5 GB egress. Investigate bots, then implement the
+remedial design after reviewing Claude's advice. Public data remains copyable;
+prevent expensive live bulk reads and exposure of review/extraction fields.
+
+### implementation
+- `public-data.js`: stable manifest, immutable checksummed shards, lazy archive,
+  individual archived deep links/bookmarks, Kolkata dates, publication age notice.
+- Dashboard/My Deputation/map use snapshots; full live table race and minute-by-minute
+  record polling retired. Preserve legacy public JSON for cached clients and feeds.
+- Fresh approved dataset exported locally (1,494 rows) with selected public fields,
+  selected eligibility extraction properties, gzip and exact row-count validation.
+  Latest measured full export ~1.33 MB; ordinary public listing loads use zero
+  Supabase vacancy-table requests. 10 MB per-run export limit; no legacy Sheet fallback.
+- Export validates IDs, counts and large shrinkage before publishing a manifest.
+  Optional enrichment no longer gates publication; explicit legacy Pages build and
+  production artifact verifier added. Actual Pages configuration is main / legacy.
+- Migration 0025 stages private base-table reads, restrictive authenticated admin
+  guard and removal of public SECURITY DEFINER search RPC execution.
+- Worker stages anonymous bulk-request rejection, search throttling, no-store API
+  responses and operational disable switch. Semantic-search guard rejects direct
+  calls without a server-only proxy token before DB/Gemini work. Missing secret or
+  limiter fails search closed; static keyword search stays available.
+- Manual encrypted application-schema backup workflow and operational runbook.
+  Backups, account alerts and live grants are NOT configured merely by this commit.
+
+### verification
+- Snapshot/export failure paths: 7 Python unit checks pass.
+- Loader/checksum/lazy archive/date/map integration: 5 Node checks pass.
+- Proxy token verification: 1 Node check passes; Worker: 10 Node checks pass.
+- Private-access migration passes in isolated real PostgreSQL (PGlite), including
+  anonymous and non-admin denial, inherited grants, admin updates and service reads.
+- Targeted browser runs cover home/modal/search, saved records, archives, mobile,
+  full offline reload, 402 and failed-archive preservation, semantic UI and regions.
+- Fixed a map integration defect found by browser checks: normalized rows use
+  closingDate/notificationDate aliases; the shared classifier now receives those.
+- Existing tests expecting injected legacy JSON explicitly use the compatibility
+  path; new snapshot browser tests opt into versioned artifacts. Search debounce
+  regression now checks result totals instead of assuming pagination length changes.
+- Wrangler 4.151.1 pinned; deploy --dry-run validates bindings/configuration with no
+  deployment. Guarded semantic-search module bundles successfully without fetching
+  remote SDK code. Node map data suite: 189 checks pass.
+
+### rollout and remaining account steps
+See EGRESS-RECOVERY.md. Publish/verify static clients first, then apply migration
+0025 and deploy guarded search/proxy with matching PUBLIC_PROXY_SECRET. CLI could
+not inspect repository secrets (403), although recent old data jobs succeeded.
+Encrypted backups need the owner's public recipient key, connection secret,
+compatible PostgreSQL client and isolated restore verification. Usage alerts and
+remaining-workload measurement are still account-side tasks. Do not claim that
+production access controls, backups or the 2 GB monthly target are already active.
+Untracked video-production/ belongs to the owner and was untouched.
+
+## session shq-2026-10-17-egress-containment end

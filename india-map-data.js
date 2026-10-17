@@ -27,7 +27,10 @@ window.IndiaMapData = (() => {
   // ~300 more active vacancies than the dashboard, most of them long closed.
   const UNDATED_ACTIVE_DAYS = 60;   // keep in step with app.js
   function isActive(v) {
-    if (window.PublicVacancies) return window.PublicVacancies.classify(v).Status === "Active";
+    if (window.PublicVacancies) return window.PublicVacancies.classify({
+      Last_Date_To_Apply: v.Last_Date_To_Apply || v.last_date_to_apply || v.closingDate || '',
+      Notification_Date: v.Notification_Date || v.notification_date || v.notificationDate || ''
+    }).Status === "Active";
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const iso = String(v.Last_Date_To_Apply || v.last_date_to_apply || v.closingDate || '').trim();

@@ -68,6 +68,9 @@ export default {
       return Response.json({error:'temporarily_unavailable'}, {status:503, headers:CORS_HEADERS});
     }
     if (url.pathname === '/functions/v1/semantic-search') {
+      if (!env.PUBLIC_PROXY_SECRET || env.PUBLIC_PROXY_SECRET.length < 32) {
+        return Response.json({error:'search_unavailable'}, {status:503, headers:CORS_HEADERS});
+      }
       // Generous per-network ceiling for a small query endpoint. Keys are not
       // logged; shared office/mobile networks can still share this allowance.
       const ip = request.headers.get('CF-Connecting-IP') || 'unknown-network';
@@ -98,7 +101,11 @@ export default {
       if (lk === "cf-worker") continue;
       if (lk === "x-forwarded-for") continue;
       if (lk.startsWith("cf-")) continue;
+      if (lk === 'x-public-proxy-secret') continue;
       headers.set(k, v);
+    }
+    if (url.pathname === '/functions/v1/semantic-search') {
+      headers.set('x-public-proxy-secret', env.PUBLIC_PROXY_SECRET);
     }
 
     // WebSocket upgrade detection. The browser sends Upgrade: websocket +

@@ -46,14 +46,14 @@ def test_search_post_debounces(page, base_url: str):
     page.wait_for_function(
         "() => (document.getElementById('resultsCount')?.textContent || '').includes('vacancies')"
     )
-    before = page.locator("tr.clickable-row[data-open-details]").count()
+    before = page.locator('#resultsCount').inner_text()
     page.fill("#searchPost", "Director")
     # app.js debounces search; wait for the row count to change. We don't
     # hardcode the new count — any change is enough to prove the debounced
     # search is wired up. The arg is passed via a closure variable.
     page.wait_for_function(
         "(prev) =>"
-        "  document.querySelectorAll('tr.clickable-row[data-open-details]').length !== prev",
+        "  document.getElementById('resultsCount').textContent !== prev",
         arg=before,
         timeout=5000,
     )

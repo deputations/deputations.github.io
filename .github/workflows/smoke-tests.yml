@@ -10,6 +10,10 @@ on:
       - "scripts/requirements.txt"
       - "scripts/verify_admin.py"
       - "data/vacancies.json"
+      - "data/vacancies-manifest.json"
+      - "scripts/**"
+      - "supabase/**"
+      - "workers/**"
       - "data/defex/**"
   push:
     branches: [main]
@@ -18,6 +22,10 @@ on:
       - "**/*.js"
       - "tests/**"
       - "data/vacancies.json"
+      - "data/vacancies-manifest.json"
+      - "scripts/**"
+      - "supabase/**"
+      - "workers/**"
       - "data/defex/**"
   workflow_dispatch:
   schedule:
@@ -56,9 +64,17 @@ jobs:
       - name: Public snapshot and map data checks
         run: |
           node --test tests/test_public_data.js
+          node --test tests/test_public_proxy.cjs
+          node --test workers/sb-proxy/worker.test.js
           node tests/test_india_map_data.js
           npm ci --prefix tests/sql --ignore-scripts --no-audit --no-fund
           node --test tests/test_vacancy_access.cjs
+
+      - name: Validate proxy configuration without deployment
+        working-directory: workers/sb-proxy
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx wrangler deploy --dry-run --outdir "$RUNNER_TEMP/proxy-build"
 
       # PR 4: drive the authenticated admin-ingest flow. Exercises Pack A
       # (401 -> refresh -> retry), Pack B (lazy editors, pager) and Pack E

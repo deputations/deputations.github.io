@@ -20,7 +20,7 @@ def main():
         raise ValueError('Invalid PostgreSQL backup URL')
     env = dict(os.environ, PGHOST=parts.hostname, PGPORT=str(parts.port or 5432),
                PGUSER=unquote(parts.username or ''), PGPASSWORD=unquote(parts.password or ''),
-               PGDATABASE=unquote(parts.path.lstrip('/')), PGSSLMODE='require')
+               PGDATABASE=unquote(parts.path.lstrip('/')), PGSSLMODE='require', PGCONNECT_TIMEOUT='15')
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)
         root.chmod(0o700)
@@ -41,7 +41,7 @@ def main():
             raise ValueError('Provide exactly one backup recipient public key')
         dump = root / 'database.dump'
         result = subprocess.run(['pg_dump', '--format=custom', '--no-owner',
-                                 '--schema=public', '--file', str(dump)], env=env, capture_output=True)
+                                 '--schema=public', '--file', str(dump)], env=env, capture_output=True, timeout=300)
         if result.returncode:
             raise RuntimeError('Backup failed; check client/server versions and connection configuration')
         subprocess.run(['pg_restore', '--list', str(dump)], check=True, capture_output=True)

@@ -1,10 +1,16 @@
 """Local-browser checks with every backend request denied or stubbed."""
 import json
+import pytest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = json.loads((ROOT / 'data/vacancies-manifest.json').read_text(encoding='utf-8'))
 ARCHIVED_ID = next(iter(MANIFEST['index']))
+
+
+@pytest.fixture(autouse=True)
+def versioned_snapshots(page):
+    page.route('**/data/vacancies-manifest.json', lambda route: route.continue_())
 
 
 def ready(page, url):

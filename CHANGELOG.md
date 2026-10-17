@@ -26,6 +26,17 @@ counter_convention:
 
 ## [Unreleased]
 
+### Changed - quota containment and public snapshot recovery (2026-10-17)
+Public browsing no longer downloads the Supabase vacancy table. Fresh public-only
+snapshots, lazy archives, archived bookmarks/deep links, Kolkata deadline handling,
+checksums and last-good offline recovery replace the live/static race. The exporter
+uses explicit fields and compression; failed/empty exports cannot silently fall
+back to a legacy spreadsheet. Critical publication precedes optional enrichment and
+verifies production artifacts. Prepared a separately deployed admin-only vacancy
+migration, proxy rate limit and guarded semantic search, and encrypted backup tooling.
+Operational rollout and unconfigured account controls are documented in EGRESS-RECOVERY.md.
+
+
 ### Changed — about-modal prose now types in at reader speed instead of appearing all at once
 The popup from 7.4.5 used to render the whole essay at once when the
 logo was clicked. Owner asked for it to type in word by word at reading

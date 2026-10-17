@@ -81,6 +81,7 @@ jobs:
           # JS files referenced by all Astro pages (index + defex +
           # contact + report-vacancy + rules + faq + my-deputation).
           cp ../config.js public/config.js
+          cp ../public-data.js public/public-data.js
           cp ../enrich.js public/enrich.js
           cp ../app.js public/app.js
           cp ../defex.js public/defex.js            2>/dev/null || true
