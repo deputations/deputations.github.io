@@ -27,6 +27,7 @@ window.IndiaMapData = (() => {
   // ~300 more active vacancies than the dashboard, most of them long closed.
   const UNDATED_ACTIVE_DAYS = 60;   // keep in step with app.js
   function isActive(v) {
+    if (window.PublicVacancies) return window.PublicVacancies.classify(v).Status === "Active";
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const iso = String(v.Last_Date_To_Apply || v.last_date_to_apply || v.closingDate || '').trim();
@@ -253,9 +254,7 @@ window.IndiaMapData = (() => {
 
   // ----- Source loaders -----
   async function loadFromJSON() {
-    const res = await fetch('data/vacancies.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error('vacancies.json HTTP ' + res.status);
-    const raw = await res.json();
+    const raw = window.PublicVacancies ? await window.PublicVacancies.load() : await fetch('data/vacancies.json').then(r => { if (!r.ok) throw new Error('Snapshot unavailable'); return r.json(); });
     const list = Array.isArray(raw) ? raw : Object.values(raw);
     allVacancies = list.map(normaliseVacancy).filter(Boolean);
     source = 'json';

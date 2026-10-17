@@ -30,6 +30,29 @@ function stubFetch(impl) {
   return () => { globalThis.fetch = orig; };
 }
 
+test('retired anonymous bulk endpoint is stopped before upstream, admins still forwarded', async () => {
+  let calls = 0;
+  const restore = stubFetch(async () => { calls++; return new Response('[]'); });
+  try {
+    const anon = new Request('https://api.alldeputations.com/rest/v1/vacancies', {headers:{apikey:'anon',Authorization:'Bearer anon'}});
+    assert.equal((await worker.fetch(anon,{BLOCK_PUBLIC_VACANCIES:'true'},ctx())).status,410);
+    assert.equal(calls,0);
+    const admin = new Request(anon.url,{headers:{apikey:'anon',Authorization:'Bearer admin-session'}});
+    assert.equal((await worker.fetch(admin,{BLOCK_PUBLIC_VACANCIES:'true'},ctx())).status,200);
+    assert.equal(calls,1);
+  } finally { restore(); }
+});
+
+test('optional request switch and search limiter protect upstream', async () => {
+  const restore = stubFetch(async () => { throw new Error('must not reach upstream'); });
+  try {
+    const req = new Request('https://api.alldeputations.com/functions/v1/semantic-search',{method:'POST'});
+    assert.equal((await worker.fetch(req,{DISABLE_PUBLIC_LIVE:'true'},ctx())).status,503);
+    assert.equal((await worker.fetch(req,{SEARCH_RATE_LIMITER:{limit:async()=>({success:false})}},ctx())).status,429);
+    assert.equal((await worker.fetch(req,{},ctx())).status,503);
+  } finally { restore(); }
+});
+
 test("OPTIONS preflight returns 204 with CORS headers", async () => {
   const restore = stubFetch(() => {
     throw new Error("preflight should not call upstream");

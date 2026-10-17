@@ -26,7 +26,18 @@ self.addEventListener("activate", function (event) {
         keys.filter(function (k) { return k.indexOf(VERSION) !== 0; })
             .map(function (k) { return caches.delete(k); })
       );
-    }).then(function () { return self.clients.claim(); })
+    }).then(async function () {
+      // Remove API entries written by the previous worker while preserving
+      // public snapshots and cached pages needed for offline browsing.
+      for (var name of [DATA, RUNTIME]) {
+        var cache = await caches.open(name);
+        for (var request of await cache.keys()) {
+          var host = new URL(request.url).hostname;
+          if (/\.supabase\.co$/.test(host) || host === 'api.alldeputations.com') await cache.delete(request);
+        }
+      }
+      return self.clients.claim();
+    })
   );
 });
 
@@ -36,6 +47,24 @@ self.addEventListener("fetch", function (event) {
 
   var url;
   try { url = new URL(req.url); } catch (e) { return; }
+
+  /* Snapshot manifest is network-first; immutable versioned shards are
+     cache-first. Retain the existing cache namespace for offline continuity.
+     Never cache authenticated Supabase/admin responses. */
+  if (url.origin === self.location.origin &&
+      (url.pathname === '/data/vacancies-manifest.json' || url.pathname.indexOf('/data/snapshots/') === 0)) {
+    event.respondWith(caches.open(DATA).then(async function (cache) {
+      var cached = await cache.match(req);
+      if (cached && url.pathname.indexOf('/data/snapshots/') === 0) return cached;
+      try {
+        var fresh = await fetch(req);
+        if (!fresh.ok) throw new Error('Snapshot unavailable');
+        await cache.put(req, fresh.clone());
+        return fresh;
+      } catch (_) { return cached || new Response('', {status:503}); }
+    }));
+    return;
+  }
 
   /* page navigations: freshest possible, degrade to cache, then the home shell */
   if (req.mode === "navigate") {
@@ -57,24 +86,8 @@ self.addEventListener("fetch", function (event) {
     return;
   }
 
-  /* live Supabase data: network-first so votes/counts stay fresh; cached copy
-     only when the network is gone */
-  if (/\.supabase\.co$/.test(url.hostname)) {
-    event.respondWith(
-      fetch(req).then(function (fresh) {
-        if (fresh && fresh.ok) {
-          var copy = fresh.clone();
-          caches.open(DATA).then(function (c) { c.put(req, copy); });
-        }
-        return fresh;
-      }).catch(function () {
-        return caches.match(req).then(function (hit) {
-          return hit || new Response("", { status: 504 });
-        });
-      })
-    );
-    return;
-  }
+  // Do not persist API responses, especially authenticated admin data.
+  if (/\.supabase\.co$/.test(url.hostname) || url.hostname === 'api.alldeputations.com') return;
 
   /* same-origin static assets + data json: stale-while-revalidate */
   if (url.origin === self.location.origin &&

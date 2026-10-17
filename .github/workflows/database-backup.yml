@@ -1,0 +1,29 @@
+name: Encrypted application database backup
+# Manual until independent recovery keys and a restore test are verified.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install database client and encryption
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client gnupg
+      - name: Create and encrypt backup before upload
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_RECIPIENT_PUBLIC_KEY: ${{ secrets.BACKUP_RECIPIENT_PUBLIC_KEY }}
+        run: python scripts/encrypted_backup.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: encrypted-application-backup-${{ github.run_id }}
+          path: backup-output/*.gpg
+          retention-days: 14
+          if-no-files-found: error

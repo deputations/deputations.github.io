@@ -54,6 +54,35 @@ export default {
     }
 
     const url = new URL(request.url);
+    // This is an early bandwidth guard, not authentication. Supabase validates
+    // every forwarded JWT and the database migration enforces the real boundary.
+    const token = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+    const knownAnonymous = !token || token === request.headers.get('apikey');
+    if (env.BLOCK_PUBLIC_VACANCIES === 'true' && url.pathname === '/rest/v1/vacancies' && knownAnonymous) {
+      return Response.json({error:'public_listings_moved', message:'Use the published website snapshot.'},
+        {status:410, headers:CORS_HEADERS});
+    }
+    const optionalPublic = url.pathname === '/functions/v1/semantic-search' ||
+      /^\/rest\/v1\/rpc\/(heartbeat|bump_visit|get_sentiment)$/.test(url.pathname);
+    if (optionalPublic && env.DISABLE_PUBLIC_LIVE === 'true') {
+      return Response.json({error:'temporarily_unavailable'}, {status:503, headers:CORS_HEADERS});
+    }
+    if (url.pathname === '/functions/v1/semantic-search') {
+      // Generous per-network ceiling for a small query endpoint. Keys are not
+      // logged; shared office/mobile networks can still share this allowance.
+      const ip = request.headers.get('CF-Connecting-IP') || 'unknown-network';
+      const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip));
+      const key = Array.from(new Uint8Array(bytes)).map(n => n.toString(16).padStart(2,'0')).join('');
+      try {
+        if (!env.SEARCH_RATE_LIMITER) throw new Error('Missing limiter binding');
+        const result = await env.SEARCH_RATE_LIMITER.limit({key});
+        if (!result.success) return Response.json({error:'rate_limited'},
+          {status:429, headers:{...CORS_HEADERS, 'Retry-After':'60'}});
+      } catch (_) {
+        // Search can fail closed: keyword search and static listings still work.
+        return Response.json({error:'search_unavailable'}, {status:503, headers:CORS_HEADERS});
+      }
+    }
     // Build the upstream URL by replacing the origin.
     const upstreamUrl = TARGET + url.pathname + url.search;
 
@@ -88,9 +117,8 @@ export default {
       return fetch(upstreamReq);
     }
 
-    // Plain HTTP fetch. Cache GETs at the edge for 60 s (Sufficient for the
-    // dashboard's vacancy-row polling + the `bump_visit` heartbeat; mutation
-    // RPCs are POSTs and bypass the cache automatically).
+    // Pass-through for remaining API calls. Public listing data is served by
+    // static hosting; authenticated responses are never shared-cache entries.
     const fetchInit = {
       method: request.method,
       headers,
@@ -104,8 +132,6 @@ export default {
     if (request.method !== "GET" && request.method !== "HEAD" && request.body) {
       fetchInit.body = request.body;
     }
-    // Only GETs go through the edge cache — POSTs/DELETEs must not be cached
-    // and must reach Supabase every call.
     let upstream;
     try {
       upstream = await fetch(upstreamUrl, fetchInit);
@@ -136,6 +162,11 @@ export default {
     for (const [k, v] of Object.entries(CORS_HEADERS)) {
       respHeaders.set(k, v);
     }
+    respHeaders.set('Cache-Control', 'no-store');
+    // No URL query, IP, credentials, or response body in observability logs.
+    console.log(JSON.stringify({event:'upstream_response', path:url.pathname,
+      method:request.method, status:upstream.status,
+      response_length:upstream.headers.get('Content-Length')}));
 
     return new Response(upstream.body, {
       status: upstream.status,

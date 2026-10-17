@@ -3,80 +3,95 @@ name: Build deputation data
 on:
   workflow_dispatch:
   schedule:
-    - cron: "35 3 * * *" # ~09:05 IST daily
+    - cron: "35 3 * * *" # 09:05 IST; reclassify deadlines even without edits
   push:
-    branches:
-      - main
-    paths:
-      - "scripts/**"
-      - ".github/workflows/build-data.yml"
+    branches: [main]
+    paths: ["scripts/**", ".github/workflows/build-data.yml"]
 
 permissions:
   contents: write
-  id-token: write
+  pages: write
+
+concurrency:
+  group: public-vacancy-publication
+  cancel-in-progress: false
 
 jobs:
-  build-data:
+  publish:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install dependencies
-        run: pip install -r scripts/requirements.txt
-
-      - name: Build data files
+      - name: Install critical exporter dependencies only
+        run: pip install pandas==2.2.3 python-dateutil==2.9.0.post0
+      - name: Export and validate public snapshots
         env:
-          # Primary source: Supabase REST (live, where admin approvals land).
-          # Fallback: Google Sheet (legacy, where vacancies used to be hand-
-          # entered) — read by build_data.py only when Supabase returns 0 rows
-          # or errors. Both sources must be present in the GitHub Actions
-          # secret store; build_data.py fails loudly if neither works.
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python scripts/build_data.py
+      - name: Publish validated artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/vacancies.json data/meta.json data/filters.json data/stats.json data/vacancies-manifest.json data/snapshots feed.xml
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: publish verified vacancy snapshot"
+            pushed=false
+            for attempt in 1 2 3 4 5; do
+              if git pull --rebase origin main && git push; then
+                pushed=true
+                break
+              fi
+              sleep 10
+            done
+            if [ "$pushed" != true ]; then
+              echo "::error::Publication push failed; preserve last good production snapshot"
+              exit 1
+            fi
+          fi
+      - name: Explicitly request a Pages build after the bot commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
+      - name: Verify the actual production publication
+        run: python scripts/verify_publication.py --attempts 15
+      - name: Publication failure summary
+        if: failure()
+        run: |
+          echo "::error::Snapshot publication failed or deployment is pending. Inspect before changing database grants."
+          echo "Snapshot publication failed. Preserve the last good version and check the production manifest. Optional enrichment did not gate this publication." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Install Chromium for link previews
-        run: python -m playwright install --with-deps chromium
-
-      - name: Render notification link previews
+  enrichment:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r scripts/requirements.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Build optional link previews
         run: python scripts/build_link_previews.py
-
-      - name: Build sitemap (P2-3)
-        # Regenerate sitemap.xml from the freshly-dumped vacancies.json so
-        # the search engines can discover per-vacancy pages (P2-3) and the
-        # canonical clean-URL shape (P2-2). Runs before the commit step so
-        # the new sitemap is part of the same daily commit.
-        run: python scripts/build_sitemap.py
-
-      - name: Build OG images (P2-4)
-        # Generate one 1200x630 PNG per vacancy into ../og/. The Astro
-        # workflow (which runs on push to astro/ branch) copies them
-        # into astro/public/og/ for the build. We don't commit these
-        # files (Pillow-generated, would balloon git history); the
-        # Astro workflow regenerates them every build.
-        run: python scripts/build_og_images.py
-
-      - name: Build vacancy embeddings (P3-3)
-        # Bulk-embed ACTIVE vacancies with Gemini and UPSERT into
-        # public.vacancy_embeddings. Uses the same GEMINI_API_KEY as the
-        # enrich/extract functions; SUPABASE_SERVICE_ROLE_KEY bypasses RLS
-        # for the write. Exits non-zero (3) on 429 — the Edge Function
-        # has already auto-disabled for the rest of the day by then, so
-        # we just continue to the commit step.
+      - name: Build sitemap and images
+        run: |
+          python scripts/build_sitemap.py
+          python scripts/build_og_images.py
+      - name: Publish optional public assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/previews data/link_previews.json sitemap.xml
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: refresh optional vacancy assets"
+            git pull --rebase origin main
+            git push
+          fi
+      - name: Build embeddings after snapshot publication
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -84,44 +99,9 @@ jobs:
         run: |
           python scripts/build_embeddings.py || {
             ec=$?
-            if [ $ec -eq 3 ]; then
-              echo "::warning::Embeddings build hit free-tier 429 — disabled until tomorrow UTC"
+            if [ "$ec" -eq 3 ]; then
+              echo "::warning::Embeddings rate-limited; public snapshot already published"
             else
-              exit $ec
+              exit "$ec"
             fi
           }
-
-      - name: Commit generated files if changed
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/*.json assets/previews
-          if git diff --cached --quiet; then
-            echo "No data changes to commit"
-          else
-            git commit -m "chore: build deputation data"
-            # The link-preview render can take ~15 min, during which another
-            # workflow (e.g. build-defex) may push. Rebase-and-retry so we don't
-            # lose the run to a non-fast-forward rejection.
-            for attempt in 1 2 3 4 5; do
-              git pull --rebase --autostash origin main \
-                && git push && { echo "pushed on attempt $attempt"; break; }
-              echo "push attempt $attempt failed; retrying in 10s"
-              sleep 10
-            done
-            if [ $? -ne 0 ]; then
-              echo "::error::Could not push after 5 attempts"
-              exit 1
-            fi
-          fi
-
-      # NOTE: a "Mirror data onto gh-pages" step used to live here. It copied
-      # data/*.json onto a gh-pages branch so the Astro port would see fresh
-      # data. It never once succeeded (21 straight red runs, 2026-07-29 →
-      # 2026-08-02) and was removed in shq-2026-08-03-003. Nothing consumed it:
-      # astro-build.yml publishes via upload-pages-artifact/deploy-pages@v4,
-      # which serves an uploaded artifact rather than a branch, and the Astro
-      # pages read data/vacancies.json at BUILD time — so copying a newer file
-      # onto a branch could not have refreshed them anyway. If the Astro port
-      # is ever switched on, solve freshness by triggering a rebuild (schedule
-      # or workflow_run on this workflow), not by mirroring files.

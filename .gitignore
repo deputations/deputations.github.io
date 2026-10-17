@@ -67,3 +67,7 @@ og-*
 tests/_artifacts/
 tests/.hypothesis/
 serve.js
+
+# Encrypted backups are uploaded by CI; never commit local backup artifacts.
+backup-output/
+**/node_modules/

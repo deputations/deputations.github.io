@@ -92,9 +92,11 @@ window.ensureSupabaseAvailable = function () {
     signal: ctrl ? ctrl.signal : undefined,
     mode: "cors",
   })
-    .then(function () {
-      window.SUPABASE_AVAILABLE = true;
-      return true;
+    .then(function (response) {
+      var available = response.status !== 402 && response.status < 500;
+      window.SUPABASE_AVAILABLE = available;
+      if (!available) document.body && document.body.classList.add("is-supabase-down");
+      return available;
     })
     .catch(function () {
       window.SUPABASE_AVAILABLE = false;
@@ -109,33 +111,9 @@ window.ensureSupabaseAvailable = function () {
   return window.__supabaseProbeInFlight;
 };
 
-/* All approved vacancies from Supabase REST, fetched page by page.
- * Supabase returns at most 1000 rows per request, so a single
- * `?status=eq.approved&select=*` silently stops at the first 1000 — once the
- * table grew past that, approved vacancies went missing from the site.
- * Pages are ordered by id so they never overlap or skip. Resolves to the full
- * array, or null if any page fails (callers then fall back to the JSON dump).
- */
-window.fetchAllApprovedVacancies = function (select) {
-  var PAGE = 1000;
-  var base = window.SUPABASE_URL + "/rest/v1/vacancies?status=eq.approved" +
-    "&select=" + encodeURIComponent(select || "*") + "&order=id.asc&limit=" + PAGE;
-  var headers = {
-    apikey: window.SUPABASE_ANON_KEY,
-    Authorization: "Bearer " + window.SUPABASE_ANON_KEY
-  };
-  var all = [];
-  function page(offset) {
-    return fetch(base + "&offset=" + offset, { headers: headers })
-      .then(function (res) { return res.ok ? res.json() : null; })
-      .then(function (rows) {
-        if (!Array.isArray(rows)) return null;
-        all = all.concat(rows);
-        return rows.length < PAGE ? all : page(offset + PAGE);
-      });
-  }
-  return page(0).catch(function () { return null; });
-};
+/* Compatibility for cached callers: live bulk reads have been retired.
+ * Returning null makes older pages retain their static JSON fallback. */
+window.fetchAllApprovedVacancies = function () { return Promise.resolve(null); };
 
 /* Web Push (vacancy alerts). The VAPID PUBLIC key is safe to expose — it only
  * identifies this server to the browser's push service; the matching PRIVATE

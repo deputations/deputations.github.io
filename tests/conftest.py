@@ -7,6 +7,7 @@ homepage theme seeded.
 from __future__ import annotations
 
 import socket
+import os
 import threading
 from pathlib import Path
 
@@ -50,7 +51,7 @@ def base_url() -> str:
 def browser() -> Browser:
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as pw:
-        b = pw.chromium.launch(headless=True)
+        b = pw.chromium.launch(headless=True, executable_path=os.getenv('TEST_CHROMIUM_PATH') or None)
         yield b
         b.close()
 
@@ -76,6 +77,9 @@ def page(context: BrowserContext, base_url: str, request: pytest.FixtureRequest)
     """
     p = context.new_page()
     p.set_default_timeout(15000)
+    # Do not let fonts/CDNs or another website affect local regression tests.
+    # Backend stub routes installed below take precedence over this guard.
+    p.route('**/*', lambda route: route.continue_() if route.request.url.startswith(base_url) else route.abort())
     install_rpc_stub(p, anon_key=ANON_KEY)
 
     tracing_path = ARTIFACTS / f"{request.node.name}.trace.zip"

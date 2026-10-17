@@ -52,3 +52,17 @@ compatibility_date = "2026-07-31"
 
 [observability]
 enabled = true
+
+[observability.traces]
+enabled = true
+
+[vars]
+# Roll out only after production snapshot verification; legacy clients fall
+# back to their public JSON when the retired bulk endpoint returns 410.
+BLOCK_PUBLIC_VACANCIES = "true"
+DISABLE_PUBLIC_LIVE = "false"
+
+[[ratelimits]]
+name = "SEARCH_RATE_LIMITER"
+namespace_id = "20261017"
+simple = { limit = 60, period = 60 }

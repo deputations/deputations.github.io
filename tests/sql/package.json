@@ -1,0 +1,1 @@
+{"private":true,"description":"Isolated PostgreSQL access-control regression tests","dependencies":{"@electric-sql/pglite":"0.5.10"}}

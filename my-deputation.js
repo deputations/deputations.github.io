@@ -147,49 +147,12 @@
       .catch(err => { console.error('vacancies load failed', err); vacancies = []; });
   }
 
-  // Mirror index.html's fetchVacancies(): the committed JSON is the PRIMARY
-  // source (same origin, no firewall surprises) and Supabase is an enhancement
-  // layered on top.
-  //
-  // Gating on SUPABASE_READY() alone was the bug that broke this page on NIC.
-  // That predicate only checks the URL and key LOOK valid — which they do on
-  // NIC — so the Supabase branch was taken, the cross-origin fetch rejected
-  // (the resolver sinkholes supabase.co and the workers.dev proxy into a
-  // walled garden), and loadVacancies()'s .catch left `vacancies` empty. With
-  // no vacancy list to resolve against, every saved bookmark reconciled as
-  // "no longer in the current list (likely closed or removed)". Same fix as
-  // index.html got in session shq-2026-07-09-005 — reachability, not config
-  // validity, is what decides.
+  // Saved records may live in the archive. Fetch only their shards.
   function fetchVacancies() {
-    const jsonPromise = fetch('data/vacancies.json')
-      .then(res => (res.ok ? res.json() : []))
-      .catch(() => []);
-
-    let sbPromise = Promise.resolve(null);
-    if (window.SUPABASE_READY && window.SUPABASE_READY() && window.ensureSupabaseAvailable) {
-      sbPromise = window.ensureSupabaseAvailable()
-        .then(available => {
-          if (!available) return null;
-          // Paged: a single request stops at Supabase's 1000-row cap.
-          return Promise.race([
-            window.fetchAllApprovedVacancies(),
-            new Promise(resolve => setTimeout(() => resolve(null), 4000))
-          ]);
-        })
-        .catch(() => null);
-    }
-
-    return Promise.all([jsonPromise, sbPromise]).then(([jsonRows, sbRows]) => {
-      const json = Array.isArray(jsonRows) ? jsonRows : [];
-      if (!Array.isArray(sbRows) || !sbRows.length) return json;
-      // Supabase rows are snake_case; enrichRecord promotes them to the
-      // Title_Case shape the JSON already uses. Prefer the JSON row for IDs
-      // present in both — its derived fields come from the last cron dump.
-      const jsonIds = new Set(json.map(r => String(r.Vacancy_ID)));
-      const sbOnly = sbRows
-        .map(r => (window.DepEnrich ? window.DepEnrich.enrichRecord(r) : r))
-        .filter(r => r && r.Vacancy_ID && !jsonIds.has(String(r.Vacancy_ID)));
-      return json.concat(sbOnly);
+    const ids = store.bookmarks().concat(store.tracker().map(r => r.vacancyId || r.vacancy_id || r.id).filter(Boolean));
+    return window.PublicVacancies.load({ ids }).catch(() => {
+      window.PublicVacancies.showError();
+      return window.PublicVacancies.load();
     });
   }
 

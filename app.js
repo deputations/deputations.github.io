@@ -558,92 +558,17 @@ function loadDataFromJSON() {
         });
 }
 
-// Source of truth = data/vacancies.json (committed, served same-origin from
-// GitHub Pages). Supabase is an OPTIONAL live enhancement: if reachable and
-// returns rows, they merge in (Supabase wins on conflict). This is the order
-// because (a) the JSON is committed at build time so it's always available,
-// (b) it's same-origin over GitHub Pages TLS which survives NIC-network
-// SSL interceptors, and (c) Supabase REST is cross-origin and frequently
-// fails on NIC networks with ERR_SSL_PROTOCOL_ERROR. Both paths run through
-// the shared enrich.js so the rendered records have identical derived fields.
+// Public browsing is independent of Supabase, including during quota restrictions.
 function fetchVacancies() {
-    const enrich = (rows) =>
-        (window.DepEnrich ? window.DepEnrich.enrichAll(rows) : rows);
-
-    // Primary: static JSON, same origin, no firewall surprises.
-    const jsonPromise = fetch('data/vacancies.json')
-        .then(res => (res.ok ? res.json() : []))
-        .catch(() => []);
-
-    // Enhancement: Supabase REST with a 4s timeout. On NIC networks this will
-    // typically reject with ERR_SSL_PROTOCOL_ERROR — the .catch swallows it
-    // and we keep the JSON rows.
-    //
-    // P3-7 PR 1: gate on ensureSupabaseAvailable() so we don't even attempt
-    // the cross-origin REST call when a one-time TLS probe has already
-    // confirmed Supabase is unreachable from this network. Saves the 4s
-    // wait + console noise on every page load inside NIC.
-    let sbPromise = Promise.resolve(null);
-    if (window.SUPABASE_READY && window.SUPABASE_READY()) {
-        sbPromise = window.ensureSupabaseAvailable().then(available => {
-            if (!available) return null;
-            // Paged: a single request stops at Supabase's 1000-row cap.
-            return Promise.race([
-                window.fetchAllApprovedVacancies(),
-                new Promise(resolve => setTimeout(() => resolve(null), 4000)),
-            ]);
+    const params = new URLSearchParams(location.search);
+    const ids = [params.get('v')].filter(Boolean);
+    try { ids.push(...JSON.parse(localStorage.getItem(WATCHLIST_KEY) || '[]')); } catch (_) {}
+    return window.PublicVacancies.load({ ids, all: params.has('status') && params.get('status') !== 'Active' })
+        .catch(() => { window.PublicVacancies.showError(); return window.PublicVacancies.load(); })
+        .then(rows => {
+            if (window.DepEnrich && window.DepEnrich.backfillDerived) rows.forEach(r => window.DepEnrich.backfillDerived(r));
+            return disambiguateDuplicateIds(recomputeStatus(rows));
         });
-    }
-
-    return Promise.all([jsonPromise, sbPromise]).then(([jsonRows, sbRows]) => {
-        const json = Array.isArray(jsonRows) ? jsonRows : [];
-        // build_data.py fills most derived fields at cron time, but two fields
-        // are NOT computed there: Region (left blank by the source spreadsheet,
-        // expected to be derived from Location_State) and eligibility_tiers
-        // (left as the legacy eligibility_rules blob). backfillDerived fills
-        // those two for Title_Case JSON rows so the Region + Pay Level filters
-        // see correct data. Idempotent; safe on already-enriched rows.
-        // MUST run on JSON rows in BOTH branches (merged/SB-only and JSON-only)
-        // because the merge path keeps JSON rows as-is and the filter pipeline
-        // skips them when eligibility_tiers is empty.
-        if (window.DepEnrich && typeof window.DepEnrich.backfillDerived === 'function') {
-            json.forEach(r => window.DepEnrich.backfillDerived(r));
-        }
-        if (sbRows && sbRows.length) {
-            // Merge strategy:
-            //   • JSON rows are already enriched (Title_Case + derived fields).
-            //   • Supabase rows are snake_case; their Title_Case fields would
-            //     be empty if passed through enrich.js's enrichAll() unchanged,
-            //     because that function reads from snake_case keys.
-            //   • For Vacancy_IDs present in BOTH, prefer the JSON row — it has
-            //     the most up-to-date derived fields from the last cron dump.
-            //   • For Supabase-only IDs (rare), enrich the snake_case row to
-            //     Title_Case via enrichRecord so the rest of the pipeline works.
-            //   • After all rows are uniform Title_Case, recompute Status from
-            //     last_date_to_apply — JSON's Status field becomes stale as
-            //     days tick by, and the dashboard should always show truth.
-            // NB: `sbRows` are still RAW snake_case here — enrichRecord below is
-            // what maps them to Title_Case. So the id to compare is
-            // `vacancy_id`, NOT `Vacancy_ID`. Reading the Title_Case key at this
-            // point yields undefined for every row, which made the whole filter
-            // falsy and silently dropped EVERY Supabase-only vacancy: newly
-            // approved postings stayed invisible on the dashboard until the next
-            // cron rebuilt data/vacancies.json. `jsonIds` is built from JSON rows,
-            // which ARE Title_Case, so that side is correct as written.
-            const jsonIds = new Set(json.map(r => r.Vacancy_ID));
-            const sbOnly = sbRows.filter(r => r.vacancy_id && !jsonIds.has(r.vacancy_id));
-            const sbOnlyEnriched = sbOnly.map(r =>
-                window.DepEnrich ? window.DepEnrich.enrichRecord(r) : r
-            );
-            const merged = [...json, ...sbOnlyEnriched];
-            console.log('📡 Source: Supabase live + JSON merged',
-                sbRows.length, 'live,', json.length, 'json,',
-                sbOnly.length, 'sb-only enriched');
-            return disambiguateDuplicateIds(recomputeStatus(merged));
-        }
-        console.log('📄 Source: data/vacancies.json (Supabase unavailable / empty)');
-        return disambiguateDuplicateIds(recomputeStatus(json));
-    });
 }
 
 // Status in the JSON is computed by build_data.py at dump time (days_left
@@ -694,6 +619,7 @@ function disambiguateDuplicateIds(rows) {
 const UNDATED_ACTIVE_DAYS = 60;
 
 function recomputeStatus(rows) {
+    if (window.PublicVacancies) return rows.map(r => window.PublicVacancies.classify(r));
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return rows.map(r => {
@@ -1743,7 +1669,8 @@ function renderTable(data) {
         setItems(filterStatus, [
             { value: '', name: 'All', count: null },
             { value: 'Active', name: 'Active', count: statusCounts.Active || 0 },
-            { value: 'Inactive', name: 'Inactive', count: statusCounts.Inactive || 0 },
+            { value: 'Inactive', name: window.PublicVacancies.archiveLoaded() ? 'Inactive' : 'Inactive — load archive',
+              count: window.PublicVacancies.archiveLoaded() ? (statusCounts.Inactive || 0) : null },
         ]);
 
         // LOCATION (multi-select) — A → Z, gradient "(N)" on each option.
@@ -2122,7 +2049,26 @@ kpiGrid.addEventListener('click', (e) => {
         renderDashboard(false);
     }
 
+   let archiveLoading = null;
    function renderDashboard(resetPageIfNeeded = true) {
+  if (filterStatus.__defaulted && filterStatus.value !== 'Active' && !window.PublicVacancies.archiveLoaded()) {
+    if (!archiveLoading) {
+      resultsCount.textContent = 'Loading archive…';
+      archiveLoading = window.PublicVacancies.load({all:true}).then(rows => {
+        rawData = disambiguateDuplicateIds(recomputeStatus(rows));
+        if (window.DepEnrich && window.DepEnrich.backfillDerived) rawData.forEach(r => window.DepEnrich.backfillDerived(r));
+        buildSearchSuggestions();
+      }).catch(() => window.PublicVacancies.showError()).finally(() => {
+        archiveLoading = null;
+        // Render loaded rows even on failure, without an automatic retry loop.
+        renderDashboardFromSnapshot(resetPageIfNeeded);
+      });
+    }
+    return;
+  }
+  renderDashboardFromSnapshot(resetPageIfNeeded);
+}
+function renderDashboardFromSnapshot(resetPageIfNeeded = true) {
   syncExperienceState();
   populateFilters();   // faceted "(N)" counts follow the current selections
   // KPI cards summarise the whole set regardless of the Status dropdown:
@@ -2470,7 +2416,7 @@ function applyUrlParameters() {
     ${buildKpiCard('Active Vacancies', current.active, 'check-circle', 'green', activeDelta, 'active')}
     ${buildKpiCard('Closing Soon', current.closingSoon, 'clock', 'red', closingSoonDelta, 'closingSoon')}
     ${buildKpiCard('Ministries', current.ministries, 'building', 'purple', ministriesDelta, 'ministries')}
-    ${buildKpiCard('Total Vacancies', current.total, 'briefcase', 'cyan', totalDelta, 'all')}
+    ${buildKpiCard(window.PublicVacancies.archiveLoaded() ? 'Total Vacancies' : 'Vacancies Loaded', current.total, 'briefcase', 'cyan', totalDelta, 'all')}
   `;
 
   animateKpiCounters();
@@ -3493,6 +3439,11 @@ function syncCardSortUI() {
     }
 
     function reconcileWatchlistWithData() {
+        // A lazy or failed archive load cannot prove a saved record was deleted.
+        if (window.PublicVacancies && !window.PublicVacancies.archiveLoaded()) {
+            updateWatchlistUI();
+            return;
+        }
         const validIds = new Set(rawData.map(item => safe(item.Vacancy_ID)).filter(Boolean));
         watchlist = new Set([...watchlist].filter(id => validIds.has(id)));
         persistWatchlist();
@@ -4240,6 +4191,7 @@ function syncCardSortUI() {
                 signal: ctrl.signal,
             });
             // The signal may have aborted because a newer keystroke fired.
+            if (res.status === 402) window.SUPABASE_AVAILABLE = false;
             if (ctrl.signal.aborted) return;
             // The input may have been cleared while the fetch was in flight.
             // Repainting now would resurrect the stale panel the user just
@@ -4279,11 +4231,17 @@ function syncCardSortUI() {
     // Click a ranked-match row → open the existing vacancy modal. Uses
     // event delegation so we don't have to rebind when the panel re-renders.
     if (semanticResultsList) {
-        semanticResultsList.addEventListener('click', (e) => {
+        semanticResultsList.addEventListener('click', async (e) => {
             const li = e.target.closest('li[data-vid]');
             if (!li) return;
             const vid = li.getAttribute('data-vid');
             if (!vid || typeof openVacancyModal !== 'function') return;
+            if (!getItemById(vid)) {
+                try {
+                    rawData = disambiguateDuplicateIds(recomputeStatus(await window.PublicVacancies.load({ids:[vid]})));
+                    if (window.DepEnrich && window.DepEnrich.backfillDerived) rawData.forEach(r => window.DepEnrich.backfillDerived(r));
+                } catch (_) { window.PublicVacancies.showError(); }
+            }
             // The AI index and the loaded dataset can drift apart (a row pulled
             // from Supabase after the last JSON dump, say). openVacancyModal()
             // returns silently for an id it can't resolve, so the row would

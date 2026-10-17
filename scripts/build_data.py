@@ -1,3 +1,4 @@
+import gzip
 import json
 import os
 import re
@@ -10,10 +11,9 @@ from xml.sax.saxutils import escape
 import pandas as pd
 import urllib.request
 from dateutil import parser as date_parser
-from google.auth import default
-from googleapiclient.discovery import build
 
 from location_defaults import fill_missing_locations
+from public_snapshots import publish, status_row, IST
 
 
 DATA_DIR = Path("data")
@@ -360,6 +360,8 @@ def list_unique_sorted(values: list[str]) -> list[str]:
 
 
 def fetch_sheet_rows(sheet_id: str) -> list[dict[str, str]]:
+    from google.auth import default
+    from googleapiclient.discovery import build
     credentials, _ = default(scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"])
     service = build("sheets", "v4", credentials=credentials, cache_discovery=False)
 
@@ -455,20 +457,42 @@ def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> tuple[list
     # so a single `limit=1000` call silently dropped every approved vacancy
     # past the first 1000. Ordered by id so pages never overlap or skip.
     page_size = 1000
+    # Select only known public fields and the two required extraction properties.
+    columns = [k for k in SUPABASE_TO_TITLE_MAP if k not in {"source_ref", "confidence"}]
+    columns += ["additional_details", "eligibility_tiers", "updated_at", "created_at",
+                "source_page:raw_extraction->>source_page",
+                "detailed_eligibility:raw_extraction->>detailed_eligibility"]
+    select = quote(",".join(columns), safe=",")
+    transfer_bytes = 0
+    expected_count = None
+    transfer_limit = int(os.getenv("SNAPSHOT_MAX_TRANSFER_BYTES", "10000000"))
     sb_rows: list[dict[str, Any]] = []
     offset = 0
     while True:
-        qs = f"status=eq.approved&select=*&order=id.asc&limit={page_size}&offset={offset}"
+        qs = f"status=eq.approved&select={select}&order=id.asc&limit={page_size}&offset={offset}"
         req = urllib.request.Request(
             api + "?" + qs,
             headers={
                 "apikey": supabase_anon_key,
                 "Authorization": "Bearer " + supabase_anon_key,
                 "Accept-Profile": "public",
+                "Accept-Encoding": "gzip",
+                "Prefer": "count=exact",
             },
         )
         with urllib.request.urlopen(req, timeout=30) as resp:
-            body = resp.read().decode("utf-8")
+            wire = resp.read(transfer_limit - transfer_bytes + 1)
+            transfer_bytes += len(wire)
+            if transfer_bytes > transfer_limit:
+                raise RuntimeError("Snapshot transfer budget exceeded; previous publication retained")
+            content_range = resp.headers.get("Content-Range", "")
+            if "/" not in content_range or not content_range.rsplit("/", 1)[1].isdigit():
+                raise RuntimeError("Missing exact export count; refusing unverifiable publication")
+            count = int(content_range.rsplit("/", 1)[1])
+            if expected_count is not None and count != expected_count:
+                raise RuntimeError("Dataset changed while exporting; retry a fresh export")
+            expected_count = count
+            body = (gzip.decompress(wire) if resp.headers.get("Content-Encoding") == "gzip" else wire).decode("utf-8")
         page = json.loads(body) if body else []
         if not isinstance(page, list):
             raise RuntimeError(f"Supabase returned non-list payload: {type(page).__name__}")
@@ -477,6 +501,8 @@ def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> tuple[list
             break
         offset += page_size
 
+    if len(sb_rows) != expected_count:
+        raise RuntimeError("Partial export; last good publication retained")
     mapped: list[dict[str, str]] = []
     for sb_row in sb_rows:
         row: dict[str, str] = {"DRAFT / APPROVED": "Approved ✅"}
@@ -488,7 +514,14 @@ def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> tuple[list
         # display status ("Active"/"Inactive"). Clear it so transform_rows()'s
         # infer_status() recomputes from days_left instead.
         row["Status"] = ""
+        row["Source_Page"] = sb_row.get("source_page") or ""
+        row["Source_Ref"] = " · ".join(str(v) for v in (sb_row.get("source_category"),
+                                      ("p. " + str(row["Source_Page"])) if row["Source_Page"] else "") if v)
+        row["Detailed_Eligibility"] = sb_row.get("detailed_eligibility") or ""
+        row["Additional_Details"] = sb_row.get("additional_details") or ""
+        row["eligibility_tiers"] = sb_row.get("eligibility_tiers") or []
         mapped.append(row)
+    print(f"Snapshot export: {len(sb_rows)} rows; {transfer_bytes} response bytes received")
     return mapped, latest_updated_at(sb_rows)
 
 
@@ -716,7 +749,7 @@ def build_stats(vacancies: list[dict[str, Any]]) -> dict[str, Any]:
 
 def build_meta(vacancies: list[dict[str, Any]], filters: dict[str, Any], stats: dict[str, Any], source: str = "supabase_rest_api_via_anon_key", vacancies_updated_at: str | None = None) -> dict[str, Any]:
     return {
-        "generated_at_utc": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
         # When a user-visible vacancy was last added or edited (newest
         # Supabase updated_at). Never the build time: a rebuild with no row
         # changes must not move the footer's "Updated" date.
@@ -838,74 +871,27 @@ def assert_no_credentials(vacancies: list[dict[str, Any]]) -> None:
 
 
 def main() -> None:
-    # Source priority: Supabase (live, where admin approvals land) → Google
-    # Sheet (legacy, where vacancies used to be hand-entered). Fall back only
-    # when Supabase errors or returns zero rows; if Sheet is also unavailable
-    # we raise so the cron fails loudly rather than shipping an empty dump.
-    supabase_url = os.getenv("SUPABASE_URL", "").strip()
-    supabase_anon_key = os.getenv("SUPABASE_ANON_KEY", "").strip()
-
-    rows: list[dict[str, str]] = []
-    source_used = "(none)"
-    vacancies_updated_at: str | None = None
-
-    if supabase_url and supabase_anon_key:
-        try:
-            sb_rows, sb_updated_at = fetch_supabase_rows(supabase_url, supabase_anon_key)
-            if sb_rows:
-                rows = sb_rows
-                vacancies_updated_at = sb_updated_at
-                source_used = f"Supabase ({len(sb_rows)} approved rows)"
-            else:
-                print("Supabase returned 0 approved rows — falling back to Google Sheet.")
-        except Exception as exc:
-            print(f"Supabase fetch failed: {exc!r} — falling back to Google Sheet.")
-
+    # Fail closed: a backend failure must never replace current data with the
+    # legacy spreadsheet. The last published manifest remains the recovery path.
+    url = os.getenv("SUPABASE_URL", "").strip()
+    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    if not url or not key:
+        raise RuntimeError("Snapshot export requires SUPABASE_URL and a server-only SUPABASE_SERVICE_ROLE_KEY")
+    rows, updated = fetch_supabase_rows(url, key)
     if not rows:
-        sheet_id = os.getenv("GOOGLE_SHEET_ID", "").strip()
-        if not sheet_id:
-            raise RuntimeError(
-                "No data: Supabase empty/unavailable AND GOOGLE_SHEET_ID is missing."
-            )
-        rows = fetch_sheet_rows(sheet_id)
-        source_used = f"Google Sheet (sheet_id={sheet_id[:6]}…)"
-
-    # Sheet rows still need the column-validation gate (no Supabase equivalent
-    # because the schema is enforced at the DB layer). Skip when rows came
-    # from Supabase.
-    if source_used.startswith("Google Sheet"):
-        validate_required_columns(rows)
-
+        raise RuntimeError("Zero-row export requires investigation; last good snapshot retained")
     vacancies, date_fixes = transform_rows(rows)
-    warn_duplicate_vacancy_ids(vacancies)
     assert_no_credentials(vacancies)
+    vacancies = [status_row(r) for r in vacancies]
     filters = build_filters(vacancies)
     stats = build_stats(vacancies)
-    meta_source = (
-        "supabase_rest_api_via_anon_key"
-        if source_used.startswith("Supabase")
-        else "private_google_sheet_via_sheets_api"
-    )
-    if not vacancies_updated_at:
-        # No row timestamps this run (Sheet fallback): keep the last known
-        # value rather than substituting the build time.
-        vacancies_updated_at = previous_vacancies_updated_at()
-    meta = build_meta(vacancies, filters, stats, source=meta_source,
-                      vacancies_updated_at=vacancies_updated_at)
-
-    write_json(OUTPUT_VACANCIES, vacancies)
-    write_json(OUTPUT_FILTERS, filters)
-    write_json(OUTPUT_STATS, stats)
-    write_json(OUTPUT_META, meta)
+    meta = build_meta(vacancies, filters, stats, source="supabase_verified_snapshot", vacancies_updated_at=updated)
+    manifest = publish(vacancies, DATA_DIR, updated,
+                       allow_large_change=os.getenv("ALLOW_LARGE_SNAPSHOT_CHANGE") == "true",
+                       metadata=meta, extras={OUTPUT_FILTERS: filters, OUTPUT_STATS: stats})
+    # Feed generation is a pure local operation; it never gates the manifest.
     OUTPUT_FEED.write_text(build_feed(vacancies), encoding="utf-8")
-
-    print(f"Built {len(vacancies)} approved vacancies from {source_used}.")
-    print(f"Date fixes applied: {date_fixes} (ND/LD swap or ND cleared — see lines above)")
-    print(f"Wrote: {OUTPUT_VACANCIES}")
-    print(f"Wrote: {OUTPUT_FILTERS}")
-    print(f"Wrote: {OUTPUT_STATS}")
-    print(f"Wrote: {OUTPUT_META}")
-    print(f"Wrote: {OUTPUT_FEED}")
+    print(f"Published snapshot {manifest['version']}: {len(vacancies)} records; {date_fixes} date fixes")
 
 
 if __name__ == "__main__":

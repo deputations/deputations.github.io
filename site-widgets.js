@@ -32,7 +32,7 @@
   var sb_fail_count = 0;
 
   function rpc(fn, body) {
-    if (!SB_OK) return Promise.resolve(null);
+    if (!SB_OK || window.SUPABASE_AVAILABLE === false) return Promise.resolve(null);
     return fetch(SB_URL + "/rest/v1/rpc/" + fn, {
       method: "POST",
       headers: {
@@ -43,7 +43,10 @@
       body: JSON.stringify(body || {}),
     })
       .then(function (r) {
-        if (!r.ok) { onRpcFail(); return null; }
+        if (!r.ok) {
+          if (r.status === 402) { SB_OK = false; window.SUPABASE_AVAILABLE = false; }
+          onRpcFail(); return null;
+        }
         sb_fail_count = 0;
         return r.json();
       })

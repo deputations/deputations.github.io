@@ -2732,6 +2732,8 @@
   let realtimeSubscribed = false;
 
   function setupRealtime() {
+    // Counts must describe the published snapshot, not an independent live feed.
+    if (window.PublicVacancies) return;
     if (realtimeSubscribed) return;
     if (!window.ensureSupabaseAvailable) {
       console.info('[map] realtime unavailable: ensureSupabaseAvailable not on window');
