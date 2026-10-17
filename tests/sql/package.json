@@ -1,1 +1,1 @@
-{"private":true,"description":"Isolated PostgreSQL access-control regression tests","dependencies":{"@electric-sql/pglite":"0.5.10"}}
+{"private":true,"description":"Isolated PostgreSQL access-control regression tests","dependencies":{"@electric-sql/pglite":"0.5.10"},"devDependencies":{"fuse.js":"7.0.0"}}

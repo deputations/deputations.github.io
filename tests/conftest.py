@@ -79,7 +79,17 @@ def page(context: BrowserContext, base_url: str, request: pytest.FixtureRequest)
     p.set_default_timeout(15000)
     # Do not let fonts/CDNs or another website affect local regression tests.
     # Backend stub routes installed below take precedence over this guard.
-    p.route('**/*', lambda route: route.continue_() if route.request.url.startswith(base_url) else route.abort())
+    def local_or_fixture(route):
+        if route.request.url.startswith(base_url):
+            route.continue_()
+        elif route.request.url == 'https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js':
+            # The DeFeX page requires Fuse. Serve its pinned test dependency
+            # locally, avoiding live CDN requests and an undefined Fuse global.
+            route.fulfill(path=str(REPO_ROOT / 'tests/sql/node_modules/fuse.js/dist/fuse.min.js'),
+                          content_type='application/javascript')
+        else:
+            route.abort()
+    p.route('**/*', local_or_fixture)
     install_rpc_stub(p, anon_key=ANON_KEY)
     # Existing page fixtures intentionally stub the compatibility JSON. Keep
     # those contract tests on that path; snapshot-specific tests opt in below.

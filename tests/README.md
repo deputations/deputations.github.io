@@ -62,3 +62,7 @@ port. (`verify_admin.py` uses 8771; `.claude/launch.json` uses 8123.)
 `.github/workflows/smoke-tests.yml` runs on every PR, every push to main,
 manual dispatch, and daily at 04:47 UTC. Failure artifacts (screenshots +
 trace zips) are uploaded for 7 days.
+
+Snapshot/security checks also require `npm ci --prefix tests/sql --ignore-scripts`.
+This supplies isolated PostgreSQL and the pinned Fuse library for offline browser
+fixtures. Tests never send actual feedback or vacancy submissions to Supabase.

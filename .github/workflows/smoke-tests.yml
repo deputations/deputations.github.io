@@ -54,20 +54,22 @@ jobs:
           pip install -r scripts/requirements.txt
           python -m playwright install --with-deps chromium
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install deterministic browser and SQL test dependencies
+        run: npm ci --prefix tests/sql --ignore-scripts --no-audit --no-fund
+
       # PR 3: full suite — all pages covered.
       - name: Run pytest suite
         run: python -m pytest tests/ -v --tb=short --maxfail=5
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
       - name: Public snapshot and map data checks
         run: |
           node --test tests/test_public_data.js
           node --test tests/test_public_proxy.cjs
           node --test workers/sb-proxy/worker.test.js
           node tests/test_india_map_data.js
-          npm ci --prefix tests/sql --ignore-scripts --no-audit --no-fund
           node --test tests/test_vacancy_access.cjs
 
       - name: Validate proxy configuration without deployment
