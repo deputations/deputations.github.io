@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
   // Public clients go through the rate-limited proxy. Reject direct invocation
   // before any database or embedding call. Missing configuration fails closed.
   const proxySecret = Deno.env.get('PUBLIC_PROXY_SECRET') || '';
-  if (proxySecret.length < 32) return json({ok:false, code:'disabled', message:'Use keyword search.'}, 503);
+  if (proxySecret.length < 32) return json({ok:false, code:'unavailable', message:'Use keyword search.'}, 503);
   if (!await verifyProxyToken(req.headers.get('x-public-proxy-secret'), proxySecret)) {
     return json({ok:false, code:'proxy_required', message:'Use the website search.'}, 403);
   }
