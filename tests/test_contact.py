@@ -51,7 +51,7 @@ def test_contact_submit_success(page, base_url: str):
         else:
             route.continue_()
 
-    page.route("**/supabase.co/**", handler)
+    page.route("**/functions/v1/submit", handler)
 
     # Required: category, subject, message (>=8 chars), confirm checkbox.
     # Some categories also require ctRelatedPage; pick the first non-required
@@ -66,3 +66,17 @@ def test_contact_submit_success(page, base_url: str):
     assert "FB-T-1" in success_text or "FB-" in success_text, (
         f"success view missing feedback id: {success_text!r}"
     )
+
+
+def test_contact_quota_failure_preserves_input_without_false_success(page, base_url: str):
+    from tests.pages.route_helpers import reply_json
+    page.route('**/functions/v1/submit', lambda route: reply_json(route, {'ok': True}, status=402))
+    page.goto(base_url + '/contact.html')
+    page.select_option('#ctCategory', index=1)
+    page.fill('#ctSubject', 'Retain this feedback')
+    page.fill('#ctMessage', 'This text must survive an unavailable backend.')
+    page.check('#ctConfirm')
+    page.click('#ctSubmitBtn')
+    page.wait_for_function("() => document.getElementById('ctFormErr').textContent.includes('402')")
+    assert page.locator('#ctSuccess').is_hidden()
+    assert page.locator('#ctMessage').input_value() == 'This text must survive an unavailable backend.'

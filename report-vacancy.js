@@ -401,7 +401,10 @@
       headers: headers,
       body: JSON.stringify(buildPayload())
     })
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Submission was not saved (HTTP ' + r.status + '). Your text is still here; please retry later.');
+        return r.json();
+      })
       .then(function (res) {
         if (!res || (!res.ok && !res.success)) {
           throw new Error((res && (res.error || res.message)) || "Server error");

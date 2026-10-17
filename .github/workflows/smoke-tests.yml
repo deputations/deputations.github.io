@@ -56,7 +56,7 @@ jobs:
 
       # PR 3: full suite — all pages covered.
       - name: Run pytest suite
-        run: python -m pytest tests/ -v --tb=short --maxfail=1
+        run: python -m pytest tests/ -v --tb=short --maxfail=5
 
       - uses: actions/setup-node@v4
         with:
