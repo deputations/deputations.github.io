@@ -6923,3 +6923,25 @@ Correct mocking also exposed a few pixels of navigation/feedback overlap with
 fallback fonts and a loaded count. Header space now follows measured feedback
 width, with a stable minimum; responsive checks pass. Production rollout remains
 separate from the draft PR. No untracked owner files were staged.
+
+
+## session shq-2026-10-18-live-egress-restriction
+- Owner completed Supabase CLI login as deputations (VivekVishal org verified).
+- PR #30 merged and Pages/site verified. New scheduled export passed and served
+  all 1,600 approved records; 1,448,601 response bytes transferred by the exporter.
+- Applied migration 0025 using Supabase db query to target djaxutkmhazufsxeobal,
+  after inspecting live policies, grants, function ownership and dependencies.
+- Saved before-access metadata and prior semantic-search source outside the repo
+  in C:/Users/vivek/.codex/tmp/deputation-live-rollout/ for rollback.
+- Anonymous direct and proxy table reads now return permission denied (401/code
+  42501); role checks passed for non-admin denial, configured admin access and
+  service_role exporter/search. No data or admin writes used in production tests.
+- Live listings, detail modal and archived deep link continue working with zero
+  vacancy table requests. Archived deep link fetched one static archive shard.
+- Cloudflare OAuth is still css2012batch (account 37aeeac4c5bdd002c1744afd46ad944c),
+  which has no sb-proxy. Cached target account aa6fca8ba721498e8ab8ebe8141f08d1
+  rejects that credential. Asked owner to log into the Worker-owning account.
+- Do not deploy a new sb-proxy into the wrong account. Secret/function/proxy rollout
+  remains pending; existing search is unchanged until matching server-only tokens
+  and correct production Worker can be configured together.
+## session shq-2026-10-18-live-egress-restriction end

@@ -4,6 +4,27 @@ Implemented on `codex/reduce-supabase-egress`. Deployment and account-side
 configuration are separate steps. Never interpret a passing local test as a
 production change.
 
+## Verified rollout status — 18 October 2026 IST
+
+- PR #30 merged; full CI passed (184 Python/browser checks, one intentional
+  hostname skip, Node security/data/Worker checks and authenticated admin checks).
+- Public static clients are live at alldeputations.com. The production export
+  published and verified 1,600 records using 1,448,601 received response bytes.
+- Migration 0025 applied to the live project djaxutkmhazufsxeobal. Direct anonymous
+  table requests through both the Supabase URL and api.alldeputations.com return
+  permission denied (PostgREST code 42501). No database rows were removed.
+- Live read-only role checks passed: authenticated non-admin sees zero rows;
+  a configured admin reads all rows; service_role reads approved rows and retains
+  search RPC access. No production admin mutations were performed for testing.
+- Production homepage and archived deep link tested after restriction: listings
+  and detail modals work, archived link loads one static shard, zero table requests
+  and zero page errors on the tested homepage.
+- Proxy and guarded Edge Function deployment are pending Cloudflare access.
+  The currently saved css2012batch Cloudflare account does not host sb-proxy.
+  No Worker was created in that account. Existing AI search is still on its prior
+  deployed function; direct search RPC execution has already been restricted to
+  service_role. Backups/usage-alert configuration remain separate setup tasks.
+
 ## Deployment order
 
 1. Check `SUPABASE_URL` and the existing server-only `SUPABASE_SERVICE_ROLE_KEY`
