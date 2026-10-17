@@ -274,7 +274,7 @@
   // Listings need a short label; the detail popup retains the full wording.
   function formatEligibilityCompact(item) {
     const tiers = eligibilityDisplayTiers(item);
-    return tiers.length ? tiers.map(t => `L${t.label}` + (t.min_years > 0 ? `(${t.min_years}Y)` : '')).join(' / ') : 'Not specified';
+    return tiers.length ? tiers.map(t => `L-${t.label}` + (t.min_years > 0 ? ` (${t.min_years}Y)` : '')).join('\n') : 'Not specified';
   }
 
   function inferStatus(raw, daysLeft) {

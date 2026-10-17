@@ -1436,7 +1436,7 @@ function renderTable(data) {
         </td>
 
         <td class="eligibility-col" data-label="Eligibility" title="${escapeHtml(formatEligibility(item))}">
-          ${escapeHtml(formatEligibilityCompact(item))}
+          ${escapeHtml(formatEligibilityCompact(item)).replace(/\n/g, '<br>')}
         </td>
 
         <td class="ministry-col" data-label="Ministry">
@@ -2732,7 +2732,7 @@ function cardMetaChips(item, { withLocation = true } = {}) {
   }
   const elig = cardEligibilityText(item);
   if (elig && elig !== 'Not specified') {
-    chips.push(`<span class="vx-chip" title="Eligible feeder grades">${svgIcon('layers')}<span>${escapeHtml(elig)}</span></span>`);
+    chips.push(`<span class="vx-chip" title="Eligible feeder grades">${svgIcon('layers')}<span>${escapeHtml(elig).replace(/\n/g, '<br>')}</span></span>`);
   }
   const notif = formatDisplayDate(safe(item.Notification_Date));
   if (notif && notif !== 'Not specified') {

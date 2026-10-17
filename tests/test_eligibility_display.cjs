@@ -21,7 +21,7 @@ test('Internal Audit Officer summary and level-10 filter use all three saved tie
   const expected='Level 12 (0 years) OR Level 11 (3 years) OR Level 10 (5 years)';
   assert.equal(modal(row),expected);assert.equal(U.formatEligibility(row),expected);
   assert.equal(E.formatEligibilitySummary(raw),expected);assert.equal(sort(row),10);
-  assert.equal(E.formatEligibilityCompact(row),'L12 / L11(3Y) / L10(5Y)');
+  assert.equal(E.formatEligibilityCompact(row),'L-12\nL-11 (3Y)\nL-10 (5Y)');
   assert(E.isEligible(row,'10','5'));assert(!E.isEligible(row,'10','4'));
   assert(E.isEligible(row,'11','3'));assert(E.isEligible(row,'12','0'));
   assert.equal(JSON.stringify(row),before,'Rendering must not change saved eligibility or filtering.');
@@ -31,7 +31,7 @@ test('four tiers, skipped levels and 13A are explicit alternatives, never a rang
   const {E,modal}=helpers();
   const row={Req_Level1:'14',Req_Level2:'13A',eligibility_tiers:[{level:14,min_years:0},{level:13.5,label:'13A',min_years:1},{level:12,min_years:3},{level:10,min_years:5}]};
   assert.equal(modal(row),'Level 14 (0 years) OR Level 13A (1 year) OR Level 12 (3 years) OR Level 10 (5 years)');
-  assert.equal(E.formatEligibilityCompact(row),'L14 / L13A(1Y) / L12(3Y) / L10(5Y)');
+  assert.equal(E.formatEligibilityCompact(row),'L-14\nL-13A (1Y)\nL-12 (3Y)\nL-10 (5Y)');
   assert(!E.isEligible(row,'11','10'));assert(E.isEligible(row,'13A','1'));
   assert(!modal(row).includes('13.5'));
 });
@@ -54,6 +54,6 @@ test('legacy rows still render and absent service years are not invented as zero
 test('home page finance example is compact, complete and highest level first',()=>{
   const {E}=helpers();
   const row={eligibility_tiers:[{level:'7',min_years:'5'},{level:'10',min_years:'0'},{level:'8',min_years:'4'}]};
-  assert.equal(E.formatEligibilityCompact(row),'L10 / L8(4Y) / L7(5Y)');
+  assert.equal(E.formatEligibilityCompact(row),'L-10\nL-8 (4Y)\nL-7 (5Y)');
   assert.equal(E.formatEligibilitySummary(row),'Level 10 (0 years) OR Level 8 (4 years) OR Level 7 (5 years)');
 });
