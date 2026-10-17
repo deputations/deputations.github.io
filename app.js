@@ -944,7 +944,7 @@ function formatSourceBadgeShort(item) {
 function buildShareText(item) {
     const lines = [`📢 ${safe(item.Post_Name) || 'Deputation vacancy'} — ${withAcronym(item.Ministry) || ''}`.trim()];
     const lvl = safe(item.Level_Text);
-    const elig = safe(item.eligibility_tiers_text) || formatEligibility(item);
+    const elig = formatEligibilityCompact(item);
     if (lvl) lines.push(`Level: ${lvl}${elig && elig !== 'Not specified' ? ` · Eligible: ${elig}` : ''}`);
     const loc = formatLocation(item);
     if (loc) lines.push(`Location: ${loc}`);
@@ -1435,8 +1435,8 @@ function renderTable(data) {
           ${escapeHtml(safe(item.Level_Text) || '—')}
         </td>
 
-        <td class="eligibility-col" data-label="Eligibility">
-          ${escapeHtml(formatEligibility(item))}
+        <td class="eligibility-col" data-label="Eligibility" title="${escapeHtml(formatEligibility(item))}">
+          ${escapeHtml(formatEligibilityCompact(item))}
         </td>
 
         <td class="ministry-col" data-label="Ministry">
@@ -2721,7 +2721,7 @@ function cardOrgLine(item) {
 }
 
 function cardEligibilityText(item) {
-  return safe(item.eligibility_tiers_text) || formatEligibility(item);
+  return formatEligibilityCompact(item);
 }
 
 function cardMetaChips(item, { withLocation = true } = {}) {
@@ -3719,6 +3719,11 @@ function syncCardSortUI() {
     function parseNumericSafe(value, fallback = 0) {
         const num = Number.parseInt(value, 10);
         return Number.isNaN(num) ? fallback : num;
+    }
+
+    function formatEligibilityCompact(item) {
+        if (window.DepEnrich?.formatEligibilityCompact) return window.DepEnrich.formatEligibilityCompact(item);
+        return safe(item.eligibility_tiers_text) || formatEligibility(item);
     }
 
     function formatEligibility(item) {

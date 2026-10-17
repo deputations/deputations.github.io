@@ -254,7 +254,7 @@
         const key = `${t.level}:${t.min_years}`;
         if (seen.has(key)) return false;
         seen.add(key); return true;
-      }).sort((a, b) => a.level - b.level);
+      }).sort((a, b) => b.level - a.level);
     };
     if (Array.isArray(raw)) {
       const tiers = clean(raw);
@@ -269,6 +269,12 @@
   function formatEligibilitySummary(item) {
     const tiers = eligibilityDisplayTiers(item);
     return tiers.length ? tiers.map(t => `Level ${t.label}` + (t.min_years === null ? '' : ` (${t.min_years} ${t.min_years === 1 ? 'year' : 'years'})`)).join(' OR ') : 'Not specified';
+  }
+
+  // Listings need a short label; the detail popup retains the full wording.
+  function formatEligibilityCompact(item) {
+    const tiers = eligibilityDisplayTiers(item);
+    return tiers.length ? tiers.map(t => `L${t.label}` + (t.min_years > 0 ? `(${t.min_years}Y)` : '')).join(' / ') : 'Not specified';
   }
 
   function inferStatus(raw, daysLeft) {
@@ -560,5 +566,5 @@
     return row;
   }
 
-  global.DepEnrich = { enrichRecord, enrichAll, parseTiers, isEligible, formatTiers, eligibilityDisplayTiers, formatEligibilitySummary, levelToken, acronymFor, withAcronym, backfillDerived, regionForState };
+  global.DepEnrich = { enrichRecord, enrichAll, parseTiers, isEligible, formatTiers, eligibilityDisplayTiers, formatEligibilitySummary, formatEligibilityCompact, levelToken, acronymFor, withAcronym, backfillDerived, regionForState };
 })(window);

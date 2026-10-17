@@ -16,8 +16,9 @@ def test_three_tier_eligibility_matches_pay_level_filter_and_modal(page, base_ur
     page.goto(f'{base_url}/index.html?myPayLevel=10')
     vacancy = page.locator('tr.clickable-row[data-open-details="THREE-TIER-IAO"]')
     vacancy.wait_for()
-    expected = 'Level 10 (5 years) OR Level 11 (3 years) OR Level 12 (0 years)'
-    assert vacancy.locator('.eligibility-col').inner_text().strip() == expected
+    expected = 'Level 12 (0 years) OR Level 11 (3 years) OR Level 10 (5 years)'
+    assert vacancy.locator('.eligibility-col').inner_text().strip() == 'L12 / L11(3Y) / L10(5Y)'
+    assert vacancy.locator('.eligibility-col').get_attribute('title') == expected
     vacancy.click()
     page.wait_for_selector('#modal[open]')
     eligibility = page.locator('#modal .modal-field').filter(
