@@ -6978,3 +6978,17 @@ separate from the draft PR. No untracked owner files were staged.
   in logs/traces; API readback confirmed secret_text, rate-limit binding and flags.
 - Production desktop and mobile (simulated backend quota 402) show 472 active
   listings, no vacancy table/archive requests, no page errors; desktop details work.
+
+### CI follow-up after protected-search rollout
+- Full CI 39062676438: 182 passed, 1 skipped; two failures outside the proxy.
+- Fixed deadline fixture using a frozen 19:00 UTC instant and matching Kolkata
+  date; runner-local date previously disagreed after 18:30 UTC. App date logic
+  is unchanged. Targeted deadline regression passes.
+- Optional sitemap generation dropped the manually added map route. Added its
+  canonical URL to the generator and current sitemap, and extended the existing
+  regression to generate into a temporary file and verify future publications.
+
+- Follow-up validation: both failing tests pass (including actual sitemap
+  generation). All 18 Node security/snapshot/SQL/Worker checks, 189 map checks,
+  Wrangler dry-run and authenticated admin harness pass locally. Admin harness
+  used the installed Chromium binary explicitly; no production admin writes.

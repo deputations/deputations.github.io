@@ -33,6 +33,10 @@ without trusting caller-supplied addresses. Direct function calls now reject bef
 live work. Updated deployment templates, account selection and incident recovery
 instructions; production checks confirmed rejection and throttling.
 
+The final full regression run exposed a UTC/IST fixture mismatch and daily sitemap
+generation dropping the map page. Deadline tests now freeze an explicit UTC/IST
+boundary; the generator preserves the map's canonical URL and is tested directly.
+
 ### Changed - quota containment and public snapshot recovery (2026-10-17)
 Public browsing no longer downloads the Supabase vacancy table. Fresh public-only
 snapshots, lazy archives, archived bookmarks/deep links, Kolkata deadline handling,

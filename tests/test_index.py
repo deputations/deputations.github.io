@@ -15,7 +15,7 @@ is the one users hit first and is the primary smoke target.
 from __future__ import annotations
 
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from tests.pages.route_helpers import reply_json
 
@@ -91,7 +91,7 @@ def test_filter_trigger_toggles(page, base_url: str):
 # --------------------------------------------------------------------------
 
 
-def _row(vid: str, days_out: int) -> dict:
+def _row(vid: str, days_out: int, today: date) -> dict:
     """A minimal ACTIVE vacancy row closing `days_out` days from today.
 
     `Days_Left` is NOT set here on purpose. `app.js#recomputeStatus` (line
@@ -100,7 +100,7 @@ def _row(vid: str, days_out: int) -> dict:
     would test nothing. Driving it from a relative date exercises the real
     path that produces the user-visible pill.
     """
-    closing = date.today() + timedelta(days=days_out)
+    closing = today + timedelta(days=days_out)
     return {
         "Vacancy_ID": vid,
         "DRAFT / APPROVED": "APPROVED",
@@ -114,7 +114,7 @@ def _row(vid: str, days_out: int) -> dict:
         "Location_State": "Delhi",
         "Region": "North",
         "Last_Date_To_Apply": closing.isoformat(),
-        "Notification_Date": date.today().isoformat(),
+        "Notification_Date": today.isoformat(),
         "Status": "Active",
     }
 
@@ -122,10 +122,8 @@ def _row(vid: str, days_out: int) -> dict:
 def _serve_fixture_rows(page, rows: list[dict]) -> None:
     """Make `rawData` exactly `rows`.
 
-    `fetchVacancies()` races the bundled `data/vacancies.json` against the
-    Supabase REST query and merges both. Stub the JSON and force the probe
-    to report Supabase unreachable, so production rows can't drown out the
-    fixture. Mirrors `_force_supabase_offline` in test_watchlist.py.
+    The shared fixture makes the manifest unavailable, selecting compatibility
+    JSON. Stub that file and keep optional live features offline.
     """
     page.add_init_script(
         """let _installed = false;
@@ -154,7 +152,11 @@ def test_days_left_pill_pluralises_one_day(page, base_url: str):
     dataset may contain zero rows closing tomorrow (on 2026-08-06 it had
     exactly one), so the singular branch would go unexercised.
     """
-    _serve_fixture_rows(page, [_row("TEST-SINGULAR", 1), _row("TEST-PLURAL", 2)])
+    # Exercise the UTC/IST date boundary that previously failed CI after
+    # 18:30 UTC. Deadlines follow Kolkata's calendar, independent of runner TZ.
+    page.clock.set_fixed_time(datetime(2026, 10, 17, 19, tzinfo=timezone.utc))
+    today = date(2026, 10, 18)
+    _serve_fixture_rows(page, [_row("TEST-SINGULAR", 1, today), _row("TEST-PLURAL", 2, today)])
     page.goto(f"{base_url}/index.html")
     page.wait_for_selector("tr.clickable-row[data-open-details]")
 

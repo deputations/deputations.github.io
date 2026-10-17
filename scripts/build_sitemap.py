@@ -28,6 +28,7 @@ BASE = "https://alldeputations.com"
 STATIC = [
     # (path, changefreq, priority)
     ("/",          "daily",   1.0),
+    ("/india-map.html", "daily", 0.8),
     ("/rules/",    "monthly", 0.8),
     ("/faq/",      "monthly", 0.7),
     ("/defex/",    "weekly",  0.7),

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import re
+import runpy
 from pathlib import Path
 from urllib.parse import quote
 
@@ -1428,9 +1429,15 @@ class TestSiteIntegration:
         assert "India Map" in head["h1"], head
         assert head["theme"] == "light", head
 
-    def test_map_in_sitemap(self):
+    def test_map_in_sitemap(self, tmp_path):
         sitemap = (REPO_ROOT / "sitemap.xml").read_text(encoding="utf-8")
         assert "<loc>https://alldeputations.com/india-map.html</loc>" in sitemap
+        # The daily optional-assets job must retain the entry too.
+        generator = runpy.run_path(str(REPO_ROOT / "scripts/build_sitemap.py"))["main"]
+        generated = tmp_path / "sitemap.xml"
+        generator.__globals__["OUT"] = generated
+        generator()
+        assert "<loc>https://alldeputations.com/india-map.html</loc>" in generated.read_text(encoding="utf-8")
 
     def test_mobile_menu_lists_map(self, page: Page, base_url: str, all_36_states_fixture):
         page.set_viewport_size({"width": 390, "height": 812})
