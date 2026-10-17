@@ -19,11 +19,24 @@ production change.
 - Production homepage and archived deep link tested after restriction: listings
   and detail modals work, archived link loads one static shard, zero table requests
   and zero page errors on the tested homepage.
-- Proxy and guarded Edge Function deployment are pending Cloudflare access.
-  The currently saved css2012batch Cloudflare account does not host sb-proxy.
-  No Worker was created in that account. Existing AI search is still on its prior
-  deployed function; direct search RPC execution has already been restricted to
-  service_role. Backups/usage-alert configuration remain separate setup tasks.
+- Guarded semantic-search and sb-proxy are deployed in the correct accounts.
+  Worker version: f1208a68-da74-4cba-84d0-9f7f744e327a. The website's actual
+  ingress is Oracle/Caddy at api.alldeputations.com, not a Worker custom domain.
+  Only its semantic-search path now forwards through the Worker. The A record and
+  other backend routes remain in place for government-network compatibility.
+- Caddy overwrites the server token and client-address headers. The Worker trusts
+  that address only with a valid server token; direct callers use Cloudflare's
+  client address. Client addresses and tokens are stripped before forwarding.
+  Live forged-header tests could not rotate the limiter key: HTTP 429 with
+  Retry-After: 60. Direct Edge Function calls, including forged tokens, get 403.
+- Website-route validation reaches the function. A real AI query returned the
+  existing disabled/free-tier safeguard, until 18 October 2026 00:00 UTC
+  (05:30 IST). This timer does not guarantee provider quota recovery. Keyword
+  search remains available; do not clear the flag to bypass provider limits.
+- Worker logs/traces redact URL query strings. Live desktop browsing and mobile
+  browsing with simulated backend HTTP 402 both showed 472 active listings,
+  without vacancy-table/archive requests or page errors.
+- Backups/usage-alert configuration remain separate setup tasks.
 
 ## Deployment order
 
@@ -52,8 +65,12 @@ production change.
    Local PostgreSQL role/RLS tests passed, but do not establish live schema parity.
 7. Configure the same randomly generated (at least 32 characters) PUBLIC_PROXY_SECRET
    as a protected Supabase function secret and a Wrangler Worker secret. Never
-   put it in config.js, browser requests, source files or logs. Deploy the guarded
-   semantic-search function and proxy together. Missing configuration disables AI
+   put it in config.js, browser requests, source files or logs. Provision the same
+   token in Oracle's root:caddy 0640 private Caddy snippet, using the templates in
+   workers/oracle-proxy/. Preserve Oracle's A record: workers.dev is not reachable
+   from all government networks. Deploy Worker first, validate/reload the Caddy
+   route, then deploy only semantic-search, preserving its existing gateway JWT
+   setting. Missing configuration disables AI
    search safely; keyword search remains available. Test direct invocation rejects
    before accessing the database/Gemini, while the website proxy succeeds.
 8. Deploy the proxy safeguards with its rate-limit binding. BLOCK_PUBLIC_VACANCIES
@@ -86,8 +103,10 @@ snapshots, revalidates the manifest, and does not cache authenticated API respon
 Optional widget requests stop after three failures or a quota 402. Map realtime
 and full-record polling have been retired; update checks fetch only the manifest.
 
-Set proxy DISABLE_PUBLIC_LIVE=true to pause optional proxy search/counters during
-an incident. This leaves static keyword search and listings available; it does
+Set Worker DISABLE_PUBLIC_LIVE=true to pause search during an incident. The switch
+also pauses counters sent directly to that Worker; the production Oracle route
+sends counters directly to Supabase, so those require a separate ingress change.
+This leaves static keyword search and listings available; it does
 not itself pause other direct Edge Function endpoints. A server-side usage restriction
 still needs to be resolved separately. Existing submission forms retain their
 input on failure and only show success after a confirmed successful response.
@@ -137,6 +156,15 @@ admin grants/policy after inspecting actual role memberships. Do not restore
 anonymous bulk-table reads as the default rollback. Proxy flags can be disabled
 independently; a missing search limiter fails search closed rather than exposing
 the upstream without a limit.
+
+Oracle's pre-change Caddyfile is /etc/caddy/Caddyfile.pre-egress-20261018.
+Restoring it alone bypasses the Worker but search then fails closed at the guarded
+function. Prefer temporarily disabling AI search while repairing the protected
+route. The prior Worker version is 01e34122-fc79-4ce8-bfa8-c2c3e74cad7b;
+rolling it back also removes the limiter, so it is not a safe default search
+recovery. Previous function source and database access metadata were saved in
+the owner's local .codex/tmp/deputation-live-rollout directory. Do not restore
+unprotected public search or anonymous table grants as routine recovery.
 
 ## Checks
 

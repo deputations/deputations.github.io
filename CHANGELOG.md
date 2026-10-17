@@ -26,6 +26,13 @@ counter_convention:
 
 ## [Unreleased]
 
+### Changed - deployed guarded search through the actual production ingress (2026-10-18)
+Kept Oracle/Caddy for government-network access and routed only AI search through
+the Cloudflare rate limiter. Authenticated forwarding preserves per-network limits
+without trusting caller-supplied addresses. Direct function calls now reject before
+live work. Updated deployment templates, account selection and incident recovery
+instructions; production checks confirmed rejection and throttling.
+
 ### Changed - quota containment and public snapshot recovery (2026-10-17)
 Public browsing no longer downloads the Supabase vacancy table. Fresh public-only
 snapshots, lazy archives, archived bookmarks/deep links, Kolkata deadline handling,

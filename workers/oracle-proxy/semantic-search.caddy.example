@@ -1,0 +1,10 @@
+# Provision as /etc/caddy/private/semantic-search.caddy, root:caddy 0640.
+# Replace the placeholder through a protected deployment channel. Never commit
+# the rendered file. Use the same server-only token as Worker and Edge Function.
+handle /functions/v1/semantic-search {
+    reverse_proxy https://sb-proxy.ncrsarkarishaadi.workers.dev {
+        header_up Host {upstream_hostport}
+        header_up x-public-proxy-secret "SERVER_ONLY_PROXY_SECRET"
+        header_up x-public-proxy-client-ip {remote_host}
+    }
+}

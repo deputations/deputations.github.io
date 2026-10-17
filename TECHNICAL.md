@@ -66,11 +66,15 @@ previews/embeddings and verifies the actual host. See EGRESS-RECOVERY.md for rol
 backup scope, access controls and quota handling.
 
 Supabase continues to handle admin review/import, submissions, semantic search,
-feedback and push features. Migration 0025 is a separate staged production change:
+feedback and push features. Migration 0025 was applied on 18 October 2026 IST:
 base vacancy reads become admin/service-only, and public search RPC execution is
-removed. Semantic search uses a secret-authenticated, rate-limited proxy. These
-account-side changes must be explicitly deployed; repository files alone do not
-establish live grants or secrets. The public anon key still identifies the app,
+removed. Semantic search uses a secret-authenticated, rate-limited Worker behind
+Oracle/Caddy at api.alldeputations.com. Oracle preserves government-network access;
+only semantic-search is routed through the Worker. Caddy overwrites client-IP and
+token headers; the Worker authenticates ingress before trusting its client address.
+Guarded function, Worker and Caddy route were deployed and checked in production.
+See EGRESS-RECOVERY.md for exact live state and remaining account setup.
+The public anon key still identifies the app,
 but is no longer intended to authorize full vacancy downloads.
 
 Build actions:

@@ -1,0 +1,11 @@
+# Keep the A record on Oracle for government-network compatibility.
+api.alldeputations.com {
+    import /etc/caddy/private/semantic-search.caddy
+    handle {
+        reverse_proxy https://djaxutkmhazufsxeobal.supabase.co {
+            header_up Host {upstream_hostport}
+            header_up -x-public-proxy-secret
+            header_up -x-public-proxy-client-ip
+        }
+    }
+}

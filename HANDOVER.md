@@ -6945,3 +6945,36 @@ separate from the draft PR. No untracked owner files were staged.
   remains pending; existing search is unchanged until matching server-only tokens
   and correct production Worker can be configured together.
 ## session shq-2026-10-18-live-egress-restriction end
+
+
+## session shq-2026-10-18-protected-search-rollout
+- Correct Cloudflare account verified: aa6fca8ba721498e8ab8ebe8141f08d1. Official
+  Cloudflare agent setup installed 19 skills and registered/authorized the MCP
+  connection in user config. Restart Codex to load it. Optional beta CLI skipped.
+- Rechecked config.js and DNS: api.alldeputations.com is Oracle/Caddy, not a
+  Cloudflare custom domain. Preserved its A record and other backend routes.
+- Restored owner-only local SSH-key permissions on a separate copy, recovered
+  Oracle access, backed up /etc/caddy/Caddyfile.pre-egress-20261018.
+- Deployed Worker adf77433-1b59-49b5-9871-96713bbab967 with rate-limit binding and
+  server-only secret. Previous version 01e34122-fc79-4ce8-bfa8-c2c3e74cad7b saved.
+- Validated/reloaded Caddy with a root:caddy 0640 private snippet; only AI search
+  now goes through the Worker. It overwrites secret/client-address headers.
+- Deployed only guarded semantic-search preserving existing gateway JWT setting.
+  Worker accepts Oracle client address only after token verification. Spoofed
+  addresses cannot rotate the limiter; 11 Worker tests and dry-run pass.
+- Live checks: direct and forged function calls 403; Oracle/Worker empty query
+  400; base table denied through Oracle, 410 through Worker; malformed-query
+  limiter probe stopped with 429/Retry-After 60, without database/Gemini work.
+- Real query hit existing AI quota safeguard until 2026-10-18T00:00:00Z (05:30 IST).
+  Did not clear it. Static listings/keyword search stay available. No claim that
+  provider quota resumes exactly when its application timer expires.
+- Backups and usage alerts still need their independent credentials/configuration
+  and restore/alert verification. Search limiter is not a global egress cap.
+- Owner video-production/ remained untouched.
+## session shq-2026-10-18-protected-search-rollout end
+
+### final protected-search verification
+- Final Worker version f1208a68-da74-4cba-84d0-9f7f744e327a adds URL query redaction
+  in logs/traces; API readback confirmed secret_text, rate-limit binding and flags.
+- Production desktop and mobile (simulated backend quota 402) show 472 active
+  listings, no vacancy table/archive requests, no page errors; desktop details work.

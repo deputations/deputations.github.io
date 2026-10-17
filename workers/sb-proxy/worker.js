@@ -32,6 +32,8 @@
  * in wrangler.toml.
  * ========================================================================== */
 
+import { verifyProxyToken } from '../../supabase/functions/_shared/public-proxy.js';
+
 const TARGET = "https://djaxutkmhazufsxeobal.supabase.co";
 const ALLOW_ORIGIN = "*"; // anon-key is public; same as Supabase's policy
 
@@ -73,7 +75,14 @@ export default {
       }
       // Generous per-network ceiling for a small query endpoint. Keys are not
       // logged; shared office/mobile networks can still share this allowance.
-      const ip = request.headers.get('CF-Connecting-IP') || 'unknown-network';
+      // The NIC-compatible Oracle ingress overwrites these two headers. Trust
+      // its client address only with the server-only token; public callers
+      // cannot rotate their limiter key by supplying a forwarded address.
+      const ingressIp = request.headers.get('x-public-proxy-client-ip');
+      const trustedIngress = ingressIp && ingressIp.length <= 64 &&
+        await verifyProxyToken(request.headers.get('x-public-proxy-secret'), env.PUBLIC_PROXY_SECRET);
+      const ip = trustedIngress ? ingressIp :
+        (request.headers.get('CF-Connecting-IP') || 'unknown-network');
       const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip));
       const key = Array.from(new Uint8Array(bytes)).map(n => n.toString(16).padStart(2,'0')).join('');
       try {
@@ -102,6 +111,7 @@ export default {
       if (lk === "x-forwarded-for") continue;
       if (lk.startsWith("cf-")) continue;
       if (lk === 'x-public-proxy-secret') continue;
+      if (lk === 'x-public-proxy-client-ip') continue;
       headers.set(k, v);
     }
     if (url.pathname === '/functions/v1/semantic-search') {

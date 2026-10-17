@@ -13,9 +13,10 @@
 //   On 503 (free-tier overflow): { ok: false, code: "disabled",
 //                                   message, disabled_until }
 //
-// Deployed with --no-verify-jwt (PUBLIC). RLS on the source tables applies
-// regardless — search_vacancies() joins on vacancies.status in
-// ('Active','approved') and the anon role can only see approved rows.
+// Gateway JWT verification remains disabled, as on the previous deployment.
+// The handler requires the server-only proxy token before any live work.
+// Only the service role can execute search_vacancies(); browser roles cannot
+// read the base vacancy table or invoke the search RPC directly.
 //
 // Free-tier safety:
 //   1. Cheap pre-check: SELECT disabled_until from semantic_search_state —

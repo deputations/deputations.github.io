@@ -1,58 +1,17 @@
-# Cloudflare Worker config for the Supabase reverse-proxy.
-#
-# Deploy:
-#   cd workers/sb-proxy
-#   npx wrangler deploy
-#
-# After deploy, point `api.alldeputations.com` CNAME at the `workers.dev`
-# subdomain shown by wrangler. Cloudflare auto-issues certs.
-#
-# Plan notes:
-#   - CURRENTLY ON WORKERS FREE (downgraded 2026-08-03 from Paid). The
-#     realtime-toast live-push feature (websocket to Supabase /realtime/v1)
-#     is dormant on this plan; users get new-vacancy data via the
-#     60-s polling fallback (data/vacancies.json). The WebSocket handler
-#     in worker.js is intentionally retained behind an Upgrade-header
-#     check — flipping back to Paid is a one-click plan change with no
-#     re-deploy required.
-#   - Free plan: 100k req/day. Plenty of headroom for ~38k dashboard
-#     visitors/month; AI search + heart + visitor counter all use the
-#     REST/RPC/Edge Function path which is free-tier compatible.
-#   - Public listing reads are retired. PUBLIC_PROXY_SECRET is a Worker secret
-#     shared only with the semantic-search function; apikey still comes from
-#     the request. See EGRESS-RECOVERY.md before deploying these controls.
-
+# AI-search safeguards behind the NIC-compatible Oracle ingress.
+# The public api.alldeputations.com A record stays on Oracle. Only its
+# semantic-search path forwards to this Worker; other API traffic is unchanged.
+# See ../oracle-proxy/ and ../../EGRESS-RECOVERY.md before deploying.
 name = "sb-proxy"
+account_id = "aa6fca8ba721498e8ab8ebe8141f08d1"
 main = "worker.js"
 compatibility_date = "2026-07-31"
-
-# Custom domain — BLOCKED at the zone level (not just at the token level).
-#
-# `api.alldeputations.com` was the plan. Workers Custom Domains need
-# the apex zone to be on Cloudflare. `alldeputations.com` is currently
-# on Wix DNS (ns10.wixdns.net, ns11.wixdns.net) — verified via the
-# Cloudflare REST API: `/zones?name=alldeputations.com` → total_count 0.
-# A new API token with Zone:DNS:Edit + Workers Routes:Edit is necessary
-# but not sufficient; the apex NS has to migrate to Cloudflare first.
-# (No "partial CNAME setup" path for subdomains on a non-CF apex.)
-#
-# To migrate `api.alldeputations.com` to this Worker:
-#   1. Move NS from Wix to Cloudflare for `alldeputations.com`.
-#   2. Re-enable the routes block below and `wrangler deploy`.
-#   3. Update `config.js` to point at https://api.alldeputations.com.
-#
-# Until then the workers.dev URL is the canonical proxy host.
-# routes = [
-#   { pattern = "api.alldeputations.com", custom_domain = true }
-# ]
-
-# Custom domain wired via Cloudflare dashboard (Workers → sb-proxy →
-# Settings → Triggers → Custom Domains → api.alldeputations.com).
-# Until that's set, the Worker is reachable at:
-#   https://sb-proxy.<your-cloudflare-subdomain>.workers.dev
+workers_dev = true
+preview_urls = false
 
 [observability]
 enabled = true
+redact_query_string = true
 
 [observability.traces]
 enabled = true

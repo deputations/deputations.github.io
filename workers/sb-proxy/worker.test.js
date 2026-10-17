@@ -16,6 +16,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from 'node:crypto';
 import worker from "./worker.js";
 
 /** Build a minimal `ctx` object. */
@@ -63,6 +64,27 @@ test('search receives only the configured server token, never a caller-supplied 
       method:'POST',headers:{'x-public-proxy-secret':'forged-client-token'}});
     assert.equal((await worker.fetch(req,{PUBLIC_PROXY_SECRET:'x'.repeat(64),
       SEARCH_RATE_LIMITER:{limit:async()=>({success:true})}},ctx())).status,200);
+  } finally { restore(); }
+});
+
+test('only authenticated Oracle ingress can supply a client limiter address', async () => {
+  const keys = [];
+  const secret = 'x'.repeat(64);
+  const restore = stubFetch(async (_, init) => {
+    assert.equal(init.headers.get('x-public-proxy-client-ip'), null);
+    assert.equal(init.headers.get('x-public-proxy-secret'), secret);
+    return new Response('{}');
+  });
+  try {
+    const env = {PUBLIC_PROXY_SECRET:secret,
+      SEARCH_RATE_LIMITER:{limit:async({key})=>{keys.push(key); return {success:true};}}};
+    for (const token of [secret, 'forged-token'.repeat(4)]) {
+      await worker.fetch(new Request('https://worker.example/functions/v1/semantic-search', {
+        method:'POST', headers:{'CF-Connecting-IP':'161.118.160.186',
+          'x-public-proxy-client-ip':'203.0.113.7','x-public-proxy-secret':token}
+      }), env, ctx());
+    }
+    assert.deepEqual(keys, ['203.0.113.7','161.118.160.186'].map(ip=>createHash('sha256').update(ip).digest('hex')));
   } finally { restore(); }
 });
 
