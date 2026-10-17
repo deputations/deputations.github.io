@@ -35,17 +35,20 @@ def install(page: Page, *, anon_key: str = "") -> None:
                 f"rpc_stub routed {route.request.url} but expected {SUPA_HOST}"
             )
             reply_json(route, body)
-        page.route(f"**/supabase.co/rest/v1/rpc/{name}", handler)
+        page.route(f"**/*.supabase.co/rest/v1/rpc/{name}", handler)
 
-    rpc("bump_visit", {"ok": True, "count": 42})
-    rpc("heartbeat", {"ok": True})
+    rpc("bump_visit", {"total": 42, "today": 1})
+    rpc("heartbeat", 1)
     rpc("get_sentiment", {"ok": True, "ups": 100, "downs": 0})
     rpc("record_sentiment", {"ok": True, "ups": 101, "downs": 0})
 
+    # Optional-live features probe this root with HEAD. Keep tests offline;
+    # individual outage tests can override the route with a later registration.
+    page.route('**/*.supabase.co/rest/v1/', lambda route: reply_json(route, {}))
+
     # Note: we deliberately do NOT register a catch-all OPTIONS handler here.
-# Playwright dispatches routes in registration order (first match wins); a
-# catch-all for `**/supabase.co/**` would shadow any per-test route that
-# tests register later (e.g. to stub the Edge Function submit POST or the
-# /auth/v1/otp call). Browser-driven CORS preflights work fine without
+# Playwright dispatches the last registered matching route first; precise
+# routes let individual tests override failures or inspect request bodies.
+# Browser-driven CORS preflights work fine without
 # explicit interception in headless mode — the response just needs the
 # right CORS headers, which the test stubs already provide.
