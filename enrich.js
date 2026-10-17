@@ -237,6 +237,40 @@
     }).join(' · ');
   }
 
+  // Display the same unbounded feeder-tier list used by the level filter.
+  // A range hides years and incorrectly implies eligibility for skipped levels.
+  function eligibilityDisplayTiers(item) {
+    if (!item) return [];
+    let raw = item.eligibility_tiers;
+    if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch (_) { raw = null; } }
+    const clean = tiers => {
+      const seen = new Set();
+      return tiers.map(t => {
+        const level = typeof t?.level === 'number' ? t.level : parseLevel(t?.level);
+        const years = norm(t?.min_years);
+        return {level, label: rankLabel(level), min_years: /^\d+(?:\.\d+)?$/.test(years) ? Number(years) : null};
+      }).filter(t => {
+        if (t.level == null || t.level < 1 || t.level > 18 || (!Number.isInteger(t.level) && t.level !== 13.5)) return false;
+        const key = `${t.level}:${t.min_years}`;
+        if (seen.has(key)) return false;
+        seen.add(key); return true;
+      }).sort((a, b) => a.level - b.level);
+    };
+    if (Array.isArray(raw)) {
+      const tiers = clean(raw);
+      if (tiers.length) return tiers;
+    }
+    return clean([
+      {level: item.Req_Level1 ?? item.req_level1, min_years: item.Min_Years_Experience ?? item.min_years_experience},
+      {level: item.Req_Level2 ?? item.req_level2, min_years: item.Min_Years_Experience2 ?? item.min_years_experience2}
+    ]);
+  }
+
+  function formatEligibilitySummary(item) {
+    const tiers = eligibilityDisplayTiers(item);
+    return tiers.length ? tiers.map(t => `Level ${t.label}` + (t.min_years === null ? '' : ` (${t.min_years} ${t.min_years === 1 ? 'year' : 'years'})`)).join(' OR ') : 'Not specified';
+  }
+
   function inferStatus(raw, daysLeft) {
     const s = norm(raw).toLowerCase();
     if (['active','inactive','expired'].includes(s)) {
@@ -526,5 +560,5 @@
     return row;
   }
 
-  global.DepEnrich = { enrichRecord, enrichAll, parseTiers, isEligible, formatTiers, levelToken, acronymFor, withAcronym, backfillDerived, regionForState };
+  global.DepEnrich = { enrichRecord, enrichAll, parseTiers, isEligible, formatTiers, eligibilityDisplayTiers, formatEligibilitySummary, levelToken, acronymFor, withAcronym, backfillDerived, regionForState };
 })(window);

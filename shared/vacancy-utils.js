@@ -56,6 +56,7 @@
   }
 
   function formatEligibility(item) {
+    if (window.DepEnrich?.formatEligibilitySummary) return window.DepEnrich.formatEligibilitySummary(item);
     const a = parseLevelValue(item && item.Req_Level1);
     const b = parseLevelValue(item && item.Req_Level2);
     const ta = levelLabel(item && item.Req_Level1);

@@ -3722,6 +3722,7 @@ function syncCardSortUI() {
     }
 
     function formatEligibility(item) {
+        if (window.DepEnrich?.formatEligibilitySummary) return window.DepEnrich.formatEligibilitySummary(item);
         // ranks order the pair; tokens are displayed (so "13A", never 13.5)
         const req1 = parseLevelValue(item.Req_Level1);
         const req2 = parseLevelValue(item.Req_Level2);
@@ -3741,6 +3742,8 @@ function syncCardSortUI() {
     }
 
     function getEligibilitySortValue(item) {
+        const tiers = window.DepEnrich?.eligibilityDisplayTiers(item) || [];
+        if (tiers.length) return Math.min(...tiers.map(tier => tier.level));
         const req1 = parseLevelValue(item.Req_Level1);
         const req2 = parseLevelValue(item.Req_Level2);
 
