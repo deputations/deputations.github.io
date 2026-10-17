@@ -6912,3 +6912,14 @@ production access controls, backups or the 2 GB monthly target are already activ
 Untracked video-production/ belongs to the owner and was untouched.
 
 ## session shq-2026-10-17-egress-containment end
+
+### final regression addendum (same session)
+Full CI exposed older URL-glob mistakes in contact/RPC mocks and reliance on the
+external Fuse CDN. Tests now serve a pinned local Fuse dependency, mock the actual
+Supabase hostname and HEAD probe, and block real external backend requests. HTTP
+error submission responses cannot show success, and retain entered text. Animated
+results tests wait for painted rows rather than the earlier counter update.
+Correct mocking also exposed a few pixels of navigation/feedback overlap with
+fallback fonts and a loaded count. Header space now follows measured feedback
+width, with a stable minimum; responsive checks pass. Production rollout remains
+separate from the draft PR. No untracked owner files were staged.

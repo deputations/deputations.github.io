@@ -7,9 +7,9 @@
  * If this file fails to load, every form shows an "endpoint not configured"
  * notice — failures surface immediately instead of being silently masked. */
 
-/* Supabase — public vacancies backend.
- * The anon key is SAFE to expose in the browser: Row Level Security limits the
- * anon role to reading only approved vacancies. */
+/* Supabase forms, optional public features and admin backend. This public anon
+ * key is an app identifier, not a secret. Listings use static snapshots; staged
+ * migration 0025 removes anonymous reads of the underlying vacancy table. */
 window.SUPABASE_URL = "https://djaxutkmhazufsxeobal.supabase.co";
 window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYXh1dGttaGF6dWZzeGVvYmFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMjgzNTksImV4cCI6MjA5NTcwNDM1OX0.AHfWNpMS69KhxGX6Px1fS9dVddo9lUiXvc96hM5UTbU";
 

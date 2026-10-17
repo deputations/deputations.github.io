@@ -203,7 +203,7 @@ html[data-theme="light"] .top-nav a:not(.nav-brand).active,
 /* ---- above 768px the like / dislike pill (site-widgets.js) floats over the
    right end of the nav: keep the links clear of it ---- */
 @media (min-width: 769px) {
-  .top-nav:has(.nav-links) { padding-right: 150px; }
+  .top-nav:has(.nav-links) { padding-right: var(--feedback-nav-space, 170px); }
 }
 /* narrow desktops: tighter pills, and the row scrolls if it still runs out of room */
 @media (min-width: 861px) and (max-width: 1180px) {

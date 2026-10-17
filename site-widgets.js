@@ -407,6 +407,12 @@
     var likeBtn = wrap.querySelector(".like");
     var dislikeBtn = wrap.querySelector(".dislike");
     var cntEl = wrap.querySelector(".cnt");
+    function reserveFeedbackSpace() {
+      var width = wrap.getBoundingClientRect().width;
+      if (width) document.documentElement.style.setProperty('--feedback-nav-space', Math.max(170, Math.ceil(width + 32)) + 'px');
+    }
+    reserveFeedbackSpace();
+    if (window.ResizeObserver) new ResizeObserver(reserveFeedbackSpace).observe(wrap);
 
     // Pin to the very top-right corner. On desktop the nav links are centred, so
     // the right of the sticky navbar is empty — sit there (above the page's own
@@ -426,6 +432,7 @@
     function setCount(ups) {
       cntEl.textContent = (ups == null) ? "—" : fmt(ups);
       likeBtn.title = (ups == null) ? "Like the website" : (fmt(ups) + " liked the site");
+      reserveFeedbackSpace();
     }
 
     // load current like tally (site-wide)

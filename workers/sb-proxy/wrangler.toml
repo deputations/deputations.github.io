@@ -18,8 +18,9 @@
 #   - Free plan: 100k req/day. Plenty of headroom for ~38k dashboard
 #     visitors/month; AI search + heart + visitor counter all use the
 #     REST/RPC/Edge Function path which is free-tier compatible.
-#   - `vars` / `secrets` not used — Worker is a transparent pass-through and
-#     carries the apikey in the request, not in the env.
+#   - Public listing reads are retired. PUBLIC_PROXY_SECRET is a Worker secret
+#     shared only with the semantic-search function; apikey still comes from
+#     the request. See EGRESS-RECOVERY.md before deploying these controls.
 
 name = "sb-proxy"
 main = "worker.js"
