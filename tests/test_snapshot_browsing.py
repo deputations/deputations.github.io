@@ -16,6 +16,8 @@ def versioned_snapshots(page):
 def ready(page, url):
     page.goto(url)
     page.wait_for_function("() => (document.getElementById('resultsCount')?.textContent || '').includes('vacancies')")
+    # The existing animated renderer updates the counter before painting rows.
+    page.wait_for_selector('#dataContainer [data-open-details]')
 
 
 def test_normal_load_never_reads_vacancy_table_or_archive(page, base_url):
@@ -93,4 +95,5 @@ def test_cached_snapshot_survives_full_network_outage(page, base_url):
     page.context.set_offline(True)
     page.reload()
     page.wait_for_function("() => (document.getElementById('resultsCount')?.textContent || '').includes('vacancies')")
+    page.wait_for_selector('tr.clickable-row')
     assert page.locator('tr.clickable-row').count() > 0
