@@ -7085,3 +7085,8 @@ separate from the draft PR. No untracked owner files were staged.
   confirms an obsolete cached config is replaced on its first fetch and that the
   fresh copy remains available offline. Initial broader checks: 11 passed; one
   existing filter test timed out during a view transition and passed on rerun.
+- Three targeted cache/offline/filter checks passed on rerun. Pages deployment
+  39130501422 succeeded. Live HTML loads config sb8 and the deployed worker has
+  the network-first configuration route. Fresh production browser login request
+  for the owner's existing admin email returned HTTP 200, showed Magic link sent
+  and had no page errors. One new owner login email was requested for this check.
