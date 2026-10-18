@@ -25,6 +25,15 @@ Both projects remain on Free. The source project is retained for rollback.
   accepted (HTTP 200). Real AI query through the production proxy returned three
   matches (HTTP 200).
 - Empty jobs created by validation were identified against source IDs and removed.
+- Live production admin UI shows 34 draft records and 1,600 approved records,
+  with 25 cards per page and no page errors. A temporary draft was created,
+  edited and deleted through a real admin session; no test record remains.
+- A real admin signed-URL request and ranged PDF read succeeded (200/206),
+  confirming access to private source files. All seven function endpoints were
+  checked with invalid/unauthorized inputs, without sending push notifications.
+- The mirror's scheduled exporter and actual-host publication verification passed:
+  1,600 records, snapshot `424551c8d6450301270f`. The optional thumbnail job is
+  independent of the verified publication.
 
 ## Production connections
 
@@ -57,6 +66,13 @@ extraction, push and core site operation use the recovered credentials.
 
 Migration material is kept outside Git in the owner's protected directory:
 `C:/Users/vivek/.codex/tmp/deputation-mirror-migration-20261018/`.
+The retained backup is `deputations-migration-recovery-20261018.aesgcm`, with a
+Windows DPAPI-protected key and a standalone decryption/verification helper.
+Authenticated decryption and plaintext checksum were independently verified using
+the protected key. Temporary unencrypted exports and credential copies were
+removed afterward. This is a manual migration recovery point; recurring backups
+and off-device key recovery are not configured. See RECOVERY-INSTRUCTIONS.md
+inside the protected directory.
 Oracle's previous route is backed up as
 `/etc/caddy/Caddyfile.pre-mirror-20261018`. Previous Worker version was
 `f1208a68-da74-4cba-84d0-9f7f744e327a`.

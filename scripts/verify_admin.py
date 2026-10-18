@@ -12,6 +12,7 @@ so no real backend (and no magic-link login) is needed. Exercises:
 Screenshots land in _verify/.
 """
 import json
+import os
 import re
 import sys
 import time
@@ -28,10 +29,10 @@ sys.path.insert(0, str(_ROOT))
 
 from tests.pages.route_helpers import jwt, reply_empty_cors, reply_json  # noqa: E402
 from tests.pages.serve import serve  # noqa: E402
+from tests.fixtures.constants import SUPA_HOST  # noqa: E402
 
 ROOT = _ROOT
 PORT = 8771
-SUPA_HOST = "djaxutkmhazufsxeobal.supabase.co"
 OUT = ROOT / "_verify"
 OUT.mkdir(exist_ok=True)
 
@@ -194,7 +195,7 @@ def main():
             failures.append(label)
 
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
+        browser = pw.chromium.launch(executable_path=os.getenv("TEST_CHROMIUM_PATH") or None)
         page = browser.new_page()
         page.on("pageerror", lambda e: page_errors.append(str(e)))
         page.on("dialog", lambda d: d.accept())

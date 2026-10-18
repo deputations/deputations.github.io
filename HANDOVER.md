@@ -7035,3 +7035,23 @@ separate from the draft PR. No untracked owner files were staged.
   fresh-snapshot status assertion to match the previous footer removal.
 - Owner video-production/ remains untouched.
 ## session shq-2026-10-18-free-mirror-migration end
+
+### final mirror recovery and production verification
+- Production frontend and proxies use the mirror. Public homepage shows 472
+  active vacancies, no base-table requests, no page errors, widget APIs 200.
+- Authenticated production admin UI: 34 drafts and 1,600 approved records, 25
+  cards/page. Admin create/edit/delete verified on one temporary draft and cleaned
+  up. Private PDF signed URL/ranged read 200/206 with correct PDF header.
+- All seven production function endpoints respond and reject invalid/unauthorized
+  calls. No push messages or real publication records were created for tests.
+- Exporter publication job 39123573689 verified 1,600 records from the mirror;
+  optional preview generation continues separately. Original source remains intact.
+- Encrypted recovery bundle (93,697,103 bytes), protected key and independent
+  verification helper retained outside Git. Authenticated decrypt/checksum passed
+  using the Windows DPAPI key. Removed temporary plaintext exports and credential
+  copies, and the one-time encrypted CI artifact/recovery branch.
+- CI 39123533220 passed the full Python/browser suite, Node/data/SQL/Worker and
+  Wrangler checks, but the admin harness still hardcoded the old host. Replaced
+  that literal with shared test constants and verified ALL CHECKS PASSED locally.
+- Four original fallback values remain unavailable. Owner answered that they have
+  a local file; requested its path without asking them to paste secret values.

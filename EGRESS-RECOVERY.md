@@ -149,8 +149,12 @@ The backup preserves ACL statements; restore into an isolated compatible project
 with expected roles, then decrypt locally and use pg_restore to load the dump.
 Verify row counts, admin access and representative source references before
 declaring a recovery test successful. `pg_restore --list` checks the archive
-structure; it is not a substitute for a real restore. No live backup or restore
-has been run by this implementation.
+structure; it is not a substitute for a real restore. A manual live backup,
+mirror restore and table-content verification were completed on 18 October 2026.
+The migration recovery bundle includes all three private PDFs and recovered
+server settings, encrypted with AES-256-GCM and a Windows-protected key. This
+does not activate the recurring backup workflow or provide off-device key
+recovery. See MIRROR-MIGRATION-2026-10-18.md for that recovery point and limits.
 
 ## Rollback
 
