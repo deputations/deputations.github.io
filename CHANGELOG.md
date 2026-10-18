@@ -26,6 +26,12 @@ counter_convention:
 
 ## [Unreleased]
 
+### Fixed - refresh cached backend settings after migration (2026-10-18)
+Backend configuration now loads from the network before a cached copy, including
+when an older page requests a previous config URL. Retained a last-valid offline
+copy and bumped shared config references to sb8. This prevents cached old project
+keys from being reused after a reload; existing open tabs need to reload once.
+
 ### Changed - move production backend to the verified Free mirror (2026-10-18)
 Restored the existing database, Auth users, private source PDFs and seven Edge
 Functions into the Mumbai project. Repointed the website, protected search proxy,

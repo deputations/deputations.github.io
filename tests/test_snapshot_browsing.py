@@ -2,6 +2,7 @@
 import json
 import pytest
 from pathlib import Path
+from tests.fixtures.constants import ANON_KEY
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = json.loads((ROOT / 'data/vacancies-manifest.json').read_text(encoding='utf-8'))
@@ -85,6 +86,29 @@ def test_mobile_current_listings_and_modal(page, base_url):
     page.set_viewport_size({'width':390, 'height':844})
     ready(page, base_url + '/index.html')
     assert page.locator('#resultsCount').is_visible()
+
+
+def test_cached_backend_config_is_refreshed_before_use(page, base_url):
+    page.goto(base_url + '/admin-ingest.html')
+    page.evaluate("async () => { await navigator.serviceWorker.register('/sw.js'); await navigator.serviceWorker.ready; }")
+    page.wait_for_function('() => !!navigator.serviceWorker.controller')
+    # Reproduce a browser that still has a pre-migration key under an old URL.
+    result = page.evaluate("""async () => {
+        const url = '/config.js?v=before-migration';
+        const cache = await caches.open('dep-sw-v1-runtime');
+        await cache.put(url, new Response('window.SUPABASE_ANON_KEY = "obsolete-key";', {
+            headers: {'Content-Type': 'application/javascript'}
+        }));
+        const response = await fetch(url);
+        return {body: await response.text(), cached: await (await cache.match(url)).text()};
+    }""")
+    assert ANON_KEY in result['body']
+    assert 'obsolete-key' not in result['body']
+    assert result['cached'] == result['body']
+    # The fresh copy must still support offline snapshot pages.
+    page.context.set_offline(True)
+    offline_body = page.evaluate("async () => (await fetch('/config.js?v=before-migration')).text()")
+    assert offline_body == result['body']
 
 
 def test_cached_snapshot_survives_full_network_outage(page, base_url):

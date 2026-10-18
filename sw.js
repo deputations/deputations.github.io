@@ -1,7 +1,8 @@
 /* Deputations service worker (review P1-2).
  * Strategy — chosen to coexist with the site's manual ?v= cache-busting:
  *   - page navigations .... network-first, cached page fallback, then home shell
- *   - Supabase REST GETs .. network-first, cache fallback (offline last-fetched list)
+ *   - backend config .... network-first, bypassing the browser's HTTP cache
+ *   - Supabase API calls . never cached
  *   - same-origin assets +
  *     /data/*.json ........ stale-while-revalidate (new ?v= URL = new cache entry,
  *                           so deploys keep working exactly as before)
@@ -47,6 +48,23 @@ self.addEventListener("fetch", function (event) {
 
   var url;
   try { url = new URL(req.url); } catch (e) { return; }
+
+  // A project migration can invalidate an otherwise fresh cached public key.
+  // Refresh configuration even when an older page requests its old ?v= URL.
+  // Keep the last valid copy available for offline public snapshot browsing.
+  if (url.origin === self.location.origin && url.pathname === '/config.js') {
+    event.respondWith(caches.open(RUNTIME).then(async function (cache) {
+      try {
+        var fresh = await fetch(req, { cache: 'no-store' });
+        if (!fresh.ok) throw new Error('Configuration unavailable');
+        await cache.put(req, fresh.clone());
+        return fresh;
+      } catch (_) {
+        return await cache.match(req) || new Response('', { status: 503 });
+      }
+    }));
+    return;
+  }
 
   /* Snapshot manifest is network-first; immutable versioned shards are
      cache-first. Retain the existing cache namespace for offline continuity.

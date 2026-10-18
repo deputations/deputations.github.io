@@ -7070,3 +7070,18 @@ separate from the draft PR. No untracked owner files were staged.
   public data/map/SQL/Worker checks, Wrangler dry-run and authenticated admin
   harness. Temporary local verification server on port 8793 stopped; owner's
   intake app and unrelated video-production/ remain untouched.
+
+### admin login screenshot follow-up
+- Owner reported an Invalid API key error on the login card. Read-only live Auth
+  settings checks accepted the mirror anon key (HTTP 200), both directly and
+  through api.alldeputations.com. Live HTML/config point to the mirror. Evidence
+  indicates an older open page or cached configuration; the failing browser's
+  request itself was unavailable because browser automation could not initialize.
+- Shared config references bumped to sb8. Service worker now fetches config.js
+  network-first with HTTP-cache bypass, including old version URLs, and retains
+  a last-valid offline fallback without clearing saved public snapshots.
+- Old source anon key reproduces the screenshot's exact HTTP 401 Invalid API key
+  response at the live proxy; mirror key is accepted. Local cache regression
+  confirms an obsolete cached config is replaced on its first fetch and that the
+  fresh copy remains available offline. Initial broader checks: 11 passed; one
+  existing filter test timed out during a view transition and passed on rerun.
