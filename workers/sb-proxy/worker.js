@@ -7,7 +7,7 @@
  * alldeputations.com (the static-site hostname it already trusts).
  *
  * This Worker accepts requests at `https://api.alldeputations.com/*` and
- * forwards them to `https://djaxutkmhazufsxeobal.supabase.co/*`. The browser
+ * forwards them to `https://cwygwxhvpcthaejvlfqv.supabase.co/*`. The browser
  * speaks TLS to alldeputations.com (allowed); the Worker speaks TLS to
  * Supabase (Cloudflare→Cloudflare, no middlebox in between).
  *
@@ -34,7 +34,7 @@
 
 import { verifyProxyToken } from '../../supabase/functions/_shared/public-proxy.js';
 
-const TARGET = "https://djaxutkmhazufsxeobal.supabase.co";
+const TARGET = "https://cwygwxhvpcthaejvlfqv.supabase.co";
 const ALLOW_ORIGIN = "*"; // anon-key is public; same as Supabase's policy
 
 const CORS_HEADERS = {

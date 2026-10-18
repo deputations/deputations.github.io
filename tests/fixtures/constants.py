@@ -11,16 +11,16 @@ from pathlib import Path
 REPO_ROOT: Path = Path(__file__).resolve().parents[2]
 
 # Supabase project — mirrored from config.js lines 13-14
-SUPA_HOST: str = "djaxutkmhazufsxeobal.supabase.co"
+SUPA_HOST: str = "cwygwxhvpcthaejvlfqv.supabase.co"
 SUPA_URL: str = f"https://{SUPA_HOST}"
 
-# Public anon key (safe-by-design, RLS-gated to status=eq.approved). Mirrored
+# Public anon key (base vacancy reads denied; listings use snapshots). Mirrored
 # from config.js. The smoke stubs use it only to assert that the browser sent
 # it; we never forward to Supabase.
 ANON_KEY: str = (
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-    "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYXh1dGttaGF6dWZzeGVvYmFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMjgzNTksImV4cCI6MjA5NTcwNDM1OX0."
-    "AHfWNpMS69KhxGX6Px1fS9dVddo9lUiXvc96hM5UTbU"
+    "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN3eWd3eGh2cGN0aGFlanZsZnF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzMTU5NTgsImV4cCI6MjEwNzg5MTk1OH0."
+    "GUnAYb6ohnUE6XH0kinrzJvghYbV8JUO8MTMyVdiQPo"
 )
 
 # Local static-serve port. Chosen not to collide with verify_admin.py (8771)

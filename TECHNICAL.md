@@ -77,6 +77,12 @@ See EGRESS-RECOVERY.md for exact live state and remaining account setup.
 The public anon key still identifies the app,
 but is no longer intended to authorize full vacancy downloads.
 
+Production backend moved on 18 October 2026 to the Free mirror project
+`cwygwxhvpcthaejvlfqv` in Mumbai (`ap-south-1`), organization
+`lkffkyhuhnfqbfdjtxqr`. The original `djaxutkmhazufsxeobal` project is retained
+for rollback. See MIRROR-MIGRATION-2026-10-18.md for restore verification,
+credentials, proxy/publisher changes and remaining optional provider keys.
+
 Build actions:
 - `build-data.yml`: daily snapshot publication; independent optional enrichment
 - `build-defex.yml`: weekly DeFeX dataset, unchanged

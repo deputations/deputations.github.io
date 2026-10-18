@@ -15,13 +15,16 @@ on:
 jobs:
   push-notify:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      PUSH_CRON_KEY: ${{ secrets.PUSH_CRON_KEY }}
     steps:
       - name: Call push-notify Edge Function
         run: |
           code=$(curl -s -o /tmp/resp.json -w "%{http_code}" -X POST \
-            "https://djaxutkmhazufsxeobal.supabase.co/functions/v1/push-notify" \
+            "$SUPABASE_URL/functions/v1/push-notify" \
             -H "Content-Type: application/json" \
-            -H "x-cron-key: ${{ secrets.PUSH_CRON_KEY }}" \
+            -H "x-cron-key: $PUSH_CRON_KEY" \
             --data '{}')
           echo "HTTP $code"
           cat /tmp/resp.json

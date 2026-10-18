@@ -7001,3 +7001,37 @@ separate from the draft PR. No untracked owner files were staged.
 - Added a regression assertion that a fresh snapshot creates no snapshot-status
   message. Owner `video-production/` remains untouched.
 ## session shq-2026-10-18-remove-redundant-snapshot-footer end
+
+## session shq-2026-10-18-free-mirror-migration
+- Owner explicitly authorized full migration to the new Free account/project.
+- Source djaxutkmhazufsxeobal retained. Mirror cwygwxhvpcthaejvlfqv belongs to
+  organization lkffkyhuhnfqbfdjtxqr, region ap-south-1 (Mumbai).
+- Protected full source backup created outside Git (7,328,468 bytes). Restored
+  public schema/data and existing Auth users/identities. All 17 public tables
+  matched by count and content checksum; 1,974 vacancies, 87 jobs, 3 admins,
+  5 Auth users and 5 identities. Fresh login sessions replace old sessions.
+- Restored private Storage bucket/policy and all 3 PDFs (88,653,763 bytes) from
+  local originals with SHA-256 hashes matching their recorded object paths.
+- Reapplied migration 0025 after restore to remove destination default grants;
+  anonymous reads return 401/42501 and direct search returns 403/proxy_required.
+- Downloaded the actual seven deployed function sources and deployed to the
+  mirror preserving JWT gateway flags. Primary Gemini/push keys recovered via
+  an encrypted CI artifact, matching original secret digests; VAPID and proxy
+  credentials also recovered and verified. Four older fallback values still
+  require original local values (listed in MIRROR-MIGRATION-2026-10-18.md).
+- Oracle's previous Caddyfile saved as Caddyfile.pre-mirror-20261018. Validated
+  and reloaded the mirror route. Worker 03f82a60-9a52-41b4-971c-9834f4c432ed
+  targets the mirror; limiter, private ingress token and redaction retained.
+- GitHub publisher secrets updated; push workflow now uses SUPABASE_URL.
+  Frontend config imports bumped to sb7 across seven pages. No service keys or
+  account tokens are committed. Local intake configuration and DPAPI session
+  updated with an encrypted prior-state backup; admin check succeeds.
+- Live proxy checks: public counter 200, admin table 206 with 1,974 total,
+  AI search 200 with three matches. Mirror admin email request accepted 200.
+  Real authenticated browser on local new frontend: API calls all 200/206,
+  no page errors. Two empty jobs created by validation removed by exact IDs.
+- Targeted checks: 17 Node checks pass, 23 browser/Python tests pass; an offline
+  browser check timed out once, then passed in isolation. Updated its obsolete
+  fresh-snapshot status assertion to match the previous footer removal.
+- Owner video-production/ remains untouched.
+## session shq-2026-10-18-free-mirror-migration end

@@ -8,10 +8,10 @@
  * notice — failures surface immediately instead of being silently masked. */
 
 /* Supabase forms, optional public features and admin backend. This public anon
- * key is an app identifier, not a secret. Listings use static snapshots; staged
- * migration 0025 removes anonymous reads of the underlying vacancy table. */
-window.SUPABASE_URL = "https://djaxutkmhazufsxeobal.supabase.co";
-window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYXh1dGttaGF6dWZzeGVvYmFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMjgzNTksImV4cCI6MjA5NTcwNDM1OX0.AHfWNpMS69KhxGX6Px1fS9dVddo9lUiXvc96hM5UTbU";
+ * key is an app identifier, not a secret. Listings use static snapshots;
+ * migration 0025 blocks anonymous reads of the underlying vacancy table. */
+window.SUPABASE_URL = "https://cwygwxhvpcthaejvlfqv.supabase.co";
+window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN3eWd3eGh2cGN0aGFlanZsZnF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzMTU5NTgsImV4cCI6MjEwNzg5MTk1OH0.GUnAYb6ohnUE6XH0kinrzJvghYbV8JUO8MTMyVdiQPo";
 
 /* Cloudflare Worker reverse proxy (P3-7 PR 2).
  *

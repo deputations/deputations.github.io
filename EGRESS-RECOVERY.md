@@ -6,6 +6,11 @@ production change.
 
 ## Verified rollout status — 18 October 2026 IST
 
+Production now uses the Free mirror `cwygwxhvpcthaejvlfqv` in organization
+`lkffkyhuhnfqbfdjtxqr`; the restricted original `djaxutkmhazufsxeobal` is retained.
+See MIRROR-MIGRATION-2026-10-18.md before any rollback or credential change.
+The historical containment checks below describe the original rollout.
+
 - PR #30 merged; full CI passed (184 Python/browser checks, one intentional
   hostname skip, Node security/data/Worker checks and authenticated admin checks).
 - Public static clients are live at alldeputations.com. The production export
@@ -97,7 +102,7 @@ rule. No publication refresh is required to stop showing a passed deadline as ac
 
 On an export failure, retain the last good manifest. Never substitute the legacy
 Google Sheet or refresh the source-updated timestamp to disguise stale data.
-The site shows the publication time and warns after 48 hours. A missing manifest
+The site uses its existing Updated date and warns after 48 hours. A missing manifest
 falls back to the public compatibility JSON. The service worker preserves cached
 snapshots, revalidates the manifest, and does not cache authenticated API responses.
 Optional widget requests stop after three failures or a quota 402. Map realtime

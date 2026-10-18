@@ -26,6 +26,12 @@ counter_convention:
 
 ## [Unreleased]
 
+### Changed - move production backend to the verified Free mirror (2026-10-18)
+Restored the existing database, Auth users, private source PDFs and seven Edge
+Functions into the Mumbai project. Repointed the website, protected search proxy,
+Oracle ingress and scheduled publisher, retaining static public browsing and
+anonymous database-read restrictions. Bumped shared config references to sb7.
+
 ### Changed - remove redundant fresh-snapshot timestamp from the public footer (2026-10-18)
 The normal snapshot publication time no longer appears as a second footer date.
 The existing vacancy-data "Updated" date remains; stale or offline snapshot

@@ -129,7 +129,7 @@ test("forwards GET to upstream with path + query unchanged", async () => {
     assert.equal(resp.status, 200);
     assert.match(
       captured.url,
-      /^https:\/\/djaxutkmhazufsxeobal\.supabase\.co\/rest\/v1\/vacancies\?status=eq\.approved&limit=5$/,
+      /^https:\/\/cwygwxhvpcthaejvlfqv\.supabase\.co\/rest\/v1\/vacancies\?status=eq\.approved&limit=5$/,
     );
     assert.equal(captured.init.method, "GET");
     assert.equal(captured.init.headers.get("apikey"), "test-key");
@@ -175,7 +175,7 @@ test("forwards POST body to upstream (RPC)", async () => {
     assert.equal(resp.status, 200);
     assert.match(
       capturedUrl,
-      /^https:\/\/djaxutkmhazufsxeobal\.supabase\.co\/rest\/v1\/rpc\/bump_visit$/,
+      /^https:\/\/cwygwxhvpcthaejvlfqv\.supabase\.co\/rest\/v1\/rpc\/bump_visit$/,
     );
     assert.equal(capturedBodyText, "{}");
   } finally { restore(); }
@@ -274,7 +274,7 @@ test("websocket upgrade: passes Upgrade header through, returns upstream respons
     assert.equal(resp.status, 200);
     assert.match(
       captured.url,
-      /^https:\/\/djaxutkmhazufsxeobal\.supabase\.co\/realtime\/v1\/websocket/,
+      /^https:\/\/cwygwxhvpcthaejvlfqv\.supabase\.co\/realtime\/v1\/websocket/,
     );
     assert.equal(captured.headers.get("upgrade"), "websocket");
   } finally { restore(); }

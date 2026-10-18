@@ -27,7 +27,7 @@ def test_normal_load_never_reads_vacancy_table_or_archive(page, base_url):
     assert page.locator('tr.clickable-row').count() > 0
     assert not any('/rest/v1/vacancies' in url for url in calls)
     assert not any('/archive-' in url for url in calls)
-    assert page.locator('#snapshot-status').count() == 1
+    assert page.locator('#snapshot-status').count() == 0
 
 
 def test_archived_deep_link_loads_only_its_shard(page, base_url):
