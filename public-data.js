@@ -62,8 +62,10 @@
         await shard('current', candidate.current);
         manifest = candidate;
         var age = Date.now() - Date.parse(manifest.generated_at_utc);
+        // A fresh snapshot's build time is an implementation detail and
+        // duplicates the footer's user-facing "Updated" date. Keep only the
+        // actionable stale-data warning when the snapshot is older than 48h.
         if (!Number.isFinite(age) || age > 48 * 3600000) status('Showing the last published vacancy snapshot. Updates are delayed. Verify deadlines in the original notification.');
-        else status('Vacancy snapshot published ' + new Date(manifest.generated_at_utc).toLocaleString('en-IN', {timeZone:'Asia/Kolkata'}) + ' IST.');
       } catch (error) {
         merge(await json('data/vacancies.json')); legacy = true;
         status('Showing the last available vacancy snapshot. Live updates are unavailable; verify the original notification.');

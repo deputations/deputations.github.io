@@ -31,6 +31,7 @@ function fixture(options = {}) {
 }
 test('startup fetches only current data; archived deep link loads one pinned shard',async()=>{
   const f=fixture();assert.equal((await f.api.load()).length,1);
+  assert.equal(f.context.document.getElementById('snapshot-status'),undefined);
   assert.equal(f.calls.length,2);assert(!f.calls.some(p=>p.includes('archive-')));
   assert.equal((await f.api.load({ids:['B']})).length,2);assert.equal(f.calls.length,3);
   await f.api.load({all:true});assert.equal(f.calls.length,3);assert(f.api.archiveLoaded());

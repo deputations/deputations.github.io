@@ -6992,3 +6992,12 @@ separate from the draft PR. No untracked owner files were staged.
   generation). All 18 Node security/snapshot/SQL/Worker checks, 189 map checks,
   Wrangler dry-run and authenticated admin harness pass locally. Admin harness
   used the installed Chromium binary explicitly; no production admin writes.
+
+## session shq-2026-10-18-remove-redundant-snapshot-footer
+- Removed the fresh-manifest publication timestamp from `public-data.js`; it was
+  the static bundle generation time and duplicated the footer's vacancy-data
+  `Updated` date. Stale (>48h) and offline warnings remain.
+- Bumped the public-data cache version on index, India map and My Deputation.
+- Added a regression assertion that a fresh snapshot creates no snapshot-status
+  message. Owner `video-production/` remains untouched.
+## session shq-2026-10-18-remove-redundant-snapshot-footer end

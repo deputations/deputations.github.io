@@ -26,6 +26,11 @@ counter_convention:
 
 ## [Unreleased]
 
+### Changed - remove redundant fresh-snapshot timestamp from the public footer (2026-10-18)
+The normal snapshot publication time no longer appears as a second footer date.
+The existing vacancy-data "Updated" date remains; stale or offline snapshot
+warnings remain visible when they provide actionable information.
+
 ### Changed - deployed guarded search through the actual production ingress (2026-10-18)
 Kept Oracle/Caddy for government-network access and routed only AI search through
 the Cloudflare rate limiter. Authenticated forwarding preserves per-network limits
