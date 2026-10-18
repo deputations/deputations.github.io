@@ -36,6 +36,9 @@ Both projects remain on Free. The source project is retained for rollback.
   independent of the verified publication.
 - The complete publication/enrichment workflow 39123573689 subsequently finished
   successfully, including optional link previews, sitemap/images and embeddings.
+- Final CI workflow 39124592725 passed the full browser/Python suite, public
+  snapshot/map/SQL/Worker checks, proxy deployment dry-run and authenticated admin
+  harness after removing its stale hardcoded source-project host.
 
 ## Production connections
 

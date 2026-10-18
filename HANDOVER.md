@@ -7066,3 +7066,7 @@ separate from the draft PR. No untracked owner files were staged.
   services remain available; these optional fallback paths remain incomplete.
 - Complete Build deputation data workflow 39123573689 finished successfully,
   including its independent enrichment, sitemap/images and embeddings job.
+- Final Smoke tests workflow 39124592725 succeeded, including Python/browser,
+  public data/map/SQL/Worker checks, Wrangler dry-run and authenticated admin
+  harness. Temporary local verification server on port 8793 stopped; owner's
+  intake app and unrelated video-production/ remain untouched.
