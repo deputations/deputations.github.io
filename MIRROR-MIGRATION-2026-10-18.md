@@ -34,6 +34,8 @@ Both projects remain on Free. The source project is retained for rollback.
 - The mirror's scheduled exporter and actual-host publication verification passed:
   1,600 records, snapshot `424551c8d6450301270f`. The optional thumbnail job is
   independent of the verified publication.
+- The complete publication/enrichment workflow 39123573689 subsequently finished
+  successfully, including optional link previews, sitemap/images and embeddings.
 
 ## Production connections
 
@@ -63,6 +65,13 @@ Four older fallback values cannot be revealed by Supabase: MISTRAL_API_KEY,
 OPENROUTER_API_KEY, SERPER_API_KEY and APPS_SCRIPT_URL. They need the owner's
 original local values to reproduce those fallback paths. Primary Gemini search,
 extraction, push and core site operation use the recovered credentials.
+At the owner's request, local settings (including ignored settings files), project
+copies, automation settings, local/cloud-drive backups, deployment history and
+the protected intake credential store were searched. No candidate matched these
+four original secret fingerprints. GitHub's configured repository secrets do not
+contain these four names. Their restoration remains incomplete; values must be
+recovered from the provider accounts or replaced before those fallback paths can
+be verified.
 
 Migration material is kept outside Git in the owner's protected directory:
 `C:/Users/vivek/.codex/tmp/deputation-mirror-migration-20261018/`.

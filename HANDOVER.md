@@ -7055,3 +7055,14 @@ separate from the draft PR. No untracked owner files were staged.
   that literal with shared test constants and verified ALL CHECKS PASSED locally.
 - Four original fallback values remain unavailable. Owner answered that they have
   a local file; requested its path without asking them to paste secret values.
+
+### fallback credential search requested by owner
+- Owner did not know the file path and authorized a local search. Searched ignored
+  settings files, project copies, automation settings, local/cloud-drive backups,
+  deployment records and the intake app's protected store. Compared candidates
+  against original SHA-256 fingerprints without exposing values. No match for
+  MISTRAL_API_KEY, OPENROUTER_API_KEY, SERPER_API_KEY or APPS_SCRIPT_URL. None of
+  these four names is configured as a GitHub repository secret. Core restored
+  services remain available; these optional fallback paths remain incomplete.
+- Complete Build deputation data workflow 39123573689 finished successfully,
+  including its independent enrichment, sitemap/images and embeddings job.
