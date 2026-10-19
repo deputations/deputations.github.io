@@ -12,6 +12,30 @@ test('Employment News extractor requires an explicit deputation verdict', () => 
   assert.doesNotMatch(source, /it\.is_deputation === false/);
 });
 
+test('database blocks approval of Employment News rows without a deputation basis', async () => {
+  const {PGlite} = require(process.env.PGLITE_MODULE || './sql/node_modules/@electric-sql/pglite');
+  const db = new PGlite();
+  try {
+    await db.exec(`
+      create table public.vacancies (
+        id int primary key, status text, source_type text, deputation_type text,
+        raw_extraction jsonb default '{}'::jsonb
+      );
+    `);
+    await db.exec(fs.readFileSync('supabase/migrations/0026_require_employment_news_deputation.sql', 'utf8'));
+    await db.exec(`insert into public.vacancies values (1,'draft','employment_news','', '{}'::jsonb)`);
+    await assert.rejects(
+      db.exec(`update public.vacancies set status='approved' where id=1`),
+      /explicit deputation basis/
+    );
+    await db.exec(`insert into public.vacancies values (2,'approved','employment_news','Deputation', '{}'::jsonb)`);
+    await assert.rejects(
+      db.exec(`insert into public.vacancies values (3,'approved','employment_news','Deputation', '{"is_deputation": false}'::jsonb)`),
+      /marked non-deputation/
+    );
+  } finally { await db.close(); }
+});
+
 test('migration closes public and non-admin reads while preserving admin and exporter access', async () => {
   const {PGlite} = require(process.env.PGLITE_MODULE || './sql/node_modules/@electric-sql/pglite');
   const db = new PGlite();

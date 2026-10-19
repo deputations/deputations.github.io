@@ -7126,3 +7126,8 @@ separate from the draft PR. No untracked owner files were staged.
   (37) and repository access/guard tests (2) pass. The guarded extract function
   was deployed to mirror cwygwxhvpcthaejvlfqv. A fresh snapshot publication is
   required to remove the already-published record from static files.
+- Applied migration 0026 directly to the mirror and verified its trigger exists.
+  It blocks approval of any Employment News row without a deputation basis, or
+  whose source extraction explicitly says it is not deputation. Its isolated SQL
+  regression test and the extractor guard test pass. The public publication
+  workflow removed AUTO-b112bc0e-be4 from the live 1,599-record snapshot.

@@ -29,7 +29,8 @@ counter_convention:
 ### Fixed - block non-deputation Employment News imports (2026-10-19)
 The extractor now requires an explicit positive deputation verdict for Employment
 News. The local intake application also requires an explicit deputation basis
-before it sends a reviewed row to the portal queue.
+before it sends a reviewed row to the portal queue. The database also blocks
+approval of an Employment News row without that basis.
 
 ### Fixed - immediate map route after state zoom (2026-10-19)
 State selection now writes its URL when the visible zoom lands. Active-status
