@@ -17,6 +17,25 @@ window.IndiaMapData = (() => {
   let nationwideCount = 0;
   let multiStateCount = 0;
   let source = 'none';
+  // State and district rendering asks for many related counts. Cache each
+  // record's active status until the next Kolkata midnight instead of asking
+  // PublicVacancies.classify() thousands of times during one drill-down.
+  let activeStatusCache = new WeakMap();
+  let activeStatusCacheUntil = 0;
+  const KOLKATA_PARTS = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
+  });
+
+  function refreshActiveStatusCache() {
+    const now = Date.now();
+    if (now < activeStatusCacheUntil) return;
+    const fields = {};
+    KOLKATA_PARTS.formatToParts(new Date(now)).forEach(part => { fields[part.type] = part.value; });
+    activeStatusCache = new WeakMap();
+    // India is UTC+05:30, so the next Kolkata midnight is 18:30 UTC on the
+    // same UTC calendar date as the current Kolkata date.
+    activeStatusCacheUntil = Date.UTC(Number(fields.year), Number(fields.month) - 1, Number(fields.day), 18, 30);
+  }
 
   // ----- Active-date check (mirrors app.js recomputeStatus) -----
   // The JSON's Status was computed at dump time and several days may have
@@ -27,17 +46,28 @@ window.IndiaMapData = (() => {
   // ~300 more active vacancies than the dashboard, most of them long closed.
   const UNDATED_ACTIVE_DAYS = 60;   // keep in step with app.js
   function isActive(v) {
-    if (window.PublicVacancies) return window.PublicVacancies.classify({
-      Last_Date_To_Apply: v.Last_Date_To_Apply || v.last_date_to_apply || v.closingDate || '',
-      Notification_Date: v.Notification_Date || v.notification_date || v.notificationDate || ''
-    }).Status === "Active";
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const iso = String(v.Last_Date_To_Apply || v.last_date_to_apply || v.closingDate || '').trim();
-    const d = iso ? new Date(iso + 'T00:00:00') : null;
-    if (d && !isNaN(d.getTime())) return d >= today;
-    const n = new Date(String(v.Notification_Date || v.notification_date || v.notificationDate || '').trim() + 'T00:00:00');
-    return !isNaN(n.getTime()) && Math.round((today - n) / 86400000) <= UNDATED_ACTIVE_DAYS;
+    if (!v || typeof v !== 'object') return false;
+    refreshActiveStatusCache();
+    if (activeStatusCache.has(v)) return activeStatusCache.get(v);
+    let active;
+    if (window.PublicVacancies) {
+      active = window.PublicVacancies.classify({
+        Last_Date_To_Apply: v.Last_Date_To_Apply || v.last_date_to_apply || v.closingDate || '',
+        Notification_Date: v.Notification_Date || v.notification_date || v.notificationDate || ''
+      }).Status === "Active";
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const iso = String(v.Last_Date_To_Apply || v.last_date_to_apply || v.closingDate || '').trim();
+      const d = iso ? new Date(iso + 'T00:00:00') : null;
+      if (d && !isNaN(d.getTime())) active = d >= today;
+      else {
+        const n = new Date(String(v.Notification_Date || v.notification_date || v.notificationDate || '').trim() + 'T00:00:00');
+        active = !isNaN(n.getTime()) && Math.round((today - n) / 86400000) <= UNDATED_ACTIVE_DAYS;
+      }
+    }
+    activeStatusCache.set(v, active);
+    return active;
   }
 
   // Derive state abbreviation from Location_State name.
@@ -472,6 +502,8 @@ window.IndiaMapData = (() => {
   // Testing helper: reset all internal state (not for production use)
   function reset() {
     allVacancies = [];
+    activeStatusCache = new WeakMap();
+    activeStatusCacheUntil = 0;
     stateCounts = {};
     districtCounts = {};
     nationwideCount = 0;

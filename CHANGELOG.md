@@ -26,6 +26,11 @@ counter_convention:
 
 ## [Unreleased]
 
+### Fixed - immediate map route after state zoom (2026-10-19)
+State selection now writes its URL when the visible zoom lands. Active-status
+classification is cached through the Kolkata day, removing repeated expensive
+date formatting while the selected state’s district view is built.
+
 ### Fixed - show published vacancy total without loading the archive (2026-10-19)
 The final KPI now uses the manifest's published record count and is always titled
 "Total Vacancies." Archive shards remain lazy, so showing the total does not add

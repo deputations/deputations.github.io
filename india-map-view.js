@@ -1559,7 +1559,7 @@
     return selectedAbbr === abbr && (viewMode === 'state' || viewMode === 'district');
   }
 
-  async function drillToState(abbr, name) {
+  async function drillToState(abbr, name, onZoomComplete) {
     if (isOnState(abbr)) return true;
     lastFocusedState = abbr;
     const gen = ++renderGeneration; // (J) render navigation generation
@@ -1584,6 +1584,9 @@
 
     await cinematicZoom(abbr, sel);
     if (gen !== renderGeneration) return false;
+    // The URL is part of the visible state transition. Do this when the zoom
+    // lands, before synchronous district-detail construction begins.
+    if (onZoomComplete) onZoomComplete();
 
     renderState(abbr, name);
     selectedAbbr = abbr;
@@ -2292,9 +2295,14 @@
   async function navigateToState(stateAbbr) {
     if (isOnState(stateAbbr)) return;
     const name = ABBR_TO_NAME[stateAbbr] || stateAbbr;
-    const ok = await drillToState(stateAbbr, name);
-    if (!ok) return;
-    history.pushState(makeRoute('state', stateAbbr, null, true), '', stateUrl(stateAbbr));
+    let routeWritten = false;
+    const writeRoute = () => {
+      if (routeWritten) return;
+      routeWritten = true;
+      history.pushState(makeRoute('state', stateAbbr, null, true), '', stateUrl(stateAbbr));
+    };
+    const ok = await drillToState(stateAbbr, name, writeRoute);
+    if (ok && !routeWritten) writeRoute();
   }
 
   // User click: State → District. Exactly one push.

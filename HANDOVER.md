@@ -7099,3 +7099,16 @@ separate from the draft PR. No untracked owner files were staged.
   count is 1,600; the final KPI now always says “Total Vacancies” and uses that
   count without downloading the archive. The 1,974 database rows include private
   drafts/internal records and are not a public-listing total.
+
+### state map drill-down delay correction
+- Owner reported a four-to-eight second pause after clicking a state: the map
+  completed its national zoom but did not show the state route or district view.
+  A production CPU profile of Rajasthan showed `PublicVacancies.classify()` using
+  about 4.9 seconds; every district label/count was reclassifying every loaded
+  vacancy.
+- Cached each normalized record's active status until the next Kolkata midnight,
+  and write the `?state=` route as the 700 ms visible zoom lands rather than
+  after district-detail rendering. Full-data local measurement: the route changed
+  in 973 ms and state districts appeared in 1,039 ms. Map data smoke suite: 190
+  passed; state-click browser checks: 2 passed. Temporary local test server was
+  stopped. Owner `video-production/` remains untouched.

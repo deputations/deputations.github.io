@@ -259,6 +259,24 @@ window.IndiaMapData.recordNewVacancy({
 assert(window.IndiaMapData.getNationwideCount() === 1, 'Nationwide count stays 1 (no negative)');
 assert(window.IndiaMapData.getStateCount('MH') === 0, 'State MH stays 0 after nationwide dedup');
 
+section('C21: Active status is cached during state-detail rendering');
+const priorPublicVacancies = window.PublicVacancies;
+let classifyCalls = 0;
+window.PublicVacancies = { classify() { classifyCalls++; return { Status: 'Active' }; } };
+window.IndiaMapData.reset();
+window.IndiaMapData.recordNewVacancy({
+  Vacancy_ID: 'CACHE1', state_abbr: 'MH', district: 'Pune',
+  Last_Date_To_Apply: '2099-01-01', location_scope: 'district'
+});
+const callsAfterInsert = classifyCalls;
+window.IndiaMapData.getListingsForDistrict('MH', 'Pune');
+window.IndiaMapData.getFiltered('MH');
+window.IndiaMapData.getActiveTotal();
+assert(classifyCalls === callsAfterInsert,
+  'Repeated state-detail queries reuse each record’s cached active status');
+if (priorPublicVacancies === undefined) delete window.PublicVacancies;
+else window.PublicVacancies = priorPublicVacancies;
+
 // ===== Active total: the counter matches the dashboard =====
 section('Active total — every active vacancy, as the dashboard counts');
 window.IndiaMapData.reset();
