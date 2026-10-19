@@ -404,6 +404,13 @@
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
           <h2 style="margin:0">🎗 Awaiting verification <span id="vfHdrCount" class="muted"></span></h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input id="vfSearch" placeholder="Search post / org / ministry / city…" style="width:260px" />
+            <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Source:
+              <select id="vfSource" style="width:auto"><option value="">All</option></select>
+            </label>
+            <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Sort:
+              <select id="vfSort" style="width:auto"></select>
+            </label>
             <button id="vfRefresh" title="Reload the pending list">↻</button>
             <button id="vfVerifyChecked" class="good" disabled>✓ Verify checked</button>
             <button id="vfVerifyAll" class="primary">✓✓ Verify all pending</button>
@@ -506,6 +513,6 @@
   <script src="config.js?v=sb8"></script>
   <script src="enrich.js?v=elig-20261018-lines"></script>
   <script src="shared/vacancy-utils.js?v=elig-20261018-lines"></script>
-  <script src="admin-ingest.js?v=sb54"></script>
+  <script src="admin-ingest.js?v=sb55"></script>
 </body>
 </html>

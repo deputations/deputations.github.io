@@ -1010,11 +1010,14 @@ function wireApp() {
   // a stale saved state may predate the active↔expired mutual exclusion
   if (DRAFT_QUICK.has('active') && DRAFT_QUICK.has('expired')) { DRAFT_QUICK.delete('active'); DRAFT_QUICK.delete('expired'); }
   MG_PAGE = Math.max(1, parseInt(ui.mgPage, 10) || 1);
+  VERIFY_PAGE = Math.max(1, parseInt(ui.vfPage, 10) || 1);
   RESTORE_LEVEL = ui.draftLevel || '';
   RESTORE_SOURCE = ui.draftSource || '';
   RESTORE_MG_SOURCE = ui.mgSource || '';
+  RESTORE_VF_SOURCE = ui.vfSource || '';
   if ($('draftSearch')) $('draftSearch').value = ui.draftSearch || '';
   if ($('mgSearch')) $('mgSearch').value = ui.mgSearch || '';
+  if ($('vfSearch')) $('vfSearch').value = ui.vfSearch || '';
   if (ui.mgStatus && $('mgStatus')) $('mgStatus').value = ui.mgStatus;
   if (ui.flagStatus && $('flagStatus')) $('flagStatus').value = ui.flagStatus;
   if (ui.fbStatus && $('fbStatus')) $('fbStatus').value = ui.fbStatus;
@@ -1052,6 +1055,23 @@ function wireApp() {
 
   // Verify tab wiring
   if ($('vfRefresh')) $('vfRefresh').onclick = () => loadVerifyQueue();
+  if ($('vfSource')) $('vfSource').onchange = () => {
+    VERIFY_PAGE = 1; saveUI({ vfSource: $('vfSource').value, vfPage: 1 });
+    renderVerifyQueue();
+  };
+  if ($('vfSort')) $('vfSort').innerHTML = sortOptionsHtml(ui.vfSort || 'upload');
+  if ($('vfSort')) $('vfSort').onchange = () => {
+    VERIFY_PAGE = 1; saveUI({ vfSort: $('vfSort').value, vfPage: 1 });
+    renderVerifyQueue();
+  };
+  let _vfFilterTimer = null;
+  if ($('vfSearch')) $('vfSearch').oninput = () => {
+    clearTimeout(_vfFilterTimer);
+    _vfFilterTimer = setTimeout(() => {
+      VERIFY_PAGE = 1; saveUI({ vfSearch: $('vfSearch').value, vfPage: 1 });
+      renderVerifyQueue();
+    }, 200);
+  };
   if ($('vfVerifyChecked')) $('vfVerifyChecked').onclick = verifyChecked;
   if ($('vfVerifyAll')) $('vfVerifyAll').onclick = verifyAllPending;
   if ($('vfCheckAll')) $('vfCheckAll').onclick = (e) => {
@@ -2747,12 +2767,14 @@ function feedbackCard(f) {
 const VERIFY_PER = 25;
 let VERIFY_PAGE = 1;
 let VERIFY_TOTAL = 0;
+let VERIFY_ROWS = [];
+let RESTORE_VF_SOURCE = '';
 
 const VF_SELECT = [
   'id', 'vacancy_id', 'post_name', 'organisation', 'department', 'ministry',
   'level_text', 'location_city', 'location_state', 'last_date_to_apply',
   'notification_date', 'official_notification_link', 'source_file_url',
-  'confidence', 'created_at',
+  'source_type', 'source_category', 'confidence', 'created_at',
 ].join(',');
 
 // Tab badge. Called after every bulk publish and every verify so the number
@@ -2771,26 +2793,46 @@ async function loadVerifyQueue(page = VERIFY_PAGE) {
   const list = $('vfList');
   if (!list) return;
   list.innerHTML = '<p class="muted">Loading…</p>';
-  const offset = (VERIFY_PAGE - 1) * VERIFY_PER;
   try {
-    const r = await api(
-      `/rest/v1/vacancies?status=eq.approved&admin_verified=eq.false`
-      + `&select=${VF_SELECT}&order=created_at.desc&limit=${VERIFY_PER}&offset=${offset}`,
-      { headers: { Prefer: 'count=exact' } },
+    VERIFY_ROWS = await fetchAll(
+      `vacancies?status=eq.approved&admin_verified=eq.false&select=${VF_SELECT}&order=created_at.desc,id.asc`,
     );
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    VERIFY_TOTAL = parseInt(((r.headers.get('content-range') || '/0').split('/')[1]) || '0', 10) || 0;
-    const rows = await r.json();
-    // Deleting/verifying the last row of a page leaves you stranded past the
-    // end — step back a page instead of showing a spurious empty state.
-    if (!rows.length && VERIFY_PAGE > 1 && VERIFY_TOTAL > 0) return loadVerifyQueue(VERIFY_PAGE - 1);
-    renderVerifyTable(rows);
-    renderVerifyPager();
+    populateVerifySourceFilter();
+    renderVerifyQueue();
     loadVerifyCount();
   } catch (e) {
     list.innerHTML = `<p class="muted">Load error: ${escapeHtml(e.message)}.`
       + ` If this is the first run, apply <code>supabase/migrations/0017_admin_verified.sql</code> in the SQL editor.</p>`;
   }
+}
+
+function populateVerifySourceFilter() {
+  const sel = $('vfSource');
+  if (!sel) return;
+  const previous = sel.value || RESTORE_VF_SOURCE; RESTORE_VF_SOURCE = '';
+  const sources = [...new Set(VERIFY_ROWS.map((r) => String(r.source_category || r.source_type || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">All</option>'
+    + sources.map((source) => `<option value="${escapeHtml(source)}">${escapeHtml(source)}</option>`).join('');
+  if (previous && sources.includes(previous)) sel.value = previous;
+}
+
+function getVerifyViewRows() {
+  const query = ($('vfSearch')?.value || '').toLowerCase().trim();
+  const source = ($('vfSource')?.value || '').trim();
+  let rows = !query ? VERIFY_ROWS : VERIFY_ROWS.filter((r) => rowMatchesQuery(r, query));
+  if (source) rows = rows.filter((r) => String(r.source_category || r.source_type || '').trim() === source);
+  return sortRows(rows, ($('vfSort')?.value || 'upload'));
+}
+
+function renderVerifyQueue() {
+  const rows = getVerifyViewRows();
+  VERIFY_TOTAL = rows.length;
+  const pages = Math.max(1, Math.ceil(VERIFY_TOTAL / VERIFY_PER));
+  if (VERIFY_PAGE > pages) VERIFY_PAGE = pages;
+  const start = (VERIFY_PAGE - 1) * VERIFY_PER;
+  renderVerifyTable(rows.slice(start, start + VERIFY_PER));
+  renderVerifyPager();
 }
 
 function vfLocation(r) {
@@ -2824,6 +2866,7 @@ function renderVerifyTable(rows) {
         <td>${escapeHtml(r.level_text || '—')}</td>
         <td>${escapeHtml(r.ministry || '—')}</td>
         <td>${escapeHtml(vfLocation(r))}</td>
+        <td>${escapeHtml(r.source_category || r.source_type || '—')}</td>
         <td>${escapeHtml(r.last_date_to_apply || '—')}</td>
         <td>${link
           ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">🔗 Official</a>`
@@ -2842,6 +2885,7 @@ function renderVerifyTable(rows) {
           <th>Level</th>
           <th>Ministry</th>
           <th>Location</th>
+          <th>Source</th>
           <th>Last date</th>
           <th>Link</th>
           <th></th>
@@ -2870,10 +2914,10 @@ function renderVerifyPager() {
   if (pages <= 1) { pager.innerHTML = ''; return; }
   pager.innerHTML = `
     <button ${VERIFY_PAGE <= 1 ? 'disabled' : ''} data-vf-page="${VERIFY_PAGE - 1}">← Prev</button>
-    <span class="muted">Page ${VERIFY_PAGE} / ${pages}</span>
+    <span class="muted">Page ${VERIFY_PAGE} / ${pages} · ${VERIFY_TOTAL} matching</span>
     <button ${VERIFY_PAGE >= pages ? 'disabled' : ''} data-vf-page="${VERIFY_PAGE + 1}">Next →</button>`;
   pager.querySelectorAll('[data-vf-page]').forEach((b) => {
-    b.onclick = () => loadVerifyQueue(parseInt(b.dataset.vfPage, 10));
+    b.onclick = () => { VERIFY_PAGE = parseInt(b.dataset.vfPage, 10); saveUI({ vfPage: VERIFY_PAGE }); renderVerifyQueue(); };
   });
 }
 

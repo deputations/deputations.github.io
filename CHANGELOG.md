@@ -26,6 +26,10 @@ counter_convention:
 
 ## [Unreleased]
 
+### Added - Verify queue filters (2026-10-19)
+The pending-verification queue now has the same search, source and sort controls
+as Manage data. Filters are applied locally to the already-loaded pending set.
+
 ### Fixed - block non-deputation Employment News imports (2026-10-19)
 The extractor now requires an explicit positive deputation verdict for Employment
 News. The local intake application also requires an explicit deputation basis

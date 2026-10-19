@@ -7131,3 +7131,13 @@ separate from the draft PR. No untracked owner files were staged.
   whose source extraction explicitly says it is not deputation. Its isolated SQL
   regression test and the extractor guard test pass. The public publication
   workflow removed AUTO-b112bc0e-be4 from the live 1,599-record snapshot.
+
+### Verify queue filters
+- Added Manage-equivalent Search, Source and Sort controls to the Verify tab.
+  Verify keeps its fixed scope of approved rows awaiting human verification;
+  filters apply locally to the loaded pending set, pagination reports matching
+  rows, and Source is also visible in the verification table. Existing per-page
+  selection and all-pending verification behaviour are unchanged.
+- Admin harness extended for the new controls. It passed the login refresh,
+  review bulk action, Manage lazy-editor/pagination and Verify filtering flows
+  with no page errors.

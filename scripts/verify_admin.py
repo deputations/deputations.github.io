@@ -66,7 +66,8 @@ def live(i):
         "id": 100 + i, "vacancy_id": f"L-2026-L13-{i:03d}", "post_name": f"Live Post {i}",
         "organisation": f"Alpha {i}", "level": "13A" if i % 5 == 0 else "13",
         "location_city": "Mumbai", "status": "approved",
-        "source_type": "notification", "source_category": "NCLT",
+        "source_type": "notification" if i % 2 else "employment_news",
+        "source_category": "NCLT" if i % 2 else "EN Test",
         "official_notification_link": "https://example.gov.in/x.pdf",
         "notification_date": (TODAY - timedelta(days=40)).isoformat(),
         "last_date_to_apply": FUTURE_DATE,
@@ -253,6 +254,20 @@ def main():
         n = page.locator("#manageList .draft").count()
         check(1 <= n < 25, f"search narrows the list (got {n} cards)")
         page.screenshot(path=str(OUT / "admin_manage_pager.png"))
+
+        print("== Verify tab filters ==")
+        page.click("#tabVerify")
+        page.wait_for_selector("#vfList .vf-row")
+        check(page.locator("#vfList .vf-row").count() == 25, "Verify renders 25 rows/page")
+        check("EN Test" in page.locator("#vfSource").inner_text(), "Verify source filter is populated")
+        page.select_option("#vfSource", "EN Test")
+        check("30 matching" in page.locator("#vfPager").inner_text(), "Verify source filter narrows pending rows")
+        page.fill("#vfSearch", "L-2026-L13-008")
+        page.wait_for_timeout(450)
+        check(page.locator("#vfList .vf-row").count() == 1, "Verify search narrows the list")
+        page.select_option("#vfSort", "lastdate_asc")
+        check(page.locator("#vfList .vf-row").count() == 1, "Verify sort preserves the filtered result")
+        page.screenshot(path=str(OUT / "admin_verify_filters.png"))
 
         browser.close()
     srv.shutdown()
