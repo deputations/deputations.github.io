@@ -26,6 +26,11 @@ counter_convention:
 
 ## [Unreleased]
 
+### Fixed - show published vacancy total without loading the archive (2026-10-19)
+The final KPI now uses the manifest's published record count and is always titled
+"Total Vacancies." Archive shards remain lazy, so showing the total does not add
+bulk data transfer to ordinary visits.
+
 ### Fixed - refresh cached backend settings after migration (2026-10-18)
 Backend configuration now loads from the network before a cached copy, including
 when an older page requests a previous config URL. Retained a last-valid offline

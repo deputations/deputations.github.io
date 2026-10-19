@@ -29,6 +29,9 @@ def test_normal_load_never_reads_vacancy_table_or_archive(page, base_url):
     assert not any('/rest/v1/vacancies' in url for url in calls)
     assert not any('/archive-' in url for url in calls)
     assert page.locator('#snapshot-status').count() == 0
+    total_card = page.locator('[data-kpi-filter="all"]')
+    assert total_card.locator('.kpi-title').inner_text() == 'TOTAL VACANCIES'
+    assert total_card.locator('.kpi-value').get_attribute('data-count') == str(MANIFEST['record_count'])
 
 
 def test_archived_deep_link_loads_only_its_shard(page, base_url):

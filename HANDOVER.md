@@ -7090,3 +7090,12 @@ separate from the draft PR. No untracked owner files were staged.
   the network-first configuration route. Fresh production browser login request
   for the owner's existing admin email returned HTTP 200, showed Magic link sent
   and had no page errors. One new owner login email was requested for this check.
+
+### public total KPI correction
+- Owner reported that the public home-page KPI said “Vacancies Loaded 761.” This
+  is the intentionally lazy current snapshot: 472 active records plus 289
+  undated/recent records. The remaining 839 published records are archive shards
+  that are not fetched on an ordinary visit. The manifest's published record
+  count is 1,600; the final KPI now always says “Total Vacancies” and uses that
+  count without downloading the archive. The 1,974 database rows include private
+  drafts/internal records and are not a public-listing total.

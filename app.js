@@ -2404,11 +2404,22 @@ function applyUrlParameters() {
         };
     }
 
+ function publishedVacancyCount(fallback) {
+  // The manifest carries the published record count without downloading the
+  // archived shards. Those shards stay lazy so a normal visit remains small.
+  const metadata = window.PublicVacancies && window.PublicVacancies.metadata
+    ? window.PublicVacancies.metadata()
+    : null;
+  const total = Number(metadata && metadata.record_count);
+  return Number.isSafeInteger(total) && total >= fallback ? total : fallback;
+ }
+
  function renderKPIs(filteredData) {
   const current = getKpiSnapshot(filteredData);
+  const publishedTotal = publishedVacancyCount(current.total);
   const previous = previousKpiSnapshot;
 
-  const totalDelta = previous ? current.total - previous.total : 0;
+  const totalDelta = previous ? publishedTotal - previous.publishedTotal : 0;
   const activeDelta = previous ? current.active - previous.active : 0;
   const closingSoonDelta = previous ? current.closingSoon - previous.closingSoon : 0;
   const ministriesDelta = previous ? current.ministries - previous.ministries : 0;
@@ -2417,11 +2428,11 @@ function applyUrlParameters() {
     ${buildKpiCard('Active Vacancies', current.active, 'check-circle', 'green', activeDelta, 'active')}
     ${buildKpiCard('Closing Soon', current.closingSoon, 'clock', 'red', closingSoonDelta, 'closingSoon')}
     ${buildKpiCard('Ministries', current.ministries, 'building', 'purple', ministriesDelta, 'ministries')}
-    ${buildKpiCard(window.PublicVacancies.archiveLoaded() ? 'Total Vacancies' : 'Vacancies Loaded', current.total, 'briefcase', 'cyan', totalDelta, 'all')}
+    ${buildKpiCard('Total Vacancies', publishedTotal, 'briefcase', 'cyan', totalDelta, 'all')}
   `;
 
   animateKpiCounters();
-  previousKpiSnapshot = current;
+  previousKpiSnapshot = { ...current, publishedTotal };
 }
 
    function buildKpiCard(title, value, icon, tone, delta, filterKey = 'all') {
