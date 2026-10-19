@@ -7112,3 +7112,17 @@ separate from the draft PR. No untracked owner files were staged.
   in 973 ms and state districts appeared in 1,039 ms. Map data smoke suite: 190
   passed; state-click browser checks: 2 passed. Temporary local test server was
   stopped. Owner `video-production/` remains untouched.
+
+### non-deputation JRF correction
+- Owner reported public vacancy AUTO-b112bc0e-be4 (DRDO CAIR JRF-Mathematics).
+  The official notice CAIR/HRT/JRF/2026/03 is a fellowship recruitment, not a
+  deputation vacancy. It was created by the 17 October Employment News local
+  workflow as a draft despite seven explicit automation warnings; it was later
+  approved and therefore exported. Rejected the live record on 19 October and
+  marked it for review, preserving the audit trail rather than deleting it.
+- The server-side Employment News extractor now requires `is_deputation === true`.
+  The local intake portal delivery also skips every row without an explicit
+  deputation basis and records the skipped row in its receipt. Local intake tests
+  (37) and repository access/guard tests (2) pass. The guarded extract function
+  was deployed to mirror cwygwxhvpcthaejvlfqv. A fresh snapshot publication is
+  required to remove the already-published record from static files.

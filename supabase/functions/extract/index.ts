@@ -743,7 +743,9 @@ Deno.serve(async (req) => {
       it.post_name = pn; // normalise alternate keys (post / name / …) to post_name
       // Only Employment News needs the deputation filter (it's a mixed newspaper).
       // Single notifications / circulars / URLs: keep every advertised post.
-      if (job.source_type === "employment_news" && it.is_deputation === false) return false;
+      // Employment News is mixed. Only an explicit affirmative answer may
+      // create a deputation draft; missing or ambiguous values are excluded.
+      if (job.source_type === "employment_news" && it.is_deputation !== true) return false;
       const key = [it.post_name, it.organisation, it.location_city, it.level, it.notification_date]
         .map((x: unknown) => String(x ?? "").toLowerCase().trim()).join("|");
       if (seen.has(key)) return false;

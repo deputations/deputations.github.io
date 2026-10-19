@@ -4,6 +4,14 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
+
+test('Employment News extractor requires an explicit deputation verdict', () => {
+  const source = fs.readFileSync(path.join('supabase', 'functions', 'extract', 'index.ts'), 'utf8');
+  assert.match(source, /job\.source_type === "employment_news" && it\.is_deputation !== true/);
+  assert.doesNotMatch(source, /it\.is_deputation === false/);
+});
+
 test('migration closes public and non-admin reads while preserving admin and exporter access', async () => {
   const {PGlite} = require(process.env.PGLITE_MODULE || './sql/node_modules/@electric-sql/pglite');
   const db = new PGlite();
