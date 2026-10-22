@@ -429,6 +429,37 @@ section('C28: Missing locations — no place at all → New Delhi; city without 
   D.reset();
 }
 
+section('C29: Shared filters — counts and listings follow the row filter');
+{
+  const D = window.IndiaMapData;
+  D.reset();
+  const add = (id, state, city, extra = {}) => D.recordNewVacancy(Object.assign({
+    Vacancy_ID: id, Location_State: state, Location_City: city, Last_Date_To_Apply: '2099-01-01',
+  }, extra));
+  add('F1', 'Maharashtra', 'Mumbai', { Ministry: 'Finance' });
+  add('F2', 'Maharashtra', 'Pune', { Ministry: 'Railways' });
+  add('F3', 'Karnataka', 'Bengaluru', { Ministry: 'Finance' });
+  add('F4', 'Karnataka', 'Bengaluru', { Ministry: 'Finance', Last_Date_To_Apply: '2001-01-01' }); // expired
+  assert(D.getActiveTotal() === 3 && D.getStateCount('MH') === 2, 'unfiltered: three active, two in Maharashtra');
+  D.setRowFilter(row => row.Ministry === 'Finance');
+  assert(D.getActiveTotal() === 2, `the counter follows the filter (got: ${D.getActiveTotal()})`);
+  assert(D.getStateCount('MH') === 1 && D.getStateCount('KA') === 1, 'state counts follow the filter');
+  assert(D.getListingsForDistrict('MH', 'Pune').length === 0, 'a filtered-out vacancy leaves its district list');
+  assert(D.getFiltered('MH', {}).map(v => v.id).join(',') === 'F1', 'the state list follows the filter');
+  const rows = D.getActiveRows();
+  assert(rows.length === 3 && rows.every(r => r.Vacancy_ID), 'the options come from every active row, as given');
+  add('F5', 'Maharashtra', 'Nagpur', { Ministry: 'Railways' });
+  assert(D.getStateCount('MH') === 1, 'a vacancy added under a filter is counted only if it passes');
+  D.setRowFilter(null);
+  assert(D.getActiveTotal() === 4 && D.getStateCount('MH') === 3, 'clearing the filter restores every count');
+  D.setRowFilter(() => false);
+  D.reset();
+  assert(D.getActiveTotal() === 0, 'reset clears the filter with the data');
+  add('F6', 'Goa', 'Panaji');
+  assert(D.getStateCount('GA') === 1, 'no filter is left over after reset');
+  D.reset();
+}
+
 // ---- Summary ----
 console.log(`\n${'='.repeat(50)}`);
 console.log(`Results: ${passed} passed, ${failed} failed`);

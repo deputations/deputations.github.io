@@ -1,286 +1,3 @@
-// Shared open/close positioning for the filter dropdowns.
-//  • elevates the (sticky → own stacking context) sidebar so the open panel
-//    paints OVER the page content and the visitor counter, not behind them;
-//  • flips the panel upward when there isn't room below (desktop only).
-function flipIfNeeded(root, trigger, panel) {
-  const desktop = window.innerWidth > 768;
-  const sb = root && root.closest && root.closest('.filters-sidebar');
-  if (sb && desktop) sb.classList.add('ms-elevated');
-  if (!desktop) { panel.classList.remove('ms-open-up'); return; }
-  const tr = trigger.getBoundingClientRect();
-  const ph = panel.getBoundingClientRect().height;
-  const spaceBelow = window.innerHeight - tr.bottom;
-  panel.classList.toggle('ms-open-up', spaceBelow < ph + 12 && tr.top > spaceBelow);
-}
-function dropElevation() {
-  // remove elevation once nothing is open (defer so the just-closed panel counts as hidden)
-  setTimeout(() => {
-    if (!document.querySelector('.ms-panel:not([hidden])')) {
-      document.querySelectorAll('.filters-sidebar.ms-elevated')
-        .forEach(s => s.classList.remove('ms-elevated'));
-    }
-  }, 0);
-}
-
-// Inline SVG sprite reference (symbols live in index.html — no icon CDN).
-function svgIcon(name, cls = '') {
-  return `<svg class="icon${cls ? ' ' + cls : ''}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
-}
-
-// ----- Multi-select widget (popover + checkbox list) ---------------------
-// Returns a controller that mirrors enough of a <select>'s surface area
-// (`.value`, `.value = ''`, `addEventListener('change', …)`) plus multi-value
-// helpers (`.values`, `.setValues(arr)`, `.populate(arr)`).
-function createMultiSelect(root, opts = {}) {
-  const trigger = root.querySelector('.ms-trigger');
-  const label   = root.querySelector('.ms-trigger-label');
-  const panel   = root.querySelector('.ms-panel');
-  const search  = root.querySelector('.ms-search');
-  const list    = root.querySelector('.ms-list');
-  const empty   = root.querySelector('.ms-empty');
-  const noneBtn = root.querySelector('[data-ms-none]');
-  const doneBtns = root.querySelectorAll('[data-ms-done]');
-  const countEl = root.querySelector('[data-ms-count]');
-
-  const placeholder    = opts.placeholder || 'All';
-  const singularPattern = opts.singularPattern || ((v) => v);
-  const multiPattern    = opts.multiPattern    || ((n) => `${n} selected`);
-  // Optional: an option's displayed label (HTML) and the text the panel's search
-  // box matches against, when they differ from the raw value (e.g. Organisation:
-  // value = full name, label = "Full Name (ACR)" / "ACR" by screen width).
-  const labelHTML  = opts.labelHTML  || null;
-  const searchText = opts.searchText || ((v) => v);
-  const changeListeners = [];
-
-  let items = [];
-  let selected = new Set();
-  let countMap = {};   // optional { value: number } → renders a gradient "(N)"
-
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g,
-      m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
-  }
-  function countHTML(v) {
-    const c = countMap[v];
-    return c == null ? '' : `<span class="ss-opt-count">(${c})</span>`;
-  }
-
-  function renderList(filter = '') {
-    const f = filter.trim().toLowerCase();
-    const visible = f ? items.filter(i => String(searchText(i)).toLowerCase().includes(f)) : items;
-    if (!visible.length) {
-      list.innerHTML = '';
-      empty.hidden = false;
-    } else {
-      empty.hidden = true;
-      list.innerHTML = visible.map(v => `
-        <li><button type="button" class="ms-opt ${selected.has(v) ? 'is-selected' : ''}"
-              role="option" aria-selected="${selected.has(v)}" data-value="${esc(v)}">
-          <span class="ms-opt-check" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-          </span>
-          <span class="ms-opt-label">${labelHTML ? labelHTML(v) : esc(v)}</span>${countHTML(v)}
-        </button></li>`).join('');
-    }
-    syncCount();
-  }
-
-  function syncCount() {
-    if (!countEl) return;
-    const n = selected.size;
-    countEl.textContent = n === 0 ? 'None selected' : (n === 1 ? '1 selected' : `${n} selected`);
-    countEl.setAttribute('data-active', n > 0 ? 'true' : 'false');
-  }
-
-  function syncTrigger() {
-    label.removeAttribute('title');
-    if (!selected.size) {
-      label.textContent = placeholder;
-      trigger.classList.remove('ms-trigger--active');
-    } else if (selected.size === 1) {
-      const only = [...selected][0];
-      if (labelHTML) {
-        label.innerHTML = labelHTML(only);
-        // the trigger truncates long labels — keep the full one on hover
-        label.title = (label.firstElementChild || label).textContent;
-      } else {
-        label.textContent = singularPattern(only);
-      }
-      trigger.classList.add('ms-trigger--active');
-    } else {
-      label.textContent = multiPattern(selected.size);
-      trigger.classList.add('ms-trigger--active');
-    }
-  }
-
-  function emitChange() {
-    changeListeners.forEach(fn => {
-      try { fn({ type: 'change', target: api }); } catch (e) { console.warn(e); }
-    });
-  }
-
-  function open() {
-    panel.hidden = false;
-    trigger.setAttribute('aria-expanded', 'true');
-    search.value = ''; renderList();
-    flipIfNeeded(root, trigger, panel);
-    setTimeout(() => search.focus(), 0);
-  }
-  function close() {
-    panel.hidden = true;
-    trigger.setAttribute('aria-expanded', 'false');
-    dropElevation();
-  }
-
-  trigger.addEventListener('click', () => panel.hidden ? open() : close());
-  document.addEventListener('click', (e) => {
-    if (!root.contains(e.target) && !panel.hidden) close();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !panel.hidden) { close(); trigger.focus(); }
-  });
-
-  search.addEventListener('input', () => renderList(search.value));
-
-  list.addEventListener('click', (e) => {
-    const btn = e.target.closest('.ms-opt');
-    if (!btn) return;
-    const v = btn.dataset.value;
-    if (selected.has(v)) selected.delete(v); else selected.add(v);
-    // Animate just this row, don't full-rerender (preserves scroll position)
-    const nowSelected = selected.has(v);
-    btn.classList.toggle('is-selected', nowSelected);
-    btn.setAttribute('aria-selected', String(nowSelected));
-    syncCount(); syncTrigger(); emitChange();
-  });
-
-  noneBtn.addEventListener('click', () => {
-    selected.clear();
-    renderList(search.value); syncTrigger(); emitChange();
-  });
-  doneBtns.forEach(b => b.addEventListener('click', close));
-
-  const api = {
-    populate(arr, counts) {
-      items = (arr || []).slice();
-      countMap = counts || {};
-      // drop selections that are no longer present
-      [...selected].forEach(v => { if (!items.includes(v)) selected.delete(v); });
-      renderList(search.value); syncTrigger();   // keep any text typed in the open panel
-    },
-    get values() { return [...selected]; },
-    setValues(arr) {
-      selected = new Set((arr || []).filter(v => items.includes(v)));
-      renderList(search.value); syncTrigger();
-    },
-    // Compatibility shims so legacy `.value`/`.value = ''` code keeps working.
-    get value() { return selected.size === 1 ? [...selected][0] : ''; },
-    set value(v) {
-      if (!v) { selected.clear(); }
-      else { selected = new Set([v]); }
-      renderList(search.value); syncTrigger();
-    },
-    addEventListener(name, fn) {
-      if (name === 'change') changeListeners.push(fn);
-    },
-    isEmpty() { return selected.size === 0; },
-    has(v) { return selected.has(v); },
-  };
-  return api;
-}
-
-/* Themed single-select dropdown (used for Pay Level). Reuses the .ms-* panel
-   styling but renders each option as a name + a gradient-coloured "(N …)"
-   count. Exposes the same `.value` / change shims as a native <select>. */
-function createSingleSelect(root, opts = {}) {
-  const trigger = root.querySelector('.ms-trigger');
-  const label   = root.querySelector('.ms-trigger-label');
-  const panel   = root.querySelector('.ms-panel');
-  const list    = root.querySelector('.ms-list');
-  let placeholder = opts.placeholder || 'All';
-  const fmtCount = opts.countFormat || ((n) => String(n));   // text inside "(…)"
-  const changeListeners = [];
-
-  let items = [];   // [{ value, name, count }]  (count null = no count shown)
-  let selected = '';
-  let disabled = false;
-
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g,
-      m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
-  }
-  function countHTML(it) {
-    if (it.count == null) return '';
-    return `<span class="ss-opt-count">(${esc(fmtCount(it.count))})</span>`;
-  }
-  function renderList() {
-    list.innerHTML = items.map(it => {
-      const sel = it.value === selected;
-      return `<li><button type="button" class="ms-opt ss-opt${sel ? ' is-selected' : ''}"
-            role="option" aria-selected="${sel}" data-value="${esc(it.value)}">
-          <span class="ss-opt-name">${esc(it.name)}</span>${countHTML(it)}
-        </button></li>`;
-    }).join('');
-  }
-  function syncTrigger() {
-    const it = items.find(i => i.value === selected);
-    if (!selected) {
-      // Empty = the "All / Any" default → show the placeholder, no active glow.
-      label.innerHTML = esc(placeholder);
-      trigger.classList.remove('ms-trigger--active');
-    } else if (!it) {
-      label.innerHTML = esc(selected);
-      trigger.classList.add('ms-trigger--active');
-    } else {
-      label.innerHTML = `${esc(it.name)}${countHTML(it)}`;
-      trigger.classList.add('ms-trigger--active');
-    }
-  }
-  function emitChange() {
-    changeListeners.forEach(fn => { try { fn({ type: 'change', target: api }); } catch (e) { console.warn(e); } });
-  }
-  function open() {
-    panel.hidden = false;
-    trigger.setAttribute('aria-expanded', 'true');
-    flipIfNeeded(root, trigger, panel);
-  }
-  function close() { panel.hidden = true; trigger.setAttribute('aria-expanded', 'false'); dropElevation(); }
-
-  trigger.addEventListener('click', () => { if (disabled) return; panel.hidden ? open() : close(); });
-  document.addEventListener('click', (e) => { if (!root.contains(e.target) && !panel.hidden) close(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) { close(); trigger.focus(); } });
-  list.addEventListener('click', (e) => {
-    const btn = e.target.closest('.ss-opt');
-    if (!btn) return;
-    selected = btn.dataset.value;
-    renderList(); syncTrigger(); close(); emitChange();
-  });
-
-  const api = {
-    populate(arr) {
-      items = (arr || []).slice();
-      if (selected && !items.some(i => i.value === selected)) selected = '';
-      renderList(); syncTrigger();
-    },
-    get value() { return selected; },
-    set value(v) { selected = v || ''; renderList(); syncTrigger(); },
-    addEventListener(name, fn) { if (name === 'change') changeListeners.push(fn); },
-    // Native-<select> compatibility shims used by legacy call-sites.
-    get options() { return items.map(it => ({ value: it.value, textContent: it.name })); },
-    dispatchEvent(evt) { if (evt && evt.type === 'change') emitChange(); return true; },
-    has(v) { return items.some(it => it.value === v); },
-    get disabled() { return disabled; },
-    set disabled(b) {
-      disabled = !!b;
-      trigger.classList.toggle('ms-trigger--disabled', disabled);
-      trigger.setAttribute('aria-disabled', String(disabled));
-      if (disabled) close();
-    },
-    setPlaceholder(p) { placeholder = p; if (!selected) syncTrigger(); },
-  };
-  return api;
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Deputation dashboard started');
 
@@ -528,7 +245,7 @@ function loadDataFromJSON() {
 
             reconcileWatchlistWithData();
             populateFilters();
-            hydrateFiltersFromUrl();
+            hydrateFiltersFromUrl(filterParamsOnLoad());
             autoselectPayLevelFromProfile();
             buildSearchSuggestions();
             bindEvents();
@@ -782,9 +499,17 @@ function initLinkPreview() {
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
 }
 
-function hydrateFiltersFromUrl() {
+// Filters to start with: the link's own ?search=…&level=… if it has any,
+// otherwise the selection saved for this browser tab (by this page or the
+// India map — shared/vacancy-filters.js), otherwise none.
+function filterParamsOnLoad() {
+    const fromUrl = new URLSearchParams(window.location.search);
+    if (window.DepFilters.hasFilterParams(fromUrl)) return fromUrl;
+    return window.DepFilters.savedParams() || fromUrl;
+}
+
+function hydrateFiltersFromUrl(params = new URLSearchParams(window.location.search)) {
     try {
-        const params = new URLSearchParams(window.location.search);
         if (![...params.keys()].length) return;
 
         const setIfPresent = (param, el) => {
@@ -799,8 +524,9 @@ function hydrateFiltersFromUrl() {
         setIfPresent('ministry', filterMinistry);
         setIfPresent('orgType', filterOrgType);
         setIfPresent('region', filterRegion);
-        // multi-selects: ?level=Level-10,Level-11  ?org=<name>&org=<name>  ?location=a,b,c
-        // (organisation names contain commas — "AIIMS, Patna" — so one param each)
+        // multi-selects: ?level=Level-10,Level-11  ?org=<name>&org=<name>  ?location=<place>&location=<place>
+        // (organisation names and places contain commas — "AIIMS, Patna",
+        // "Patna, Bihar" — so one param each)
         if (params.has('level')) {
           const arr = (params.get('level') || '').split(',').map(s => s.trim()).filter(Boolean);
           if (arr.length) filterLevel.__pendingValues = arr;
@@ -810,10 +536,14 @@ function hydrateFiltersFromUrl() {
           if (arr.length) filterOrganisation.__pendingValues = [...new Set(arr)];
         }
         if (params.has('location')) {
-          const arr = (params.get('location') || '').split(',').map(s => s.trim()).filter(Boolean);
-          if (arr.length) filterLocation.__pendingValues = arr;
+          const arr = params.getAll('location').map(s => s.trim()).filter(Boolean);
+          if (arr.length) filterLocation.__pendingValues = [...new Set(arr)];
         }
-        if (params.has('status')) filterStatus.value = params.get('status');
+        if (params.has('status')) {
+            filterStatus.value = params.get('status');
+            // An explicit choice — "" is "All" — must not be reset to Active
+            filterStatus.__defaulted = true;
+        }
 
         const quick = (params.get('quick') || '').split(',').filter(Boolean);
         if (quick.includes('newOnly')) quickFilters.newOnly = true;
@@ -2072,6 +1802,7 @@ kpiGrid.addEventListener('click', (e) => {
 function renderDashboardFromSnapshot(resetPageIfNeeded = true) {
   syncExperienceState();
   populateFilters();   // faceted "(N)" counts follow the current selections
+  window.DepFilters.save(currentFilterState());   // the India map reads it
   // KPI cards summarise the whole set regardless of the Status dropdown:
   // "Total Vacancies" = all (Status: All); "Active Vacancies" / "Ministries"
   // = the active subset of them.
@@ -2204,92 +1935,42 @@ function applyUrlParameters() {
   }
 }
 
-    // Search hits memoised per query: populateFilters() runs getFilteredData()
-    // once per dropdown on every render, and fuzzy-matching every row each time
-    // would multiply the cost of a keystroke. Reset whenever the query changes.
-    let searchMemo = { query: null, hits: new WeakMap() };
-    function matchesSearchCached(item, query, textFn) {
-        if (searchMemo.query !== query) searchMemo = { query, hits: new WeakMap() };
-        let hit = searchMemo.hits.get(item);
-        if (hit === undefined) {
-            hit = fuzzyIncludes(query, textFn());
-            searchMemo.hits.set(item, hit);
-        }
-        return hit;
+    // The sidebar selection as one object (shared/vacancy-filters.js format).
+    // Saved for this browser tab on every render, so the India map opens with
+    // the same filters (and this page picks up any the map changed).
+    function currentFilterState() {
+        return {
+            search: searchPost.value.trim(),
+            myPayLevel: filterMyPayLevel.value,
+            experience: filterExperience ? filterExperience.value : '',
+            levels: filterLevel.values,
+            ministry: filterMinistry.value,
+            orgs: filterOrganisation.values,
+            orgType: filterOrgType.value,
+            region: filterRegion.value,
+            locations: filterLocation.values,
+            status: filterStatus.value,
+            quick: Object.keys(quickFilters).filter(k => quickFilters[k]),
+            watchlist: showWatchlistOnly,
+        };
     }
 
     // `exclude` names one dropdown whose selection is ignored ('myPayLevel',
     // 'level', 'ministry', 'organisation', 'orgType', 'region', 'location',
-    // 'status') — used by
-    // populateFilters() to compute that dropdown's faceted counts.
+    // 'status') — used by populateFilters() to compute that dropdown's
+    // faceted counts. The sidebar filters are DepFilters.matches (shared with
+    // the India map); the watchlist, quick chips and KPI cards are home-page
+    // only and stay here.
     function getFilteredData({ applyKpiFilter = true, applyStatusFilter = true, exclude = '' } = {}) {
-  const search = searchPost.value.trim().toLowerCase();
-  const myPayLevel = exclude === 'myPayLevel' ? '' : filterMyPayLevel.value;
-  const myYears = filterExperience ? filterExperience.value : '';
-  const levels = exclude === 'level' ? [] : filterLevel.values;
-  const levelSet = levels.length ? new Set(levels) : null;
-  const orgs = exclude === 'organisation' ? [] : filterOrganisation.values;
-  const orgSet = orgs.length ? new Set(orgs) : null;
-  const ministry = exclude === 'ministry' ? '' : filterMinistry.value;
-  const orgType = exclude === 'orgType' ? '' : filterOrgType.value;
-  const region = exclude === 'region' ? '' : filterRegion.value;
-  const locations = exclude === 'location' ? [] : filterLocation.values;
-  const locationSet = locations.length ? new Set(locations) : null;
-  const status = exclude === 'status' ? '' : filterStatus.value;
+  const state = currentFilterState();
+  const status = exclude === 'status' ? '' : state.status;
 
   return rawData.filter(item => {
+    if (!window.DepFilters.matches(item, state, { exclude, applyStatus: applyStatusFilter })) return false;
+
     const itemStatus = safe(item.Status);
-    const itemLevel = safe(item.Level_Text);
-    const itemMinistry = safe(item.Ministry);
-    const itemLocation = formatLocation(item);
     const itemDaysLeft = parseInt(item.Days_Left, 10);
     const itemId = safe(item.Vacancy_ID);
-
-    // Department_Organisation and Desirable_Qualification are Sheets-era column
-    // names that the Supabase pipeline never fills, so they contributed '' on
-    // every row — the organisation name was only findable when Keywords
-    // happened to repeat it. Organisation is the real field (383/384 rows).
-    // search_text is the pre-built blob from enrich.js/build_data.py; it also
-    // carries the acronym expansions that Acronyms alone only has on the
-    // Supabase-only path, since JSON rows take backfillDerived, which doesn't
-    // set it. Both legacy keys are kept: harmless when absent, live if the
-    // Sheets path ever returns.
-    const searchableText = () => [
-      item.Post_Name,
-      item.Organisation,
-      item.Department_Organisation,
-      item.Ministry,
-      item.Location_City,
-      item.Location_State,
-      item.Level_Text,
-      item.Req_Level1,
-      item.Req_Level2,
-      item.Keywords,
-      item.Essential_Qualification,
-      item.Desirable_Qualification,
-      item.Acronyms,
-      item.Department,
-      item.search_text
-    ].map(safe).join(' ').toLowerCase();
-
-    if (search && !matchesSearchCached(item, search, searchableText)) return false;
-    if (levelSet && !levelSet.has(itemLevel)) return false;
-    if (orgSet && !orgSet.has(orgKey(item.Organisation))) return false;
-    if (ministry && itemMinistry !== ministry) return false;
-    if (orgType && safe(item.Organisation_Type) !== orgType) return false;
-    if (region && safe(item.Region) !== region) return false;
-    if (locationSet && !locationSet.has(itemLocation)) return false;
-    if (applyStatusFilter && status && itemStatus !== status) return false;
-
-    if (myPayLevel) {
-      // Tier-aware eligibility: matches the candidate's level + years-at-level
-      // against the vacancy's eligibility_tiers (see enrich.js#isEligible).
-      // Experience only narrows results when a pay level is also chosen.
-      const eligible = (window.DepEnrich && window.DepEnrich.isEligible)
-        ? window.DepEnrich.isEligible(item, myPayLevel, myYears)
-        : true;
-      if (!eligible) return false;
-    }
 
     if (showWatchlistOnly && !watchlist.has(itemId)) return false;
     if (applyStatusFilter && !Number.isNaN(itemDaysLeft) && status === 'Active' && itemDaysLeft < 0) return false;
@@ -3507,67 +3188,8 @@ function syncCardSortUI() {
             .join('');
     }
 
-    function tokenizeText(text) {
-        return normalizeText(text).split(' ').filter(Boolean);
-    }
-
-    function levenshteinDistance(a, b) {
-        const m = a.length;
-        const n = b.length;
-
-        if (m === 0) return n;
-        if (n === 0) return m;
-
-        const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
-
-        for (let i = 0; i <= m; i++) dp[i][0] = i;
-        for (let j = 0; j <= n; j++) dp[0][j] = j;
-
-        for (let i = 1; i <= m; i++) {
-            for (let j = 1; j <= n; j++) {
-                const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-                dp[i][j] = Math.min(
-                    dp[i - 1][j] + 1,
-                    dp[i][j - 1] + 1,
-                    dp[i - 1][j - 1] + cost
-                );
-            }
-        }
-
-        return dp[m][n];
-    }
-
-    function fuzzyIncludes(query, text) {
-        const normalizedQuery = normalizeText(query);
-        const normalizedText = normalizeText(text);
-
-        if (!normalizedQuery) return true;
-        // Exact phrase / substring match (e.g. "external affairs").
-        if (normalizedText.includes(normalizedQuery)) return true;
-
-        const queryTokens = tokenizeText(normalizedQuery);
-        if (!queryTokens.length) return false;
-        const textTokens = tokenizeText(normalizedText);
-
-        // Typo tolerance is reserved for single-word queries. Multi-word queries
-        // require every word to actually appear (AND of substrings) — otherwise
-        // loose fuzzy matching over the long qualification text returns rows that
-        // don't contain the phrase at all.
-        const allowFuzzy = queryTokens.length === 1;
-
-        return queryTokens.every(qToken => {
-            // The query word must appear as a substring somewhere in the text
-            // ("affair" → "affairs", "extern" → "external").
-            if (normalizedText.includes(qToken)) return true;
-            if (!allowFuzzy || qToken.length < 4) return false;
-
-            // Single-word fallback: tolerate one typo against a similar-length word.
-            return textTokens.some(tToken =>
-                Math.abs(tToken.length - qToken.length) <= 1 &&
-                levenshteinDistance(qToken, tToken) <= 1
-            );
-        });
-    }
+    // Search matching lives in shared/vacancy-filters.js (the India map uses it too)
+    function fuzzyIncludes(query, text) { return window.DepFilters.fuzzyIncludes(query, text); }
 
     function isDelhiNcrLocation(item) {
         const text = normalizeText([
@@ -3621,91 +3243,12 @@ function syncCardSortUI() {
         return f(safe(item.Organisation)) || f(safe(item.Department)) || '';
     }
 
-    // Matching key for an organisation name, so spellings of the same body
-    // collapse into one filter option:
-    //   "Central Water Commission (CWC)"                ┐
-    //   "Central Water Commission"                      ┘→ "central water commission"
-    //   "Footwear Design & Development Institute"       ┐
-    //   "Footwear Design and Development Institute (FDDI)" ┘→ same key
-    //   "AIIMS, Rishikesh" / "AIIMS Rishikesh"           → same key
-    // A bracket is dropped only when it is a short form (its first word is in
-    // capitals: "(CWC)", "(AIIMS Nagpur)", "(SPM-NIWAS)"); descriptive brackets
-    // such as "(Handicrafts)" or "(Storage and Research Division)" stay part of
-    // the key, so genuinely different offices remain separate options.
-    const orgKeyMemo = new Map();
-    function orgKey(name) {
-        const raw = safe(name);
-        if (!raw) return '';
-        let key = orgKeyMemo.get(raw);
-        if (key === undefined) {
-            key = raw
-                .replace(/\(([^()]*)\)/g, (m, inner) =>
-                    isShortFormWord(inner.trim().split(/\s+/)[0]) ? ' ' : ` ${inner} `)
-                .toLowerCase()
-                .replace(/&/g, ' and ')
-                .replace(/[^a-z0-9]+/g, ' ')
-                .trim();
-            orgKeyMemo.set(raw, key);
-        }
-        return key;
-    }
-    function isShortFormWord(w) {
-        return !!w && /^[A-Z0-9][A-Z0-9&.\-]*$/.test(w) && /[A-Z]/.test(w);
-    }
+    // Organisation matching keys and display names live in
+    // shared/vacancy-filters.js, so the India map groups organisations the same way.
+    function orgKey(name) { return window.DepFilters.orgKey(name); }
+    function buildOrgIndex(rows) { return window.DepFilters.buildOrgIndex(rows); }
 
-    // Per organisation key: the name to display and its short (mobile) label.
-    //  • Display name: among the spellings in the data, prefer one that carries
-    //    its official short form in brackets (so "(CFQCTI)" wins over an
-    //    auto-built acronym), then the most frequent, then the longest.
-    //  • Short label: "IIT Goa" → "IITG"; an explicit bracket is used whole and
-    //    text after it is kept ("AIIMS Nagpur", "AIIMS, Jodhpur") so campuses
-    //    differ. Organisations with no short
-    //    form, or one shared with another organisation (IIT Goa / IIT
-    //    Gandhinagar → "IITG"), get none and show their full name instead, so
-    //    the list is never ambiguous.
-    function buildOrgIndex(rows) {
-        const acronymFor = window.DepEnrich && window.DepEnrich.acronymFor;
-        const variants = {};   // key → { name → row count }
-        rows.forEach(r => {
-            const name = safe(r.Organisation);
-            const key = orgKey(name);
-            if (!key) return;
-            const v = variants[key] || (variants[key] = {});
-            v[name] = (v[name] || 0) + 1;
-        });
-        const hasShortForm = (n) => {
-            const m = n.match(/\(([^()]*)\)/);
-            return !!m && isShortFormWord(m[1].trim().split(/\s+/)[0]);
-        };
-        const names = {}, shortOf = {};
-        Object.keys(variants).forEach(key => {
-            const counts = variants[key];
-            const name = Object.keys(counts).sort((a, b) =>
-                (hasShortForm(b) - hasShortForm(a)) || (counts[b] - counts[a]) || (b.length - a.length))[0];
-            names[key] = name;
-            const acr = acronymFor ? acronymFor(name) : '';
-            if (!acr) return;
-            // An explicit bracket that starts with the acronym is used whole
-            // ("(AIIMS Nagpur)" → "AIIMS Nagpur"), plus any text after it.
-            const m = name.match(/^(.*?)\(\s*([^()]+?)\s*\)\s*(.*)$/);
-            const explicit = m && m[2].startsWith(acr) ? m : null;
-            const base = explicit ? explicit[2] : acr;
-            const tail = explicit ? explicit[3].trim() : '';
-            shortOf[key] = tail ? `${base}${tail.startsWith(',') ? '' : ' '}${tail}` : base;
-        });
-        const uses = {};
-        Object.values(shortOf).forEach(sh => { uses[sh] = (uses[sh] || 0) + 1; });
-        const short = {};
-        Object.keys(shortOf).forEach(key => { if (uses[shortOf[key]] === 1) short[key] = shortOf[key]; });
-        return { names, short, forRows: rows };
-    }
-
-    function formatLocation(item) {
-        const city = safe(item.Location_City);
-        const state = safe(item.Location_State);
-        if (city && state) return `${city}, ${state}`;
-        return city || state || '';
-    }
+    function formatLocation(item) { return window.DepFilters.formatLocation(item); }
 
     // Rank-based level parsing: "13A" → 13.5 (sits between 13 and 14), so all
     // comparisons/sorts below need no special-casing. levelLabel gives the

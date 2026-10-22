@@ -71,6 +71,7 @@ jobs:
           node --test workers/sb-proxy/worker.test.js
           node tests/test_india_map_data.js
           node --test tests/test_vacancy_access.cjs
+          node --test tests/test_vacancy_filters.js
 
       - name: Validate proxy configuration without deployment
         working-directory: workers/sb-proxy

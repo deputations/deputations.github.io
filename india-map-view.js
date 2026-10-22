@@ -136,7 +136,9 @@
       const col = Math.round(Math.min(TITLE.maxCol, Math.max(TITLE.minCol, W * TITLE.colShare)));
       return {
         mode: 'side', W, H,
-        title: { right: TITLE.pad, top, width: col - TITLE.pad, height: Math.max(80, foot - top) },
+        // With the filter panel under the name, the name keeps the top part
+        title: { right: TITLE.pad, top, width: col - TITLE.pad,
+          height: Math.max(80, window.IndiaMapFilters ? Math.round((foot - top) * 0.42) : foot - top) },
         map: { x: 0, y: TITLE.edge, w: W - col - TITLE.gap, h: H - 2 * TITLE.edge },
       };
     }
@@ -153,6 +155,64 @@
     return { x: cx - (m.x + m.w / 2) / sc, y: cy - (m.y + m.h / 2) / sc, w: layout.W / sc, h: layout.H / sc };
   }
   let stateContent = null;   // the open state's drawn box, for re-framing on resize
+  let nationalContent = null; // the India view's drawn box, likewise
+  // Set while a view is redrawn for a filter change: no intro, no draw-in
+  let quietRender = false;
+
+  // ----- Filter panel (india-map-filters.js) -----
+  // India: a column on the left, with the map framed beside it. A state: on
+  // the right under its name. Narrow or portrait screens, or no room: the
+  // panel opens as a sheet from a Filters button.
+  const FILTER_COL = { width: 260, pad: 16, gap: 20, minW: 860 };
+  function filterSide(W, H) { return W >= FILTER_COL.minW && W / H >= 1.05; }
+  function nationalLayout() {
+    const wrap = document.getElementById('mapSvgWrap')?.getBoundingClientRect();
+    if (!window.IndiaMapFilters || !wrap || !wrap.width || !filterSide(wrap.width, wrap.height)) return null;
+    const W = wrap.width, H = wrap.height;
+    const x = FILTER_COL.pad + FILTER_COL.width + FILTER_COL.gap;
+    return { W, H, map: { x, y: 0, w: W - x, h: H } };
+  }
+  function placeFilterPanel() {
+    const F = window.IndiaMapFilters;
+    const wrap = document.getElementById('mapSvgWrap')?.getBoundingClientRect();
+    if (!F || !wrap || !wrap.width) return;
+    const W = wrap.width, H = wrap.height;
+    if (!filterSide(W, H)) { F.place({ mode: 'sheet' }); return; }
+    if (viewMode === 'national') {
+      F.place({ mode: 'left', left: FILTER_COL.pad, top: FILTER_COL.pad,
+        width: FILTER_COL.width, maxHeight: H - 2 * FILTER_COL.pad });
+      return;
+    }
+    // A state: under its name in the title column, above the zoom buttons
+    const counter = mapAreaRect(document.getElementById('mapCounter'));
+    const zoom = mapAreaRect(document.querySelector('.map-zoom-controls'));
+    const title = document.getElementById('mapStateTitle');
+    let top = (counter ? counter.bottom : 60) + 16;
+    if (title && !title.hidden && title.dataset.bottom) top = Math.max(top, +title.dataset.bottom + 16);
+    const foot = (zoom ? zoom.top : H - 60) - 12;
+    const layout = stateLayout();
+    let width = Math.min(FILTER_COL.width + 40, layout?.title ? layout.title.width : FILTER_COL.width + 40);
+    // Delhi's photo map sits in the middle: only beside it, if it fits
+    const photo = document.querySelector('#mapSvgWrap .ad-delhi-map-img');
+    if (photo) {
+      const r = mapAreaRect(photo);
+      width = Math.min(FILTER_COL.width + 40, r ? W - r.right - 2 * TITLE.pad : 0);
+    }
+    if (layout?.mode !== 'side' || foot - top < 180 || width < 220) { F.place({ mode: 'sheet' }); return; }
+    F.place({ mode: 'right', right: TITLE.pad, top, width, maxHeight: foot - top });
+  }
+  // A filter changed: redraw the current view with the new counts, quietly
+  function refreshForFilters() {
+    if (!(window._indiaGeoData?.features || []).length) return;
+    quietRender = true;
+    try {
+      if (viewMode === 'national') renderNational(getData());
+      else if (viewMode === 'state' && selectedAbbr) {
+        renderState(selectedAbbr, ABBR_TO_NAME[selectedAbbr] || selectedAbbr);
+        updateCounter(getData());
+      }
+    } finally { quietRender = false; }
+  }
   function computeProjection(features, fill = 0.92) {
     let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
     features.forEach(f => {
@@ -562,8 +622,11 @@
     // Full state names, each fitted inside its own borders (see
     // layoutStateLabels)
     layoutStateLabels(labelStates, labelsG);
-    homeView = nationalHome = contentView([g, labelsG]);
+    nationalContent = contentView([g, labelsG]);
+    homeView = nationalHome = stateViewBox(nationalContent, nationalLayout());
     setView(mapSvg, homeView);
+    placeFilterPanel();
+    const quiet = quietRender;
     buildRelief(labelStates.map(st => st.path), g, p => stateFill(p.dataset.abbr), p => p.dataset.abbr);
 
     // Trigger draw-in for all paths after the SVG is in the DOM
@@ -572,7 +635,7 @@
       let completed = 0;
       const total = paths.length;
       const gen = ++drawGeneration; // (J) separate from renderGeneration
-      const useReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const useReducedMotion = quiet || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
       function onPathComplete() {
         completed++;
@@ -618,6 +681,7 @@
         }
       });
       // Count labels pop in after draw-in finishes (2s + max stagger 600ms)
+      if (quiet) return;
       document.querySelectorAll('#map-svg .ad-state-count').forEach((el, i) => {
         el.style.animationDelay = `${1800 + i * 25}ms`;
         el.classList.add('pop');
@@ -1866,6 +1930,9 @@
     if (!fit) return null;
     el.style.top = `${box.top}px`;
     el.style.width = `${box.width}px`;
+    if (layout.mode === 'side') {
+      el.dataset.bottom = String(Math.ceil(box.top + fit.lines.length * fit.size * TITLE_LINE_H + TITLE_EXTRA.side));
+    } else delete el.dataset.bottom;
     el.classList.toggle('align-right', align === 'right');
     el.classList.toggle('compact', layout.mode === 'band');
     nameEl.style.fontSize = `${fit.size.toFixed(1)}px`;
@@ -1989,34 +2056,48 @@
     requestAnimationFrame(() => {
       if (run !== titleRun || lg !== ledGeneration) return;
       fit = placeStateTitle(el, name);
-      if (!fit) { hideStateTitle(); return; }
-      if (wanted) play();
+      if (!fit) hideStateTitle();
+      // The filter panel goes under the name, so it moves once that's placed
+      placeFilterPanel();
+      if (fit && wanted) play();
     });
     return { reveal() { wanted = true; play(); } };
   }
 
   // Keeps the open state framed beside its title when the window resizes
   function onStateResize() {
-    if (!stateContent || (viewMode !== 'state' && viewMode !== 'district')) return;
-    const svg = document.getElementById('map-svg');
-    if (!svg) return;
-    homeView = stateViewBox(stateContent, stateLayout());
-    setView(svg, homeView);
-    const el = document.getElementById('mapStateTitle');
-    if (el && !el.hidden && el.classList.contains('done')) {
-      const fit = placeStateTitle(el, el.dataset.name);
-      if (fit) setTitleLines(el.querySelector('.mst-name'), fit.lines);
-      else el.style.visibility = 'hidden';
+    if (viewMode === 'national' && nationalContent) {
+      const svg = document.getElementById('map-svg');
+      if (svg) { homeView = nationalHome = stateViewBox(nationalContent, nationalLayout()); setView(svg, homeView); }
     }
+    if (stateContent && (viewMode === 'state' || viewMode === 'district')) {
+      const svg = document.getElementById('map-svg');
+      if (!svg) return;
+      homeView = stateViewBox(stateContent, stateLayout());
+      setView(svg, homeView);
+      const el = document.getElementById('mapStateTitle');
+      if (el && !el.hidden && el.classList.contains('done')) {
+        const fit = placeStateTitle(el, el.dataset.name);
+        if (fit) setTitleLines(el.querySelector('.mst-name'), fit.lines);
+        else el.style.visibility = 'hidden';
+      }
+    }
+    placeFilterPanel();
   }
 
   function renderState(abbr, name) {
     clearMap();
+    // Set before the filter panel is placed, which goes by the view mode
+    selectedAbbr = abbr;
+    viewMode = 'state';
 
     // Delhi uses an image-map drill-down (coloured district photos)
     if (abbr === 'DL') {
       const data = getData();
       renderDelhiImageMap(abbr, name, data);
+      // The panel goes beside the photo, so place it once the photo has a size
+      requestAnimationFrame(placeFilterPanel);
+      document.querySelector('#mapSvgWrap .ad-delhi-map-img')?.addEventListener('load', placeFilterPanel, { once: true });
       return;
     }
 
@@ -2111,7 +2192,7 @@
     // the chakra, then electricity lights each district's border
     const paths = Array.from(g.querySelectorAll('.ad-district'));
     const lg = ledGeneration;
-    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = quietRender || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     mapSvg.classList.toggle('ad-intro', !reduced);
     // The state's name beside it: placed now, decoded in only once the
     // state has fully loaded, so the two animations don't run together
@@ -2120,6 +2201,7 @@
       vacancies: stateListings(abbr).length,
       duration: reduced ? 0 : TITLE_REVEAL,
     }, lg);
+    placeFilterPanel();
     requestAnimationFrame(() => {
       if (lg !== ledGeneration) return;
       if (reduced) { buildLeds(paths, lg, null); title?.reveal(); }
@@ -2555,6 +2637,11 @@
     // Load data
     if (window.IndiaMapData && IndiaMapData.load) {
       try { await IndiaMapData.load(); } catch (e) { console.error('[map] data load failed:', e); }
+    }
+    // The home page's filters (saved for this tab) apply from the first draw
+    if (window.IndiaMapFilters) {
+      try { window.IndiaMapFilters.init(); } catch (e) { console.error('[map] filters failed:', e); }
+      document.addEventListener('map:filtersChanged', refreshForFilters);
     }
 
     const urlParams = new URLSearchParams(location.search);
