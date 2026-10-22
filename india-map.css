@@ -435,3 +435,44 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
   body.map-entry .sw-counter { display: none !important; }
   body.map-entry .sw-footer { margin: 4px auto 6px; font-size: .68rem; gap: 0 8px; line-height: 1.4; }
 }
+
+/* ----- Filter panel (india-map-filters.js): the home page's filters ----- */
+/* Placed by india-map-view.js: a column on the left (India), under the
+   state's name on the right (a state), or a sheet behind a button. */
+.map-filter-panel {
+  position: absolute; z-index: 4; display: flex; flex-direction: column;
+  background: var(--map-surface); border: 1px solid var(--map-hairline); border-radius: 14px;
+  box-shadow: var(--map-shadow); font-family: var(--map-font); color: var(--map-text);
+}
+.map-filter-panel[hidden] { display: none; }
+.mfp-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px 10px; border-bottom: 1px solid var(--map-hairline); }
+.mfp-title { margin: 0; flex: 1; font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
+.mfp-clear { font-size: 12px; }
+.mfp-close { display: none; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border-radius: 50%; border: 1px solid var(--map-hairline); background: var(--map-surface); color: var(--map-text-2); cursor: pointer; }
+.mfp-close svg { width: 14px; height: 14px; }
+.mfp-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+.mfp-body .filter-group { margin: 0; }
+.mfp-body .filter-hint { display: none; }
+.mfp-note { margin: 2px 0 0; font-size: 11px; line-height: 1.4; color: var(--map-text-2); }
+/* Inside the scrolling panel a dropdown always opens downwards */
+.map-filter-panel .ms-panel.ms-open-up { top: calc(100% + 6px); bottom: auto; }
+
+/* Narrow / portrait screens: a sheet from the bottom, behind a button */
+.map-filter-panel.is-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: auto;
+  max-height: 78vh; border-radius: 16px 16px 0 0; z-index: 3100;
+}
+.map-filter-panel.is-sheet .mfp-close { display: inline-flex; }
+.map-filters-btn {
+  position: absolute; left: 16px; bottom: 14px; z-index: 4;
+  display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px;
+  border-radius: 10px; border: 1px solid var(--map-hairline); background: var(--map-surface);
+  color: var(--map-text); font: 600 13px var(--map-font); box-shadow: var(--map-shadow); cursor: pointer;
+}
+.map-filters-btn[hidden] { display: none; }
+.map-filters-btn .icon { width: 18px; height: 18px; }
+.mfp-badge {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px;
+  padding: 0 5px; border-radius: 9px; background: var(--map-text); color: #fff; font-size: 11px; font-weight: 700;
+}
+.mfp-badge[hidden] { display: none; }

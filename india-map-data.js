@@ -282,6 +282,7 @@ window.IndiaMapData = (() => {
       location_scope: v.location_scope || '',
       districtKeys: [],
       notificationLink: v.Official_Notification_Link || '',
+      raw: v,   // the source row: the home page's filters (DepFilters) read it
     };
   }
 
@@ -289,6 +290,9 @@ window.IndiaMapData = (() => {
   async function loadFromJSON() {
     const raw = window.PublicVacancies ? await window.PublicVacancies.load() : await fetch('data/vacancies.json').then(r => { if (!r.ok) throw new Error('Snapshot unavailable'); return r.json(); });
     const list = Array.isArray(raw) ? raw : Object.values(raw);
+    // Region and eligibility tiers, as the home page derives them, so its
+    // filters (india-map-filters.js) match the same rows here
+    if (window.DepEnrich && window.DepEnrich.backfillDerived) list.forEach(r => window.DepEnrich.backfillDerived(r));
     allVacancies = list.map(normaliseVacancy).filter(Boolean);
     source = 'json';
   }
@@ -357,6 +361,28 @@ window.IndiaMapData = (() => {
     return { total: getTotal(), source, stateCounts };
   }
 
+  // ----- Filters chosen on the page (india-map-filters.js) -----
+  // A function of the source row, or null. Every count, label, listing and
+  // the counter use visible(), so they all follow the selection.
+  let rowFilter = null;
+  function visible(v) {
+    return isActive(v) && (!rowFilter || rowFilter(v.raw || v));
+  }
+  function setRowFilter(fn) {
+    rowFilter = typeof fn === 'function' ? fn : null;
+    recomputeCounts();
+  }
+  // Every active vacancy's source row, once each, ignoring the filters: the
+  // rows the filter dropdowns offer and count.
+  function getActiveRows() {
+    const seen = new Set();
+    return allVacancies.filter(v => {
+      if (!isActive(v) || seen.has(v.id)) return false;
+      seen.add(v.id);
+      return true;
+    }).map(v => v.raw || v);
+  }
+
   // ----- Count recomputation from loaded vacancies -----
   function recomputeCounts() {
     stateCounts = {};
@@ -365,7 +391,7 @@ window.IndiaMapData = (() => {
     multiStateCount = 0;
     const seen = new Set(); // deduplicate by vacancy ID
     allVacancies.forEach(v => {
-      if (!isActive(v)) return;
+      if (!visible(v)) return;
       if (seen.has(v.id)) return; // stable dedup by Vacancy_ID
       seen.add(v.id);
       if (v.location_scope === 'nationwide') { nationwideCount++; return; }
@@ -393,7 +419,7 @@ window.IndiaMapData = (() => {
     const seen = new Set(); // same dedup contract as recomputeCounts
     let n = 0;
     allVacancies.forEach(v => {
-      if (!isActive(v) || seen.has(v.id)) return;
+      if (!visible(v) || seen.has(v.id)) return;
       seen.add(v.id);
       if (!category || v.category === category) n++;
     });
@@ -410,7 +436,7 @@ window.IndiaMapData = (() => {
     if (!target) return [];
     const seen = new Set();
     return allVacancies.filter(v => {
-      if (!isActive(v)) return false;
+      if (!visible(v)) return false;
       if (v.state_abbr !== stateAbbr) return false;
       // Nationwide / multi-state records never belong to one district
       if (v.location_scope === 'nationwide' || v.location_scope === 'multi_state') return false;
@@ -425,7 +451,7 @@ window.IndiaMapData = (() => {
     if (!abbr) return [];
     const seen = new Set(); // same dedup contract as recomputeCounts
     return allVacancies.filter(v => {
-      if (!isActive(v)) return false;
+      if (!visible(v)) return false;
       if (v.state_abbr !== abbr) return false;
       if (seen.has(v.id)) return false;
       seen.add(v.id);
@@ -461,6 +487,7 @@ window.IndiaMapData = (() => {
       }
     }
     allVacancies.push(v);
+    if (rowFilter) { recomputeCounts(); return true; }
     // Increment counts only if active
     if (isActive(v)) {
       if (v.location_scope === 'nationwide') { nationwideCount++; return true; }
@@ -509,6 +536,7 @@ window.IndiaMapData = (() => {
     nationwideCount = 0;
     multiStateCount = 0;
     source = 'none';
+    rowFilter = null;
   }
 
   return {
@@ -518,5 +546,6 @@ window.IndiaMapData = (() => {
     getDistrictCounts, getDistrictCodes,
     getListingsForDistrict, getFiltered, normaliseVacancy, deriveCategory,
     recordNewVacancy, rpcDiagnostic, reset,
+    setRowFilter, getActiveRows,
   };
 })();

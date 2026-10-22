@@ -7141,3 +7141,43 @@ separate from the draft PR. No untracked owner files were staged.
 - Admin harness extended for the new controls. It passed the login refresh,
   review bulk action, Manage lazy-editor/pagination and Verify filtering flows
   with no page errors.
+
+## session shq-2026-10-22-map-filters
+```
+started:        2026-10-22
+ended:          2026-10-22
+model:          Claude Code
+driver:         solo
+branch:         claude/beautiful-allen-13etna (new PR after #21 merged)
+starting_head:  c56c4ee
+ending_head:    <see the PR merge commit on main>
+focus:          The home page's filters on the India map; a selection carries between the two pages
+```
+
+### inbound context read
+- shq-2026-10-11-002 (map shows every active vacancy; default location rule).
+
+### owner's brief
+- "the filters on the main page is to be added to the map page as well ...and if filter is selected on the main page and then clicked on map page it should retain ...In India map it can be shown on the left while on the state map it can be shown on the right side below state name"
+
+### work done
+- **`shared/filter-controls.js`** (new): the dropdown widgets `createMultiSelect` / `createSingleSelect` and their helpers (`flipIfNeeded`, `dropElevation`, `svgIcon`), moved verbatim from the top of app.js. Plain globals.
+- **`shared/vacancy-filters.js`** (new, `window.DepFilters`): the sidebar filter rules as one function, `matches(row, state, {exclude, applyStatus})` — search (typo-tolerant), My Pay Level + years (`DepEnrich.isEligible`), Pay Level, Ministry, Organisation, Organisation Type, Region, Location, Status. `orgKey` / `buildOrgIndex` / `fuzzyIncludes` / `formatLocation` moved here from app.js unchanged. A selection is one object (`emptyState()`); `toParams` / `fromParams` use the home page's existing URL format; `save` / `load` keep it in sessionStorage `dep_filters_v1` (that URL string). Also the option orderings both pages use (`compareLevels`, `REGION_ORDER`, `myPayLevelValues`).
+- **app.js**: `getFilteredData` calls `DepFilters.matches` for the sidebar filters; the quick chips, watchlist, KPI cards and the Active days-left rule stay in app.js. `currentFilterState()` reads the controls; every render saves it. On load the link's own filter params win, else the saved selection (`filterParamsOnLoad`). Load order on index.html (and astro index): filter-controls.js, vacancy-filters.js, app.js.
+- **URL change:** `location` is now one param per place (`?location=Patna, Bihar&location=New Delhi, Delhi`), like `org`. The old comma list split "Patna, Bihar" into two values that matched nothing; no page or link ever produced `?location=`, so nothing breaks.
+- **india-map-data.js**: rows keep their source row (`raw`); JSON rows get `DepEnrich.backfillDerived` (Region, eligibility_tiers) so Region and My Pay Level filter as on the home page. `setRowFilter(fn)`: state counts, district lists, state lists, state titles and the counter all go through `visible(v)` = active and passes the filter. `getActiveRows()` (active rows, unfiltered) feeds the panel's options.
+- **india-map-filters.js** (new, `window.IndiaMapFilters`): the panel — Search, Display deputations for me (+ years), Pay Level, Ministry, Organisation, Organisation Type, Location, Region — with the home page's labels, orderings and faceted "(N)" counts over active vacancies; Clear All; a count badge; fires `map:filtersChanged`. Status, the quick chips and the watchlist are not on the map (it always shows active vacancies) but stay in the saved selection, so the home page gets them back.
+- **india-map-view.js** `placeFilterPanel()`: India view — a 260px column on the left, the map framed to its right (`nationalLayout`). A state — on the right under its name (`#mapStateTitle` `data-bottom`) and above the zoom buttons; the title column is capped at 42% of the height when the panel exists. Delhi — beside the photo map. A bottom sheet behind a "Filters" button when the map area is under 860px wide, portrait, or the space is under 180px tall / 220px wide. `refreshForFilters()` redraws the current view without the intro animation and updates the counter.
+- Versions: `?v=filters-20261022` on the changed scripts and india-map.css.
+- Tests: `tests/test_vacancy_filters.js` (Node, 7 — rules, facets, URL round trip incl. places with commas, save / load, level order), added to smoke-tests.yml; Node C29 in `tests/test_india_map_data.js` (row filter); `tests/test_map_filters.py` (Playwright, 6 — home → map, map → home, faceted counts + Clear All, state title counts, panel left / right-under-the-name, phone sheet).
+
+### decisions
+- The selection lives for the browser tab (sessionStorage), not across visits: a new tab starts clean, as the home page always did. Links with filter params still win over a saved selection.
+- The map does not offer Status / quick chips / watchlist (see above); its counts are always active vacancies.
+
+### gotchas for next session
+- `placeFilterPanel()` goes by `viewMode`; `renderState()` sets `viewMode` / `selectedAbbr` itself before placing the panel. The state title is placed one frame later (`showStateTitle`'s requestAnimationFrame), which places the panel again.
+- A filter change re-renders the view with `quietRender` set (no intro, no count pop); anything new that animates on render should respect it.
+- New .py files still need `git add -f` (`.gitignore` ignores `*.py`) — `tests/test_map_filters.py` was added that way.
+
+## session shq-2026-10-22-map-filters end
