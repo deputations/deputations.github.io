@@ -4,7 +4,8 @@ A selection made on either page is saved for the browser tab
 (shared/vacancy-filters.js), so it is still applied when the other page
 opens, and the map's counts follow it. The panel sits on the left of the
 India view, on the right under the state's name on a state view, and opens
-as a sheet from a Filters button on a phone.
+as a sheet from a Filters button on a phone: a row of tabs with one filter
+open at a time, the map framed above it.
 
 Runs on a fixed set of six vacancies (data/vacancies.json is stubbed; the
 real state and district outlines are used).
@@ -149,17 +150,66 @@ def test_panel_left_on_india_and_right_under_the_state_name(vacancies: Page, bas
     expect(page.locator("#mapFiltersBtn")).to_be_hidden()
 
 
-def test_phone_opens_filters_as_a_sheet(vacancies: Page, base_url: str):
+def test_several_levels_can_be_picked_in_one_go(vacancies: Page, base_url: str):
+    """A pick redraws the list's counts; the list must stay open for the next."""
     page = vacancies
-    page.set_viewport_size({"width": 390, "height": 844})
+    _open_map(page, base_url)
+    page.locator("#mfLevelMS .ms-trigger").click()
+    page.locator("#mfLevelMS .ms-opt", has_text="Level-10").click()
+    expect(page.locator("#mfLevelMS .ms-panel")).to_be_visible()
+    page.locator("#mfLevelMS .ms-opt", has_text="Level-8").click()
+    expect(_counter(page)).to_have_text("5")
+    expect(page.locator("#mfLevelMS .ms-trigger-label")).to_have_text("2 levels")
+
+
+def _visible_groups(page: Page) -> list[str]:
+    return page.evaluate("""() => [...document.querySelectorAll('#mapFilterPanel .mfp-body .filter-group')]
+        .filter(g => g.offsetParent !== null).map(g => g.dataset.group)""")
+
+
+def _map_clear_of_sheet(page: Page) -> None:
+    page.wait_for_function("""() => {
+        const sheet = document.getElementById('mapFilterPanel').getBoundingClientRect();
+        const map = document.getElementById('map-group').getBoundingClientRect();
+        return map.height > 0 && map.bottom <= sheet.top + 1;
+    }""", timeout=5000)
+
+
+def test_phone_sheet_shows_one_filter_and_keeps_the_map_in_view(vacancies: Page, base_url: str):
+    page = vacancies
+    page.set_viewport_size({"width": 375, "height": 667})
     _open_map(page, base_url)
     panel = page.locator("#mapFilterPanel")
     expect(panel).to_have_class(re.compile(r"\bis-sheet\b"))
     expect(panel).to_be_hidden()
     page.locator("#mapFiltersBtn").click()
     expect(panel).to_be_visible()
+
+    # Just the tabs at first; a tab opens its filter alone
+    assert _visible_groups(page) == []
+    page.locator('.mfp-tab[data-tab="ministry"]').click()
+    assert _visible_groups(page) == ["ministry"]
+    _map_clear_of_sheet(page)
     _pick(page, "mfMinistrySS", "Railways")
     expect(_counter(page)).to_have_text("2")
+    expect(page.locator('.mfp-tab[data-tab="ministry"]')).to_have_class(re.compile(r"\bis-set\b"))
+
+    # Another tab replaces it; the same tab again closes it
+    page.locator('.mfp-tab[data-tab="me"]').click()
+    assert _visible_groups(page) == ["me", "me"]
+    page.locator('.mfp-tab[data-tab="me"]').click()
+    assert _visible_groups(page) == []
+
     page.locator("#mfClose").click()
     expect(panel).to_be_hidden()
     expect(page.locator("#mapFiltersBtn .mfp-badge")).to_have_text("1")
+
+
+def test_phone_state_view_keeps_the_state_above_the_sheet(vacancies: Page, base_url: str):
+    page = vacancies
+    page.set_viewport_size({"width": 375, "height": 667})
+    _open_map(page, base_url, "?state=MH")
+    expect(page.locator("#btn-back")).to_be_visible(timeout=15000)
+    page.locator("#mapFiltersBtn").click()
+    page.locator('.mfp-tab[data-tab="level"]').click()
+    _map_clear_of_sheet(page)

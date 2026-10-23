@@ -10,8 +10,9 @@
  *
  * india-map-view.js calls init() once the data is loaded and place() to put
  * the panel on the left (India), under the state's name (a state) or in a
- * sheet behind a Filters button (narrow screens). A change dispatches
- * 'map:filtersChanged'; the view redraws with the new counts.
+ * sheet behind a Filters button (narrow screens). The sheet shows a row of
+ * tabs and one filter at a time, so the map stays in view above it. A change
+ * dispatches 'map:filtersChanged'; the view redraws with the new counts.
  */
 (function () {
   'use strict';
@@ -23,9 +24,15 @@
   const CLOSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
   const SLIDERS_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2"/></svg>';
 
+  // The sheet's tabs; each opens the filter groups with that data-group
+  const TABS = [
+    ['search', 'Search'], ['me', 'For me'], ['level', 'Pay Level'], ['ministry', 'Ministry'],
+    ['org', 'Organisation'], ['orgType', 'Type'], ['location', 'Location'], ['region', 'Region'],
+  ];
+
   // ----- Markup (the home page's sidebar dropdowns) -----
-  function single(id, label, placeholder, aria) {
-    return `<div class="filter-group">
+  function single(id, group, label, placeholder, aria) {
+    return `<div class="filter-group" data-group="${group}">
         <label id="${id}Lbl">${label}</label>
         <div class="ms ss" id="${id}SS">
           <button type="button" class="ms-trigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="${id}Lbl">
@@ -37,8 +44,8 @@
         </div>
       </div>`;
   }
-  function multi(id, label, placeholder, searchPh, aria, hint) {
-    return `<div class="filter-group">
+  function multi(id, group, label, placeholder, searchPh, aria, hint) {
+    return `<div class="filter-group" data-group="${group}">
         <label id="${id}Lbl">${label}</label>
         <div class="ms" id="${id}MS">
           <button type="button" class="ms-trigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="${id}Lbl">
@@ -69,28 +76,32 @@
     panel.className = 'map-filter-panel';
     panel.id = 'mapFilterPanel';
     panel.setAttribute('aria-label', 'Filter vacancies');
+    panel.dataset.tab = '';
     panel.innerHTML = `
       <div class="mfp-head">
         <h2 class="mfp-title">Filters</h2>
         <button type="button" class="text-btn mfp-clear" id="mfClear" hidden>Clear All</button>
         <button type="button" class="mfp-close" id="mfClose" aria-label="Close filters">${CLOSE_ICON}</button>
       </div>
+      <div class="mfp-tabs" role="tablist" aria-label="Choose a filter">
+        ${TABS.map(([id, label]) => `<button type="button" class="mfp-tab" role="tab" aria-selected="false" data-tab="${id}">${label}</button>`).join('')}
+      </div>
       <div class="mfp-body">
-        <div class="filter-group fg-search">
+        <div class="filter-group fg-search" data-group="search">
           <label for="mfSearch">Search</label>
           <div class="input-icon">
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
             <input type="text" id="mfSearch" placeholder="Search by post, dept, keywords…" autocomplete="off">
           </div>
         </div>
-        ${single('mfMyPayLevel', 'Display deputations for me', 'Your Pay Level', 'Select your pay level')}
-        ${single('mfExperience', 'My Years of Experience', 'Select Pay Level first', 'Select years of experience')}
-        ${multi('mfLevel', 'Pay Level', 'All Levels', 'Search levels…', 'Select pay levels', 'Pick one or more levels · click again to deselect')}
-        ${single('mfMinistry', 'Ministry', 'All Ministries', 'Select ministry')}
-        ${multi('mfOrganisation', 'Organisation', 'All Organisations', 'Search organisations…', 'Select organisations', 'Pick one or more organisations · click again to deselect')}
-        ${single('mfOrgType', 'Organisation Type', 'All Types', 'Select organisation type')}
-        ${multi('mfLocation', 'Location', 'All Locations', 'Search locations…', 'Select locations', 'Click a location to select it · click again to deselect')}
-        ${single('mfRegion', 'Region', 'All Regions', 'Select region')}
+        ${single('mfMyPayLevel', 'me', 'Display deputations for me', 'Your Pay Level', 'Select your pay level')}
+        ${single('mfExperience', 'me', 'My Years of Experience', 'Select Pay Level first', 'Select years of experience')}
+        ${multi('mfLevel', 'level', 'Pay Level', 'All Levels', 'Search levels…', 'Select pay levels', 'Pick one or more levels · click again to deselect')}
+        ${single('mfMinistry', 'ministry', 'Ministry', 'All Ministries', 'Select ministry')}
+        ${multi('mfOrganisation', 'org', 'Organisation', 'All Organisations', 'Search organisations…', 'Select organisations', 'Pick one or more organisations · click again to deselect')}
+        ${single('mfOrgType', 'orgType', 'Organisation Type', 'All Types', 'Select organisation type')}
+        ${multi('mfLocation', 'location', 'Location', 'All Locations', 'Search locations…', 'Select locations', 'Click a location to select it · click again to deselect')}
+        ${single('mfRegion', 'region', 'Region', 'All Regions', 'Select region')}
         <p class="mfp-note">The map shows active vacancies. Filters are shared with the home page.</p>
       </div>`;
     host.appendChild(panel);
@@ -248,6 +259,12 @@
     }
     els.panel.classList.toggle('has-filters', n > 0);
     byId('mfClear').hidden = n === 0;
+    // A tab whose filter is set is marked, so a closed one still shows it
+    const set = {
+      search: !!s.search, me: !!s.myPayLevel, level: s.levels.length > 0, ministry: !!s.ministry,
+      org: s.orgs.length > 0, orgType: !!s.orgType, location: s.locations.length > 0, region: !!s.region,
+    };
+    els.panel.querySelectorAll('.mfp-tab').forEach(b => b.classList.toggle('is-set', !!set[b.dataset.tab]));
     const badge = els.btn.querySelector('.mfp-badge');
     badge.hidden = n === 0;
     badge.textContent = String(n);
@@ -285,9 +302,24 @@
     p.style.maxHeight = `${Math.max(120, Math.round(opts.maxHeight))}px`;
   }
   function setOpen(open) {
+    const was = sheetOpen();
     els.panel.classList.toggle('open', open);
     els.btn.setAttribute('aria-expanded', String(open));
     if (els.panel.classList.contains('is-sheet')) els.panel.hidden = !open;
+    if (sheetOpen() !== was) document.dispatchEvent(new CustomEvent('map:filterSheet', { detail: { open: !was } }));
+  }
+  function sheetOpen() {
+    return els.panel.classList.contains('is-sheet') && !els.panel.hidden;
+  }
+  // The sheet shows one filter at a time: its tab's groups. The open tab
+  // again closes it, leaving just the tabs.
+  function setTab(id) {
+    const tab = els.panel.dataset.tab === id ? '' : id;
+    els.panel.dataset.tab = tab;
+    els.panel.querySelectorAll('.mfp-tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
+    els.panel.querySelectorAll('.mfp-body .filter-group').forEach(g => g.classList.toggle('is-current', g.dataset.group === tab));
+    if (tab === 'search') ctl.search.focus();
+    if (sheetOpen()) document.dispatchEvent(new CustomEvent('map:filterSheet', { detail: { open: true } }));
   }
 
   // ----- Start -----
@@ -325,6 +357,12 @@
         if (list && !list.hidden) list.scrollIntoView({ block: 'nearest' });
       });
     });
+    els.panel.querySelector('.mfp-tabs').addEventListener('click', (e) => {
+      const b = e.target.closest('.mfp-tab');
+      if (!b) return;
+      setTab(b.dataset.tab);
+      b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
     els.btn.addEventListener('click', () => setOpen(!els.panel.classList.contains('open')));
     byId('mfClose').addEventListener('click', () => { setOpen(false); els.btn.focus(); });
     document.addEventListener('keydown', (e) => {
@@ -333,5 +371,9 @@
     });
   }
 
-  window.IndiaMapFilters = { init, place, current: () => (ctl ? current() : null) };
+  window.IndiaMapFilters = {
+    init, place, current: () => (ctl ? current() : null),
+    // The sheet's top edge while it is open, for the view to keep the map above it
+    sheetTop: () => (els && sheetOpen() ? els.panel.getBoundingClientRect().top : null),
+  };
 })();

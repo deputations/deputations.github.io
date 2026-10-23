@@ -142,7 +142,15 @@
         map: { x: 0, y: TITLE.edge, w: W - col - TITLE.gap, h: H - 2 * TITLE.edge },
       };
     }
-    return { mode: 'band', W, H, map: { x: 0, y: 0, w: W, h: H } };
+    // A phone's open filter sheet covers the bottom: the state (and its name,
+    // see placeStateTitle) keep to the part above it
+    return { mode: 'band', W, H, map: { x: 0, y: 0, w: W, h: H - sheetCut(wrap) } };
+  }
+  // How much of the map area the phone's filter sheet covers while open
+  // (at most half, so the map never shrinks to nothing)
+  function sheetCut(wrap) {
+    const top = window.IndiaMapFilters?.sheetTop?.();
+    return top == null ? 0 : Math.round(Math.min(wrap.height / 2, Math.max(0, wrap.bottom - top)));
   }
   // The viewBox that shows `box` as large as it fits in the layout's map
   // region, centred there. Used for the state's home view and as the end of
@@ -167,8 +175,13 @@
   function filterSide(W, H) { return W >= FILTER_COL.minW && W / H >= 1.05; }
   function nationalLayout() {
     const wrap = document.getElementById('mapSvgWrap')?.getBoundingClientRect();
-    if (!window.IndiaMapFilters || !wrap || !wrap.width || !filterSide(wrap.width, wrap.height)) return null;
+    if (!window.IndiaMapFilters || !wrap || !wrap.width) return null;
     const W = wrap.width, H = wrap.height;
+    if (!filterSide(W, H)) {
+      // A phone: India keeps above the filter sheet while it is open
+      const cut = sheetCut(wrap);
+      return cut ? { W, H, map: { x: 0, y: 0, w: W, h: H - cut } } : null;
+    }
     const x = FILTER_COL.pad + FILTER_COL.width + FILTER_COL.gap;
     return { W, H, map: { x, y: 0, w: W - x, h: H } };
   }
@@ -1915,7 +1928,7 @@
       const head = Math.max(...['btn-back', 'stateListBtn', 'mapCounter']
         .map(id => mapAreaRect(document.getElementById(id))).filter(Boolean).map(r => r.bottom), 0);
       const foot = Math.min(...['zoomInBtn']
-        .map(id => mapAreaRect(document.getElementById(id))).filter(Boolean).map(r => r.top), layout.H);
+        .map(id => mapAreaRect(document.getElementById(id))).filter(Boolean).map(r => r.top), layout.map.y + layout.map.h);
       const mapTop = g.top - area.top, mapBottom = g.bottom - area.top;
       const above = mapTop - head - 24, below = foot - mapBottom - 24;
       box = above >= below
@@ -2075,14 +2088,40 @@
       if (!svg) return;
       homeView = stateViewBox(stateContent, stateLayout());
       setView(svg, homeView);
-      const el = document.getElementById('mapStateTitle');
-      if (el && !el.hidden && el.classList.contains('done')) {
-        const fit = placeStateTitle(el, el.dataset.name);
-        if (fit) setTitleLines(el.querySelector('.mst-name'), fit.lines);
-        else el.style.visibility = 'hidden';
-      }
+      refitStateTitle();
     }
     placeFilterPanel();
+  }
+  // The open state's name, placed again for the current layout
+  function refitStateTitle() {
+    const el = document.getElementById('mapStateTitle');
+    if (!el || el.hidden || !el.classList.contains('done')) return;
+    const fit = placeStateTitle(el, el.dataset.name);
+    if (fit) setTitleLines(el.querySelector('.mst-name'), fit.lines);
+    el.style.visibility = fit ? '' : 'hidden';
+  }
+  // The phone's filter sheet opened, closed or changed height: the map (and
+  // a state's name) glide to stay in view above it. A view zoomed in by hand
+  // is left where it is; Home then frames the map above the sheet.
+  let sheetGlide = 0;   // the glide in flight (its viewBoxAnimId), if any
+  function onFilterSheet() {
+    const svg = document.getElementById('map-svg');
+    if (!svg || !homeView) return;
+    const vb = svg.viewBox.baseVal;
+    const now = { x: vb.x, y: vb.y, w: vb.width, h: vb.height };
+    const same = (a, b) => Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5 && Math.abs(a.w - b.w) < 0.5;
+    // At home, or still gliding there after the sheet's last change
+    const atHome = (sheetGlide && sheetGlide === viewBoxAnimId) || same(now, homeView);
+    const before = homeView;
+    if (viewMode === 'national' && nationalContent) homeView = nationalHome = stateViewBox(nationalContent, nationalLayout());
+    else if ((viewMode === 'state' || viewMode === 'district') && stateContent) homeView = stateViewBox(stateContent, stateLayout());
+    else return;
+    if (!atHome || same(before, homeView)) return;
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) { setView(svg, homeView); refitStateTitle(); return; }
+    const glide = animateViewBox(svg, now, homeView, 320);
+    const id = sheetGlide = viewBoxAnimId;
+    glide.then(() => { if (sheetGlide === id) { sheetGlide = 0; refitStateTitle(); } });
   }
 
   function renderState(abbr, name) {
@@ -2642,6 +2681,7 @@
     if (window.IndiaMapFilters) {
       try { window.IndiaMapFilters.init(); } catch (e) { console.error('[map] filters failed:', e); }
       document.addEventListener('map:filtersChanged', refreshForFilters);
+      document.addEventListener('map:filterSheet', onFilterSheet);
     }
 
     const urlParams = new URLSearchParams(location.search);
