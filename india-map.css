@@ -463,6 +463,34 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
   max-height: 78vh; border-radius: 16px 16px 0 0; z-index: 3100;
 }
 .map-filter-panel.is-sheet .mfp-close { display: inline-flex; }
+/* The sheet holds a row of tabs and one filter at a time, so it stays short
+   and the map (and its counts) stay in view above it */
+.mfp-tabs { display: none; }
+.map-filter-panel.is-sheet .mfp-tabs {
+  display: flex; gap: 6px; padding: 10px 14px; overflow-x: auto; scrollbar-width: none;
+  border-bottom: 1px solid var(--map-hairline);
+}
+.map-filter-panel.is-sheet .mfp-tabs::-webkit-scrollbar { display: none; }
+.mfp-tab {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 13px;
+  border-radius: 17px; border: 1px solid var(--map-hairline); background: var(--map-surface);
+  color: var(--map-text-2); font: 600 12.5px var(--map-font); white-space: nowrap; cursor: pointer;
+}
+/* A filter that is set: tinted like the home page's active dropdowns */
+.mfp-tab.is-set { color: #0891b2; border-color: rgba(8, 145, 178, 0.45); background: rgba(8, 145, 178, 0.08); }
+.mfp-tab.is-set::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.mfp-tab[aria-selected="true"] { color: #fff; background: var(--map-text); border-color: var(--map-text); }
+.mfp-tab:focus-visible { outline: 2px solid var(--map-select); outline-offset: 2px; }
+.map-filter-panel.is-sheet .mfp-body { overflow: visible; padding: 10px 14px 14px; }
+.map-filter-panel.is-sheet[data-tab=""] .mfp-body,
+.map-filter-panel.is-sheet .mfp-body .filter-group:not(.is-current),
+.map-filter-panel.is-sheet .mfp-note { display: none; }
+.map-filter-panel.is-sheet[data-tab="me"] .mfp-body {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; gap: 10px;
+}
+/* Below the sheet is the screen's edge: an open list goes up, over the map */
+.map-filter-panel.is-sheet .ms-panel,
+.map-filter-panel.is-sheet .ms-panel.ms-open-up { top: auto; bottom: calc(100% + 6px); max-height: min(55vh, 420px); }
 .map-filters-btn {
   position: absolute; left: 16px; bottom: 14px; z-index: 4;
   display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px;

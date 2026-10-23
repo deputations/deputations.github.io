@@ -7181,3 +7181,34 @@ focus:          The home page's filters on the India map; a selection carries be
 - New .py files still need `git add -f` (`.gitignore` ignores `*.py`) — `tests/test_map_filters.py` was added that way.
 
 ## session shq-2026-10-22-map-filters end
+
+## session shq-2026-10-23-phone-filter-sheet
+```
+started:        2026-10-23
+ended:          2026-10-23
+model:          Claude Code
+driver:         solo
+branch:         claude/beautiful-allen-13etna (restarted from main after PR #31 merged)
+starting_head:  776087a
+ending_head:    <see the PR merge commit on main>
+focus:          Phone filter sheet no longer covers the map; multi-select dropdowns stay open between picks
+```
+
+### inbound context read
+- shq-2026-10-22-map-filters (block above).
+
+### owner's brief
+- (screenshot of the phone sheet) "when it is in mobile view and then filter is clicked it covers the entire page hiding the map itself...same when state is selected and filter is selected ... we need to find the solution so that once filtered the filtered data is displayed on the map for the user to see...one solution to that can be that at a time we expand only one filter ...so it would not cover the entire map ...with an option to open other filter it would collapse the previous filter...only in case of smaller screen (mobile)"
+
+### work done
+- **Phone / narrow sheet** (`india-map-filters.js`, `india-map.css`, sheet mode only): a row of tabs (Search, For me, Pay Level, Ministry, Organisation, Type, Location, Region) under the sheet's header; a tab opens that filter alone (For me = My Pay Level + years, side by side), another tab replaces it, the open tab again closes it. A set filter's tab is tinted with a dot. The sheet is ~110px with no tab open, ~210px with one. A dropdown list opens upwards over the map (below the sheet is the screen edge). Desktop / side panel unchanged (`.mfp-tabs` hidden, all groups shown).
+- **Map kept above the sheet** (`india-map-view.js`): `sheetCut()` = how much of the map area the open sheet covers (at most half). `nationalLayout()` and `stateLayout()` (band mode) frame the map in the part above it; the state's name (`placeStateTitle` band foot) too. The sheet fires `map:filterSheet` on open / close / tab change; `onFilterSheet()` glides the view to the new home view (320 ms; instant with reduced motion) unless the user had zoomed in by hand, then re-places the name (`refitStateTitle()`, split out of `onStateResize`).
+- **Bug from PR #31 fixed** (`shared/filter-controls.js`): picking an option in a multi-select (Pay Level, Organisation, Location) closed the list after one pick on the map. The pick refreshes the option counts, which redraws the list and detaches the tapped option before the click reaches the document's "click outside closes" handler (`root.contains(e.target)` was false). Both widgets now test `e.composedPath().includes(root)`.
+- Versions: `filters-20261023` on india-map.css, india-map-filters.js, india-map-view.js and shared/filter-controls.js (index.html, india-map.html, astro index).
+- Tests (`tests/test_map_filters.py`): `test_several_levels_can_be_picked_in_one_go` (fails on the old widget), `test_phone_sheet_shows_one_filter_and_keeps_the_map_in_view` (375×667: tabs only at first, one group per tab, map above the sheet, tab marked when set), `test_phone_state_view_keeps_the_state_above_the_sheet`.
+
+### gotchas for next session
+- On short phones (e.g. 375×667) a state's name has no room in the band under the state and is not shown (`placeStateTitle` returns null) — that was already so before this session, sheet open or not.
+- `animateViewBox` supersedes an earlier glide; `onFilterSheet` counts a view still gliding home (`sheetGlide === viewBoxAnimId`) as at home, so opening the sheet and tapping a tab at once still ends above the sheet.
+
+## session shq-2026-10-23-phone-filter-sheet end

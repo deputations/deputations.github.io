@@ -138,8 +138,11 @@ function createMultiSelect(root, opts = {}) {
   }
 
   trigger.addEventListener('click', () => panel.hidden ? open() : close());
+  // Outside clicks close the panel. The path is taken when the click starts:
+  // a pick can redraw the list (the page refreshes the option counts), which
+  // detaches the tapped option before the click reaches the document.
   document.addEventListener('click', (e) => {
-    if (!root.contains(e.target) && !panel.hidden) close();
+    if (!panel.hidden && !e.composedPath().includes(root)) close();
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !panel.hidden) { close(); trigger.focus(); }
@@ -252,7 +255,7 @@ function createSingleSelect(root, opts = {}) {
   function close() { panel.hidden = true; trigger.setAttribute('aria-expanded', 'false'); dropElevation(); }
 
   trigger.addEventListener('click', () => { if (disabled) return; panel.hidden ? open() : close(); });
-  document.addEventListener('click', (e) => { if (!root.contains(e.target) && !panel.hidden) close(); });
+  document.addEventListener('click', (e) => { if (!panel.hidden && !e.composedPath().includes(root)) close(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) { close(); trigger.focus(); } });
   list.addEventListener('click', (e) => {
     const btn = e.target.closest('.ss-opt');
