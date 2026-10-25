@@ -62,8 +62,12 @@ feeds and the Astro scaffold. `data/meta.json` records build and source timestam
 credential, gzip, exact counts and a 10 MB per-run transfer ceiling. It refuses
 empty, duplicate, incomplete or unexpectedly shrunken exports. No implicit legacy
 spreadsheet fallback. `.github/workflows/build-data.yml` publishes before optional
-previews/embeddings and verifies the actual host. See EGRESS-RECOVERY.md for rollout,
-backup scope, access controls and quota handling.
+previews/embeddings and verifies the actual host. A ten-minute scheduled staleness
+check compares the newest Supabase
+`vacancies.updated_at` value with the published manifest and runs the full build
+only when data changed. The daily 09:05 IST run remains forced so deadline-derived
+summary data is refreshed even on days without database edits.
+See EGRESS-RECOVERY.md for rollout, backup scope, access controls and quota handling.
 
 Supabase continues to handle admin review/import, submissions, semantic search,
 feedback and push features. Migration 0025 was applied on 18 October 2026 IST:
