@@ -2233,12 +2233,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://alldeputations.com/vacancy/HA-2026-L12-012/</loc>
-    <lastmod>2026-05-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://alldeputations.com/vacancy/CA-2026-L4-089/</loc>
     <lastmod>2026-05-21</lastmod>
     <changefreq>weekly</changefreq>
@@ -5035,12 +5029,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://alldeputations.com/vacancy/HA-2026-L13-043/</loc>
-    <lastmod>2026-07-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://alldeputations.com/vacancy/JS-2026-L14-005/</loc>
     <lastmod>2022-10-10</lastmod>
     <changefreq>weekly</changefreq>
@@ -6631,6 +6619,12 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://alldeputations.com/vacancy/HA-2026-L13-043/</loc>
+    <lastmod>2026-07-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://alldeputations.com/vacancy/AUTO-131b0d78-b95/</loc>
     <lastmod>2026-09-16</lastmod>
     <changefreq>weekly</changefreq>
@@ -7255,6 +7249,18 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://alldeputations.com/vacancy/HA-2026-L6-001/</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://alldeputations.com/vacancy/HA-2026-L13-001/</loc>
+    <lastmod>2026-09-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://alldeputations.com/vacancy/AUTO-c4e4134f-520/</loc>
     <lastmod>2026-10-06</lastmod>
     <changefreq>weekly</changefreq>
@@ -7455,6 +7461,12 @@
   <url>
     <loc>https://alldeputations.com/vacancy/AUTO-ee2a423d-95a/</loc>
     <lastmod>2026-07-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://alldeputations.com/vacancy/PSW-2026-L11-001/</loc>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
