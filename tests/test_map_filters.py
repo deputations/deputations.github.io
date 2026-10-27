@@ -39,6 +39,8 @@ VACANCIES = [
     _row("F5", "Assistant", "Finance", "Level-10", "Mysuru", "Karnataka"),
     _row("F6", "Stenographer", "Railways", "Level-8", "New Delhi", "Delhi"),
 ]
+VACANCIES[2]["Organisation_Type"] = "Statutory Bodies"
+VACANCIES[5]["Organisation_Type"] = "Autonomous Bodies"
 
 
 @pytest.fixture()
@@ -213,3 +215,88 @@ def test_phone_state_view_keeps_the_state_above_the_sheet(vacancies: Page, base_
     page.locator("#mapFiltersBtn").click()
     page.locator('.mfp-tab[data-tab="level"]').click()
     _map_clear_of_sheet(page)
+
+
+def _option(page: Page, control: str, value: str):
+    return page.locator(f'#{control} .ms-opt[data-value="{value}"]')
+
+
+@pytest.mark.parametrize("state,attached,statutory,autonomous", [
+    ("MH", "(2)", "(1)", None),
+    ("DL", None, None, "(1)"),
+    ("UP", None, None, None),
+])
+def test_state_type_options_count_only_local_vacancies(
+        vacancies: Page, base_url: str, state: str, attached, statutory, autonomous):
+    page = vacancies
+    _open_map(page, base_url, f"?state={state}")
+    expect(page.locator("#btn-back")).to_be_visible()
+    page.locator("#mfOrgTypeSS .ms-trigger").click()
+    for value, count in [("Attached Office", attached), ("Statutory Bodies", statutory),
+                         ("Autonomous Bodies", autonomous)]:
+        option = _option(page, "mfOrgTypeSS", value)
+        if count is None:
+            expect(option).to_have_count(0)
+        else:
+            expect(option.locator(".ss-opt-count")).to_have_text(count)
+
+
+def test_state_facets_combine_filters_and_clear_within_the_state(vacancies: Page, base_url: str):
+    page = vacancies
+    _open_map(page, base_url, "?state=MH&ministry=Finance")
+    expect(page.locator("#mapStateTitle")).to_have_attribute("aria-label", re.compile("Maharashtra: 2 active vacancies"))
+    expect(_option(page, "mfMinistrySS", "Finance").locator(".ss-opt-count")).to_have_text("(2)")
+    expect(_option(page, "mfMinistrySS", "Railways").locator(".ss-opt-count")).to_have_text("(1)")
+    expect(_option(page, "mfOrgTypeSS", "Attached Office").locator(".ss-opt-count")).to_have_text("(2)")
+    expect(_option(page, "mfLevelMS", "Level-10").locator(".ss-opt-count")).to_have_text("(2)")
+    expect(page.locator("#mfLocationMS .ms-opt")).to_have_count(2)
+    expect(page.locator("#mfOrganisationMS .ms-opt")).to_have_count(1)
+
+    page.locator("#mfClear").click()
+    expect(page.locator("#mapStateTitle")).to_have_attribute("aria-label", re.compile("Maharashtra: 3 active vacancies"))
+    expect(_option(page, "mfLevelMS", "Level-11").locator(".ss-opt-count")).to_have_text("(1)")
+    expect(page.locator("#mfLocationMS .ms-opt")).to_have_count(3)
+    assert "state=MH" in page.url
+    assert page.evaluate("sessionStorage.getItem('dep_filters_v1')") == "status=Active"
+
+
+def test_state_options_refresh_on_click_back_and_forward(vacancies: Page, base_url: str):
+    page = vacancies
+    _open_map(page, base_url)
+    finance = _option(page, "mfMinistrySS", "Finance").locator(".ss-opt-count")
+    expect(finance).to_have_text("(4)")
+    page.locator('#map-svg .ad-state[data-abbr="MH"]').click()
+    expect(finance).to_have_text("(2)")
+    saved = page.evaluate("sessionStorage.getItem('dep_filters_v1')")
+    page.locator("#btn-back").click()
+    expect(finance).to_have_text("(4)")
+    page.go_forward()
+    expect(finance).to_have_text("(2)")
+    page.go_back()
+    expect(finance).to_have_text("(4)")
+    assert page.evaluate("sessionStorage.getItem('dep_filters_v1')") == saved
+
+
+def test_selected_option_without_state_matches_stays_available_at_zero(vacancies: Page, base_url: str):
+    page = vacancies
+    _open_map(page, base_url, "?state=KA&orgType=Statutory%20Bodies&level=Level-11")
+    expect(page.locator("#mapStateTitle")).to_be_visible()
+    option = _option(page, "mfOrgTypeSS", "Statutory Bodies")
+    expect(option).to_have_attribute("aria-selected", "true")
+    expect(option.locator(".ss-opt-count")).to_have_text("(0)")
+    expect(_option(page, "mfLevelMS", "Level-11").locator(".ss-opt-count")).to_have_text("(0)")
+    page.locator("#btn-back").click()
+    expect(option.locator(".ss-opt-count")).to_have_text("(1)")
+    expect(_option(page, "mfLevelMS", "Level-11").locator(".ss-opt-count")).to_have_text("(1)")
+
+
+def test_phone_state_option_counts_are_local(vacancies: Page, base_url: str):
+    page = vacancies
+    page.set_viewport_size({"width": 375, "height": 667})
+    _open_map(page, base_url, "?state=MH")
+    expect(page.locator("#btn-back")).to_be_visible()
+    page.locator("#mapFiltersBtn").click()
+    page.locator('.mfp-tab[data-tab="orgType"]').click()
+    page.locator("#mfOrgTypeSS .ms-trigger").click()
+    expect(_option(page, "mfOrgTypeSS", "Attached Office").locator(".ss-opt-count")).to_have_text("(2)")
+    expect(_option(page, "mfOrgTypeSS", "Autonomous Bodies")).to_have_count(0)

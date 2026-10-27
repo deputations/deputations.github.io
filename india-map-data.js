@@ -372,11 +372,13 @@ window.IndiaMapData = (() => {
     rowFilter = typeof fn === 'function' ? fn : null;
     recomputeCounts();
   }
-  // Every active vacancy's source row, once each, ignoring the filters: the
-  // rows the filter dropdowns offer and count.
-  function getActiveRows() {
+  // Active source rows, once each, ignoring sidebar filters so each facet
+  // can exclude its own selection. A state view uses the same resolved
+  // geography as the map counts, including inferred/default locations.
+  function getActiveRows(abbr) {
     const seen = new Set();
     return allVacancies.filter(v => {
+      if (abbr && (v.state_abbr !== abbr || v.location_scope === 'nationwide' || v.location_scope === 'multi_state')) return false;
       if (!isActive(v) || seen.has(v.id)) return false;
       seen.add(v.id);
       return true;

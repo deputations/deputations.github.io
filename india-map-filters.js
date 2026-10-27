@@ -121,6 +121,7 @@
   const byId = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   let ctl = null, els = null, rows = [], orgIndex = { names: {}, short: {} }, kept = F.emptyState();
+  let stateAbbr = null;
   const orgFull = (key) => {
     const name = orgIndex.names[key] || key;
     return (window.DepEnrich && window.DepEnrich.withAcronym) ? window.DepEnrich.withAcronym(name) : name;
@@ -279,6 +280,16 @@
     apply(s, true);
   }
 
+  // Geography belongs to map navigation, not the saved sidebar selection.
+  // Keep selected options available at (0) when they have no local matches.
+  function setState(abbr) {
+    const next = abbr || null;
+    if (!ctl || next === stateAbbr) return;
+    stateAbbr = next;
+    rows = window.IndiaMapData.getActiveRows(stateAbbr);
+    populate(current());
+  }
+
   // ----- Placement (called by the view) -----
   function place(opts) {
     if (!els) return;
@@ -372,7 +383,7 @@
   }
 
   window.IndiaMapFilters = {
-    init, place, current: () => (ctl ? current() : null),
+    init, place, setState, current: () => (ctl ? current() : null),
     // The sheet's top edge while it is open, for the view to keep the map above it
     sheetTop: () => (els && sheetOpen() ? els.panel.getBoundingClientRect().top : null),
   };
