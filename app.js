@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cardSort = cardSortRoot ? createSingleSelect(cardSortRoot, { placeholder: 'Sort' }) : null;
     if (cardSort) {
       cardSort.populate(Object.entries(CARD_SORTS).map(([value, s]) => ({ value, name: s.name, count: null })));
-      cardSort.value = 'closing';
+      cardSort.value = 'level';
       cardSort.addEventListener('change', () => {
         const s = CARD_SORTS[cardSort.value] || CARD_SORTS.closing;
         sortState.key = s.key;
@@ -108,10 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let showWatchlistOnly = false;
     let kpiFilter = 'all';
 
-   let sortState = {
-  key: 'Notification_Date',
-  direction: 'desc'
-};
+    let sortState = { key: 'Level_Text', direction: 'desc' };
+    let sortFilterSignature = null;
 
     let pagination = {
         currentPage: 1,
@@ -1802,6 +1800,14 @@ kpiGrid.addEventListener('click', (e) => {
 function renderDashboardFromSnapshot(resetPageIfNeeded = true) {
   syncExperienceState();
   populateFilters();   // faceted "(N)" counts follow the current selections
+  // Every new filter selection starts highest-pay-first. Sorting a column,
+  // paging, or saving a vacancy keeps the user's chosen sort until filters change.
+  const nextSortFilterSignature = JSON.stringify([currentFilterState(), kpiFilter]);
+  if (nextSortFilterSignature !== sortFilterSignature) {
+    sortState = { key: 'Level_Text', direction: 'desc' };
+    if (cardSort) cardSort.value = 'level';
+    sortFilterSignature = nextSortFilterSignature;
+  }
   window.DepFilters.save(currentFilterState());   // the India map reads it
   // KPI cards summarise the whole set regardless of the Status dropdown:
   // "Total Vacancies" = all (Status: All); "Active Vacancies" / "Ministries"
@@ -2017,6 +2023,10 @@ function applyUrlParameters() {
                 case 'Level_Text':
                     aVal = parseLevelValue(a.Level_Text);
                     bVal = parseLevelValue(b.Level_Text);
+                    // Unspecified pay levels stay last in either direction.
+                    if (aVal === null || bVal === null) {
+                        return aVal === bVal ? 0 : (aVal === null ? 1 : -1);
+                    }
                     break;
                 case 'Eligibility':
                     aVal = getEligibilitySortValue(a);
