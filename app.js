@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cardSort = cardSortRoot ? createSingleSelect(cardSortRoot, { placeholder: 'Sort' }) : null;
     if (cardSort) {
       cardSort.populate(Object.entries(CARD_SORTS).map(([value, s]) => ({ value, name: s.name, count: null })));
-      cardSort.value = 'closing';
+      cardSort.value = 'level';
       cardSort.addEventListener('change', () => {
         const s = CARD_SORTS[cardSort.value] || CARD_SORTS.closing;
         sortState.key = s.key;
@@ -108,10 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let showWatchlistOnly = false;
     let kpiFilter = 'all';
 
-   let sortState = {
-  key: 'Notification_Date',
-  direction: 'desc'
-};
+    let sortState = { key: 'Level_Text', direction: 'desc' };
+    let sortFilterSignature = null;
 
     let pagination = {
         currentPage: 1,
@@ -1802,11 +1800,19 @@ kpiGrid.addEventListener('click', (e) => {
 function renderDashboardFromSnapshot(resetPageIfNeeded = true) {
   syncExperienceState();
   populateFilters();   // faceted "(N)" counts follow the current selections
+  // Every new filter selection starts highest-pay-first. Sorting a column,
+  // paging, or saving a vacancy keeps the user's chosen sort until filters change.
+  const nextSortFilterSignature = JSON.stringify([currentFilterState(), kpiFilter]);
+  if (nextSortFilterSignature !== sortFilterSignature) {
+    sortState = { key: 'Level_Text', direction: 'desc' };
+    if (cardSort) cardSort.value = 'level';
+    sortFilterSignature = nextSortFilterSignature;
+  }
   window.DepFilters.save(currentFilterState());   // the India map reads it
   // KPI cards summarise the whole set regardless of the Status dropdown:
   // "Total Vacancies" = all (Status: All); "Active Vacancies" / "Ministries"
   // = the active subset of them.
-  const baseFilteredData = getFilteredData({ applyKpiFilter: false, applyStatusFilter: false });
+  const baseFilteredData = getFilteredData({ applyKpiFilter: false, applyStatusFilter: false, requirePayLevel: false });
   const filteredData = sortData(getFilteredData({ applyKpiFilter: true }));
 
   // Animate only discrete-click re-renders (never search keystrokes).
@@ -1961,11 +1967,14 @@ function applyUrlParameters() {
     // faceted counts. The sidebar filters are DepFilters.matches (shared with
     // the India map); the watchlist, quick chips and KPI cards are home-page
     // only and stay here.
-    function getFilteredData({ applyKpiFilter = true, applyStatusFilter = true, exclude = '' } = {}) {
+    function getFilteredData({ applyKpiFilter = true, applyStatusFilter = true, exclude = '', requirePayLevel = true } = {}) {
   const state = currentFilterState();
   const status = exclude === 'status' ? '' : state.status;
 
   return rawData.filter(item => {
+    // Results and their facet counts omit vacancies without a pay level.
+    // KPI summaries still cover the full snapshot, including those records.
+    if (requirePayLevel && !safe(item.Level_Text)) return false;
     if (!window.DepFilters.matches(item, state, { exclude, applyStatus: applyStatusFilter })) return false;
 
     const itemStatus = safe(item.Status);
