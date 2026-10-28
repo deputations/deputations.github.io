@@ -1812,7 +1812,7 @@ function renderDashboardFromSnapshot(resetPageIfNeeded = true) {
   // KPI cards summarise the whole set regardless of the Status dropdown:
   // "Total Vacancies" = all (Status: All); "Active Vacancies" / "Ministries"
   // = the active subset of them.
-  const baseFilteredData = getFilteredData({ applyKpiFilter: false, applyStatusFilter: false, requirePayLevel: false });
+  const baseFilteredData = getFilteredData({ applyKpiFilter: false, applyStatusFilter: false });
   const filteredData = sortData(getFilteredData({ applyKpiFilter: true }));
 
   // Animate only discrete-click re-renders (never search keystrokes).
@@ -1967,14 +1967,11 @@ function applyUrlParameters() {
     // faceted counts. The sidebar filters are DepFilters.matches (shared with
     // the India map); the watchlist, quick chips and KPI cards are home-page
     // only and stay here.
-    function getFilteredData({ applyKpiFilter = true, applyStatusFilter = true, exclude = '', requirePayLevel = true } = {}) {
+    function getFilteredData({ applyKpiFilter = true, applyStatusFilter = true, exclude = '' } = {}) {
   const state = currentFilterState();
   const status = exclude === 'status' ? '' : state.status;
 
   return rawData.filter(item => {
-    // Results and their facet counts omit vacancies without a pay level.
-    // KPI summaries still cover the full snapshot, including those records.
-    if (requirePayLevel && !safe(item.Level_Text)) return false;
     if (!window.DepFilters.matches(item, state, { exclude, applyStatus: applyStatusFilter })) return false;
 
     const itemStatus = safe(item.Status);
@@ -2026,6 +2023,10 @@ function applyUrlParameters() {
                 case 'Level_Text':
                     aVal = parseLevelValue(a.Level_Text);
                     bVal = parseLevelValue(b.Level_Text);
+                    // Unspecified pay levels stay last in either direction.
+                    if (aVal === null || bVal === null) {
+                        return aVal === bVal ? 0 : (aVal === null ? 1 : -1);
+                    }
                     break;
                 case 'Eligibility':
                     aVal = getEligibilitySortValue(a);
