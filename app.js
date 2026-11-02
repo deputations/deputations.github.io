@@ -614,7 +614,7 @@ function injectJsonLd() {
 /* ---------------- Share helpers ---------------- */
 
 /**
- * Compact "Employment News edition + page" badge used under the Source PDF
+ * Compact "Employment News edition + page" badge used under the Source
  * link in table + card views. Mirrors the modal's "pNN of <edition>" phrasing
  * (see buildModalContent). When Source_Page is missing, falls back to just
  * the edition string so every row that has a Source Category still shows it.
@@ -1203,7 +1203,7 @@ function renderTable(data) {
           ${escapeHtml(notificationDateText)}
         </td>
 
-        <td class="table-link-cell" data-label="Source PDF">
+        <td class="table-link-cell" data-label="Source">
           ${notificationLink ? `
             <a
               class="table-link-btn"
@@ -1212,7 +1212,7 @@ function renderTable(data) {
               rel="noopener noreferrer"
               onclick="event.stopPropagation();"${notifPreviewAttr(item)}
             >
-              Source PDF
+              PDF
             </a>
           ` : '—'}
           ${(() => {
@@ -1251,7 +1251,7 @@ function renderTable(data) {
             ${renderSortableHeader('Location', 'Location', 'location-col')}
             ${renderSortableHeader('Days Left', 'Days_Left', 'days-col')}
             ${renderSortableHeader('Notification Date', 'Notification_Date', 'notification-date-col')}
-            <th class="table-link-cell">Source PDF</th>
+            <th class="table-link-cell">Source</th>
             <th
               class="save-col save-col-heading ${hasSavedAny ? 'has-saved' : ''}"
               title="${hasSavedAny ? 'Bookmarks saved' : 'No bookmarks yet'}"
