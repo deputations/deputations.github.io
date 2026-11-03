@@ -460,6 +460,31 @@ section('C29: Shared filters — counts and listings follow the row filter');
   D.reset();
 }
 
+section('C30: Filter options respect resolved state geography without sidebar filters');
+{
+  const D = window.IndiaMapData;
+  D.reset();
+  const add = (id, state, city, extra = {}) => D.recordNewVacancy(Object.assign({
+    Vacancy_ID: id, Location_State: state, Location_City: city, Last_Date_To_Apply: '2099-01-01',
+  }, extra));
+  add('S1', 'Maharashtra', 'Pune');
+  add('S2', '', 'Mumbai'); // inferred state
+  add('S3', '', ''); // default New Delhi
+  add('S4', 'Maharashtra', '', { location_scope: 'nationwide' });
+  add('S5', 'Maharashtra', '', { location_scope: 'multi_state' });
+  add('S6', 'Maharashtra', 'Pune', { Last_Date_To_Apply: '2001-01-01' });
+  // A duplicate source record must contribute only once.
+  D.getAllVacancies().push(D.normaliseVacancy({ Vacancy_ID: 'S1', Location_State: 'Maharashtra', Last_Date_To_Apply: '2099-01-01' }));
+  const ids = abbr => D.getActiveRows(abbr).map(r => r.Vacancy_ID).sort().join(',');
+  assert(ids('MH') === 'S1,S2', 'state options use resolved geography, deduplicate and exclude expired or non-state rows');
+  assert(ids('DL') === 'S3', 'state options include the default New Delhi location');
+  assert(ids('UP') === '', 'a state with no vacancies has no option rows');
+  assert(ids() === 'S1,S2,S3,S4,S5', 'national options retain all active locations and scopes');
+  D.setRowFilter(() => false);
+  assert(ids('MH') === 'S1,S2', 'option rows ignore sidebar filters so facets can exclude their own selection');
+  D.reset();
+}
+
 // ---- Summary ----
 console.log(`\n${'='.repeat(50)}`);
 console.log(`Results: ${passed} passed, ${failed} failed`);

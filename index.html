@@ -521,8 +521,11 @@
   <script src="config.js?v=sb8"></script>
   <script src="enrich.js?v=elig-20261018-lines"></script>
   <script src="shared/filter-controls.js?v=filters-20261023"></script>
-  <script src="shared/vacancy-filters.js?v=filters-20261102"></script>
-  <script src="app.js?v=filters-20261102"></script>
+  <!-- app.js now carries main's pay-sort work AND the compact Source
+       column (merged 2026-11-02) — token bumped past pay-sort-20261028
+       so the service worker's SWR cache treats it as a new file. -->
+  <script src="shared/vacancy-filters.js?v=filters-20261102b"></script>
+  <script src="app.js?v=filters-20261102b"></script>
   <!-- vacancy push alerts (review P1-3); no-op unless Push is supported + VAPID configured -->
   <script defer src="push-client.js?v=1"></script>
   <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the stylesheet above to revert) -->

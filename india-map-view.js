@@ -564,6 +564,7 @@
   function renderNational(data) {
     viewMode = 'national';
     selectedAbbr = null;
+    window.IndiaMapFilters?.setState(null);
     clearMap();
     const mapSvg = document.getElementById('map-svg');
     const g = mapSvg?.querySelector('#map-group');
@@ -2129,6 +2130,7 @@
     // Set before the filter panel is placed, which goes by the view mode
     selectedAbbr = abbr;
     viewMode = 'state';
+    window.IndiaMapFilters?.setState(abbr);
 
     // Delhi uses an image-map drill-down (coloured district photos)
     if (abbr === 'DL') {
