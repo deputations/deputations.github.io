@@ -668,7 +668,22 @@ function formatSourceBadgeShort(item) {
   // Tooltip always carries the full edition string (and page if present),
   // matching the modal's phrasing so users see one consistent label.
   const full = page ? `p${page} of ${cat}` : cat;
-  return { short: page ? `p${page} of ${compact}` : compact, full };
+  // Tightest in-cell form, used only by the table view's Source column
+  // (2026-11-02): the badge must stay short enough that it no longer sets
+  // the column's content width (~50px target). Employment News is the
+  // dominant source (~80%), then GSTAT; each collapses to a label. Card/
+  // group views deliberately keep `short` (the full "pNN of …" phrasing).
+  const isEn = /^(en[-\s]|employment[-\s]news)/i.test(cat);
+  let badge;
+  if (isEn) badge = 'Emp.News';
+  else if (/^gstat/i.test(cat)) badge = 'GSTAT';
+  else if (/circular/i.test(cat)) badge = 'Circular';
+  else if (/website/i.test(cat)) badge = 'Website';
+  else if (/ehrms/i.test(cat)) badge = 'EHRMS';
+  else if (/whatsapp/i.test(cat)) badge = 'WhatsApp';
+  else if (/public tip/i.test(cat)) badge = 'Tip';
+  else badge = compact.slice(0, 10);
+  return { short: page ? `p${page} of ${compact}` : compact, full, badge };
 }
 
 function buildShareText(item) {
@@ -1217,7 +1232,7 @@ function renderTable(data) {
           ` : '—'}
           ${(() => {
             const b = formatSourceBadgeShort(item);
-            return b ? `<div class="table-source-line"><span class="source-badge" title="${escapeHtml(b.full)}">${escapeHtml(b.short)}</span></div>` : '';
+            return b ? `<div class="table-source-line"><span class="source-badge" title="${escapeHtml(b.full)}">${escapeHtml(b.badge)}</span></div>` : '';
           })()}
         </td>
 

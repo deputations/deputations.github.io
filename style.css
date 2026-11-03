@@ -1313,7 +1313,7 @@ select:disabled {
 
 /* generic fallback; the data-table variant below sets the compact width */
 .table-link-cell {
-  min-width: 96px;
+  min-width: 72px;
 }
 
 .table-link-btn {
@@ -3036,6 +3036,10 @@ select:disabled {
 .data-table td.level-col {
   min-width: 84px;
 }
+/* Post Name gets the freed Source space via the governing percentage blocks
+   ("column balance — sums to 100%", and the filters-collapsed variant below):
+   desktop column widths are driven there by #dataContainer …:nth-child(N)
+   rules that set min-width:0, so a min-width floor here would be inert. */
 .data-table .ministry-col,
 .data-table td.ministry-col {
   min-width: 168px;
@@ -3055,19 +3059,20 @@ select:disabled {
   font-weight: 600;
 }
 /* Notification button + source badge: equal-width stacked boxes.
-   Compact "Source" column (renamed from "Source PDF" 2026-10-28): the
-   column min-width, the 108px button/badge widths, and the header's
-   reduced type (th.table-link-cell below) were all cut so the Post
-   Name column wins the space back. The edition badge keeps its
-   "p6 of EN- 24 Oct 26" phrasing + full tooltip. */
+   Compact "Source" column (renamed from "Source PDF" 2026-10-28, shrunk
+   again 2026-11-02): the column min-width, the 108px button/badge
+   widths, and the header's reduced type were all cut so the Post Name
+   column (see .post-col above) wins the space back. The edition badge
+   is now just "Emp.News" in-cell; the full "p6 of EN- 24 Oct 26"
+   string lives in the title tooltip. */
 .data-table .table-link-cell {
-  min-width: 96px;
+  min-width: 72px;
   padding-left: 0.375rem;
   padding-right: 0.375rem;
 }
 .data-table td.table-link-cell .table-link-btn {
   display: flex;
-  min-width: 78px;
+  min-width: 60px;
   margin: 0 auto;
   box-sizing: border-box;
   padding-left: 0.4rem;
@@ -3080,7 +3085,7 @@ select:disabled {
 }
 .data-table td.table-link-cell .source-badge {
   display: flex;
-  min-width: 78px;
+  min-width: 60px;
   margin: 0 auto;
   box-sizing: border-box;
   justify-content: center;
@@ -5216,9 +5221,10 @@ html:not([data-theme="light"]) .premium-credit {
   /* header labels may wrap (so "NOTIFICATION" never clips) */
   #dataContainer.view-table .data-table thead th { white-space: normal; }
 
-  /* column balance — sums to 100% */
+  /* column balance — sums to 100%. 2026-11-02: Source (col 9, compact
+     "Emp.News" badge) gives up 4 points, all to Post Name (col 1). */
   #dataContainer.view-table .data-table th:nth-child(1),
-  #dataContainer.view-table .data-table td:nth-child(1)  { width: 11%; min-width: 0; }   /* Post */
+  #dataContainer.view-table .data-table td:nth-child(1)  { width: 15%; min-width: 0; }   /* Post */
   #dataContainer.view-table .data-table th:nth-child(2),
   #dataContainer.view-table .data-table td:nth-child(2)  { width: 6%;  min-width: 0; }   /* Level */
   #dataContainer.view-table .data-table th:nth-child(3),
@@ -5234,7 +5240,7 @@ html:not([data-theme="light"]) .premium-credit {
   #dataContainer.view-table .data-table th:nth-child(8),
   #dataContainer.view-table .data-table td:nth-child(8)  { width: 9%;  min-width: 0; white-space: normal; } /* Notif. Date */
   #dataContainer.view-table .data-table th:nth-child(9),
-  #dataContainer.view-table .data-table td:nth-child(9)  { width: 14%; min-width: 0; }   /* Notification */
+  #dataContainer.view-table .data-table td:nth-child(9)  { width: 10%; min-width: 0; }   /* Source */
   #dataContainer.view-table .data-table th:nth-child(10),
   #dataContainer.view-table .data-table td:nth-child(10) { width: 5%;  min-width: 0; }   /* Bookmark */
 
@@ -5254,7 +5260,7 @@ html:not([data-theme="light"]) .premium-credit {
   #dataContainer.view-table .data-table td.table-link-cell .table-link-btn,
   #dataContainer.view-table .data-table td.table-link-cell .source-badge {
     width: 100%;
-    max-width: 110px;
+    max-width: 90px;
   }
   /* Notification cell stays above the 3D faces and is the only thing that reacts
      to its own hover (row stays put — see :has() gate above). */
@@ -6234,8 +6240,13 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
   body.filters-collapsed .filters-sidebar .filters-more-btn { order: 3; margin: auto 0 0; }
 
   /* full-width rows: hand the freed space to Post Name (sums to 100%) */
+  /* the Post Name floor (top of file, "table column tweaks") must not
+     defeat the percentage spec below — those widths are chosen to sum
+     to 100% so the collapsed layout never scrolls horizontally.
+     2026-11-02: the compact Source column (Emp.News badge) gives up 4
+     points, all to Post Name — 20→24% / 12→8%, sum still 100%. */
   body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(1),
-  body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(1) { width: 20%; }
+  body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(1) { width: 24%; }
   body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(2),
   body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(2) { width: 6%; }
   body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(3),
@@ -6251,7 +6262,7 @@ html.vt-filters::view-transition-new(*) { animation-duration: 0.85s; animation-t
   body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(8),
   body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(8) { width: 8%; }
   body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(9),
-  body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(9) { width: 12%; }
+  body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(9) { width: 8%; }
   body.filters-collapsed #dataContainer.view-table .data-table th:nth-child(10),
   body.filters-collapsed #dataContainer.view-table .data-table td:nth-child(10) { width: 5%; }
 
