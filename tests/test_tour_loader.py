@@ -14,6 +14,8 @@ from urllib.parse import urlparse
 
 from playwright.sync_api import Page, expect
 
+from tests.tour_helpers import no_hero_wave  # noqa: F401  (autouse fixture)
+
 HOME_ORDER = [
     "/vendor/gsap.min.js",
     "/tour/tour.css",
@@ -45,7 +47,7 @@ def _tour_path(url: str) -> str | None:
 
 
 def _wait_for_loader(page: Page) -> None:
-    page.wait_for_function("() => !!window.DepTourLoader", timeout=10000)
+    page.wait_for_function("() => !!window.DepTourLoader", polling=100, timeout=30000)
 
 
 def test_no_autoplay_under_webdriver(page: Page, base_url: str):
@@ -104,7 +106,7 @@ def test_force_play_loads_in_order(page: Page, base_url: str):
     order = []
     page.on("request", lambda r: (p := _tour_path(r.url)) and order.append(p))
     page.goto(f"{base_url}/index.html?tour=play&tourSpeed=20")
-    page.wait_for_function("() => !!window.__played", timeout=15000)
+    page.wait_for_function("() => !!window.__played", polling=100, timeout=15000)
     assert order == HOME_ORDER
     assert page.evaluate("window.__played") == ["home", 20]
 
@@ -170,4 +172,4 @@ def test_replay_hides_over_footer(page: Page, base_url: str):
     expect(btn).to_be_visible(timeout=10000)
     page.wait_for_selector(".sw-footer", state="attached", timeout=10000)
     page.evaluate("document.querySelector('.sw-footer').scrollIntoView({block: 'end'})")
-    expect(btn).to_have_class(re.compile(r"\bdt-replay--hidden\b"), timeout=5000)
+    expect(btn).to_have_class(re.compile(r"\bdt-replay--hidden\b"), timeout=15000)

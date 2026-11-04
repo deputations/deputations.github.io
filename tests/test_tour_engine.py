@@ -12,7 +12,7 @@ from __future__ import annotations
 from playwright.sync_api import Page, expect
 
 from tests.tour_helpers import (
-    BLOCK_STORAGE, open_engine, register_probe_tour, result, seen, start,
+    BLOCK_STORAGE, no_hero_wave, open_engine, register_probe_tour, result, seen, start,
 )
 
 
@@ -102,7 +102,7 @@ def test_double_play_single_overlay(page: Page, base_url: str):
     page.wait_for_timeout(300)
     expect(page.locator(".dt-overlay")).to_have_count(1)
     page.locator(".dt-skip").click()
-    page.wait_for_function("() => window.__a !== null && window.__b !== null")
+    page.wait_for_function("() => window.__a !== null && window.__b !== null", polling=100)
     assert page.evaluate("[window.__a, window.__b]") == ["skip", "skip"]
 
 
@@ -113,19 +113,19 @@ def test_keyboard_and_dots(page: Page, base_url: str):
     start(page)
     page.wait_for_timeout(200)
     page.keyboard.press("ArrowRight")
-    page.wait_for_function("() => DepTour.state().sceneIndex === 1")
+    page.wait_for_function("() => DepTour.state().sceneIndex === 1", polling=100)
     expect(page.locator("#dt-title")).to_have_text("Beta")
     page.locator(".dt-dots > button").nth(0).click()
-    page.wait_for_function("() => DepTour.state().sceneIndex === 0")
+    page.wait_for_function("() => DepTour.state().sceneIndex === 0", polling=100)
     expect(page.locator("#dt-title")).to_have_text("Alpha")
     page.locator(".dt-overlay").focus()
     page.keyboard.press("Space")
-    page.wait_for_function("() => DepTour.state().paused === true")
+    page.wait_for_function("() => DepTour.state().paused === true", polling=100)
     before = page.evaluate("DepTour.state().progress")
     page.wait_for_timeout(500)
     assert page.evaluate("DepTour.state().progress") == before
     page.keyboard.press("Space")
-    page.wait_for_function("() => DepTour.state().paused === false")
+    page.wait_for_function("() => DepTour.state().paused === false", polling=100)
 
 
 def test_scene_errors_are_skipped(page: Page, base_url: str):

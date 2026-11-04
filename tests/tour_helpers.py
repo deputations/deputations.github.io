@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from playwright.sync_api import Page
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -37,15 +38,30 @@ PROBE_SCENE_JS = """
 """
 
 
+@pytest.fixture(autouse=True)
+def no_hero_wave(page: Page) -> None:
+    """Stub the homepage WebGL hero for tour tests.
+
+    In CPU-only CI/containers the software-rendered hero drops index.html to a
+    few frames per second, which starves both rAF-based polling and GSAP's
+    clock. The tour does not depend on the hero, so tour tests run without it.
+    Import this fixture into each tour test module to activate it.
+    """
+    page.route("**/hero-wave.js*", lambda r: r.fulfill(body="", content_type="application/javascript"))
+
+
 def open_engine(page: Page, base_url: str, path: str = "/index.html") -> None:
     page.goto(f"{base_url}{path}")
-    page.wait_for_function("() => !!window.DepTourLoader", timeout=30000)
+    page.wait_for_function("() => !!window.DepTourLoader", polling=100, timeout=30000)
     page.add_script_tag(url=f"{base_url}/vendor/gsap.min.js")
     page.add_style_tag(url=f"{base_url}/tour/tour.css")
     page.add_script_tag(url=f"{base_url}/tour/tour-engine.js")
     if (REPO_ROOT / "tour" / "tour-kit.js").exists():
         page.add_script_tag(url=f"{base_url}/tour/tour-kit.js")
-    page.wait_for_function("() => !!window.DepTour && !!window.gsap", timeout=10000)
+    page.wait_for_function("() => !!window.DepTour && !!window.gsap", polling=100, timeout=10000)
+    # Advance GSAP by wall-clock time even when a starved test browser paints
+    # only a few frames per second (no effect on what the tour does).
+    page.evaluate("gsap.ticker.lagSmoothing(0)")
     page.evaluate(f"window.__probeScene = {PROBE_SCENE_JS};")
 
 
@@ -74,7 +90,7 @@ def start(page: Page, key: str = "t", **opts) -> None:
 
 
 def result(page: Page, timeout: int = 15000) -> str:
-    page.wait_for_function("() => window.__res !== null", timeout=timeout)
+    page.wait_for_function("() => window.__res !== null", polling=100, timeout=timeout)
     return page.evaluate("window.__res")
 
 
