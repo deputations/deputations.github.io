@@ -228,3 +228,54 @@ def test_pause_during_opening_still_shows_overlay(page: Page, base_url: str):
     opacity = page.evaluate("""() => [getComputedStyle(document.querySelector('.dt-backdrop')).opacity,
                                       getComputedStyle(document.querySelector('.dt-chrome')).opacity].map(Number)""")
     assert opacity == [1, 1], opacity
+
+
+def test_expect_waits_for_registration(page: Page, base_url: str):
+    open_engine(page, base_url)
+    page.evaluate("""() => {
+      window.__res = null;
+      DepTour.expect('late');
+      DepTour.play('late').then(r => { window.__res = r; });
+      setTimeout(() => DepTour.register('late', { scenes: [__probeScene('a', 'Late', {duration: 0.3})] }), 600);
+    }""")
+    page.wait_for_selector(".dt-overlay", state="attached", timeout=10000)
+    assert result(page) == "end"
+
+
+def test_expect_times_out_without_registration(page: Page, base_url: str):
+    open_engine(page, base_url)
+    page.evaluate("""() => {
+      window.__res = null; window.__t0 = performance.now();
+      DepTour.expect('never');
+      DepTour.play('never').then(r => { window.__res = r; window.__dt = performance.now() - window.__t0; });
+    }""")
+    assert result(page, timeout=10000) == "error"
+    assert 2500 <= page.evaluate("window.__dt") <= 6000
+    expect(page.locator(".dt-overlay")).to_have_count(0)
+
+
+def test_open_and_close_events(page: Page, base_url: str):
+    open_engine(page, base_url)
+    register_probe_tour(page)
+    page.evaluate("""() => {
+      window.__events = [];
+      document.addEventListener('deptour:open', e => __events.push(['open', e.detail.key]));
+      document.addEventListener('deptour:close', e => __events.push(['close', e.detail.key, e.detail.reason]));
+    }""")
+    start(page)
+    page.locator(".dt-skip").click()
+    assert result(page) == "skip"
+    assert page.evaluate("window.__events") == [["open", "t"], ["close", "t", "skip"]]
+
+
+def test_skipping_ahead_reaches_the_cta(page: Page, base_url: str):
+    open_engine(page, base_url)
+    register_probe_tour(page, intro="Hello tour", cta="Go")
+    start(page)
+    for _ in range(3):
+        page.keyboard.press("ArrowRight")
+    cta = page.locator(".dt-cta")
+    expect(cta).to_contain_text("Go", timeout=5000)
+    cta.click()
+    assert result(page) == "cta"
+    assert page.evaluate("window.__ctaRan") is True

@@ -22,6 +22,8 @@
   var OFF_KEY = 'dep_tour_off_v1';
 
   var tours = {};
+  var pending = {};                  // keys announced with expect() but not registered yet
+  var waiting = null;                // a play() call waiting on a pending registration
   var S = null;                      // the open session, or null
 
   /* ---------- small helpers ---------- */
@@ -84,10 +86,37 @@
   /* ---------- registration + play ---------- */
   function register(key, tour) {
     tours[key] = tour;
+    if (pending[key]) { pending[key].resolve(); delete pending[key]; }
+  }
+
+  // A scene file calls expect(key) synchronously, then registers after async
+  // setup (e.g. loading map data); play(key) waits for it for up to 3 s.
+  function expectTour(key) {
+    if (tours[key] || pending[key]) return;
+    var done;
+    var p = new Promise(function (r) { done = r; });
+    pending[key] = { promise: p, resolve: done };
+  }
+
+  function emit(name, detail) {
+    try { document.dispatchEvent(new CustomEvent(name, { detail: detail })); } catch (e) {}
   }
 
   function play(key, opts) {
     if (S) return S.promise;
+    if (!tours[key] && pending[key]) {
+      if (!waiting) {
+        waiting = Promise.race([
+          pending[key].promise,
+          new Promise(function (r) { setTimeout(r, 3000); })
+        ]).then(function () {
+          waiting = null;
+          if (!tours[key]) { warn('tour "' + key + '" was not registered in time'); return 'error'; }
+          return play(key, opts);
+        });
+      }
+      return waiting;
+    }
     opts = opts || {};
     var tour = tours[key];
     if (!tour || !tour.scenes || !tour.scenes.length) {
@@ -177,6 +206,7 @@
     window.addEventListener('resize', S.onResize);
 
     document.body.appendChild(ov);
+    emit('deptour:open', { key: S.key, mode: S.mode });
     fit();
     try { ov.focus({ preventScroll: true }); } catch (e) { ov.focus(); }
 
@@ -522,6 +552,7 @@
       if (reason === 'cta' && sess.tour.cta && typeof sess.tour.cta.action === 'function') {
         try { sess.tour.cta.action(); } catch (err) { warn('CTA action failed:', err && err.message); }
       }
+      emit('deptour:close', { key: sess.key, reason: reason });
       sess.resolve(reason);
     }
     try {
@@ -543,6 +574,7 @@
 
   window.DepTour = {
     register: register,
+    expect: expectTour,
     play: play,
     close: function (reason) { close(reason || 'skip'); },
     isOpen: function () { return !!S; },

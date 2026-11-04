@@ -1,0 +1,174 @@
+"""Site tour — the Home page intro (tour/scenes/home.js), end to end through the
+real loader on index.html.
+
+Run:
+    pytest tests/test_tour_home.py -v
+"""
+from __future__ import annotations
+
+from playwright.sync_api import Page, expect
+
+from tests.tour_helpers import no_hero_wave, seen  # noqa: F401
+
+TITLES = ["Only the posts you can apply for", "Just ask", "See India's vacancies on a map"]
+HEADLINE = "Every Central deputation vacancy. One place."
+RECORD_CLOSE = """
+  document.addEventListener('deptour:close', e => { window.__closed = e.detail; });
+"""
+
+
+def _open_home(page: Page, base_url: str, speed: float = 1) -> None:
+    page.add_init_script(RECORD_CLOSE)
+    page.goto(f"{base_url}/index.html?tour=play&tourSpeed={speed}")
+    page.wait_for_function("() => !!window.gsap && !!window.DepTour", polling=100, timeout=30000)
+    page.evaluate("gsap.ticker.lagSmoothing(0)")
+    page.wait_for_function("() => DepTour.isOpen()", polling=100, timeout=20000)
+
+
+def _scene_end(page: Page, index: int) -> None:
+    page.evaluate(f"DepTour.goTo({index}); DepTour.pause();")
+    page.wait_for_function(f"() => DepTour.state().sceneIndex === {index} && DepTour.state().phase === 'scene'",
+                           polling=100)
+    page.evaluate("DepTour.seek(DepTour.state().sceneDuration - 0.01)")
+    page.wait_for_timeout(100)
+
+
+def test_scene_order(page: Page, base_url: str):
+    _open_home(page, base_url)
+    page.wait_for_function("() => document.querySelectorAll('.dt-headline .dt-ch').length > 0",
+                           polling=100, timeout=10000)
+    assert page.evaluate("document.querySelector('.dt-headline').textContent") == HEADLINE
+    for i, title in enumerate(TITLES):
+        page.evaluate(f"DepTour.goTo({i})")
+        expect(page.locator("#dt-title")).to_have_text(title)
+
+
+def test_eligibility_end_state(page: Page, base_url: str):
+    page.add_init_script("Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });")
+    _open_home(page, base_url)
+    _scene_end(page, 0)
+    assert page.locator(".dt-vcard").count() == 120
+    assert page.evaluate("document.querySelector('.dt-count').getAttribute('aria-label')") == "86"
+    assert page.evaluate("document.querySelector('.dt-count').textContent") == "86"
+    assert page.locator(".dt-vcard.is-eligible").count() == 8
+
+
+def test_eligibility_on_phone(page: Page, base_url: str):
+    page.add_init_script("Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });")
+    page.set_viewport_size({"width": 390, "height": 844})
+    _open_home(page, base_url)
+    _scene_end(page, 0)
+    assert page.locator(".dt-vcard").count() == 48
+    assert page.locator(".dt-vcard.is-eligible").count() == 5
+
+
+def test_low_power_wall(page: Page, base_url: str):
+    page.add_init_script("Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 4 });")
+    _open_home(page, base_url)
+    _scene_end(page, 0)
+    assert page.locator(".dt-vcard").count() == 72
+    assert page.locator(".dt-vcard.is-eligible").count() == 8
+
+
+def test_ask_end_state(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _scene_end(page, 1)
+    assert page.evaluate("document.querySelector('.dt-ask-text').textContent") == \
+        "Level 8 posts in Delhi closing this month"
+    chips = page.evaluate("[...document.querySelectorAll('.dt-ask-chips .dt-chip')].map(c => c.textContent.trim())")
+    assert chips == ["Level 8", "Delhi", "Closes ≤ 30 days"]
+    assert page.locator(".dt-match").count() == 3
+    rings = page.evaluate("[...document.querySelectorAll('.dt-match .dt-ring-v')].map(e => e.getAttribute('aria-label'))")
+    assert rings == ["96", "91", "87"]
+    # every match is a Delhi, Level 8 sample post
+    assert page.evaluate("[...document.querySelectorAll('.dt-match')].every(m => /Delhi/.test(m.textContent) && /Level 8/.test(m.textContent))")
+
+
+def test_cta_opens_pay_level(page: Page, base_url: str):
+    _open_home(page, base_url)
+    for _ in range(4):                             # skip ahead like a person: → past the last scene
+        page.keyboard.press("ArrowRight")
+    cta = page.locator(".dt-cta")
+    expect(cta).to_contain_text("Try it with your pay level", timeout=10000)
+    cta.click()
+    page.wait_for_function("() => !!window.__closed", polling=100, timeout=10000)
+    assert page.evaluate("window.__closed.reason") == "cta"
+    expect(page.locator(".dt-overlay")).to_have_count(0)
+    expect(page.locator("#filterMyPayLevelPanel")).not_to_have_attribute("hidden", "", timeout=5000)
+    assert seen(page).get("home") == 1
+
+
+def test_full_run_fast(page: Page, base_url: str):
+    errors, console_errors = [], []
+    page.on("pageerror", lambda e: "/tour/" in (e.stack or "") and errors.append(str(e)))
+    page.on("console", lambda m: m.type == "error" and (
+        "/tour/" in m.text or "/tour/" in ((m.location or {}).get("url") or "")) and console_errors.append(m.text))
+    _open_home(page, base_url, speed=20)
+    page.wait_for_function("() => !!window.__closed", polling=100, timeout=15000)
+    assert page.evaluate("window.__closed.reason") == "end"
+    assert errors == [] and console_errors == []
+
+
+def test_plays_once_then_not_again(page: Page, base_url: str):
+    page.add_init_script("Object.defineProperty(navigator, 'webdriver', { get: () => false });")
+    page.goto(f"{base_url}/index.html")
+    page.wait_for_selector(".dt-overlay", state="attached", timeout=15000)
+    page.locator(".dt-skip").click()
+    expect(page.locator(".dt-overlay")).to_have_count(0, timeout=5000)
+    assert seen(page).get("home") == 1
+    page.reload()
+    page.wait_for_function("() => !!window.DepTourLoader", polling=100, timeout=30000)
+    page.wait_for_timeout(3000)
+    assert page.locator(".dt-overlay").count() == 0
+
+
+def test_counter_digits_visible_while_rolling(page: Page, base_url: str):
+    _open_home(page, base_url)
+    page.evaluate("DepTour.goTo(0); DepTour.pause();")
+    page.wait_for_function("() => DepTour.state().sceneIndex === 0", polling=100)
+    page.evaluate("DepTour.seek(7.2)")                # mid-roll of 1,240 -> 86
+    page.wait_for_timeout(100)
+    fills = page.evaluate("""() => [...document.querySelectorAll('.dt-count .dt-odo-slot b')]
+                               .map(b => getComputedStyle(b).webkitTextFillColor || getComputedStyle(b).color)""")
+    assert fills, "the counter should be rolling at 7.2 s"
+    assert all("0)" not in f.replace(" ", "") and f != "transparent" for f in fills), fills
+
+
+def test_level_options_sit_above_the_counter_on_phone(page: Page, base_url: str):
+    page.set_viewport_size({"width": 390, "height": 844})
+    _open_home(page, base_url)
+    page.evaluate("DepTour.goTo(0); DepTour.pause();")
+    page.wait_for_function("() => DepTour.state().sceneIndex === 0", polling=100)
+    page.evaluate("DepTour.seek(3.95)")               # options list open
+    page.wait_for_timeout(100)
+    hit = page.evaluate("""() => [...document.querySelectorAll('.dt-options li')].every(li => {
+      const r = li.getBoundingClientRect();
+      const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return top && li.contains(top);
+    })""")
+    assert hit is True
+
+
+def test_ring_score_on_one_line(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _scene_end(page, 1)
+    rows = page.evaluate("""() => [...document.querySelectorAll('.dt-ring-n')].map(n => {
+      const b = n.querySelector('b').getBoundingClientRect();
+      const range = document.createRange(); range.selectNodeContents(n.lastChild);
+      const pct = range.getBoundingClientRect();
+      return Math.abs((b.top + b.height / 2) - (pct.top + pct.height / 2));
+    })""")
+    assert rows and all(d <= 4 for d in rows), rows
+
+
+def test_ask_scene_is_vertically_centred_on_desktop(page: Page, base_url: str):
+    page.set_viewport_size({"width": 1440, "height": 900})
+    _open_home(page, base_url)
+    _scene_end(page, 1)
+    off = page.evaluate("""() => {
+      const cv = document.querySelector('.dt-canvas').getBoundingClientRect();
+      const top = document.querySelector('.dt-ask').getBoundingClientRect().top;
+      const bottom = Math.max(...[...document.querySelectorAll('.dt-match')].map(m => m.getBoundingClientRect().bottom));
+      return Math.abs((top + bottom) / 2 - (cv.top + cv.height / 2)) / (cv.height / 620);
+    }""")
+    assert off <= 60, off
