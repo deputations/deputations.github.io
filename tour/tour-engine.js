@@ -180,8 +180,10 @@
     fit();
     try { ov.focus({ preventScroll: true }); } catch (e) { ov.focus(); }
 
-    var openTl = track(gsap.timeline());
-    openTl.fromTo(S.backdrop, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out' }, 0)
+    // The opening fade is never paused or sped up: pausing it would leave the
+    // page showing through a transparent overlay. It is still killed on close.
+    S.openTl = gsap.timeline();
+    S.openTl.fromTo(S.backdrop, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out' }, 0)
       .fromTo(chrome, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out' }, 0.15);
 
     if (S.mode === 'steps') return renderStep(0);
@@ -500,6 +502,7 @@
     window.removeEventListener('resize', sess.onResize);
     clearTimeout(sess.resizeTimer);
     sess.tls.forEach(kill);
+    kill(sess.openTl);
     sess.retiring.forEach(function (r) { kill(r.wrap); });
 
     var finished = false;

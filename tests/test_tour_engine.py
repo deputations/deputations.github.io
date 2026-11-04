@@ -218,3 +218,13 @@ def test_unknown_key_resolves_error(page: Page, base_url: str):
     page.evaluate("window.__res = null; DepTour.play('nope').then(r => { window.__res = r; })")
     assert result(page) == "error"
     expect(page.locator(".dt-overlay")).to_have_count(0)
+
+
+def test_pause_during_opening_still_shows_overlay(page: Page, base_url: str):
+    open_engine(page, base_url)
+    register_probe_tour(page)
+    page.evaluate("window.__res = null; DepTour.play('t').then(r => { window.__res = r; }); DepTour.pause();")
+    page.wait_for_timeout(900)
+    opacity = page.evaluate("""() => [getComputedStyle(document.querySelector('.dt-backdrop')).opacity,
+                                      getComputedStyle(document.querySelector('.dt-chrome')).opacity].map(Number)""")
+    assert opacity == [1, 1], opacity
