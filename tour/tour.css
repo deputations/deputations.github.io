@@ -1,0 +1,352 @@
+/* ============================================================
+   tour/tour.css — site tour overlay, chrome and stage.
+   Always the dark cinematic look, in both site themes.
+   Loaded lazily by tour/tour-loader.js only when a tour plays.
+   ============================================================ */
+
+.dt-overlay {
+  --dt-cyan: #22d3ee;
+  --dt-violet: #a78bfa;
+  --dt-pink: #f0abfc;
+  --dt-ink: #02040b;
+  --dt-text: #eaf7ff;
+  --dt-dim: rgba(226, 245, 255, 0.68);
+  --dt-glass: rgba(15, 23, 42, 0.6);
+  --dt-glass-strong: rgba(15, 23, 42, 0.82);
+  --dt-line: rgba(165, 243, 252, 0.18);
+  --dt-head-font: "Unbounded", "Sora", system-ui, sans-serif;
+  --dt-ui-font: "Plus Jakarta Sans", "Sora", system-ui, sans-serif;
+
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  overflow: hidden;
+  isolation: isolate;
+  outline: none;
+  color: var(--dt-text);
+  font-family: var(--dt-ui-font);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  color-scheme: dark;
+}
+.dt-overlay *,
+.dt-overlay *::before,
+.dt-overlay *::after { box-sizing: border-box; }
+
+/* ---------- layers ---------- */
+.dt-backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% 38%, rgba(10, 18, 40, 0.74), rgba(2, 4, 11, 0.95) 70%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  backdrop-filter: blur(16px) saturate(120%);
+}
+.dt-backdrop::after {                 /* faint grid floor for depth */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(165, 243, 252, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(165, 243, 252, 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(70% 60% at 50% 60%, #000 20%, transparent 75%);
+  mask-image: radial-gradient(70% 60% at 50% 60%, #000 20%, transparent 75%);
+}
+
+.dt-aurora { position: absolute; inset: -20%; pointer-events: none; filter: blur(70px); }
+.dt-aurora i { position: absolute; border-radius: 50%; mix-blend-mode: screen; will-change: transform; }
+.dt-aurora-a {
+  width: 58vmax; height: 58vmax; left: 6%; top: 0%;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.42), transparent 64%);
+  animation: dtDriftA 18s ease-in-out infinite alternate;
+}
+.dt-aurora-b {
+  width: 62vmax; height: 62vmax; right: 2%; bottom: -6%;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.4), transparent 64%);
+  animation: dtDriftB 22s ease-in-out infinite alternate;
+}
+.dt-aurora-c {
+  width: 30vmax; height: 30vmax; left: 40%; top: 34%;
+  background: radial-gradient(circle, rgba(240, 171, 252, 0.22), transparent 66%);
+  animation: dtDriftC 26s ease-in-out infinite alternate;
+}
+@keyframes dtDriftA { to { transform: translate3d(9vw, 7vh, 0) scale(1.14); } }
+@keyframes dtDriftB { to { transform: translate3d(-8vw, -6vh, 0) scale(1.1); } }
+@keyframes dtDriftC { to { transform: translate3d(-6vw, 5vh, 0) scale(1.25); } }
+
+/* ---------- stage + camera ---------- */
+.dt-stage { position: absolute; left: 0; right: 0; top: 118px; bottom: 84px; }
+.dt-canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1100px;
+  height: 620px;
+  transform-origin: 50% 50%;
+  perspective: 1600px;
+  perspective-origin: 50% 40%;
+}
+.dt-camera {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+.dt-scene { position: absolute; inset: 0; transform-style: preserve-3d; }
+.dt-cursor-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+
+/* ---------- intro headline ---------- */
+.dt-headline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  padding: 0 6vw;
+  text-align: center;
+  pointer-events: none;
+  font-family: var(--dt-head-font);
+  font-weight: 700;
+  font-size: clamp(30px, 5.4vw, 72px);
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  color: #f6fdff;
+  text-shadow: 0 0 34px rgba(34, 211, 238, 0.35), 0 0 80px rgba(167, 139, 250, 0.25);
+}
+.dt-word { display: inline-block; white-space: nowrap; }
+.dt-ch { display: inline-block; will-change: transform, opacity, filter; }
+
+/* ---------- chrome ---------- */
+.dt-chrome { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+.dt-chrome button { pointer-events: auto; }
+
+.dt-head {
+  position: absolute;
+  left: 40px;
+  right: 200px;
+  top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: opacity 0.35s ease;
+}
+.dt-head.is-hidden { opacity: 0; }
+.dt-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font: 700 11px/1 "Sora", system-ui, sans-serif;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+}
+.dt-label:not(:empty)::before {
+  content: "";
+  width: 26px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--dt-cyan), var(--dt-violet));
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.8);
+}
+.dt-title {
+  margin: 0;
+  font-family: var(--dt-head-font);
+  font-weight: 700;
+  font-size: clamp(20px, 2.5vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -0.005em;
+  color: #f8fdff;
+  text-shadow: 0 0 28px rgba(34, 211, 238, 0.28);
+}
+
+.dt-skip,
+.dt-steps-nav button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--dt-line);
+  background: var(--dt-glass);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  color: var(--dt-text);
+  font: 600 13px/1 var(--dt-ui-font);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.dt-skip { position: absolute; top: 26px; right: 32px; }
+.dt-skip:hover,
+.dt-steps-nav button:hover:not(:disabled) {
+  border-color: rgba(34, 211, 238, 0.7);
+  box-shadow: 0 0 24px -4px rgba(34, 211, 238, 0.55);
+}
+
+.dt-foot {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.dt-badge {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px dashed rgba(165, 243, 252, 0.32);
+  background: rgba(15, 23, 42, 0.5);
+  font: 600 11px/1 var(--dt-ui-font);
+  letter-spacing: 0.06em;
+  color: var(--dt-dim);
+  white-space: nowrap;
+}
+.dt-dots { display: flex; align-items: center; gap: 10px; }
+.dt-dots button {
+  width: 26px;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+  transition: width 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;
+}
+.dt-dots button.is-done { background: rgba(34, 211, 238, 0.55); }
+.dt-dots button.is-active {
+  width: 46px;
+  background: linear-gradient(90deg, var(--dt-cyan), var(--dt-violet));
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.6);
+}
+.dt-off {
+  padding: 8px 4px;
+  border: 0;
+  background: none;
+  color: var(--dt-dim);
+  font: 600 12px/1 var(--dt-ui-font);
+  text-decoration: underline;
+  text-decoration-color: rgba(226, 245, 255, 0.3);
+  text-underline-offset: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dt-off:hover { color: #fff; text-decoration-color: var(--dt-cyan); }
+
+.dt-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.dt-progress i {
+  position: absolute;
+  inset: 0;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--dt-cyan), var(--dt-violet), var(--dt-pink));
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.8);
+}
+
+.dt-overlay button:focus-visible { outline: 2px solid var(--dt-cyan); outline-offset: 3px; }
+
+/* ---------- finale ---------- */
+.dt-finale { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; pointer-events: none; }
+.dt-cta {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 34px;
+  border: 0;
+  border-radius: 999px;
+  pointer-events: auto;
+  cursor: pointer;
+  color: var(--dt-ink);
+  font: 700 clamp(16px, 1.6vw, 19px)/1 "Sora", system-ui, sans-serif;
+  letter-spacing: 0.01em;
+  background: linear-gradient(110deg, var(--dt-cyan), #a5f3fc 42%, var(--dt-violet));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 20px 60px -12px rgba(34, 211, 238, 0.75),
+    0 0 120px -18px rgba(167, 139, 250, 0.85);
+}
+.dt-cta::after {                      /* travelling shine */
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -40%;
+  width: 30%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  transform: skewX(-18deg);
+  animation: dtShine 2.6s ease-in-out infinite;
+}
+.dt-cta-arrow { font-size: 1.2em; transition: transform 0.25s ease; }
+.dt-cta:hover .dt-cta-arrow { transform: translateX(4px); }
+@keyframes dtShine { 0%, 35% { left: -40%; } 75%, 100% { left: 130%; } }
+
+/* ---------- steps view (reduced motion) ---------- */
+.dt-steps {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 6;
+  width: min(540px, calc(100vw - 32px));
+  transform: translate(-50%, -50%);
+  padding: 34px 32px 26px;
+  border-radius: 24px;
+  border: 1px solid var(--dt-line);
+  background: var(--dt-glass);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.7), 0 0 60px -30px rgba(34, 211, 238, 0.6);
+}
+.dt-steps-label {
+  font: 700 11px/1 "Sora", system-ui, sans-serif;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+}
+.dt-steps h3 {
+  margin: 14px 0 10px;
+  font-family: var(--dt-head-font);
+  font-size: 24px;
+  line-height: 1.2;
+  color: #f8fdff;
+}
+.dt-steps p { margin: 0; font-size: 16px; line-height: 1.6; color: var(--dt-dim); }
+.dt-steps-nav { margin-top: 26px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.dt-steps-nav button:disabled { opacity: 0.4; cursor: default; }
+.dt-steps-nav .dt-next {
+  border-color: transparent;
+  color: var(--dt-ink);
+  background: linear-gradient(110deg, var(--dt-cyan), var(--dt-violet));
+}
+.dt-steps-count { font: 600 12px/1 var(--dt-ui-font); color: var(--dt-dim); }
+.dt-mode-steps .dt-aurora i { animation: none; }
+
+/* ---------- phone layout ---------- */
+.dt-is-tall .dt-head { left: 18px; right: 104px; top: 20px; gap: 8px; }
+.dt-is-tall .dt-label { font-size: 10px; letter-spacing: 0.24em; }
+.dt-is-tall .dt-title { font-size: 19px; }
+.dt-is-tall .dt-skip { top: 16px; right: 14px; padding: 9px 14px; font-size: 12px; }
+.dt-is-tall .dt-foot { left: 14px; right: 14px; bottom: 18px; gap: 10px; }
+.dt-is-tall .dt-badge { padding: 6px 9px; font-size: 10px; }
+.dt-is-tall .dt-dots { gap: 6px; }
+.dt-is-tall .dt-dots button { width: 16px; }
+.dt-is-tall .dt-dots button.is-active { width: 30px; }
+.dt-is-tall .dt-off { font-size: 11px; }
+.dt-is-tall .dt-cta { padding: 17px 24px; }
+
+/* ---------- motion preferences ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .dt-aurora i,
+  .dt-cta::after { animation: none; }
+}
