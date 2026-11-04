@@ -47,6 +47,7 @@ table_of_contents:
 - theme bootstrap: inline script in `<head>` reads
   `localStorage.deputation_theme_v1`, sets `data-theme` to avoid FOUC
 - shared injector: `site-widgets.js` (deferred); every page loads it
+- site tour: `tour/tour-loader.js` (deferred, `data-tour=<pageKey>`) on pages with a demo; it lazy-loads `vendor/gsap.min.js` + `tour/` only when a tour plays (design: docs/superpowers/specs/2026-11-04-site-tour-design.md)
 - icon sprite: inline `<svg defs>` at top of every HTML (no CDN)
 - fonts: Google Fonts (Plus Jakarta Sans, Sora, Unbounded); render-blocking
 
@@ -178,6 +179,8 @@ Service worker specifics:
 | `sw_sid` | site-widgets | string UUID | counter per-tab session id |
 | `sw_voted_<page>` | site-widgets | `"up"` \| `"down"` | like/dislike per page |
 | `sw_updated` | site-widgets | date string | "Updated on" chip |
+| `dep_tour_seen_v1` | every page with a tour | `{<pageKey>: 1}` | page's first-visit tour already played |
+| `dep_tour_off_v1` | every page with a tour | `"1"` | visitor chose "Don't show tours again" |
 
 Namespace prefixes: `deputation*`, `deputations*`, `dep_*`, `sw_*`. Do not
 introduce new prefixes without updating this table.
