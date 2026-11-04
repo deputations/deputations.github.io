@@ -104,7 +104,8 @@ independently. "Tall" = portrait phone layout, designed separately (not scaled).
 vendor/gsap.min.js            GSAP 3.15.1 core (UMD), vendored like three.module.js
 tour/tour-loader.js           ~2 KB, deferred on each page; decides + lazy-loads
 tour/tour.css                 overlay, chrome, cursor, glass, tall layout
-tour/tour-engine.js           player: overlay DOM, master timeline, camera, kit
+tour/tour-engine.js           player: overlay DOM, scene timelines, chrome, layout, closing
+tour/tour-kit.js              toolbox scenes draw with: cursor, tap, type, odometer, camera, burst, sweep, sample data
 tour/scenes/home.js           scenes for index.html
 tour/scenes/map.js            scenes for india-map.html (+ reused by home scene 3)
 tour/scenes/mydep.js
@@ -112,22 +113,25 @@ tour/scenes/defex.js
 tour/scenes/report.js
 tour/tour-map.json            pre-baked map geometry (~50 KB target, < 80 KB hard cap)
 scripts/build_tour_map.py     builds tour-map.json from geo/*.geojson
-tests/test_tour.py            Playwright smoke tests (existing suite conventions)
+tests/test_tour_*.py          Playwright smoke tests (existing suite conventions):
+                              test_tour_map, _loader, _engine, _kit, _map_scene, _home; shared helpers in tests/tour_helpers.py
 ```
 
 ### 4.1 Units and interfaces
 
 **tour-loader.js** — the only always-loaded piece.
 - Read by `<script defer src="/tour/tour-loader.js?v=1" data-tour="home"></script>`.
-- Injects a small floating "▶ How this works" button (bottom-left, above the
-  footer trust line, never covering it).
+- Injects a small floating "▶ How this works" button (bottom-right — bottom-left
+  is the site's visitor counter); it fades out while the footer trust line is on
+  screen, so it never covers it.
 - Auto-play rule, all must hold: page key not in `dep_tour_seen_v1`;
   `dep_tour_off_v1` not set; `navigator.webdriver` is false; not
   `prefers-reduced-motion: reduce`. `?tour=play` forces play and bypasses all four.
 - Starts after `window.load` plus one idle callback (fallback 800 ms), so the
   page's own load and the WebGL hero finish first.
 - On play: loads, in order, `vendor/gsap.min.js`, `tour/tour.css`,
-  `tour/tour-engine.js`, `tour/scenes/<key>.js` (and `map.js` for home), then
+  `tour/tour-engine.js`, `tour/tour-kit.js`, `tour/scenes/<key>.js` (and `map.js`
+  before `home.js` for home), then
   calls `DepTour.play(key)`. A load failure aborts silently and leaves the page untouched.
 
 **tour-engine.js** — exposes `window.DepTour`:
