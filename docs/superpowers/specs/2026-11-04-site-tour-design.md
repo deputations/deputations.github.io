@@ -34,7 +34,7 @@ Sora / Plus Jakarta Sans for UI text).
 
 | element | behaviour |
 |---|---|
-| Opening | page behind blurs (backdrop-filter) and darkens; a cyan→violet aurora blooms; headline assembles letter by letter, blur→sharp, with slight letter-spacing collapse |
+| Opening | page behind blurs (backdrop-filter) and darkens; a cyan→violet aurora blooms; headline assembles letter by letter, blur→sharp, with slight letter-spacing collapse; then an optional full-screen brand wordmark |
 | Stage | glass panels in a `perspective` container; a "camera" (one transform on the stage root) pushes in, tilts (rotateX/Y ≤ 12°) and glides between panels; 2–3 depth layers move at different rates for parallax |
 | Cursor | glowing orb with a short light trail; each tap emits a ripple ring and a spark |
 | Numbers | odometer-style rolling digits |
@@ -51,23 +51,46 @@ so the browser can run it on the GPU.
 Timings are targets; each scene is its own GSAP timeline so they can be tuned
 independently. "Tall" = portrait phone layout, designed separately (not scaled).
 
-### 3.1 Home (`index.html`) — key `home`, ~40 s, three scenes
+### 3.1 Home (`index.html`) — key `home`, ~75 s (revised 2026-11-05 with the owner)
 
-1. **"Only the posts you can apply for"** (~14 s)
-   - ~120 mini vacancy cards stand in a tilted 3D wall; counter shows 1,240.
-   - Cursor opens "Display deputations for me" → picks Pay Level 7 → types 4 years.
-   - Signature moment: ineligible cards flip and fall away into depth blur;
-     survivors fly into a neat list; counter rolls 1,240 → 86.
-2. **"Just ask"** (~12 s)
-   - AI search box; query types itself: "Level 8 posts in Delhi closing this month".
-   - Signature moment: "Level 8", "Delhi", "this month" detach as glowing
-     particles and land as filter chips (Level 8 · Delhi · Closes ≤ 30 days).
-   - "AI-ranked matches" shimmer; three cards slide in with match-score rings filling.
-3. **"See India's vacancies on a map"** (~10 s, teaser)
-   - India map draws itself stroke by stroke, tilts back like a hologram table,
-     states glow as a heat map; camera dives toward one state; pin drops with a light beam.
-   - Finale: burst + CTA **"Try it with your pay level"** → closes the tour,
-     scrolls to and opens `#filterMyPayLevelBtn`.
+Every Home feature gets its own short step; the other pages get only a
+"small mention" montage at the end (their full demos live on their own pages).
+Sample data follows the site's feeder-grade eligibility rule and every number
+is labelled as sample.
+
+0. **Intro** (~6 s): *"Your one stop solution to Deputation"* assembles letter
+   by letter, then the brand **ALL Deputations.com** crashes in full-screen
+   (fitted to ~90 % of the viewport width; on phones "ALL" over
+   "Deputations.com"), a light sweep crosses it and it holds long enough to be
+   remembered before flying into step 1.
+1. **"Only the posts you can apply for"** (~11 s): card wall; Display
+   deputations for me → Level 7 → 4 years; ineligible cards fall away;
+   survivors ("Open to L-7 · 3 yrs") fly into a list; 1,240 → 86.
+2. **"Narrow it down"** (~8 s): Ministry / Organisation / Location dropdown
+   pills and the quick chips (New, Closing in 7 days, Delhi/NCR, Closing today).
+   The cursor ticks two ministries, then Delhi/NCR, then Closing in 7 days;
+   result rows collapse away and the count rolls down at each pick.
+3. **"Just ask"** (~10 s): as before ("Understood" tags, AI-ranked matches).
+4. **"Sort and switch views"** (~9 s): a results table; the cursor clicks the
+   "Days left" header, its arrow flips and the rows glide into the new order;
+   then the view toggle morphs the rows into cards (each row flies and
+   reshapes into its card).
+5. **"Save posts you like"** (~6 s): tapping a row's heart fills it with a
+   burst; a heart arcs up to the header bookmark icon and its badge ticks 0 → 1.
+6. **"Never miss a vacancy"** (~7 s): the header bell switches alerts on; a
+   phone slides in and a push alert drops down on it ("New · Level 8 · Delhi").
+7. **"Light or dark — your choice"** (~6 s): a mini page flips to the light
+   theme with a circular wipe from the theme toggle, then wipes back.
+8. **"Explore more pages"** (~16 s): each page appears large for ~2 s with a
+   mini animation, then shrinks into a grid slot (wide 3 × 2; phone 2 × 3):
+   India Map (map draws itself) → top-left; DeFeX (gauge needle sweeps) →
+   top-centre; My Deputation (tracker steps) → top-right; Report Vacancy (PDF
+   drops in) → bottom-left; Rules (pages flip) → bottom-centre; FAQs (a
+   question expands) → bottom-right.
+9. **Finale**: the grid stays; each card is a real link to its page; CTA
+   **"Try it with your pay level"** sits below it and opens `#filterMyPayLevelBtn`.
+
+The India map journey (former Home step 3) moves to the India Map page tour (§3.2).
 
 ### 3.2 India Map (`india-map.html`) — key `map`, ~18 s
 
@@ -106,8 +129,10 @@ tour/tour-loader.js           ~2 KB, deferred on each page; decides + lazy-loads
 tour/tour.css                 overlay, chrome, cursor, glass, tall layout
 tour/tour-engine.js           player: overlay DOM, scene timelines, chrome, layout, closing
 tour/tour-kit.js              toolbox scenes draw with: cursor, tap, type, odometer, camera, burst, sweep, sample data
-tour/scenes/home.js           scenes for index.html
-tour/scenes/map.js            scenes for india-map.html (+ reused by home scene 3)
+tour/scenes/home.js           Home steps 1–3 + registration of the Home tour
+tour/scenes/home-more.js      Home steps 4–7 (sort/views, bookmark, alerts, theme)
+tour/scenes/pages.js          Home step 8: the page montage (mini map uses map.js data)
+tour/scenes/map.js            map helpers + the map journey (India Map page tour)
 tour/scenes/mydep.js
 tour/scenes/defex.js
 tour/scenes/report.js
