@@ -26,6 +26,13 @@ counter_convention:
 
 ## [Unreleased]
 
+### Changed - Home tour shows the normal search before AI search (2026-11-05)
+Step 3 is now "Search anything — or just ask". It first shows the normal search
+box: what it searches (post, organisation, ministry, location, level,
+qualification, short forms), a short form ("UDC" finds Upper Division Clerk
+posts) and a forgiven typo ("acountant" finds Accountant posts). Then "Even
+better: just ask" shows the AI search as before. Tour assets move to `?v=4`.
+
 ### Changed - reduce-motion visitors get the tour as steps (2026-11-05)
 Every browser gets each page's tour once, whether or not it visited before the
 tours existed. Visitors with "Reduce motion" turned on were skipped; they now

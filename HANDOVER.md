@@ -7337,3 +7337,23 @@ focus:          reach visitors the tour auto-play skips (reduce motion)
 - Any tour asset change: bump `?v=` in the loader's `VERSION` and every page's loader tag (test `test_tour_asset_version_bumped_and_consistent`).
 - To see the tour as a first-time visitor, use a private window; `?tour=play` and Skip mark it seen.
 
+## session shq-2026-11-05-tour-search
+```
+started:        2026-11-05
+ended:          2026-11-05
+model:          claude-opus-5-5
+driver:         solo
+branch:         feature/tour-search
+starting_head:  4ec17d7
+focus:          Home tour: show the normal search, then AI search as the even better option
+```
+
+### owner's brief
+- "Show the normal search feature as well, it is very powerful; after that show AI search as an even better option." Clubbed into the existing AI step.
+
+### work done
+- `tour/scenes/home.js`: `classicSearch()` (box, rotating hint, "Searches" strip, "UDC" short form, "acountant" typo, sample results) runs first in the `ask` step; the AI part is a sub-timeline added at `CLASSIC_END` (7.6 s) under an "Even better: just ask" chip. CSS `.dt-qs*`, `.dt-even`. `?v=4`.
+
+### gotchas for next session
+- The search demo mirrors `shared/vacancy-filters.js` (`fuzzyIncludes`: one typo for single-word queries of 4+ letters; every word must match for multi-word queries; `search_text` carries short forms). Keep the demo truthful if that changes.
+

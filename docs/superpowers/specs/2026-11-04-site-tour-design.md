@@ -70,7 +70,13 @@ is labelled as sample.
    pills and the quick chips (New, Closing in 7 days, Delhi/NCR, Closing today).
    The cursor ticks two ministries, then Delhi/NCR, then Closing in 7 days;
    result rows collapse away and the count rolls down at each pick.
-3. **"Just ask"** (~10 s): as before ("Understood" tags, AI-ranked matches).
+3. **"Search anything — or just ask"** (~19 s; owner, 2026-11-05 evening): first
+   the normal search, as on the page: the box with its rotating "Search by post
+   name / location / Ministry" hint and a strip of what it searches (Post,
+   Organisation, Ministry, Location, Level, Qualification, Short forms); it types
+   "UDC" (short form → Upper Division Clerk posts) and then "acountant" (typo
+   forgiven → Accountant posts). Then **"Even better: just ask"**: the AI search
+   as before ("Understood" tags, AI-ranked matches).
 4. **"Sort and switch views"** (~9 s): a results table; the cursor clicks the
    "Days left" header, its arrow flips and the rows glide into the new order;
    then the view toggle morphs the rows into cards (each row flies and

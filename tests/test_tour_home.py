@@ -12,7 +12,8 @@ from playwright.sync_api import Page, expect
 
 from tests.tour_helpers import close_and_settle, no_hero_wave, seen  # noqa: F401
 
-TITLES = ["Find deputation opportunities matching your eligibility", "Narrow it down", "Just ask", "Sort and switch views",
+TITLES = ["Find deputation opportunities matching your eligibility", "Narrow it down", "Search anything — or just ask",
+          "Sort and switch views",
           "Save posts you like", "Never miss a vacancy", "Light or dark — your choice", "Explore more pages"]
 HEADLINE = "Your one stop solution to Deputation"
 BRAND = "ALL Deputations.com"
@@ -522,3 +523,62 @@ def test_whatsapp_bar_opens_the_contact_page(page: Page, base_url: str):
     _to_finale(page)
     page.locator(WA).click()
     page.wait_for_url("**/contact.html", timeout=15000)
+
+
+# ---- owner, 2026-11-05: the normal search, then AI search as the even better option ----
+
+def _text(page: Page, sel: str) -> str:
+    return page.evaluate(f"(document.querySelector({sel!r}) || {{}}).textContent || ''")
+
+
+def _at(page: Page, index: int, t: float) -> None:
+    page.evaluate(f"DepTour.goTo({index}); DepTour.pause();")
+    page.wait_for_function(f"() => DepTour.state().sceneIndex === {index} && DepTour.state().phase === 'scene'",
+                           polling=100)
+    page.evaluate(f"DepTour.seek({t})")
+    page.wait_for_timeout(150)
+
+
+def _op(page: Page, sel: str) -> float:
+    return page.evaluate(f"+getComputedStyle(document.querySelector('{sel}')).opacity")
+
+
+def test_normal_search_comes_first_then_ai_search(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _at(page, 2, 3.9)                                   # a short form
+    assert _text(page, ".dt-qs-text") == "UDC"
+    rows = page.evaluate("[...document.querySelectorAll('.dt-qs-row')].map(r => r.textContent)")
+    assert len(rows) == 3 and all("Upper Division Clerk" in r for r in rows), rows
+    assert "Short form" in _text(page, ".dt-qs-tag")
+    assert _op(page, ".dt-ask") < 0.1                   # AI search not shown yet
+    _at(page, 2, 6.6)                                   # a typo
+    assert _text(page, ".dt-qs-text") == "acountant"
+    rows = page.evaluate("[...document.querySelectorAll('.dt-qs-row')].map(r => r.textContent)")
+    assert rows and all("Accountant" in r for r in rows), rows
+    assert "Typo" in _text(page, ".dt-qs-tag")
+    fields = _text(page, ".dt-qs-fields")
+    for f in ("Post", "Organisation", "Ministry", "Location", "Level", "Qualification", "Short form"):
+        assert f in fields, fields
+    _scene_end(page, 2)                                  # then AI search, as the even better option
+    assert _op(page, ".dt-qs") < 0.05
+    assert _text(page, ".dt-even") == "Even better: just ask" and _op(page, ".dt-even") > 0.9
+    assert _op(page, ".dt-ask") > 0.9 and page.locator(".dt-match").count() == 3
+
+
+def test_search_step_fits_on_phone(page: Page, base_url: str):
+    page.set_viewport_size({"width": 390, "height": 844})
+    _open_home(page, base_url)
+    for t in (3.9, 6.6, None):
+        if t is None:
+            _scene_end(page, 2)
+        else:
+            _at(page, 2, t)
+        out = page.evaluate("""() => {
+          const cv = document.querySelector('.dt-canvas').getBoundingClientRect();
+          return [...document.querySelectorAll('.dt-qs-box, .dt-qs-fields, .dt-qs-results, .dt-even, .dt-ask, .dt-match')]
+            .filter(e => +getComputedStyle(e).opacity > 0.5)
+            .map(e => [e.className, e.getBoundingClientRect()])
+            .filter(([, r]) => r.left < cv.left - 2 || r.right > cv.right + 2 || r.top < cv.top - 2 || r.bottom > cv.bottom + 2)
+            .map(([c]) => c);
+        }""")
+        assert out == [], (t, out)

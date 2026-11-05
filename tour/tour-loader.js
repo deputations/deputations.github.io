@@ -6,7 +6,7 @@
    the engine, the kit and the page's scenes only when a demo plays.
 
    Wire on a page with:
-     <script defer src="/tour/tour-loader.js?v=3" data-tour="home"></script>
+     <script defer src="/tour/tour-loader.js?v=4" data-tour="home"></script>
    A page with its own async start-up (data fetch, intro animation) adds
    data-tour-ready="<document event>": auto-play then waits for that event
    (at most READY_WAIT ms after load) so the tour never covers the page's
@@ -29,7 +29,7 @@
   if (READY_EVENT) document.addEventListener(READY_EVENT, function () { pageReady = true; }, { once: true });
   var SEEN_KEY = 'dep_tour_seen_v1';
   var OFF_KEY = 'dep_tour_off_v1';
-  var VERSION = '?v=3';
+  var VERSION = '?v=4';
   var CORE = ['/vendor/gsap.min.js', '/tour/tour.css', '/tour/tour-engine.js', '/tour/tour-kit.js'];
   var SCENES = {
     home: ['/tour/scenes/map.js', '/tour/scenes/pages.js', '/tour/scenes/home-more.js', '/tour/scenes/home.js'],
