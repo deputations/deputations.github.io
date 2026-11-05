@@ -301,10 +301,107 @@
   var CHIPS = ['Level 8', 'Delhi', 'Closes ≤ 30 days'];
   var SCORES = [96, 91, 87];
 
+  /* ---------- 3a. the normal search, shown before AI search ---------- */
+  // Mirrors the site's search box ("Search by post name / location / Ministry…",
+  // shared/vacancy-filters.js): it searches post, organisation, ministry,
+  // location, level, qualifications and short forms, and forgives one typo.
+  var CLASSIC_END = 7.6;
+  var QS_ROWS = [
+    { tag: 'Short form: UDC = Upper Division Clerk', count: 18, hit: 'Upper Division Clerk', rows: [
+      ['Upper Division Clerk', 'Ministry of Home Affairs', 'Hyderabad', 4],
+      ['Upper Division Clerk', 'Central Water Commission', 'New Delhi', 4],
+      ['Upper Division Clerk', 'Indian Council of Agricultural Research', 'Pune', 4]] },
+    { tag: 'Typo forgiven: acountant → accountant', count: 27, hit: 'Accountant', rows: [
+      ['Accountant', 'Indian Council for Cultural Relations', 'New Delhi', 5],
+      ['Junior Accountant', 'Central Public Works Department', 'Kolkata', 5],
+      ['Senior Accountant', 'Defence Accounts Department', 'Pune', 6]] }
+  ];
+  var QS_WORDS = ['post name', 'location', 'Ministry'];
+  var QS_FIELDS = ['Post', 'Organisation', 'Ministry', 'Location', 'Level', 'Qualification', 'Short forms'];
+  var SEARCH_ICO = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/>' +
+    '<path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+
+  function classicSearch(stage, kit, tall) {
+    var L = tall
+      ? { box: [10, 36, 370, 56], fields: [10, 104, 370], res: [10, 186, 370], even: [10, 2] }
+      : { box: [110, 132, 880, 64], fields: [110, 212, 880], res: [110, 262, 880], even: [110, 92] };
+    function at(el, xy) { el.style.left = xy[0] + 'px'; el.style.top = xy[1] + 'px'; if (xy[2]) el.style.width = xy[2] + 'px'; if (xy[3]) el.style.height = xy[3] + 'px'; }
+    var qs = kit.el('div', 'dt-qs' + (tall ? ' is-tall' : ''), null, stage);
+    var qbox = kit.el('div', 'dt-qs-box', null, qs); at(qbox, L.box);
+    qbox.innerHTML = '<span class="dt-qs-ico">' + SEARCH_ICO + '</span><span class="dt-qs-field">' +
+      '<span class="dt-qs-ph">Search by <b>' + QS_WORDS.map(function (w) { return '<i>' + w + '</i>'; }).join('') + '</b></span>' +
+      '<span class="dt-qs-text"></span><span class="dt-qs-caret" aria-hidden="true"></span></span>';
+    var ph = qbox.querySelector('.dt-qs-ph'), words = qbox.querySelectorAll('.dt-qs-ph i');
+    var typedEl = qbox.querySelector('.dt-qs-text'), caret = qbox.querySelector('.dt-qs-caret');
+    var fields = kit.el('div', 'dt-qs-fields', '<span class="dt-qs-fk">Searches</span>' +
+      QS_FIELDS.map(function (f) { return '<i>' + f + '</i>'; }).join(''), qs); at(fields, L.fields);
+    var res = kit.el('div', 'dt-qs-results', '<div class="dt-qs-head"><b class="dt-qs-count"></b><span class="dt-qs-tag"></span></div>' +
+      '<div class="dt-qs-rows"></div>', qs); at(res, L.res);
+    var countEl = res.querySelector('.dt-qs-count'), tagEl = res.querySelector('.dt-qs-tag'), rowsEl = res.querySelector('.dt-qs-rows');
+    var even = kit.el('div', 'dt-even', '<i aria-hidden="true"></i>Even better: just ask', stage); at(even, L.even);
+
+    // What is typed, and which results show, are state the timeline sets
+    // (accessor properties, so seeking renders the right frame).
+    var Q = ['UDC', 'acountant'];
+    function renderTyped(x) {
+      var t = x <= 1 ? Q[0].slice(0, Math.round(x * Q[0].length))
+            : x < 2 ? Q[0]
+            : Q[1].slice(0, Math.round(Math.min(1, x - 2) * Q[1].length));
+      typedEl.textContent = t;
+      ph.style.visibility = t ? 'hidden' : 'visible';
+      qbox.classList.toggle('is-sel', x > 1.5 && x < 2);
+    }
+    function renderRows(v) {
+      var set = QS_ROWS[v - 1];
+      if (!set) { countEl.textContent = ''; tagEl.textContent = ''; rowsEl.innerHTML = ''; return; }
+      countEl.textContent = set.count + ' sample vacancies';
+      tagEl.textContent = set.tag;
+      rowsEl.innerHTML = set.rows.map(function (r) {
+        return '<div class="dt-qs-row"><span class="dt-qs-main"><b>' + esc(r[0]).replace(set.hit, '<mark>' + set.hit + '</mark>') +
+          '</b><span>' + esc(r[1]) + ' · ' + esc(r[2]) + '</span></span><i class="dt-qs-lvl">Level-' + r[3] + '</i></div>';
+      }).join('');
+    }
+    var typed = { _v: 0 }, shown = { _v: 0 };
+    Object.defineProperty(typed, 'v', { get: function () { return this._v; }, set: function (x) { this._v = x; renderTyped(x); } });
+    Object.defineProperty(shown, 'v', { get: function () { return this._v; }, set: function (x) { this._v = Math.round(x); renderRows(this._v); } });
+    renderTyped(0); renderRows(0);
+
+    var tl = gsap.timeline();
+    tl.fromTo(qbox, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, 0)
+      .fromTo(fields, { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.25)
+      .fromTo(fields.querySelectorAll('i'), { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.06 }, 0.3)
+      .set(words, { opacity: 0, yPercent: 60 }, 0)
+      .set(words[0], { opacity: 1, yPercent: 0 }, 0);
+    for (var w = 1; w < words.length; w++) {
+      tl.to(words[w - 1], { opacity: 0, yPercent: -60, duration: 0.25 }, 0.45 + w * 0.5)
+        .to(words[w], { opacity: 1, yPercent: 0, duration: 0.25 }, 0.5 + w * 0.5);
+    }
+    tl.add(kit.cursorTo(qbox, { duration: 0.6 }), 1.5)
+      .add(kit.tap(qbox), 2.1)
+      .set(caret, { visibility: 'visible' }, 2.15)
+      .to(typed, { v: 1, duration: 0.45, ease: 'none' }, 2.3)
+      .set(shown, { v: 1 }, 2.8)
+      .fromTo(res, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' }, 2.8)
+      .fromTo(rowsEl, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 }, 2.9)
+      .fromTo(tagEl, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.35, ease: 'back.out(2)' }, 3.1)
+      .add(kit.sweep(res), 3.3)
+      .to(typed, { v: 1.75, duration: 0.01 }, 4.4)                     // select all…
+      .to(typed, { v: 2, duration: 0.01 }, 4.6)                        // …and type a typo
+      .to(typed, { v: 3, duration: 0.7, ease: 'none' }, 4.65)
+      .set(shown, { v: 2 }, 5.45)
+      .fromTo(rowsEl, { opacity: 0.2, y: 10 }, { opacity: 1, y: 0, duration: 0.35, immediateRender: false }, 5.45)
+      .fromTo(tagEl, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.35, ease: 'back.out(2)', immediateRender: false }, 5.6)
+      .to(qs, { opacity: 0, y: -18, duration: 0.4, ease: 'power2.in' }, 6.9)
+      .fromTo(even, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' }, 7.3)
+      .add(kit.sweep(even), 7.7);
+    return tl;
+  }
+
   var ask = {
     key: 'ask',
-    title: 'Just ask',
-    summary: 'Type what you want in plain words — AI understands it and ranks the best matches.',
+    title: 'Search anything — or just ask',
+    summary: 'Search by post, department, place, level or short forms, and typos are fine. ' +
+      'Even better: just ask in plain words, and AI ranks the best matches.',
     build: function (stage, kit) {
       var tall = kit.layout === 'tall';
       var s = kit.sample;
@@ -314,7 +411,7 @@
         return v.location === 'Delhi' && v.payLevel === 8 && v.closes.slice(0, 7) === month;
       }).sort(function (a, b) { return a.closes < b.closes ? -1 : 1; }).slice(0, 3);
       var L = tall
-        ? { box: [10, 6, 370, 84], chips: [10, 104, 370], label: [10, 196], list: [10, 228, 370] }
+        ? { box: [10, 36, 370, 84], chips: [10, 134, 370], label: [10, 226], list: [10, 258, 370] }
         : { box: [110, 132, 880, 70], chips: [110, 226, 880], label: [110, 300], list: [110, 336, 880] };
 
       var box = kit.el('div', 'dt-ask' + (tall ? ' is-tall' : ''), null, stage);
@@ -367,13 +464,13 @@
       });
       gsap.set(sparks.map(function (o) { return o.el; }), { opacity: 0, xPercent: -50, yPercent: -50 });
 
-      var tl = gsap.timeline();
-      tl.fromTo(box, { opacity: 0, y: 24, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: 'power3.out' }, 0)
+      var ai = gsap.timeline();
+      ai.fromTo(box, { opacity: 0, y: 24, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: 'power3.out' }, 0)
         .add(kit.cursorTo(box, { duration: 0.7 }), 0.45)
         .add(kit.tap(box), 1.15)
         .add(kit.type(text, q, { cps: 22 }), 1.25);
       var typed = 1.25 + q.length / 22;
-      tl.to(text, { opacity: 0, duration: 0.3 }, typed + 0.2)
+      ai.to(text, { opacity: 0, duration: 0.3 }, typed + 0.2)
         .fromTo(marked, { opacity: 0 }, { opacity: 1, duration: 0.3 }, typed + 0.2)
         .fromTo(marks, { '--dt-m': 0 }, { '--dt-m': 1, duration: 0.4, stagger: 0.12 }, typed + 0.3);
       var flyAt = typed + 0.75;
@@ -382,26 +479,29 @@
         function A() { return a || (a = localCentre(o.from, stage, kit)); }
         function B() { return b || (b = localCentre(o.to, stage, kit)); }
         var jitter = (o.k - PER / 2) * 3;
-        tl.fromTo(o.el, { x: function () { return A().x + jitter; }, y: function () { return A().y; }, opacity: 1, scale: 1 },
+        ai.fromTo(o.el, { x: function () { return A().x + jitter; }, y: function () { return A().y; }, opacity: 1, scale: 1 },
           { x: function () { return B().x + jitter * 0.3; }, y: function () { return B().y; }, opacity: 0.2, scale: 0.4,
             duration: 0.7, ease: 'power2.inOut', immediateRender: false }, flyAt + (i % PER) * 0.025 + Math.floor(i / PER) * 0.12);
       });
-      tl.to(sparks.map(function (o) { return o.el; }), { opacity: 0, duration: 0.2 }, flyAt + 1.2);
-      tl.fromTo(understood, { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.4, ease: 'power2.out' }, flyAt + 0.4)
+      ai.to(sparks.map(function (o) { return o.el; }), { opacity: 0, duration: 0.2 }, flyAt + 1.2);
+      ai.fromTo(understood, { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.4, ease: 'power2.out' }, flyAt + 0.4)
         .fromTo(chips, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2.2)', stagger: 0.12 }, flyAt + 0.55)
         .fromTo(label, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.4 }, flyAt + 1.1)
         .add(kit.sweep(label), flyAt + 1.2);
       var listAt = flyAt + 1.4;
       cards.forEach(function (m, i) {
         var t = listAt + i * 0.18;
-        tl.fromTo(m, { opacity: 0, x: tall ? 0 : 50, y: tall ? 30 : 0 }, { opacity: 1, x: 0, y: 0, duration: 0.7, ease: 'power3.out' }, t)
+        ai.fromTo(m, { opacity: 0, x: tall ? 0 : 50, y: tall ? 30 : 0 }, { opacity: 1, x: 0, y: 0, duration: 0.7, ease: 'power3.out' }, t)
           .to(m.querySelector('.dt-ring-fg'), { strokeDashoffset: C * (1 - SCORES[i] / 100), duration: 1.2, ease: 'power2.out' }, t + 0.3)
           .add(kit.odometer(m.querySelector('.dt-ring-v'), 0, SCORES[i], { duration: 1.2, ease: 'power2.out' }), t + 0.3);
       });
-      tl.add(kit.cursorTo(cards[0], { duration: 0.7 }), listAt + 1.7)
+      ai.add(kit.cursorTo(cards[0], { duration: 0.7 }), listAt + 1.7)
         .add(kit.tap(cards[0]), listAt + 2.4)
         .add(kit.sweep(cards[0]), listAt + 2.5)
         .to({}, { duration: 1.2 });
+
+      var tl = classicSearch(stage, kit, tall);           // the normal search first (~7 s)
+      tl.add(ai, CLASSIC_END);                            // then AI search, the even better option
       return tl;
     }
   };
