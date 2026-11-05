@@ -102,6 +102,14 @@ def test_posts_in_bengaluru(page: Page, base_url: str):
     expect(page.locator(".dt-mpost")).to_have_count(3)
     expect(page.locator(".dt-mdetail .dt-heart.is-saved")).to_have_count(1)
     assert "Bengaluru Urban" in _text(page, ".dt-mposts")
+    clear = page.evaluate("""() => {
+      const h = document.querySelector('.dt-mdetail .dt-heart').getBoundingClientRect();
+      return [...document.querySelectorAll('.dt-mdetail > b, .dt-mdetail > span:not(.dt-heart)')].every(el => {
+        const r = document.createRange(); r.selectNodeContents(el);
+        return [...r.getClientRects()].every(t => t.right <= h.left + 1 || t.top >= h.bottom - 1 || t.bottom <= h.top + 1);
+      });
+    }""")
+    assert clear, "post card text runs under the heart"
 
 
 def test_back_to_india_restores_the_map(page: Page, base_url: str):
@@ -132,6 +140,34 @@ def test_map_tour_fits_on_phone(page: Page, base_url: str):
             .map(([c]) => c);
         }""")
         assert out == [], (TITLES[i], out)
+
+
+PANELS = ".dt-mcount-wrap, .dt-mfilter, .dt-mback, .dt-mstate, .dt-mposts, .dt-mdetail, .dt-mlistbtn, .dt-mlist, .dt-mzoom"
+OVERLAPS = """(sel) => {
+  const vis = [...document.querySelectorAll(sel)].filter(e => +getComputedStyle(e).opacity > 0.5)
+    .map(e => [e.className.split(' ')[0], e.getBoundingClientRect()]);
+  const hits = [];
+  for (let i = 0; i < vis.length; i++) for (let j = i + 1; j < vis.length; j++) {
+    const a = vis[i][1], b = vis[j][1];
+    if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1)
+      hits.push(vis[i][0] + ' x ' + vis[j][0]);
+  }
+  return hits;
+}"""
+
+
+def test_map_tour_panels_never_overlap(page: Page, base_url: str):
+    for vp in ({"width": 1440, "height": 900}, {"width": 390, "height": 844}):
+        page.set_viewport_size(vp)
+        _open_map(page, base_url, speed=0.25)
+        for i in range(len(TITLES)):
+            _go(page, i)
+            dur = page.evaluate("DepTour.state().sceneDuration")
+            for t in (dur * 0.35, dur * 0.5, dur - 0.01):
+                page.evaluate(f"DepTour.seek({t})")
+                page.wait_for_timeout(100)
+                assert page.evaluate(OVERLAPS, PANELS) == [], (vp["width"], TITLES[i], round(t, 2))
+        page.evaluate("DepTour.close()")
 
 
 def test_map_page_loads_in_order(page: Page, base_url: str):
