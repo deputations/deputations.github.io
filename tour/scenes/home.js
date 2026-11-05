@@ -17,7 +17,8 @@
   if (!window.DepTour) return;
   DepTour.expect('home');
 
-  var HEADLINE = 'Every Central deputation vacancy. One place.';
+  var HEADLINE = 'Your one stop solution to Deputation';
+  var BRAND = 'ALL Deputations.com';
   var LEVEL = 7, YEARS = 4;
 
   function shortMinistry(m) { return String(m).replace(/^Ministry of /, ''); }
@@ -189,14 +190,122 @@
   };
 
   /* ---------------------------------------------------------------
-     Scene 2 — just ask
+     Scene 2 — narrow it down (the other filters + quick chips)
+     --------------------------------------------------------------- */
+  // Sample rows; `out` = which pick removes the row (0 = stays to the end).
+  var FROWS = [
+    { t: 'Section Officer', m: 'Finance', loc: 'Delhi', d: 5, out: 0 },
+    { t: 'Under Secretary', m: 'Education', loc: 'Delhi', d: 12, out: 1 },
+    { t: 'Accounts Officer', m: 'Railways', loc: 'Delhi', d: 3, out: 0 },
+    { t: 'Senior Accountant', m: 'Railways', loc: 'Kolkata', d: 4, out: 2 },
+    { t: 'Deputy Director', m: 'Health', loc: 'Mumbai', d: 9, out: 1 },
+    { t: 'Assistant Section Officer', m: 'Finance', loc: 'Delhi', d: 6, out: 0 },
+    { t: 'Accounts Officer', m: 'Railways', loc: 'Delhi', d: 18, out: 3 },
+    { t: 'Section Officer', m: 'Finance', loc: 'Chennai', d: 21, out: 2 }
+  ];
+  var MINISTRY_OPTS = ['Finance', 'Railways', 'Home Affairs', 'Education', 'Defence'];
+  var QCHIPS = ['New', 'Closing in 7 days', 'Delhi/NCR', 'Closing today'];
+  var COUNTS = [1240, 214, 46, 12];
+
+  var filters = {
+    key: 'filters',
+    label: 'STEP 2',
+    title: 'Narrow it down',
+    summary: 'Pick ministries, organisations and locations, or tap a quick chip like Delhi/NCR or Closing in 7 days.',
+    build: function (stage, kit) {
+      var tall = kit.layout === 'tall';
+      var L = tall
+        ? { bar: [10, 0, 370], rows: [10, 182, 370], rowH: 52, cnt: [10, 136] }
+        : { bar: [110, 20, 880], rows: [110, 210, 880], rowH: 46, cnt: [110, 156] };
+
+      var bar = kit.el('div', 'dt-fbar' + (tall ? ' is-tall' : ''), null, stage);
+      Object.assign(bar.style, { left: L.bar[0] + 'px', top: L.bar[1] + 'px', width: L.bar[2] + 'px' });
+      var pills = kit.el('div', 'dt-fpills', null, bar);
+      var pill = ['Ministry', 'Organisation', 'Location'].map(function (n, i) {
+        var p = kit.el('span', 'dt-fpill', null, pills);
+        p.innerHTML = '<span class="dt-fpill-t">' + n + '</span>' +
+          (i === 0 ? '<span class="dt-fpill-n"> · 2</span>' : '') + '<i class="dt-fchev" aria-hidden="true"></i>';
+        return p;
+      });
+      var chipsRow = kit.el('div', 'dt-qchips', null, bar);
+      var qchip = QCHIPS.map(function (n) { var c = kit.el('span', 'dt-qchip', null, chipsRow); c.textContent = n; return c; });
+      var menu = kit.el('ul', 'dt-fmenu', null, bar);
+      var opts = MINISTRY_OPTS.map(function (n) {
+        var li = kit.el('li', null, '<i class="dt-check"></i>' + n, menu);
+        return li;
+      });
+
+      var cw = kit.el('div', 'dt-fcount-wrap', null, stage);
+      Object.assign(cw.style, { left: L.cnt[0] + 'px', top: L.cnt[1] + 'px' });
+      cw.innerHTML = '<b class="dt-fcount"></b><span class="dt-fcount-k">sample posts match</span>';
+      var count = cw.querySelector('.dt-fcount');
+      count.textContent = COUNTS[0].toLocaleString('en-IN');
+
+      var list = kit.el('div', 'dt-flist', null, stage);
+      Object.assign(list.style, { left: L.rows[0] + 'px', top: L.rows[1] + 'px', width: L.rows[2] + 'px',
+                                  height: (FROWS.length * L.rowH) + 'px' });
+      var rows = FROWS.map(function (r, i) {
+        var el = kit.el('div', 'dt-frow', null, list);
+        el.innerHTML = '<b>' + esc(r.t) + '</b><span>' + esc(r.m) + '</span><span>' + esc(r.loc) +
+          '</span><span class="dt-days">' + r.d + 'd left</span>';
+        gsap.set(el, { y: i * L.rowH, height: L.rowH - 8 });
+        return el;
+      });
+
+      var tl = gsap.timeline();
+      tl.fromTo(bar, { opacity: 0, y: -16 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 0)
+        .fromTo(cw, { opacity: 0 }, { opacity: 1, duration: 0.5 }, 0.3)
+        .fromTo(rows, { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.5, ease: 'power2.out', stagger: 0.05 }, 0.2);
+
+      // after pick k, rows with out === k leave and the rest close ranks
+      function settle(k, at) {
+        var leaving = rows.filter(function (_, i) { return FROWS[i].out === k; });
+        tl.to(leaving, { opacity: 0, x: -40, duration: 0.45, ease: 'power2.in', stagger: 0.05 }, at);
+        var y = 0;
+        rows.forEach(function (el, i) {
+          var o = FROWS[i].out;
+          if (o === 0 || o > k) { tl.to(el, { y: y, duration: 0.55, ease: 'power3.inOut' }, at + 0.35); y += L.rowH; }
+        });
+        tl.add(kit.odometer(count, COUNTS[k - 1], COUNTS[k], { duration: 0.9 }), at);
+      }
+
+      // 1. Ministry: tick two
+      tl.add(kit.cursorTo(pill[0], { duration: 0.7 }), 0.8)
+        .add(kit.tap(pill[0]), 1.5)
+        .fromTo(menu, { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' }, 1.6)
+        .add(kit.cursorTo(opts[0], { duration: 0.4 }), 1.85)
+        .add(kit.tap(opts[0]), 2.25)
+        .to(opts[0].querySelector('.dt-check'), { '--dt-on': 1, duration: 0.2 }, 2.3)
+        .add(kit.cursorTo(opts[1], { duration: 0.35 }), 2.45)
+        .add(kit.tap(opts[1]), 2.8)
+        .to(opts[1].querySelector('.dt-check'), { '--dt-on': 1, duration: 0.2 }, 2.85)
+        .to(menu, { opacity: 0, y: -6, duration: 0.25 }, 3.15)
+        .to(pill[0].querySelector('.dt-fpill-n'), { opacity: 1, maxWidth: '3em', duration: 0.3 }, 3.15)
+        .set(pill[0], { attr: { class: 'dt-fpill is-on' } }, 3.15);
+      settle(1, 3.2);
+      // 2. Delhi/NCR, 3. Closing in 7 days
+      [[2, 2, 4.0], [1, 3, 5.4]].forEach(function (step) {
+        var c = qchip[step[0]], at = step[2];
+        tl.add(kit.cursorTo(c, { duration: 0.6 }), at - 0.7)
+          .add(kit.tap(c), at - 0.05)
+          .set(c, { attr: { class: 'dt-qchip is-on' } }, at)
+          .add(kit.sweep(c), at + 0.05);
+        settle(step[1], at + 0.1);
+      });
+      tl.add(kit.sweep(cw), 6.8).to({}, { duration: 1.0 });
+      return tl;
+    }
+  };
+
+  /* ---------------------------------------------------------------
+     Scene 3 — just ask
      --------------------------------------------------------------- */
   var CHIPS = ['Level 8', 'Delhi', 'Closes ≤ 30 days'];
   var SCORES = [96, 91, 87];
 
   var ask = {
     key: 'ask',
-    label: 'STEP 2',
+    label: 'STEP 3',
     title: 'Just ask',
     summary: 'Type what you want in plain words — AI understands it and ranks the best matches.',
     build: function (stage, kit) {
@@ -318,9 +427,11 @@
 
   function register() {
     DepTour.register('home', {
-      intro: { headline: HEADLINE },
-      scenes: [eligibility, ask, window.DepTourMap.teaserScene],
-      cta: { label: 'Try it with your pay level', action: openPayLevel }
+      intro: { headline: HEADLINE, brand: BRAND },
+      scenes: [eligibility, filters, ask]
+        .concat(window.DepTourHomeMore && window.DepTourHomeMore.scenes || [])
+        .concat(window.DepTourPages && window.DepTourPages.montageScene ? [window.DepTourPages.montageScene] : []),
+      cta: { label: 'Try it with your pay level', action: openPayLevel, keepScene: true }
     });
   }
 

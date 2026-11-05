@@ -478,6 +478,7 @@
       if (i >= n) return close('end');
       return renderStep(Math.max(0, i));
     }
+    if (S.phase === 'finale' && i >= n) return;      // already at the end: keep the scene + CTA
     clearScenes();
     if (i >= n) return finale();
     enterScene(Math.max(0, i));

@@ -10,8 +10,10 @@ from playwright.sync_api import Page, expect
 
 from tests.tour_helpers import no_hero_wave, seen  # noqa: F401
 
-TITLES = ["Only the posts you can apply for", "Just ask", "See India's vacancies on a map"]
-HEADLINE = "Every Central deputation vacancy. One place."
+TITLES = ["Only the posts you can apply for", "Narrow it down", "Just ask", "Sort and switch views",
+          "Save posts you like", "Never miss a vacancy", "Light or dark — your choice", "Explore more pages"]
+HEADLINE = "Your one stop solution to Deputation"
+BRAND = "ALL Deputations.com"
 FULL_POWER = ("Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });"
               "Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });")
 RECORD_CLOSE = """
@@ -27,7 +29,7 @@ def _open_home(page: Page, base_url: str, speed: float = 1) -> None:
     page.wait_for_function("() => DepTour.isOpen()", polling=100, timeout=20000)
 
 
-def _scene_end(page: Page, index: int) -> None:
+def _scene_end(page: Page, index: int) -> None:  # noqa: D401
     page.evaluate(f"DepTour.goTo({index}); DepTour.pause();")
     page.wait_for_function(f"() => DepTour.state().sceneIndex === {index} && DepTour.state().phase === 'scene'",
                            polling=100)
@@ -35,14 +37,43 @@ def _scene_end(page: Page, index: int) -> None:
     page.wait_for_timeout(100)
 
 
-def test_scene_order(page: Page, base_url: str):
+def test_intro_and_first_steps(page: Page, base_url: str):
     _open_home(page, base_url)
     page.wait_for_function("() => document.querySelectorAll('.dt-headline .dt-ch').length > 0",
                            polling=100, timeout=10000)
     assert page.evaluate("document.querySelector('.dt-headline').textContent") == HEADLINE
-    for i, title in enumerate(TITLES):
+    page.wait_for_function("() => !!document.querySelector('.dt-brand')", polling=100, timeout=10000)
+    assert page.evaluate("document.querySelector('.dt-brand').textContent") == BRAND
+    for i, title in enumerate(TITLES[:3]):
         page.evaluate(f"DepTour.goTo({i})")
         expect(page.locator("#dt-title")).to_have_text(title)
+
+
+def test_filters_end_state(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _scene_end(page, 1)
+    assert page.evaluate("[...document.querySelectorAll('.dt-fpill')].map(p => p.textContent.trim())") == \
+        ["Ministry · 2", "Organisation", "Location"]
+    on = page.evaluate("[...document.querySelectorAll('.dt-qchip.is-on')].map(c => c.textContent.trim())")
+    assert on == ["Closing in 7 days", "Delhi/NCR"]
+    assert page.evaluate("[...document.querySelectorAll('.dt-frow')].filter(r => +getComputedStyle(r).opacity > 0.5).length") == 3
+    assert page.evaluate("document.querySelector('.dt-fcount').getAttribute('aria-label')") == "12"
+    assert "sample" in page.evaluate("document.querySelector('.dt-fcount-wrap').textContent").lower()
+
+
+def test_filters_on_phone_fit_the_stage(page: Page, base_url: str):
+    page.set_viewport_size({"width": 390, "height": 844})
+    _open_home(page, base_url)
+    _scene_end(page, 1)
+    inside = page.evaluate("""() => {
+      const cv = document.querySelector('.dt-canvas').getBoundingClientRect();
+      const els = [...document.querySelectorAll('.dt-fpill, .dt-qchip, .dt-fcount-wrap')];
+      return els.length === 8 && els.every(e => {
+        const r = e.getBoundingClientRect();
+        return r.left >= cv.left - 1 && r.right <= cv.right + 1 && r.top >= cv.top - 1 && r.bottom <= cv.bottom + 1;
+      });
+    }""")
+    assert inside is True
 
 
 def test_eligibility_end_state(page: Page, base_url: str):
@@ -74,7 +105,7 @@ def test_low_power_wall(page: Page, base_url: str):
 
 def test_ask_end_state(page: Page, base_url: str):
     _open_home(page, base_url)
-    _scene_end(page, 1)
+    _scene_end(page, 2)
     assert page.evaluate("document.querySelector('.dt-ask-text').textContent") == \
         "Level 8 posts in Delhi closing this month"
     chips = page.evaluate("[...document.querySelectorAll('.dt-ask-chips .dt-chip')].map(c => c.textContent.trim())")
@@ -88,7 +119,7 @@ def test_ask_end_state(page: Page, base_url: str):
 
 def test_cta_opens_pay_level(page: Page, base_url: str):
     _open_home(page, base_url)
-    for _ in range(4):                             # skip ahead like a person: → past the last scene
+    for _ in range(12):                            # skip ahead like a person: → past the last step
         page.keyboard.press("ArrowRight")
     cta = page.locator(".dt-cta")
     expect(cta).to_contain_text("Try it with your pay level", timeout=10000)
@@ -153,7 +184,7 @@ def test_level_options_sit_above_the_counter_on_phone(page: Page, base_url: str)
 
 def test_ring_score_on_one_line(page: Page, base_url: str):
     _open_home(page, base_url)
-    _scene_end(page, 1)
+    _scene_end(page, 2)
     rows = page.evaluate("""() => [...document.querySelectorAll('.dt-ring-n')].map(n => {
       const b = n.querySelector('b').getBoundingClientRect();
       const range = document.createRange(); range.selectNodeContents(n.lastChild);
@@ -166,7 +197,7 @@ def test_ring_score_on_one_line(page: Page, base_url: str):
 def test_ask_scene_is_vertically_centred_on_desktop(page: Page, base_url: str):
     page.set_viewport_size({"width": 1440, "height": 900})
     _open_home(page, base_url)
-    _scene_end(page, 1)
+    _scene_end(page, 2)
     off = page.evaluate("""() => {
       const cv = document.querySelector('.dt-canvas').getBoundingClientRect();
       const top = document.querySelector('.dt-ask').getBoundingClientRect().top;
@@ -198,5 +229,5 @@ def test_counter_is_labelled_as_sample(page: Page, base_url: str):
 
 def test_ask_shows_what_the_ai_understood(page: Page, base_url: str):
     _open_home(page, base_url)
-    _scene_end(page, 1)
+    _scene_end(page, 2)
     assert page.evaluate("document.querySelector('.dt-ask-chips .dt-ask-understood').textContent") == "Understood"

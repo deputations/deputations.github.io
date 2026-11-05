@@ -22,6 +22,8 @@ HOME_ORDER = [
     "/tour/tour-engine.js",
     "/tour/tour-kit.js",
     "/tour/scenes/map.js",
+    "/tour/scenes/pages.js",
+    "/tour/scenes/home-more.js",
     "/tour/scenes/home.js",
 ]
 

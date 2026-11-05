@@ -690,6 +690,67 @@
 .dt-vcard-meta .dt-days,
 .dt-match-meta .dt-days { color: #fcd34d; background: rgba(245, 158, 11, 0.12); }
 
+/* ---------- Home · narrow it down ---------- */
+.dt-fbar {
+  position: absolute; z-index: 4; display: flex; flex-direction: column; gap: 14px; padding: 18px 20px;
+  border-radius: 20px; border: 1px solid var(--dt-line);
+  background: linear-gradient(160deg, rgba(22, 33, 56, 0.94), rgba(12, 19, 36, 0.94));
+  box-shadow: 0 24px 60px -28px rgba(0, 0, 0, 0.85), 0 0 46px -24px rgba(34, 211, 238, 0.55);
+}
+.dt-fbar.is-tall { padding: 12px; gap: 10px; }
+.dt-fpills, .dt-qchips { display: flex; flex-wrap: wrap; gap: 10px; }
+.dt-fbar.is-tall .dt-fpills, .dt-fbar.is-tall .dt-qchips { gap: 6px; }
+.dt-fpill {
+  display: inline-flex; align-items: center; gap: 8px; padding: 11px 14px; border-radius: 12px;
+  border: 1px solid rgba(165, 243, 252, 0.22); background: rgba(2, 6, 23, 0.55);
+  font: 600 15px/1 var(--dt-ui-font); color: #f4fbff;
+}
+.dt-fpill.is-on { border-color: rgba(34, 211, 238, 0.75); box-shadow: 0 0 18px -4px rgba(34, 211, 238, 0.7); }
+.dt-fpill-n { display: inline-block; max-width: 0; opacity: 0; overflow: hidden; white-space: pre; vertical-align: bottom; color: #a5f3fc; }
+.dt-fchev { width: 7px; height: 7px; margin: -3px 0 0 2px; border-right: 2px solid var(--dt-dim); border-bottom: 2px solid var(--dt-dim); transform: rotate(45deg); }
+.dt-fbar.is-tall .dt-fpill { padding: 9px 10px; font-size: 13px; gap: 6px; }
+.dt-qchip {
+  position: relative; overflow: hidden; padding: 8px 13px; border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(255, 255, 255, 0.06);
+  font: 600 13px/1 var(--dt-ui-font); color: #dbeafe;
+}
+.dt-qchip.is-on {
+  color: #02040b; border-color: transparent;
+  background: linear-gradient(90deg, var(--dt-cyan), var(--dt-violet));
+  box-shadow: 0 0 18px -2px rgba(34, 211, 238, 0.7);
+}
+.dt-fbar.is-tall .dt-qchip { padding: 7px 10px; font-size: 12px; }
+.dt-fmenu {
+  position: absolute; left: 20px; top: 64px; z-index: 5; width: 220px; margin: 0; padding: 6px; list-style: none;
+  border-radius: 14px; border: 1px solid rgba(165, 243, 252, 0.28); background: rgba(10, 17, 33, 0.98);
+  box-shadow: 0 24px 50px -16px rgba(0, 0, 0, 0.9), 0 0 30px -14px rgba(34, 211, 238, 0.6); opacity: 0;
+}
+.dt-fbar.is-tall .dt-fmenu { left: 12px; top: 52px; }
+.dt-fmenu li { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; font: 600 14px/1 var(--dt-ui-font); color: #dbeafe; }
+.dt-check { --dt-on: 0; position: relative; flex: 0 0 auto; width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid rgba(165, 243, 252, 0.4); }
+.dt-check::after {
+  content: "\2713"; position: absolute; inset: -1.5px; display: grid; place-items: center; border-radius: 5px;
+  font: 800 11px/1 system-ui, sans-serif; color: #02040b;
+  background: linear-gradient(135deg, var(--dt-cyan), var(--dt-violet)); opacity: var(--dt-on);
+}
+.dt-fcount-wrap { position: absolute; z-index: 3; display: flex; align-items: baseline; gap: 10px; }
+.dt-fcount { font: 800 34px/1 "Sora", system-ui, sans-serif; color: #ecfeff; text-shadow: 0 0 18px rgba(34, 211, 238, 0.45); }
+.dt-fcount-k { font: 600 14px/1 var(--dt-ui-font); color: var(--dt-dim); }
+.dt-flist { position: absolute; z-index: 2; }
+.dt-frow {
+  position: absolute; left: 0; right: 0; top: 0; display: grid; grid-template-columns: 2fr 1.2fr 1fr auto;
+  align-items: center; gap: 12px; padding: 0 18px; border-radius: 12px; border: 1px solid rgba(165, 243, 252, 0.12);
+  background: linear-gradient(90deg, rgba(31, 44, 72, 0.92), rgba(14, 21, 40, 0.92));
+  font: 500 13px/1.2 var(--dt-ui-font); color: #cbd5e1;
+}
+.dt-frow b { font: 700 14px/1.2 "Sora", system-ui, sans-serif; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dt-frow span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dt-frow .dt-days { padding: 4px 8px; border-radius: 999px; color: #fcd34d; background: rgba(245, 158, 11, 0.12); font-weight: 600; font-size: 12px; }
+.dt-is-tall .dt-frow { grid-template-columns: 1fr auto; row-gap: 2px; padding: 0 12px; }
+.dt-is-tall .dt-frow span:nth-of-type(1) { grid-row: 2; grid-column: 1; }
+.dt-is-tall .dt-frow span:nth-of-type(2) { display: none; }
+.dt-is-tall .dt-frow .dt-days { grid-row: 1 / span 2; grid-column: 2; }
+
 /* ---------- Home · scene 2: just ask ---------- */
 .dt-ask {
   position: absolute;

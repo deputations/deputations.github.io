@@ -538,3 +538,16 @@ def test_finale_links_are_keyboard_reachable(page: Page, base_url: str):
         seen_classes.add(page.evaluate("document.activeElement.className"))
     assert any("probe-link" in c for c in seen_classes), seen_classes
     assert any("dt-cta" in c for c in seen_classes), seen_classes
+
+
+def test_arrow_keys_at_the_finale_keep_the_scene(page: Page, base_url: str):
+    open_engine(page, base_url)
+    page.evaluate(LINK_SCENE, "t")
+    start(page)
+    expect(page.locator(".dt-cta")).to_be_visible(timeout=10000)
+    page.locator(".dt-overlay").focus()
+    page.keyboard.press("ArrowRight")
+    page.keyboard.press("ArrowRight")
+    page.wait_for_timeout(300)
+    expect(page.locator(".probe-link")).to_have_count(1)
+    expect(page.locator(".dt-cta")).to_have_count(1)
