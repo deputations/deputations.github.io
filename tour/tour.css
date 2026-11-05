@@ -131,6 +131,51 @@
 .dt-word { display: inline-block; white-space: nowrap; }
 .dt-ch { display: inline-block; will-change: transform, opacity, filter; }
 
+/* ---------- brand wordmark (intro) ---------- */
+.dt-brand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  display: inline-block;
+  translate: -50% -50%;
+  white-space: nowrap;
+  text-align: center;
+  pointer-events: none;
+  font-family: var(--dt-head-font);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  color: #fff;
+  text-shadow: 0 0 0.35em rgba(34, 211, 238, 0.35), 0 0 0.9em rgba(167, 139, 250, 0.3);
+}
+.dt-brand.is-stacked .dt-brand-a { display: block; }
+.dt-brand-a {
+  background: linear-gradient(100deg, #22d3ee, #a5f3fc 45%, #a78bfa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 0.18em rgba(34, 211, 238, 0.55));
+}
+.dt-brand-b,
+.dt-brand-tld {
+  background-image: linear-gradient(100deg, #ffffff 42%, #a5f3fc 50%, #ffffff 58%);
+  background-size: 320% 100%;
+  background-position: 100% 0%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.dt-brand-tld {
+  background-image: linear-gradient(100deg, #c4b5fd 42%, #f0abfc 50%, #c4b5fd 58%);
+}
+
+/* ---------- finale that keeps the last scene ---------- */
+.dt-page-link { pointer-events: none; }
+.dt-finale-on .dt-page-link { pointer-events: auto; cursor: pointer; }
+.dt-finale.is-bottom { place-items: end center; padding-bottom: 66px; }
+.dt-is-tall .dt-finale.is-bottom { padding-bottom: 58px; }
+
 /* ---------- chrome ---------- */
 .dt-chrome { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 .dt-chrome button { pointer-events: auto; }

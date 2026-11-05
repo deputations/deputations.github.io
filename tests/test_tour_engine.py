@@ -444,3 +444,97 @@ def test_aurora_blending_stays_inside_the_aurora(page: Page, base_url: str):
     register_probe_tour(page)
     start(page)
     assert page.evaluate("getComputedStyle(document.querySelector('.dt-aurora')).isolation") == "isolate"
+
+
+# ---- Home v2: brand intro, finale that keeps the scene with page links ----
+
+def _register_brand(page: Page) -> None:
+    page.evaluate("""() => DepTour.register('t', {
+      intro: { headline: 'Hello tour', brand: 'ALL Deputations.com' },
+      scenes: [__probeScene('a', 'Alpha', { duration: 0.4 })] })""")
+
+
+def test_brand_follows_the_headline(page: Page, base_url: str):
+    open_engine(page, base_url)
+    _register_brand(page)
+    start(page)
+    expect(page.locator(".dt-headline .dt-ch")).to_have_count(9)
+    page.wait_for_function("() => !!document.querySelector('.dt-brand')", polling=100, timeout=15000)
+    assert page.evaluate("document.querySelector('.dt-brand').textContent") == "ALL Deputations.com"
+    assert page.evaluate("document.querySelector('.dt-brand-a').textContent") == "ALL"
+    assert page.evaluate("document.querySelector('.dt-brand-tld').textContent") == ".com"
+
+
+def test_brand_fits_the_screen(page: Page, base_url: str):
+    for w, h in [(1440, 900), (390, 844)]:
+        page.set_viewport_size({"width": w, "height": h})
+        open_engine(page, base_url)
+        _register_brand(page)
+        start(page, speed=0.25)     # a starved test browser paints ~1 fps; widen the hold to sample it
+        page.wait_for_function("""() => {
+          const b = document.querySelector('.dt-brand');
+          if (!b) return false;
+          const r = b.getBoundingClientRect(), k = r.width / innerWidth;
+          return +getComputedStyle(b).opacity > 0.98 && k >= 0.8 && k <= 0.95 &&
+                 r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight;
+        }""", polling=50, timeout=20000)
+        page.locator(".dt-skip").click()
+        assert result(page) == "skip"
+
+
+LINK_SCENE = """(key) => DepTour.register(key, {
+  scenes: [{ key: 'p', label: 'L', title: 'Pages', summary: 'S', build(stage) {
+    const a = document.createElement('a');
+    a.className = 'dt-page-link probe-link'; a.href = '/x.html'; a.textContent = 'X page';
+    Object.assign(a.style, { position: 'absolute', left: '100px', top: '100px', padding: '20px' });
+    stage.appendChild(a);
+    return gsap.timeline().to({}, { duration: 0.3 });
+  } }],
+  cta: { label: 'Go', keepScene: true, action() { window.__ctaRan = true; } } })"""
+
+
+def test_keep_scene_finale_shows_links(page: Page, base_url: str):
+    open_engine(page, base_url)
+    page.evaluate(LINK_SCENE, "t")
+    start(page)
+    expect(page.locator(".dt-cta")).to_be_visible(timeout=10000)
+    expect(page.locator(".dt-overlay.dt-finale-on")).to_have_count(1)
+    expect(page.locator(".dt-finale.is-bottom")).to_have_count(1)
+    assert page.evaluate("document.querySelector('.dt-stage').hasAttribute('aria-hidden')") is False
+    assert page.evaluate("getComputedStyle(document.querySelector('.dt-camera')).opacity") == "1"
+    expect(page.locator(".probe-link")).to_be_visible()
+
+
+def test_page_card_opens_its_page(page: Page, base_url: str):
+    page.route("**/x.html", lambda r: r.fulfill(body="<!doctype html><title>x</title><p>x</p>", content_type="text/html"))
+    open_engine(page, base_url)
+    page.evaluate(LINK_SCENE, "t")
+    start(page)
+    expect(page.locator(".dt-cta")).to_be_visible(timeout=10000)
+    page.locator(".probe-link").click()
+    page.wait_for_url("**/x.html", timeout=10000)
+    assert seen(page).get("t") == 1
+
+
+def test_links_do_nothing_before_the_finale(page: Page, base_url: str):
+    open_engine(page, base_url)
+    page.evaluate(LINK_SCENE.replace("duration: 0.3", "duration: 30"), "t")
+    start(page)
+    page.wait_for_timeout(800)
+    page.locator(".probe-link").click(force=True)
+    page.wait_for_timeout(500)
+    assert page.evaluate("DepTour.isOpen()") is True
+    assert page.url.endswith("/index.html")
+
+
+def test_finale_links_are_keyboard_reachable(page: Page, base_url: str):
+    open_engine(page, base_url)
+    page.evaluate(LINK_SCENE, "t")
+    start(page)
+    expect(page.locator(".dt-cta")).to_be_visible(timeout=10000)
+    seen_classes = set()
+    for _ in range(8):
+        page.keyboard.press("Tab")
+        seen_classes.add(page.evaluate("document.activeElement.className"))
+    assert any("probe-link" in c for c in seen_classes), seen_classes
+    assert any("dt-cta" in c for c in seen_classes), seen_classes
