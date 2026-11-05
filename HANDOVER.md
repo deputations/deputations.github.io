@@ -7283,3 +7283,30 @@ focus:          site tour — independent review fixes + Home tour v2 (every Hom
 - Blend modes on overlay children must stay inside an isolated group, or Chrome silently drops the backdrop blur.
 
 ## session shq-2026-11-05-site-tour-home-v2 end
+
+## session shq-2026-11-05-site-tour-map
+```
+started:        2026-11-05
+ended:          2026-11-05
+model:          claude-opus-5-5
+driver:         solo
+branch:         feature/site-tour-map (stacked on feature/site-tour, PR #35)
+starting_head:  1aad472
+ending_head:    <see the PR merge commit>
+focus:          site tour stage 2 — India Map page tour (every map feature)
+```
+
+### inbound context read
+- shq-2026-11-05-site-tour-home-v2 (block above).
+
+### owner's brief
+- Stage 2: the India Map page gets its own tour; the owner chose "All map features" (hover, filters, dive, district posts and save, state list, zoom, Back to India).
+
+### work done
+- Map helpers in `tour/scenes/map.js`: `drawIndia(..., box)`, `recolour`, `flyOut`, `heatColour`.
+- `tour/scenes/map-page.js` registers `map` (5 steps + "Explore the map"); `SCENES.map` in the loader; loader tag in `india-map.html`.
+- Spec §3.2 revised; plan `docs/superpowers/plans/2026-11-05-site-tour-stage2-map.md`.
+
+### gotchas for next session
+- `M.diveTo` pushes the camera to z 1.04, scaling the scene about its centre: tall-layout panels must end above ~y 700 (of 720) to stay on screen.
+- The filtered total is 58 (not 96) so it can't be confused with Karnataka's 96.

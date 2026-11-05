@@ -26,6 +26,17 @@ counter_convention:
 
 ## [Unreleased]
 
+### Added - first-visit tour on the India Map page (2026-11-05)
+A ~45 s tour plays once on a visitor's first plain visit to `india-map.html`,
+with the same controls and rules as the Home tour. It opens on "Vacancies
+across India, on one map", then shows every map feature: hovering a state for
+its count, filters (Pay Level, Ministry) recolouring the whole map, diving into
+Karnataka's districts, opening and saving a post in Bengaluru Urban, the state's
+list ("View all 96 vacancies in Karnataka"), zoom in and reset, and "Back to
+India". It ends on "Explore the map". Shared map links (`?state=KA`) don't
+auto-play. Files: `tour/scenes/map-page.js` (new), map helpers in
+`tour/scenes/map.js`, loader tag in `india-map.html`, `tests/test_tour_map_page.py`.
+
 ### Added - first-visit "how to use" tour on the Home page (2026-11-05)
 A ~75 s cinematic demo plays once on a visitor's first plain visit to the Home
 page, over the page, with sample data marked "Demo · sample data". It opens on
