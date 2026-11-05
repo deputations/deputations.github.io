@@ -26,6 +26,13 @@ counter_convention:
 
 ## [Unreleased]
 
+### Added - V² logo on every tour step; "A V² product" ends the Home tour (2026-11-05)
+Both tours show the V² (V Square) logo on every step: centred in the free band
+left of the tour on wide screens, and small beside "Demo · sample data" on
+phones. The Home tour now ends with "A V² product" filling the screen over the
+last screen, then settling to the left of the page grid (under the title on
+phones) before "Try it with your pay level" appears. Tour assets move to `?v=5`.
+
 ### Changed - Home tour shows the normal search before AI search (2026-11-05)
 Step 3 is now "Search anything — or just ask". It first shows the normal search
 box: what it searches (post, organisation, ministry, location, level,

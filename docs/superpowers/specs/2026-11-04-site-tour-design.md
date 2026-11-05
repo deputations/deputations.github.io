@@ -98,8 +98,12 @@ is labelled as sample.
    updates, Group · discussions) appears large with chat bubbles, then becomes
    a full-width bar under the grid linking to `/contact.html`.
    (Owner's changes, 2026-11-05 evening.)
-9. **Finale**: the grid and the WhatsApp bar stay; each is a real link; CTA
+9. **Finale**: **"A V² product"** (the V² logo between the words, as in the site
+   header) fills the screen over the dimmed last screen for ~2 s, then shrinks
+   to the left of the page grid (phones: just under the title) and stays. Then
+   the grid and the WhatsApp bar stay; each is a real link; CTA
    **"Try it with your pay level"** sits below them and opens `#filterMyPayLevelBtn`.
+   (Owner, 2026-11-05 night; Home tour only.)
 
 The India map journey (former Home step 3) moves to the India Map page tour (§3.2).
 
@@ -198,6 +202,9 @@ tests/test_tour_*.py          Playwright smoke tests (existing suite conventions
 **tour-engine.js** — exposes `window.DepTour`:
 - `DepTour.register(key, { scenes: [Scene...], cta })`
 - `DepTour.play(key, { speed })` → builds overlay, runs scenes, resolves on close.
+- V² logo (`/assets/brand/v2-logo.png`) on every step of every tour: centred in
+  the free band left of the stage on wide screens; on phones (no band), small,
+  beside the "Demo · sample data" tag (owner, 2026-11-05 night).
 - Overlay chrome: scene title (no "STEP n" label: visitors can jump to any step
   from the dots, in any order), scene dots (click to jump), progress bar,
   Skip, "Don't show tours again", Demo badge.

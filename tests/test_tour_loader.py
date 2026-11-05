@@ -256,7 +256,7 @@ def test_tour_asset_version_bumped_and_consistent():
     for page_file in ("index.html", "india-map.html"):
         tag = re.search(r'/tour/tour-loader\.js\?v=(\d+)"', Path(page_file).read_text(encoding="utf-8")).group(1)
         assert tag == v, (page_file, tag, v)
-    assert int(v) >= 4, v      # 4: normal search added to the Home tour (2026-11-05 evening)
+    assert int(v) >= 5, v      # 5: V² logo on every step and "A V² product" ending (2026-11-05 night)
 
 
 # ---- skipped visitors (owner, 2026-11-05): no "New · 1-min tour" bubble ----

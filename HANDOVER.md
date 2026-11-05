@@ -7357,3 +7357,24 @@ focus:          Home tour: show the normal search, then AI search as the even be
 ### gotchas for next session
 - The search demo mirrors `shared/vacancy-filters.js` (`fuzzyIncludes`: one typo for single-word queries of 4+ letters; every word must match for multi-word queries; `search_text` carries short forms). Keep the demo truthful if that changes.
 
+## session shq-2026-11-05-tour-brand
+```
+started:        2026-11-05
+ended:          2026-11-05
+model:          claude-opus-5-5
+driver:         solo
+branch:         feature/tour-brand
+starting_head:  0ab5250
+focus:          V² logo on every tour step; "A V² product" ending on the Home tour
+```
+
+### owner's brief
+- V² (V Square) logo on every page of the tours, left side, vertically centred (owner's screenshot: the empty band left of the page grid). At the end of the Home tour, a few seconds of "A V² product" from full screen, layered over the last screen, then kept on the left of the last page. Logo in all tours; the ending only on Home.
+
+### work done
+- `tour/tour-engine.js`: `LOGO`, `.dt-mark` + `placeMark()` (gutter when ≥ 76 px, else footer beside the Demo tag; footer left group `.dt-foot-l`); `signoff(tl, fin, opts)` called from `finale()` when the tour registers `signoff: { left: <free design units> }` (home.js: `{ left: 66 }`). `?v=5`.
+
+### gotchas for next session
+- The finale's burst now measures the CTA when it fires (the CTA appears after the ending).
+- `.dt-mark` has no CSS transition on purpose: tests measure it right after a step starts on a slow box.
+

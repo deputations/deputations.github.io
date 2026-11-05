@@ -528,7 +528,8 @@
       scenes: [eligibility, filters, ask]
         .concat(window.DepTourHomeMore && window.DepTourHomeMore.scenes || [])
         .concat(window.DepTourPages && window.DepTourPages.montageScene ? [window.DepTourPages.montageScene] : []),
-      cta: { label: 'Try it with your pay level', action: openPayLevel, keepScene: true }
+      cta: { label: 'Try it with your pay level', action: openPayLevel, keepScene: true },
+      signoff: { left: 66 }          // "A V² product" ends the tour, left of the page grid (x0 70)
     });
   }
 

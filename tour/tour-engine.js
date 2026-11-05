@@ -18,6 +18,7 @@
     wide: { top: 118, bottom: 84, side: 40 },
     tall: { top: 112, bottom: 72, side: 10 }
   };
+  var LOGO = '/assets/brand/v2-logo.png';   // the V² (V Square) mark, as in the site header
   var SEEN_KEY = 'dep_tour_seen_v1';
   var OFF_KEY = 'dep_tour_off_v1';
 
@@ -195,8 +196,12 @@
     }
     S.skipBtn = button('dt-skip', 'Skip →', chrome);
     S.skipBtn.setAttribute('aria-label', 'Skip the demo');
-    var foot = h('div', 'dt-foot', null, chrome);
-    h('span', 'dt-badge', 'Demo · sample data', foot);
+    var foot = S.footEl = h('div', 'dt-foot', null, chrome);
+    S.footLeft = h('span', 'dt-foot-l', null, foot);
+    h('span', 'dt-badge', 'Demo · sample data', S.footLeft);
+    // V² logo on every step: in the free band left of the stage, or (phones) beside the Demo tag
+    S.markEl = h('div', 'dt-mark', '<img src="' + LOGO + '" alt="" decoding="async">', chrome);
+    S.markEl.setAttribute('aria-hidden', 'true');
     S.dotsEl = h('div', 'dt-dots', null, foot);
     S.dots = S.scenes.map(function (sc, i) {
       var d = h('button', null, null, S.dotsEl);
@@ -268,6 +273,32 @@
     S.canvas.style.width = dims[0] + 'px';
     S.canvas.style.height = dims[1] + 'px';
     S.canvas.style.transform = 'translate(-50%, -50%) scale(' + s + ')';
+    placeMark();
+  }
+
+  // The logo sits centred in the free band left of the stage when there is
+  // room (wide screens); otherwise small, beside the Demo tag in the footer.
+  function placeMark() {
+    if (!S || !S.markEl) return;
+    var vw = window.innerWidth, vh = window.innerHeight, gutter = 0, midY = vh / 2;
+    if (S.canvas) {
+      var room = CHROME[S.layout];
+      gutter = (vw - CANVAS[S.layout][0] * S.scale) / 2;
+      midY = room.top + (vh - room.top - room.bottom) / 2;
+    }
+    var side = S.mode === 'cinematic' && gutter >= 76;
+    S.markEl.classList.toggle('is-side', side);
+    S.markEl.classList.toggle('is-foot', !side);
+    if (side) {
+      if (S.markEl.parentNode !== S.chrome) S.chrome.appendChild(S.markEl);
+      var size = Math.max(44, Math.min(96, gutter - 28));
+      S.markEl.style.width = S.markEl.style.height = size + 'px';
+      S.markEl.style.left = ((gutter - size) / 2) + 'px';
+      S.markEl.style.top = (midY - size / 2) + 'px';
+    } else {
+      if (S.markEl.parentNode !== S.footLeft) S.footLeft.insertBefore(S.markEl, S.footLeft.firstChild);
+      S.markEl.style.width = S.markEl.style.height = S.markEl.style.left = S.markEl.style.top = '';
+    }
   }
 
   function onResize() {
@@ -404,6 +435,7 @@
     S.retiring = [];
     kill(S.finaleTl); S.finaleTl = null;
     if (S.finaleEl) { S.finaleEl.remove(); S.finaleEl = null; }
+    if (S.markEl) gsap.set(S.markEl, { clearProps: 'opacity' });
     if (S.cursorLayer) S.cursorLayer.innerHTML = '';
     if (S.camera) gsap.set(S.camera, { clearProps: 'transform,opacity,filter' });
   }
@@ -416,7 +448,8 @@
     S.index = i;
     setChrome(i);
     setProgress(i / n);
-    if (S.mode === 'steps') return renderStep(i);
+    if (S.markEl) S.markEl.classList.add('is-on');
+    if (S.mode === 'steps') { placeMark(); return renderStep(i); }
 
     gsap.set(S.camera, { clearProps: 'transform,opacity,filter' });
     var scene = S.scenes[i];
@@ -517,16 +550,56 @@
     // A keep-scene finale is a page of links: it stays until the visitor acts.
     var tl = S.finaleTl = track(gsap.timeline({ onComplete: keep ? null : function () { close('end'); } }));
     if (S.camera && !keep) tl.to(S.camera, { opacity: 0.32, filter: 'blur(4px)', duration: 0.7, ease: 'power2.out' }, 0);
+    var t0 = keep && S.mode === 'cinematic' && S.tour.signoff ? signoff(tl, fin, S.tour.signoff) : 0;
     tl.fromTo(btn, { opacity: 0, scale: 0.8, y: 24 },
-      { opacity: 1, scale: 1, y: 0, duration: 0.8, ease: 'back.out(1.8)' }, 0.1);
+      { opacity: 1, scale: 1, y: 0, duration: 0.8, ease: 'back.out(1.8)' }, t0 + 0.1);
     var kit = makeKit();
     if (typeof kit.burst === 'function') {
-      var r = btn.getBoundingClientRect();
-      try { tl.add(kit.burst(r.left + r.width / 2, r.top + r.height / 2, { count: 40 }), 0.45); }
-      catch (err) { warn('burst failed:', err && err.message); }
+      tl.add(function () {
+        if (!S || !btn.isConnected) return;
+        var r = btn.getBoundingClientRect();
+        try { track(kit.burst(r.left + r.width / 2, r.top + r.height / 2, { count: 40 })); }
+        catch (err) { warn('burst failed:', err && err.message); }
+      }, t0 + 0.45);
     }
     if (!keep) tl.to({}, { duration: 6 });
     try { btn.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  // "A V² product": full-screen over the last screen, then it shrinks to the
+  // left of the page grid (phones: just under the title) and stays there.
+  // opts.left = free width (design units) left of the finale's content.
+  function signoff(tl, fin, opts) {
+    var dim = h('div', 'dt-so-dim', null, fin);
+    var el = h('div', 'dt-signoff', '<span class="dt-so-w">A</span> <img class="dt-so-logo" src="' + LOGO +
+      '" alt="V² (V Square)" decoding="async"> <span class="dt-so-w">product</span>', fin);
+    el.setAttribute('aria-label', 'A V² (V Square) product');
+    var target = null;
+    function T() {
+      if (target) return target;
+      var vw = window.innerWidth, vh = window.innerHeight, W = el.offsetWidth, H = el.offsetHeight;
+      var cv = S.canvas.getBoundingClientRect();
+      var free = cv.left + (opts.left || 0) * S.scale;          // viewport left edge → the content
+      if (S.layout === 'wide' && free >= 130) {
+        var k = Math.min(free - 28, 300) / W;
+        target = { x: free / 2 - vw / 2, y: (cv.top + cv.bottom) / 2 - vh / 2, k: k };
+      } else {
+        var hd = S.head.getBoundingClientRect();
+        var th = Math.max(22, Math.min(40, cv.top - hd.bottom - 14));
+        var k2 = th / H;
+        target = { x: hd.left + W * k2 / 2 - vw / 2, y: hd.bottom + 7 + th / 2 - vh / 2, k: k2 };
+      }
+      return target;
+    }
+    gsap.set(el, { xPercent: -50, yPercent: -50 });
+    tl.fromTo(dim, { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0)
+      .fromTo(el, { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.7, ease: 'power3.out' }, 0)
+      .to(el, { x: function () { return T().x; }, y: function () { return T().y; }, scale: function () { return T().k; },
+        duration: 0.9, ease: 'power3.inOut' }, 1.9)
+      .to(dim, { opacity: 0, duration: 0.7 }, 1.95);
+    if (S.markEl) tl.to(S.markEl, { opacity: 0, duration: 0.3 }, 1.9);
+    tl.add(function () { el.classList.add('is-docked'); }, 2.8);
+    return 2.8;
   }
 
   /* ---------- steps view (reduced motion) ---------- */

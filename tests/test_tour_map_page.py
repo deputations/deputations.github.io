@@ -256,3 +256,16 @@ def test_map_cta_closes_onto_the_map(page: Page, base_url: str):
     assert page.evaluate("window.__closed.reason") == "cta"
     expect(page.locator(".dt-overlay")).to_have_count(0)
     assert seen(page).get("map") == 1
+
+
+def test_map_tour_has_the_v2_logo_but_no_ending(page: Page, base_url: str):
+    page.set_viewport_size({"width": 1440, "height": 900})
+    _open_map(page, base_url)
+    for i in range(len(TITLES)):
+        _end(page, i)
+        assert page.evaluate("+getComputedStyle(document.querySelector('.dt-mark')).opacity") > 0.9, i
+    for _ in range(8):
+        page.keyboard.press("ArrowRight")
+    expect(page.locator(".dt-cta")).to_contain_text("Explore the map", timeout=10000)
+    page.wait_for_timeout(1500)
+    assert page.locator(".dt-signoff").count() == 0
