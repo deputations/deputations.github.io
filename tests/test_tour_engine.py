@@ -551,3 +551,26 @@ def test_arrow_keys_at_the_finale_keep_the_scene(page: Page, base_url: str):
     page.wait_for_timeout(300)
     expect(page.locator(".probe-link")).to_have_count(1)
     expect(page.locator(".dt-cta")).to_have_count(1)
+
+
+def test_replay_right_after_closing_stays_open(page: Page, base_url: str):
+    """Closing pops the tour's history entry asynchronously; a replay started at
+    once must not be closed by that late pop — and Back must still close it."""
+    open_engine(page, base_url)
+    register_probe_tour(page, scenes=[{"key": "a", "title": "Alpha", "duration": 30}])
+    url = page.url
+    start(page)
+    page.evaluate("""() => {
+      window.__res2 = null;
+      DepTour.close('skip');
+      const t = setInterval(() => {            // replay the moment the first tour is gone
+        if (DepTour.isOpen()) return;
+        clearInterval(t);
+        DepTour.play('t').then(r => { window.__res2 = r; });
+      }, 5);
+    }""")
+    page.wait_for_timeout(1500)
+    assert page.evaluate("DepTour.isOpen()") is True
+    page.go_back()
+    page.wait_for_function("() => window.__res2 === 'skip'", polling=100, timeout=10000)
+    assert page.url == url

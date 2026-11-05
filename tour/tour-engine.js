@@ -479,6 +479,13 @@
       return renderStep(Math.max(0, i));
     }
     if (S.phase === 'finale' && i >= n) return;      // already at the end: keep the scene + CTA
+    var cta = S.tour.cta;
+    if (i >= n && cta && cta.keepScene && S.phase === 'scene' && S.wrap && S.index === n - 1) {
+      // skipping past the last step: show it finished (its links are the finale)
+      S.wrap.seek(S.sceneStart + S.sceneDuration, true);
+      S.wrap.pause();
+      return finale();
+    }
     clearScenes();
     if (i >= n) return finale();
     enterScene(Math.max(0, i));

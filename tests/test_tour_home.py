@@ -327,7 +327,7 @@ def test_steps_view_lists_every_step(page: Page, base_url: str):
     _open_home(page, base_url)
     page.locator(".dt-skip").click()
     page.wait_for_function("() => !DepTour.isOpen()", polling=100)
-    page.evaluate("window.__res = null; DepTour.play('home', { mode: 'steps' }).then(r => { window.__res = r; })")
+    page.evaluate("() => { window.__res = null; DepTour.play('home', { mode: 'steps' }).then(r => { window.__res = r; }); }")
     titles = []
     for _ in TITLES:
         titles.append(page.locator(".dt-steps h3").text_content())
