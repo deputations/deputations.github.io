@@ -73,7 +73,8 @@ def test_should_autoplay_rules(page: Page, base_url: str):
     _wait_for_loader(page)
     results = page.evaluate(
         """() => {
-          const base = {seen: {}, off: false, webdriver: false, reducedMotion: false, force: false};
+          const base = {seen: {}, off: false, webdriver: false, reducedMotion: false, intent: false,
+                        saveData: false, force: false};
           const f = (over) => DepTourLoader.shouldAutoplay({...base, ...over}, 'home');
           return {
             clean: f({}),
@@ -82,7 +83,10 @@ def test_should_autoplay_rules(page: Page, base_url: str):
             off: f({off: true}),
             webdriver: f({webdriver: true}),
             reduced: f({reducedMotion: true}),
-            forced: f({seen: {home: 1}, off: true, webdriver: true, reducedMotion: true, force: true}),
+            intent: f({intent: true}),
+            saveData: f({saveData: true}),
+            forced: f({seen: {home: 1}, off: true, webdriver: true, reducedMotion: true, intent: true,
+                       saveData: true, force: true}),
           };
         }"""
     )
@@ -93,6 +97,8 @@ def test_should_autoplay_rules(page: Page, base_url: str):
         "off": False,
         "webdriver": False,
         "reduced": False,
+        "intent": False,
+        "saveData": False,
         "forced": True,
     }
 
@@ -173,3 +179,67 @@ def test_replay_hides_over_footer(page: Page, base_url: str):
     page.wait_for_selector(".sw-footer", state="attached", timeout=10000)
     page.evaluate("document.querySelector('.sw-footer').scrollIntoView({block: 'end'})")
     expect(btn).to_have_class(re.compile(r"\bdt-replay--hidden\b"), timeout=15000)
+
+
+# ---- auto-play must never get in the way of what the visitor came for ----
+
+REAL_VISIT = "Object.defineProperty(navigator, 'webdriver', { get: () => false });"
+
+
+def _assert_no_tour_after_load(page: Page, requested: list[str]) -> None:
+    page.wait_for_load_state("load", timeout=30000)
+    _wait_for_loader(page)
+    page.wait_for_timeout(3000)
+    assert page.locator(".dt-overlay").count() == 0
+    assert not any("/vendor/gsap.min.js" in u for u in requested)
+    assert page.evaluate("DepTourLoader.readSeen()") == {}      # still plays on a later plain visit
+
+
+def test_shared_vacancy_link_skips_autoplay(page: Page, base_url: str):
+    """A visitor opening a shared /?v=<id> link sees the vacancy, not the demo."""
+    page.add_init_script(REAL_VISIT)
+    page.goto(f"{base_url}/index.html?search=officer")          # no autoplay here; find a real listed id
+    page.wait_for_selector("[data-id]", state="attached", timeout=30000)
+    vid = page.evaluate("document.querySelector('[data-id]').getAttribute('data-id')")
+    page.evaluate("localStorage.removeItem('dep_tour_seen_v1')")
+    requested = []
+    page.on("request", lambda r: requested.append(r.url))
+    page.goto(f"{base_url}/index.html?v={vid}")
+    expect(page.locator("dialog[open]")).to_have_count(1, timeout=30000)
+    _assert_no_tour_after_load(page, requested)
+
+
+def test_filter_link_skips_autoplay(page: Page, base_url: str):
+    page.add_init_script(REAL_VISIT)
+    requested = []
+    page.on("request", lambda r: requested.append(r.url))
+    page.goto(f"{base_url}/index.html?search=officer")
+    _assert_no_tour_after_load(page, requested)
+
+
+def test_tracking_only_link_still_autoplays(page: Page, base_url: str):
+    page.add_init_script(REAL_VISIT)
+    page.goto(f"{base_url}/index.html?utm_source=whatsapp&utm_medium=share")
+    page.wait_for_selector(".dt-overlay", state="attached", timeout=30000)
+
+
+def test_early_interaction_defers_autoplay(page: Page, base_url: str):
+    page.add_init_script(REAL_VISIT + """
+      document.addEventListener('DOMContentLoaded', () => {
+        document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      });
+    """)
+    requested = []
+    page.on("request", lambda r: requested.append(r.url))
+    page.goto(f"{base_url}/index.html")
+    _assert_no_tour_after_load(page, requested)
+
+
+def test_save_data_skips_autoplay(page: Page, base_url: str):
+    page.add_init_script(REAL_VISIT + """
+      Object.defineProperty(navigator, 'connection', { get: () => ({ saveData: true, effectiveType: '4g' }) });
+    """)
+    requested = []
+    page.on("request", lambda r: requested.append(r.url))
+    page.goto(f"{base_url}/index.html")
+    _assert_no_tour_after_load(page, requested)

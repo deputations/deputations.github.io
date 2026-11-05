@@ -39,14 +39,17 @@ PROBE_SCENE_JS = """
 
 
 @pytest.fixture(autouse=True)
-def no_hero_wave(page: Page) -> None:
+def no_hero_wave(page: Page, request: pytest.FixtureRequest) -> None:
     """Stub the homepage WebGL hero for tour tests.
 
     In CPU-only CI/containers the software-rendered hero drops index.html to a
     few frames per second, which starves both rAF-based polling and GSAP's
     clock. The tour does not depend on the hero, so tour tests run without it.
-    Import this fixture into each tour test module to activate it.
+    Import this fixture into each tour test module to activate it. Tests
+    marked @pytest.mark.real_hero keep the real hero.
     """
+    if request.node.get_closest_marker("real_hero"):
+        return
     page.route("**/hero-wave.js*", lambda r: r.fulfill(body="", content_type="application/javascript"))
 
 

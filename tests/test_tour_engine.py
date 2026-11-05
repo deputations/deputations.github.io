@@ -9,6 +9,7 @@ Run:
 """
 from __future__ import annotations
 
+import pytest
 from playwright.sync_api import Page, expect
 
 from tests.tour_helpers import (
@@ -279,3 +280,167 @@ def test_skipping_ahead_reaches_the_cta(page: Page, base_url: str):
     cta.click()
     assert result(page) == "cta"
     assert page.evaluate("window.__ctaRan") is True
+
+
+# ---- review fixes: keyboard, focus, screen readers, Back, small screens, cost ----
+
+def test_keys_inside_a_page_dialog_are_left_alone(page: Page, base_url: str):
+    open_engine(page, base_url)
+    register_probe_tour(page, scenes=[{"key": "a", "title": "Alpha", "duration": 20}])
+    start(page)
+    page.evaluate("""() => {
+      const d = document.createElement('dialog');
+      d.id = 'page-dialog';
+      d.innerHTML = '<input id="page-input">';
+      document.body.appendChild(d);
+      d.showModal();
+      document.getElementById('page-input').focus();
+    }""")
+    page.keyboard.type("a b")
+    page.keyboard.press("ArrowLeft")
+    page.keyboard.type("c")
+    assert page.evaluate("document.getElementById('page-input').value") == "a cb"
+    page.keyboard.press("Escape")
+    assert page.evaluate("document.getElementById('page-dialog').open") is False
+    assert page.evaluate("DepTour.isOpen()") is True
+
+
+def test_shift_tab_stays_inside_the_tour(page: Page, base_url: str):
+    open_engine(page, base_url)
+    register_probe_tour(page)
+    start(page)
+    page.wait_for_timeout(200)
+    for key in ["Shift+Tab", "Tab", "Shift+Tab", "Shift+Tab"]:
+        page.keyboard.press(key)
+        inside = page.evaluate("""() => { const o = document.querySelector('.dt-overlay'), a = document.activeElement;
+                                          return o.contains(a) && a !== o; }""")
+        assert inside, key
+
+
+def test_page_is_inert_while_the_tour_is_open(page: Page, base_url: str):
+    open_engine(page, base_url)
+    register_probe_tour(page)
+    page.evaluate("document.body.insertAdjacentHTML('beforeend', '<div id=\"already-inert\" inert></div>')")
+    start(page)
+    assert page.evaluate("""() => [...document.body.children]
+        .filter(el => !el.classList.contains('dt-overlay')).every(el => el.inert)""")
+    page.locator(".dt-skip").click()
+    assert result(page) == "skip"
+    assert page.evaluate("""() => [...document.body.children]
+        .filter(el => el.id !== 'already-inert').every(el => !el.inert)""")
+    assert page.evaluate("document.getElementById('already-inert').inert") is True
+
+
+def test_screen_reader_semantics(page: Page, base_url: str):
+    open_engine(page, base_url)
+    register_probe_tour(page)
+    start(page)
+    expect(page.locator(".dt-stage")).to_have_attribute("aria-hidden", "true")
+    expect(page.locator(".dt-head")).to_have_attribute("aria-live", "polite")
+    expect(page.locator(".dt-skip")).to_have_attribute("aria-label", "Skip the demo")
+
+
+def test_back_button_closes_the_tour(page: Page, base_url: str):
+    open_engine(page, base_url)
+    register_probe_tour(page)
+    url = page.url
+    start(page)
+    page.go_back()
+    assert result(page) == "skip"
+    expect(page.locator(".dt-overlay")).to_have_count(0)
+    assert page.url == url
+
+
+def test_closing_removes_the_history_entry(page: Page, base_url: str):
+    open_engine(page, base_url)
+    register_probe_tour(page)
+    url = page.url
+    length = page.evaluate("history.length")
+    start(page)
+    page.locator(".dt-skip").click()
+    assert result(page) == "skip"
+    page.wait_for_function("() => !(history.state && history.state.dtTour)", polling=100, timeout=5000)
+    assert page.url == url
+    assert page.evaluate("history.length") <= length + 1
+
+
+def test_small_landscape_phone_gets_the_steps_view(page: Page, base_url: str):
+    page.set_viewport_size({"width": 844, "height": 390})
+    open_engine(page, base_url)
+    register_probe_tour(page)
+    start(page)
+    assert page.evaluate("DepTour.state().mode") == "steps"
+
+
+def test_layout_is_chosen_by_readable_scale(page: Page, base_url: str):
+    for vp, layout in [((1440, 900), "wide"), ((1024, 768), "wide"), ((390, 844), "tall"), ((820, 1180), "tall")]:
+        page.set_viewport_size({"width": vp[0], "height": vp[1]})
+        open_engine(page, base_url)
+        register_probe_tour(page)
+        start(page)
+        st = page.evaluate("DepTour.state()")
+        assert st["layout"] == layout, (vp, st)
+        scale = page.evaluate("""() => document.querySelector('.dt-canvas').getBoundingClientRect().width /
+                                       document.querySelector('.dt-canvas').offsetWidth""")
+        assert scale >= 0.6, (vp, scale)
+        page.locator(".dt-skip").click()
+        assert result(page) == "skip"
+
+
+def test_steps_view_ends_on_the_cta(page: Page, base_url: str):
+    page.emulate_media(reduced_motion="reduce")
+    open_engine(page, base_url)
+    register_probe_tour(page, cta="Go")
+    start(page)
+    page.locator(".dt-next").click()
+    expect(page.locator(".dt-next")).to_have_text("Go")
+    page.locator(".dt-next").click()
+    assert result(page) == "cta"
+    assert page.evaluate("window.__ctaRan") is True
+
+
+def test_heavy_effects_are_lighter_on_low_power_devices(page: Page, base_url: str):
+    page.add_init_script("Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });"
+                         "Object.defineProperty(navigator, 'deviceMemory', { get: () => 4 });")
+    open_engine(page, base_url)
+    register_probe_tour(page)
+    start(page)
+    expect(page.locator(".dt-overlay.dt-low")).to_have_count(1)
+    assert page.evaluate("getComputedStyle(document.querySelector('.dt-backdrop')).backdropFilter") == "none"
+    assert page.evaluate("getComputedStyle(document.querySelector('.dt-aurora')).filter") == "none"
+
+
+@pytest.mark.real_hero
+def test_the_3d_hero_pauses_while_the_tour_is_open(page: Page, base_url: str):
+    """The page's WebGL wave keeps drawing every frame; under the tour it must not."""
+    page.add_init_script("""
+      window.__draws = 0;
+      for (const C of [window.WebGLRenderingContext, window.WebGL2RenderingContext]) {
+        if (!C) continue;
+        for (const m of ['drawArrays', 'drawElements']) {
+          const orig = C.prototype[m];
+          C.prototype[m] = function () { window.__draws++; return orig.apply(this, arguments); };
+        }
+      }
+    """)
+    open_engine(page, base_url)
+    page.wait_for_function("() => window.__draws > 0", polling=200, timeout=30000)
+    register_probe_tour(page, scenes=[{"key": "a", "title": "Alpha", "duration": 30}])
+    start(page)
+    page.wait_for_timeout(1000)
+    before = page.evaluate("window.__draws")
+    page.wait_for_timeout(2500)
+    assert page.evaluate("window.__draws") == before
+    page.locator(".dt-skip").click()
+    assert result(page) == "skip"
+    after = page.evaluate("window.__draws")
+    page.wait_for_function(f"() => window.__draws > {after}", polling=200, timeout=15000)
+
+
+def test_aurora_blending_stays_inside_the_aurora(page: Page, base_url: str):
+    """Blending that leaks into the overlay silently disables the backdrop blur of
+    the page behind in Chrome (found by eye in the review fix pass)."""
+    open_engine(page, base_url)
+    register_probe_tour(page)
+    start(page)
+    assert page.evaluate("getComputedStyle(document.querySelector('.dt-aurora')).isolation") == "isolate"

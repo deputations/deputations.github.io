@@ -83,35 +83,55 @@
   };
 
   var SAMPLE = null;
+
+  // Deputation eligibility the way the site models it (enrich.js isEligible):
+  // a post lists feeder grades ("open to Level 7 with 3 years at that level");
+  // an officer qualifies if their level is one of them with enough years.
+  function isEligible(v, level, years) {
+    return (v.openTo || []).some(function (t) { return t.level === level && years >= t.years; });
+  }
+
   function buildSample() {
     var rnd = mulberry32(20261104);
     var pick = function (arr) { return arr[Math.floor(rnd() * arr.length)]; };
+    var between = function (a, b) { return a + Math.floor(rnd() * (b - a + 1)); };
     var today = todayISO();
     var monthLeft = daysToMonthEnd(today);
     var list = [];
-    function make(title, level, minYears, loc, closes) {
+    function make(title, level, openTo, loc, closes) {
       var min = pick(MINISTRIES);
       return { title: title, ministry: min.m, org: pick(min.orgs), location: loc[0], state: loc[1],
-               payLevel: level, minYears: minYears, closes: closes };
+               payLevel: level, openTo: openTo, closes: closes };
     }
     var i;
-    // Exactly 8 posts open to a Level 7 officer with 4 years at that level.
-    for (i = 0; i < 8; i++) {
-      list.push(make('Assistant Section Officer', 7, 2 + Math.floor(rnd() * 3), pick(LOCATIONS),
-                     addDays(today, 6 + Math.floor(rnd() * 45))));
+    // Exactly 8 posts a Level 7 officer with 4 years at that level can apply for:
+    // 3 analogous Level 7 posts, 5 higher posts that take Level 7 feeders.
+    for (i = 0; i < 3; i++) {
+      list.push(make('Assistant Section Officer', 7, [{ level: 7, years: 0 }], pick(LOCATIONS),
+                     addDays(today, between(6, 50))));
     }
-    // Level 8 posts in Delhi that close this month (the "Just ask" query).
+    var HIGHER = [['Section Officer', 8], ['Accounts Officer', 8], ['Section Officer', 8],
+                  ['Accounts Officer', 9], ['Senior Accounts Officer', 9]];
+    HIGHER.forEach(function (p) {
+      list.push(make(p[0], p[1], [{ level: 7, years: between(2, 4) }, { level: 6, years: between(6, 8) }],
+                     pick(LOCATIONS), addDays(today, between(6, 50))));
+    });
+    // Level 8 posts in Delhi that close this month (the "Just ask" query);
+    // they need 5+ years at Level 7, so they are not in the 8 above.
     for (i = 0; i < 4; i++) {
-      list.push(make(i % 2 ? 'Accounts Officer' : 'Section Officer', 8, 3 + Math.floor(rnd() * 3),
+      list.push(make(i % 2 ? 'Accounts Officer' : 'Section Officer', 8, [{ level: 7, years: between(5, 6) }],
                      ['Delhi', 'DL'], addDays(today, Math.floor(rnd() * (monthLeft + 1)))));
     }
-    // Everything else; any Level 7 post here needs 5+ years, so it stays ineligible.
+    // Everything else: feeder grades below the post; never Level 7 with <= 4 years.
     while (list.length < 120) {
       var post = pick(POSTS);
       var level = pick(post.l);
-      var years = Math.floor(rnd() * 9);
-      if (level === 7 && years <= 4) years = 5 + Math.floor(rnd() * 4);
-      list.push(make(post.t, level, years, pick(LOCATIONS), addDays(today, 1 + Math.floor(rnd() * 75))));
+      var tiers = [];
+      var f1 = Math.max(1, level - 1), f2 = Math.max(1, level - 2);
+      tiers.push({ level: f1, years: between(2, 5) });
+      if (f2 < f1 && rnd() < 0.6) tiers.push({ level: f2, years: between(5, 8) });
+      tiers.forEach(function (t) { if (t.level === 7 && t.years <= 4) t.years = between(5, 7); });
+      list.push(make(post.t, level, tiers, pick(LOCATIONS), addDays(today, between(1, 75))));
     }
     for (i = list.length - 1; i > 0; i--) {
       var j = Math.floor(rnd() * (i + 1));
@@ -123,7 +143,8 @@
       eligibleCount: 86,
       query: 'Level 8 posts in Delhi closing this month',
       vacancies: list,
-      heat: HEAT
+      heat: HEAT,
+      isEligible: isEligible
     };
   }
   function sample() {
@@ -198,6 +219,9 @@
       var c = cursor();
       var pt = null;
       function P() { return pt || (pt = centre(target)); }
+      // SVG shapes are not "pressed": a CSS scale on an SVG path scales it about
+      // the drawing's origin, so the state would visibly jump across the map.
+      var pressable = target && target.classList && !(window.SVGElement && target instanceof SVGElement);
       var ring = mk('i', 'dt-ripple', null, layer);
       var sparks = [];
       for (var i = 0; i < 8; i++) sparks.push(mk('i', 'dt-tap-spark', null, layer));
@@ -205,10 +229,10 @@
       function cleanup() {
         ring.remove();
         sparks.forEach(function (s) { s.remove(); });
-        if (target && target.classList) target.classList.remove('dt-pressed');
+        if (pressable) target.classList.remove('dt-pressed');
       }
       var tl = gsap.timeline({ onComplete: cleanup });
-      tl.call(function () { if (target && target.classList) target.classList.add('dt-pressed'); }, null, 0)
+      tl.call(function () { if (pressable) target.classList.add('dt-pressed'); }, null, 0)
         .to(c, { scale: 0.82, duration: 0.12, ease: 'power2.out' }, 0)
         .to(c, { scale: 1, duration: 0.24, ease: 'back.out(3)' }, 0.12)
         .fromTo(ring, { x: function () { return P().x; }, y: function () { return P().y; }, scale: 0, opacity: 0.9 },
@@ -220,7 +244,7 @@
           { x: function () { return P().x + Math.cos(a) * dist; }, y: function () { return P().y + Math.sin(a) * dist; },
             opacity: 0, scale: 0.3, duration: 0.45, ease: 'power3.out', immediateRender: false }, 0.05);
       });
-      tl.call(function () { if (target && target.classList) target.classList.remove('dt-pressed'); }, null, 0.36);
+      tl.call(function () { if (pressable) target.classList.remove('dt-pressed'); }, null, 0.36);
       return tl;
     }
 

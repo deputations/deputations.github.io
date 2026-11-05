@@ -21,6 +21,12 @@
   var LEVEL = 7, YEARS = 4;
 
   function shortMinistry(m) { return String(m).replace(/^Ministry of /, ''); }
+  // "Open to L-7 · 3 yrs" — the feeder grade that matters to this officer, else the first one
+  function openToText(v) {
+    var t = (v.openTo || []).filter(function (x) { return x.level === LEVEL; })[0] || (v.openTo || [])[0];
+    if (!t) return '';
+    return 'Open to L-' + t.level + (t.years ? ' \u00B7 ' + t.years + ' yrs' : '');
+  }
   function daysLeft(iso) {
     var today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     return Math.max(0, Math.round((Date.parse(iso) - Date.parse(today)) / 864e5));
@@ -51,11 +57,11 @@
       var s = kit.sample;
       var L = tall
         ? { panel: [10, 0, 370, 206], chip: [10, 216], wall: [15, 262, 360, 450], cols: 4, n: 48, keep: 5, card: [340, 80] }
-        : { panel: [24, 64, 300, 392], chip: [356, 0], wall: [350, 54, 730, 556], cols: 8, n: kit.lowPower ? 72 : 120, keep: 8, card: [300, 92] };
+        : { panel: [24, 64, 300, 392], chip: [356, 0], wall: [350, 54, 730, 556], cols: 8, n: kit.lowPower ? 72 : 120, keep: 8, card: [322, 92] };
 
       // pick the cards: survivors first so they are always present, then fill in
-      var eligible = s.vacancies.filter(function (v) { return v.payLevel === LEVEL && v.minYears <= YEARS; }).slice(0, L.keep);
-      var others = s.vacancies.filter(function (v) { return eligible.indexOf(v) < 0 && !(v.payLevel === LEVEL && v.minYears <= YEARS); });
+      var eligible = s.vacancies.filter(function (v) { return s.isEligible(v, LEVEL, YEARS); }).slice(0, L.keep);
+      var others = s.vacancies.filter(function (v) { return !s.isEligible(v, LEVEL, YEARS); });
       var chosen = s.vacancies.filter(function (v) {
         return eligible.indexOf(v) >= 0 || others.indexOf(v) >= 0 && others.indexOf(v) < L.n - eligible.length;
       });
@@ -71,7 +77,8 @@
             '<div class="dt-select"><span class="dt-select-v is-empty">Select level</span>' +
             '<span class="dt-select-v is-set">Level ' + LEVEL + '</span><i class="dt-chev"></i></div></div>' +
           '<div class="dt-field"><span class="dt-field-l">Years at this level</span>' +
-            '<div class="dt-input"><span class="dt-input-v"></span><span class="dt-input-suffix">years</span></div></div>' +
+            '<div class="dt-select dt-years"><span class="dt-select-v is-empty">Select years</span>' +
+            '<span class="dt-select-v is-set">' + YEARS + ' years</span><i class="dt-chev"></i></div></div>' +
         '</div>' +
         '<ul class="dt-options">' + [5, 6, 7, 8, 9].map(function (l) {
           return '<li' + (l === LEVEL ? ' class="is-pick"' : '') + '>Level ' + l + '</li>';
@@ -81,14 +88,14 @@
       var select = panel.querySelector('.dt-select');
       var options = panel.querySelector('.dt-options');
       var pick = panel.querySelector('.dt-options .is-pick');
-      var input = panel.querySelector('.dt-input');
+      var years = panel.querySelector('.dt-years');
       var note = panel.querySelector('.dt-panel-note');
 
       /* counter */
       var chip = kit.el('div', 'dt-count-chip', null, stage);
       Object.assign(chip.style, { left: L.chip[0] + 'px', top: L.chip[1] + 'px' });
       chip.innerHTML = '<b class="dt-count"></b><span class="dt-count-k">vacancies</span>' +
-        '<span class="dt-count-sub"><span class="is-all">across India</span><span class="is-you">you can apply for</span></span>';
+        '<span class="dt-count-sub"><span class="is-all">in this sample</span><span class="is-you">you can apply for</span></span>';
       var count = chip.querySelector('.dt-count');
       count.textContent = s.total.toLocaleString('en-IN');
 
@@ -105,9 +112,9 @@
         c.style.width = CW + 'px';
         c.style.height = CH + 'px';
         c.innerHTML = '<i class="dt-vcard-bar"></i><i class="dt-vcard-glow"></i>' +
-          '<div class="dt-vcard-main"><b>' + esc(v.title) + '</b><span>' + esc(v.org) + ' · ' + esc(shortMinistry(v.ministry)) + '</span></div>' +
-          '<div class="dt-vcard-meta"><span class="dt-lvl">Level ' + v.payLevel + '</span><span>' + esc(v.location) +
-          '</span><span class="dt-days">' + daysLeft(v.closes) + ' days left</span></div>';
+          '<div class="dt-vcard-main"><b>' + esc(v.title) + '</b><span>' + esc(v.org) + ' · ' + esc(v.location) + '</span></div>' +
+          '<div class="dt-vcard-meta"><span class="dt-lvl">Level ' + v.payLevel + '</span><span class="dt-open">' + openToText(v) +
+          '</span><span class="dt-days">' + daysLeft(v.closes) + 'd left</span></div>';
         var col = i % cols, row = Math.floor(i / cols);
         gsap.set(c, { x: col * cw + (cw - CW * mini) / 2, y: row * ch + (ch - CH * mini) / 2,
                       scale: mini, transformOrigin: '0 0', opacity: 0 });
@@ -147,10 +154,11 @@
         .to(select.querySelector('.is-empty'), { opacity: 0, y: -8, duration: 0.25 }, 4.55)
         .fromTo(select.querySelector('.is-set'), { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.3 }, 4.6)
         .to(options, { opacity: 0, y: -6, duration: 0.25 }, 4.65);
-      // 3. years
-      tl.add(kit.cursorTo(input, { duration: 0.5 }), 4.9)
-        .add(kit.tap(input), 5.45)
-        .add(kit.type(input.querySelector('.dt-input-v'), String(YEARS), { cps: 6 }), 5.55)
+      // 3. years at that level
+      tl.add(kit.cursorTo(years, { duration: 0.5 }), 4.9)
+        .add(kit.tap(years), 5.45)
+        .to(years.querySelector('.is-empty'), { opacity: 0, y: -8, duration: 0.25 }, 5.55)
+        .fromTo(years.querySelector('.is-set'), { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.3 }, 5.6)
         .fromTo(note, { opacity: 0 }, { opacity: 1, duration: 0.3 }, 5.95)
         .add(kit.sweep(note), 6.0);
 
@@ -159,7 +167,7 @@
       if (cursorBits.length) tl.to(cursorBits, { opacity: 0, duration: 0.4 }, 6.3);
       tl.add(kit.camera({ z: 1.03, ry: 3 }, { duration: 1.4, ease: 'power2.inOut' }), 6.2)
         .to(drop, Object.assign({ rotationY: 90, z: -360, y: '+=70', opacity: 0, duration: 0.9, ease: 'power2.in',
-          stagger: { amount: 1.3, from: 'random' } }, kit.lowPower ? {} : { filter: 'blur(6px)' }), 6.4)
+          stagger: { amount: 1.3, from: 'random' } }, kit.lowPower || tall ? {} : { filter: 'blur(6px)' }), 6.4)
         .add(kit.odometer(count, s.total, s.eligibleCount, { duration: 1.9 }), 6.5)
         .to(chip.querySelector('.is-all'), { opacity: 0, y: -8, duration: 0.3 }, 7.2)
         .fromTo(chip.querySelector('.is-you'), { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.35 }, 7.3)
@@ -190,7 +198,7 @@
     key: 'ask',
     label: 'STEP 2',
     title: 'Just ask',
-    summary: 'Type what you want in plain words — AI turns it into filters and ranks the matches.',
+    summary: 'Type what you want in plain words — AI understands it and ranks the best matches.',
     build: function (stage, kit) {
       var tall = kit.layout === 'tall';
       var s = kit.sample;
@@ -216,6 +224,7 @@
 
       var row = kit.el('div', 'dt-ask-chips', null, stage);
       Object.assign(row.style, { left: L.chips[0] + 'px', top: L.chips[1] + 'px', width: L.chips[2] + 'px' });
+      var understood = kit.el('span', 'dt-ask-understood', 'Understood', row);
       var chips = CHIPS.map(function (label) {
         var c = kit.el('span', 'dt-chip', null, row);
         c.innerHTML = '<i class="dt-chip-ico" aria-hidden="true"></i>';
@@ -272,7 +281,8 @@
             duration: 0.7, ease: 'power2.inOut', immediateRender: false }, flyAt + (i % PER) * 0.025 + Math.floor(i / PER) * 0.12);
       });
       tl.to(sparks.map(function (o) { return o.el; }), { opacity: 0, duration: 0.2 }, flyAt + 1.2);
-      tl.fromTo(chips, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2.2)', stagger: 0.12 }, flyAt + 0.55)
+      tl.fromTo(understood, { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.4, ease: 'power2.out' }, flyAt + 0.4)
+        .fromTo(chips, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2.2)', stagger: 0.12 }, flyAt + 0.55)
         .fromTo(label, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.4 }, flyAt + 1.1)
         .add(kit.sweep(label), flyAt + 1.2);
       var listAt = flyAt + 1.4;

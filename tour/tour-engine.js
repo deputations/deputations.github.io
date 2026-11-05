@@ -43,13 +43,19 @@
     b.textContent = text;
     return b;
   }
-  function layoutFor() { return window.innerWidth < 700 ? 'tall' : 'wide'; }
+  function scaleFor(layout) {
+    var dims = CANVAS[layout], room = CHROME[layout];
+    return Math.min((window.innerWidth - room.side * 2) / dims[0],
+                    (window.innerHeight - room.top - room.bottom) / dims[1]);
+  }
+  function layoutFor() { return scaleFor('wide') >= scaleFor('tall') ? 'wide' : 'tall'; }
+  var MIN_SCALE = 0.5;               // below this the cinematic stage is unreadable
   function reducedMotion() {
     try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
   }
   function lowPower() {
-    var c = navigator.hardwareConcurrency;
-    return typeof c === 'number' && c > 0 && c <= 4;
+    var c = navigator.hardwareConcurrency, m = navigator.deviceMemory;
+    return (typeof c === 'number' && c > 0 && c <= 4) || (typeof m === 'number' && m > 0 && m <= 4);
   }
   function markSeen(key) {
     var L = window.DepTourLoader;
@@ -129,6 +135,7 @@
     }
     var mode = (opts.mode === 'steps' || opts.mode === 'cinematic') ? opts.mode
       : (reducedMotion() ? 'steps' : 'cinematic');
+    if (mode === 'cinematic' && scaleFor(layoutFor()) < MIN_SCALE) mode = 'steps';   // e.g. phone held sideways
     var resolve;
     var promise = new Promise(function (r) { resolve = r; });
     S = {
@@ -155,7 +162,8 @@
     root.style.overflow = 'hidden';
     root.classList.add('dt-open');
 
-    var ov = S.overlay = h('div', 'dt-overlay dt-mode-' + S.mode);
+    S.lowPower = lowPower();
+    var ov = S.overlay = h('div', 'dt-overlay dt-mode-' + S.mode + (S.lowPower ? ' dt-low' : ''));
     ov.setAttribute('role', 'dialog');
     ov.setAttribute('aria-modal', 'true');
     ov.setAttribute('aria-labelledby', 'dt-title');
@@ -169,6 +177,7 @@
 
     if (S.mode === 'cinematic') {
       S.stage = h('div', 'dt-stage dt-' + S.layout, null, ov);
+      S.stage.setAttribute('aria-hidden', 'true');      // illustrative; the title says what it shows
       S.canvas = h('div', 'dt-canvas', null, S.stage);
       S.camera = h('div', 'dt-camera', null, S.canvas);
       S.headline = h('div', 'dt-headline', null, ov);
@@ -180,11 +189,13 @@
     var chrome = S.chrome = h('div', 'dt-chrome', null, ov);
     if (S.mode === 'cinematic') {
       S.head = h('div', 'dt-head', null, chrome);
+      S.head.setAttribute('aria-live', 'polite');
       S.labelEl = h('span', 'dt-label', null, S.head);
       S.titleEl = h('h2', 'dt-title', null, S.head);
       S.titleEl.id = 'dt-title';
     }
     S.skipBtn = button('dt-skip', 'Skip →', chrome);
+    S.skipBtn.setAttribute('aria-label', 'Skip the demo');
     var foot = h('div', 'dt-foot', null, chrome);
     h('span', 'dt-badge', 'Demo · sample data', foot);
     S.dotsEl = h('div', 'dt-dots', null, foot);
@@ -206,6 +217,18 @@
     window.addEventListener('resize', S.onResize);
 
     document.body.appendChild(ov);
+    // Everything else on the page is out of reach while the tour is open.
+    S.inerted = Array.prototype.filter.call(document.body.children, function (el) {
+      return el !== ov && !el.inert;
+    });
+    S.inerted.forEach(function (el) { el.inert = true; });
+    // Phone Back button closes the tour instead of leaving the site.
+    try {
+      history.pushState(Object.assign({}, history.state, { dtTour: 1 }), '', location.href);
+      S.pushed = true;
+    } catch (e) {}
+    S.onPop = function () { if (S && !S.closing) { S.popped = true; close('skip'); } };
+    window.addEventListener('popstate', S.onPop);
     emit('deptour:open', { key: S.key, mode: S.mode });
     fit();
     try { ov.focus({ preventScroll: true }); } catch (e) { ov.focus(); }
@@ -462,13 +485,18 @@
       S.stepCount = h('span', 'dt-steps-count', null, nav);
       S.nextBtn = button('dt-next', 'Next →', nav);
       S.backBtn.addEventListener('click', function () { goTo(S.index - 1); });
-      S.nextBtn.addEventListener('click', function () { goTo(S.index + 1); });
+      S.nextBtn.addEventListener('click', function () {
+        var cta = S.tour.cta;
+        if (S.index === S.scenes.length - 1 && cta && cta.label) close('cta');
+        else goTo(S.index + 1);
+      });
     }
     S.stepLabel.textContent = sc.label || '';
     S.stepTitle.textContent = sc.title || '';
     S.stepText.textContent = sc.summary || '';
     S.backBtn.disabled = i === 0;
-    S.nextBtn.textContent = i === n - 1 ? 'Done' : 'Next →';
+    var cta = S.tour.cta;
+    S.nextBtn.textContent = i < n - 1 ? 'Next →' : (cta && cta.label ? cta.label : 'Done');
     S.stepCount.textContent = (i + 1) + ' / ' + n;
     setChrome(i);
     setProgress((i + 1) / n);
@@ -478,6 +506,8 @@
   /* ---------- keyboard ---------- */
   function onKey(e) {
     if (!S || S.closing) return;
+    var t0 = e.target;
+    if (t0 && t0 !== document.body && t0 !== document.documentElement && !S.overlay.contains(t0)) return;
     var k = e.key;
     if (k === 'Escape') { e.preventDefault(); close('skip'); return; }
     if (k === 'ArrowRight') { e.preventDefault(); goTo(S.index + 1); return; }
@@ -499,8 +529,9 @@
     if (!items.length) { e.preventDefault(); return; }
     var first = items[0], last = items[items.length - 1];
     var active = document.activeElement;
-    if (e.shiftKey && (active === first || !S.overlay.contains(active))) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && (active === last || !S.overlay.contains(active))) { e.preventDefault(); first.focus(); }
+    var inItems = items.indexOf(active) !== -1;           // the overlay itself counts as outside
+    if (e.shiftKey && (active === first || !inItems)) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (active === last || !inItems)) { e.preventDefault(); first.focus(); }
   }
 
   /* ---------- transport ---------- */
@@ -530,6 +561,7 @@
     markSeen(sess.key);
     document.removeEventListener('keydown', sess.onKey, true);
     window.removeEventListener('resize', sess.onResize);
+    if (sess.onPop) window.removeEventListener('popstate', sess.onPop);
     clearTimeout(sess.resizeTimer);
     sess.tls.forEach(kill);
     kill(sess.openTl);
@@ -540,6 +572,10 @@
       if (finished) return;
       finished = true;
       if (sess.overlay) sess.overlay.remove();
+      (sess.inerted || []).forEach(function (el) { el.inert = false; });
+      if (sess.pushed && !sess.popped && history.state && history.state.dtTour) {
+        try { history.back(); } catch (e) {}
+      }
       var root = document.documentElement;
       root.classList.remove('dt-open');
       if (!root.getAttribute('class')) root.removeAttribute('class');

@@ -12,7 +12,8 @@ from playwright.sync_api import Page, expect
 
 from tests.tour_helpers import no_hero_wave, open_engine, result, start  # noqa: F401
 
-FAST_CPU = "Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });"
+FAST_CPU = ("Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });"
+            "Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });")
 SLOW_CPU = "Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 4 });"
 
 
@@ -185,9 +186,17 @@ def test_sample_rules(page: Page, base_url: str):
                                                         month: '2-digit', day: '2-digit' }).format(new Date());
       const month = today.slice(0, 7);
       const v = a.vacancies;
+      // the site's rule (enrich.js isEligible): the officer's level must be one of the post's
+      // feeder grades, with at least that grade's minimum years
+      const site = (x, lvl, yrs) => x.openTo.some(t => t.level === lvl && yrs >= t.years);
+      const eligible = v.filter(x => site(x, 7, 4));
       return {
         n: v.length,
-        eligible: v.filter(x => x.payLevel === 7 && x.minYears <= 4).length,
+        eligible: eligible.length,
+        kitAgrees: v.every(x => a.isEligible(x, 7, 4) === site(x, 7, 4)),
+        higher: eligible.filter(x => x.payLevel >= 8).length,
+        tiers: v.every(x => Array.isArray(x.openTo) && x.openTo.length > 0 &&
+                            x.openTo.every(t => Number.isInteger(t.level) && Number.isInteger(t.years) && t.level <= x.payLevel)),
         delhi8: v.filter(x => x.location === 'Delhi' && x.payLevel === 8 && x.closes.slice(0, 7) === month && x.closes >= today).length,
         allFuture: v.every(x => x.closes >= today),
         same: JSON.stringify(a.vacancies.map(x => x.id)) === JSON.stringify(b.vacancies.map(x => x.id)),
@@ -198,9 +207,21 @@ def test_sample_rules(page: Page, base_url: str):
     }""")
     assert out["n"] == 120
     assert out["eligible"] == 8
+    assert out["kitAgrees"] is True
+    assert out["higher"] >= 5                  # deputation mostly opens higher posts
+    assert out["tiers"] is True
     assert out["delhi8"] >= 3
     assert out["allFuture"] is True
     assert out["same"] is True
     assert out["fields"] is True
     assert out["meta"] == [1240, 86, "Level 8 posts in Delhi closing this month"]
     assert out["heatStates"] == 36
+
+
+def test_low_power_from_device_memory(page: Page, base_url: str):
+    page.add_init_script("Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });"
+                         "Object.defineProperty(navigator, 'deviceMemory', { get: () => 4 });")
+    open_engine(page, base_url)
+    _register(page, "return gsap.timeline().to({}, { duration: 1 });")
+    start(page)
+    assert page.evaluate("window.__kit.lowPower") is True

@@ -194,7 +194,7 @@
       tl.add(view.tl, 0);
 
       var count = kit.el('div', 'dt-chip dt-map-count',
-        '<span class="dt-chip-k">Active vacancies</span><b class="dt-chip-v"></b>', stage);
+        '<span class="dt-chip-k">Sample vacancies</span><b class="dt-chip-v"></b>', stage);
       Object.assign(count.style, tall ? { left: '16px', top: '8px' } : { left: '28px', top: '26px' });
       tl.fromTo(count, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 1.5)
         .add(kit.odometer(count.querySelector('.dt-chip-v'), 0, s.total, { duration: 1.7 }), 1.6);
@@ -211,7 +211,7 @@
         .add(diveTo(view, data.focus.abbr, kit), 4.5);
 
       var stateChip = kit.el('div', 'dt-chip dt-map-state',
-        '<span class="dt-chip-k">' + data.focus.state + '</span><b>' + (s.heat[data.focus.abbr] || 0) + '</b><span class="dt-chip-k">open posts</span>', stage);
+        '<span class="dt-chip-k">' + data.focus.state + '</span><b>' + (s.heat[data.focus.abbr] || 0) + '</b><span class="dt-chip-k">sample posts</span>', stage);
       Object.assign(stateChip.style, tall ? { left: '16px', top: '8px' } : { left: '28px', top: '26px' });
       tl.fromTo(stateChip, { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.5, ease: 'power2.out' }, 6.2)
         .add(raiseDistricts(view, data, kit), 6.2);
@@ -224,7 +224,7 @@
         .add(pin(view, bu.cx, bu.cy, kit), 7.95);
 
       var dChip = kit.el('div', 'dt-chip dt-map-district',
-        '<span class="dt-dot"></span><b>' + FOCUS_DISTRICT + '</b><span class="dt-chip-k">24 posts near you</span>', stage);
+        '<span class="dt-dot"></span><b>' + FOCUS_DISTRICT + '</b><span class="dt-chip-k">24 posts in this district</span>', stage);
       Object.assign(dChip.style, tall ? { left: '50%', bottom: '10px' } : { left: '50%', bottom: '22px' });
       tl.fromTo(dChip, { opacity: 0, y: 16, xPercent: -50 }, { opacity: 1, y: 0, xPercent: -50, duration: 0.6, ease: 'back.out(1.6)' }, 8.6)
         .to({}, { duration: 1.2 });

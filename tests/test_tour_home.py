@@ -12,6 +12,8 @@ from tests.tour_helpers import no_hero_wave, seen  # noqa: F401
 
 TITLES = ["Only the posts you can apply for", "Just ask", "See India's vacancies on a map"]
 HEADLINE = "Every Central deputation vacancy. One place."
+FULL_POWER = ("Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });"
+              "Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });")
 RECORD_CLOSE = """
   document.addEventListener('deptour:close', e => { window.__closed = e.detail; });
 """
@@ -44,7 +46,7 @@ def test_scene_order(page: Page, base_url: str):
 
 
 def test_eligibility_end_state(page: Page, base_url: str):
-    page.add_init_script("Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });")
+    page.add_init_script(FULL_POWER)
     _open_home(page, base_url)
     _scene_end(page, 0)
     assert page.locator(".dt-vcard").count() == 120
@@ -54,7 +56,7 @@ def test_eligibility_end_state(page: Page, base_url: str):
 
 
 def test_eligibility_on_phone(page: Page, base_url: str):
-    page.add_init_script("Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });")
+    page.add_init_script(FULL_POWER)
     page.set_viewport_size({"width": 390, "height": 844})
     _open_home(page, base_url)
     _scene_end(page, 0)
@@ -172,3 +174,29 @@ def test_ask_scene_is_vertically_centred_on_desktop(page: Page, base_url: str):
       return Math.abs((top + bottom) / 2 - (cv.top + cv.height / 2)) / (cv.height / 620);
     }""")
     assert off <= 60, off
+
+
+def test_eligible_cards_say_who_they_are_open_to(page: Page, base_url: str):
+    page.add_init_script(FULL_POWER)
+    _open_home(page, base_url)
+    _scene_end(page, 0)
+    texts = page.evaluate("[...document.querySelectorAll('.dt-vcard.is-eligible')].map(c => c.textContent)")
+    assert len(texts) == 8 and all("Open to L-7" in t for t in texts), texts
+    higher = page.evaluate("[...document.querySelectorAll('.dt-vcard.is-eligible')]"
+                           ".filter(c => /lvl-(8|9|1[0-9])/.test(c.className)).length")
+    assert higher >= 5
+
+
+def test_counter_is_labelled_as_sample(page: Page, base_url: str):
+    _open_home(page, base_url)
+    page.evaluate("DepTour.goTo(0); DepTour.pause();")
+    page.wait_for_function("() => DepTour.state().sceneIndex === 0", polling=100)
+    page.evaluate("DepTour.seek(1.0)")
+    chip = page.evaluate("document.querySelector('.dt-count-chip').textContent")
+    assert "sample" in chip.lower() and "across India" not in chip, chip
+
+
+def test_ask_shows_what_the_ai_understood(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _scene_end(page, 1)
+    assert page.evaluate("document.querySelector('.dt-ask-chips .dt-ask-understood').textContent") == "Understood"

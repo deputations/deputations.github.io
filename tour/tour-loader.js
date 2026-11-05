@@ -48,7 +48,23 @@
 
   function shouldAutoplay(env, key) {
     if (env.force) return true;
-    return !(env.seen && env.seen[key]) && !env.off && !env.webdriver && !env.reducedMotion;
+    return !(env.seen && env.seen[key]) && !env.off && !env.webdriver && !env.reducedMotion &&
+      !env.intent && !env.saveData;
+  }
+
+  // A link that carries anything beyond tracking tags (?v=<vacancy> from a share,
+  // ?search=... filters) means the visitor came for something specific; the
+  // tour waits for a plain visit instead (it is not marked seen).
+  var TRACKING = /^(tour|tourSpeed|utm_[a-z_]+|fbclid|gclid|ref)$/i;
+  function hasIntent(params) {
+    if (!params) return false;
+    var found = false;
+    params.forEach(function (_, k) { if (!TRACKING.test(k)) found = true; });
+    return found;
+  }
+  function wantsLessData() {
+    var c = navigator.connection;
+    return !!(c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || '')));
   }
 
   /* ---------- lazy asset loading, strictly in order ---------- */
@@ -161,10 +177,21 @@
       off: isOff(),
       webdriver: navigator.webdriver === true,
       reducedMotion: reduced,
+      intent: hasIntent(params),
+      saveData: wantsLessData(),
       force: force
     };
     if (!shouldAutoplay(env, KEY)) return;
+
+    // Someone already tapping or typing before the page settles is busy: don't
+    // pull the page out from under them; the tour plays on a later visit.
+    var busy = false;
+    var EVENTS = ['pointerdown', 'keydown'];
+    function onBusy() { busy = true; }
+    EVENTS.forEach(function (t) { window.addEventListener(t, onBusy, true); });
     whenSettled(function () {
+      EVENTS.forEach(function (t) { window.removeEventListener(t, onBusy, true); });
+      if (busy && !force) return;
       play(KEY, { speed: speed > 0 ? speed : 1, mode: force ? 'cinematic' : 'auto' });
     });
   }

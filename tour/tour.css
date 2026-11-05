@@ -54,7 +54,12 @@
   mask-image: radial-gradient(70% 60% at 50% 60%, #000 20%, transparent 75%);
 }
 
-.dt-aurora { position: absolute; inset: -20%; pointer-events: none; filter: blur(70px); }
+/* No filter: blur here: re-filtering a full-screen animated layer every frame is
+   too costly on phones, and the radial gradients are already soft. */
+.dt-aurora { position: absolute; inset: -20%; pointer-events: none; isolation: isolate; }
+/* isolation keeps the children's screen blending inside the aurora: blending
+   that reaches the overlay makes Chrome render the overlay as its own surface,
+   and the backdrop blur of the page behind then silently stops working. */
 .dt-aurora i { position: absolute; border-radius: 50%; mix-blend-mode: screen; will-change: transform; }
 .dt-aurora-a {
   width: 58vmax; height: 58vmax; left: 6%; top: 0%;
@@ -74,6 +79,13 @@
 @keyframes dtDriftA { to { transform: translate3d(9vw, 7vh, 0) scale(1.14); } }
 @keyframes dtDriftB { to { transform: translate3d(-8vw, -6vh, 0) scale(1.1); } }
 @keyframes dtDriftC { to { transform: translate3d(-6vw, 5vh, 0) scale(1.25); } }
+
+/* Low-power devices (≤ 4 cores or ≤ 4 GB): no live blur of the page behind. */
+.dt-low .dt-backdrop {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: radial-gradient(120% 90% at 50% 38%, rgba(10, 18, 40, 0.93), rgba(2, 4, 11, 0.985) 70%);
+}
 
 /* ---------- stage + camera ---------- */
 .dt-stage { position: absolute; left: 0; right: 0; top: 118px; bottom: 84px; }
@@ -672,6 +684,15 @@
 .dt-ask.is-tall .dt-ask-field { font-size: 15px; }
 .dt-ask.is-tall .dt-ask-hint { display: none; }
 .dt-ask-chips { position: absolute; z-index: 3; display: flex; flex-wrap: wrap; gap: 10px; }
+.dt-ask-understood {
+  align-self: center;
+  margin-right: 4px;
+  font: 700 11px/1 "Sora", system-ui, sans-serif;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #c4b5fd;
+}
+.dt-vcard-meta .dt-open { color: #e9d5ff; background: rgba(167, 139, 250, 0.16); }
 .dt-ask-chips .dt-chip { position: relative; font: 700 15px/1 var(--dt-ui-font); color: #fff; border-color: rgba(34, 211, 238, 0.45); }
 .dt-chip-ico { width: 8px; height: 8px; border-radius: 50%; background: var(--dt-cyan); box-shadow: 0 0 10px var(--dt-cyan); }
 .dt-ask-fly { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
