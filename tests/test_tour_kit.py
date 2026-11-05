@@ -64,6 +64,26 @@ def test_odometer(page: Page, base_url: str):
     assert page.evaluate("document.querySelector('.odo').textContent") == "86"
 
 
+def test_chained_odometers_start_from_the_first(page: Page, base_url: str):
+    """Two odometers on one element (1240→312, later 312→58): before either
+    runs, the element shows the first start value, not the second."""
+    open_engine(page, base_url)
+    _register(page, """
+      const el = kit.el('div', 'odo', null, stage);
+      return gsap.timeline().add(kit.odometer(el, 1240, 312, { duration: 0.4 }), 0.6)
+        .add(kit.odometer(el, 312, 58, { duration: 0.4 }), 1.4).to({}, { duration: 0.5 });
+    """)
+    start(page)
+    page.evaluate("DepTour.pause(); DepTour.seek(0.3)")
+    assert page.evaluate("document.querySelector('.odo').textContent") == "1,240"
+    page.evaluate("DepTour.seek(1.2)")
+    assert page.evaluate("document.querySelector('.odo').textContent") == "312"
+    _seek_end(page)
+    assert page.evaluate("document.querySelector('.odo').textContent") == "58"
+    page.evaluate("DepTour.seek(0.1)")
+    assert page.evaluate("document.querySelector('.odo').textContent") == "1,240"
+
+
 def test_split_title(page: Page, base_url: str):
     open_engine(page, base_url)
     _register(page, """

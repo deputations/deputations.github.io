@@ -245,3 +245,15 @@ def test_save_data_skips_autoplay(page: Page, base_url: str):
     page.on("request", lambda r: requested.append(r.url))
     page.goto(f"{base_url}/index.html")
     _assert_no_tour_after_load(page, requested)
+
+
+def test_tour_asset_version_bumped_and_consistent():
+    """The service worker serves same-origin JS/CSS cache-first, keyed by URL,
+    so a changed tour asset needs a new ?v=. Stage 2 changed map.js, tour.css
+    and the loader: every loader tag and the loader's VERSION move together."""
+    from pathlib import Path
+    v = re.search(r"var VERSION = '\?v=(\d+)'", Path("tour/tour-loader.js").read_text(encoding="utf-8")).group(1)
+    for page_file in ("index.html", "india-map.html"):
+        tag = re.search(r'/tour/tour-loader\.js\?v=(\d+)"', Path(page_file).read_text(encoding="utf-8")).group(1)
+        assert tag == v, (page_file, tag, v)
+    assert int(v) >= 2, v

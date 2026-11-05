@@ -6,7 +6,14 @@
    the engine, the kit and the page's scenes only when a demo plays.
 
    Wire on a page with:
-     <script defer src="/tour/tour-loader.js?v=1" data-tour="home"></script>
+     <script defer src="/tour/tour-loader.js?v=2" data-tour="home"></script>
+   A page with its own async start-up (data fetch, intro animation) adds
+   data-tour-ready="<document event>": auto-play then waits for that event
+   (at most READY_WAIT ms after load) so the tour never covers the page's
+   intro or races its history.replaceState.
+
+   Bump ?v= here (VERSION) and in every page's tag whenever any tour asset
+   changes: sw.js serves same-origin JS/CSS cache-first, keyed by URL.
 
    Design: docs/superpowers/specs/2026-11-04-site-tour-design.md §4.1
    ============================================================ */
@@ -16,12 +23,17 @@
 
   var script = document.currentScript;
   var KEY = (script && script.dataset && script.dataset.tour) || '';
+  var READY_EVENT = (script && script.dataset && script.dataset.tourReady) || '';
+  var READY_WAIT = 12000;   // the map page's own intro takes ~5-10 s after load
+  var pageReady = !READY_EVENT;
+  if (READY_EVENT) document.addEventListener(READY_EVENT, function () { pageReady = true; }, { once: true });
   var SEEN_KEY = 'dep_tour_seen_v1';
   var OFF_KEY = 'dep_tour_off_v1';
-  var VERSION = '?v=1';
+  var VERSION = '?v=2';
   var CORE = ['/vendor/gsap.min.js', '/tour/tour.css', '/tour/tour-engine.js', '/tour/tour-kit.js'];
   var SCENES = {
-    home: ['/tour/scenes/map.js', '/tour/scenes/pages.js', '/tour/scenes/home-more.js', '/tour/scenes/home.js']
+    home: ['/tour/scenes/map.js', '/tour/scenes/pages.js', '/tour/scenes/home-more.js', '/tour/scenes/home.js'],
+    map: ['/tour/scenes/map.js', '/tour/scenes/map-page.js']
   };
 
   /* ---------- storage (every access guarded) ---------- */
@@ -155,9 +167,16 @@
 
   /* ---------- auto-play decision ---------- */
   function whenSettled(fn) {
-    function go() {
+    function idle() {
       if ('requestIdleCallback' in window) window.requestIdleCallback(fn, { timeout: 800 });
       else setTimeout(fn, 800);
+    }
+    function go() {
+      if (pageReady) return idle();
+      var done = false;
+      function once() { if (done) return; done = true; idle(); }
+      document.addEventListener(READY_EVENT, once, { once: true });
+      setTimeout(once, READY_WAIT);
     }
     if (document.readyState === 'complete') go();
     else window.addEventListener('load', go, { once: true });

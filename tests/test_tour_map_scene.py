@@ -110,3 +110,57 @@ def test_map_numbers_are_labelled_as_sample(page: Page, base_url: str):
     assert "Sample" in count and "Active" not in count, count
     district = page.evaluate("document.querySelector('.dt-map-district').textContent")
     assert "near you" not in district and "in this district" in district, district
+
+
+# ---- stage 2: map helpers for the India Map page tour ----
+
+def _open_helper_scene(page: Page, base_url: str, body: str) -> None:
+    """Register a one-scene tour whose build(stage, kit) runs `body` (must return a timeline)."""
+    open_engine(page, base_url)
+    page.add_script_tag(url=f"{base_url}/tour/scenes/map.js")
+    page.wait_for_function("() => !!window.DepTourMap", polling=100, timeout=10000)
+    page.evaluate("""async (body) => {
+      await DepTourMap.load();
+      const build = new Function('stage', 'kit', 'M', body);
+      DepTour.register('t', { scenes: [{ key: 'h', label: 'L', title: 'Helpers', summary: 'S',
+        build(stage, kit) { return build(stage, kit, DepTourMap); } }] });
+    }""", body)
+    start(page)
+    page.wait_for_function("() => DepTour.state().phase === 'scene'", polling=100, timeout=10000)
+
+
+def test_draw_into_a_box(page: Page, base_url: str):
+    _open_helper_scene(page, base_url, """
+      const v = M.drawIndia(stage, M.data, kit, { x: 400, y: 40, w: 600, h: 500 });
+      return gsap.timeline().add(v.tl).to({}, { duration: 0.5 });""")
+    style = page.evaluate("""() => { const s = document.querySelector('.dt-map-view').style;
+                                     return [s.left, s.top, s.width, s.height]; }""")
+    assert style == ["400px", "40px", "600px", "500px"]
+
+
+def test_recolour_changes_fills(page: Page, base_url: str):
+    _open_helper_scene(page, base_url, """
+      const v = M.drawIndia(stage, M.data, kit);
+      const heat = {}; M.data.states.forEach(s => { heat[s.abbr] = 1; }); heat.KA = 400; heat.RJ = 300;
+      return gsap.timeline().add(v.tl, 0).add(M.recolour(v, heat, kit), 4).to({}, { duration: 0.5 });""")
+    fills = "() => [...document.querySelectorAll('path.dt-state')].map(p => getComputedStyle(p).fill)"
+    page.evaluate("DepTour.pause(); DepTour.seek(3.9)")
+    page.wait_for_timeout(80)
+    before = page.evaluate(fills)
+    page.evaluate("DepTour.seek(DepTour.state().sceneDuration - 0.01)")
+    page.wait_for_timeout(80)
+    after = page.evaluate(fills)
+    assert sum(1 for a, b in zip(before, after) if a != b) >= 10
+
+
+def test_fly_out_restores_the_map(page: Page, base_url: str):
+    _open_helper_scene(page, base_url, """
+      const v = M.drawIndia(stage, M.data, kit);
+      const ka = M.data.focus.districts.find(d => d.name === 'Bengaluru Urban');
+      return gsap.timeline().add(v.tl, 0).add(M.diveTo(v, 'KA', kit), 3.5).add(M.raiseDistricts(v, M.data, kit), 5.5)
+        .add(M.pin(v, ka.cx, ka.cy, kit), 6.5).add(M.flyOut(v, kit), 8).to({}, { duration: 0.5 });""")
+    page.evaluate("DepTour.pause(); DepTour.seek(DepTour.state().sceneDuration - 0.01)")
+    page.wait_for_timeout(100)
+    assert page.evaluate("document.querySelector('.dt-map-svg').getAttribute('viewBox')") == "0 0 1000 800"
+    assert page.evaluate("[...document.querySelectorAll('path.dt-district')].every(p => +getComputedStyle(p).opacity === 0)")
+    assert page.evaluate("[...document.querySelectorAll('.dt-pin')].every(p => +getComputedStyle(p).opacity === 0)")
