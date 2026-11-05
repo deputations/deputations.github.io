@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from urllib.parse import urlparse
 
+import pytest
 from playwright.sync_api import Page, expect
 
 from tests.tour_helpers import close_and_settle, no_hero_wave, seen  # noqa: F401
@@ -17,6 +18,11 @@ TITLES = ["Every state at a glance", "Filter the whole map", "Dive into a state"
 HEADLINE = "Vacancies across India, on one map"
 RECORD_CLOSE = "document.addEventListener('deptour:close', e => { window.__closed = e.detail; });"
 REAL_VISIT = "Object.defineProperty(navigator, 'webdriver', { get: () => false });"
+# CI (Ubuntu) falls back to the wider DejaVu Sans where this box has Inter; the
+# layout must hold with either, so the layout tests also run with DejaVu forced.
+WIDE_FONT = ("document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style');"
+             " s.textContent = '.dt-overlay, .dt-overlay * { font-family: \"DejaVu Sans\", sans-serif !important; }';"
+             " document.head.appendChild(s); });")
 MAP_ORDER = ["/vendor/gsap.min.js", "/tour/tour.css", "/tour/tour-engine.js", "/tour/tour-kit.js",
              "/tour/scenes/map.js", "/tour/scenes/map-page.js"]
 
@@ -131,8 +137,12 @@ def test_back_to_india_restores_the_map(page: Page, base_url: str):
     assert page.evaluate("[...document.querySelectorAll('path.dt-district')].every(p => +getComputedStyle(p).opacity === 0)")
 
 
-def test_map_tour_fits_on_phone(page: Page, base_url: str):
-    page.set_viewport_size({"width": 390, "height": 844})
+@pytest.mark.parametrize("vp", [(390, 844), (1440, 900)])
+@pytest.mark.parametrize("font", ["site", "dejavu"])
+def test_map_tour_fits_in_the_stage(page: Page, base_url: str, font: str, vp: tuple):
+    if font == "dejavu":
+        page.add_init_script(WIDE_FONT)
+    page.set_viewport_size({"width": vp[0], "height": vp[1]})
     _open_map(page, base_url)
     for i in range(len(TITLES)):
         _end(page, i)
@@ -162,7 +172,10 @@ OVERLAPS = """(sel) => {
 }"""
 
 
-def test_map_tour_panels_never_overlap(page: Page, base_url: str):
+@pytest.mark.parametrize("font", ["site", "dejavu"])
+def test_map_tour_panels_never_overlap(page: Page, base_url: str, font: str):
+    if font == "dejavu":
+        page.add_init_script(WIDE_FONT)
     for vp in ({"width": 1440, "height": 900}, {"width": 390, "height": 844}):
         page.set_viewport_size(vp)
         _open_map(page, base_url, speed=0.25)

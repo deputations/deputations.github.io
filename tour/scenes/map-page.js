@@ -60,7 +60,7 @@
           back: [16, 128], posts: [10, 418, 370], detail: [20, 200, 350], listBtn: [10, 566, 370],
           list: [20, 270, 350], zoom: [334, 132] }
       : { map: { x: 340, y: 0, w: 750, h: 610 }, count: [24, 8], panel: [24, 70, 296], state: [24, 70],
-          back: [362, 14], posts: [24, 128, 296], detail: [24, 474, 296], listBtn: [24, 128, 296],
+          back: [362, 14], posts: [24, 92, 296], detail: null, listBtn: [24, 128, 296],
           list: [24, 188, 296], zoom: [1042, 214] };
   }
 
@@ -217,8 +217,12 @@
       stateChip(stage, kit, L).style.opacity = 0;          // the posts panel takes its place
       var bu = M.data.focus.districts.filter(function (d) { return d.name === FOCUS; })[0];
       var buPath = districtPath(v);
-      var panel = kit.el('div', 'dt-mposts', null, stage);
-      place(panel, L.posts);
+      // Desktop: the list and the opened post share one column, so the post
+      // always sits below the list whatever the fonts make its height.
+      var col = kit.layout === 'tall' ? stage : kit.el('div', 'dt-mside', null, stage);
+      if (col !== stage) place(col, L.posts);
+      var panel = kit.el('div', 'dt-mposts', null, col);
+      if (col === stage) place(panel, L.posts);
       panel.innerHTML = '<div class="dt-mposts-h"><b>' + FOCUS + '</b><span>24 sample posts</span></div>' +
         POSTS.map(function (p) {
           return '<div class="dt-mpost"><span class="dt-mpost-h"><b>' + esc(p.t) + '</b><i class="dt-mbadge">Level-' + p.l +
@@ -226,8 +230,8 @@
             '<span class="dt-mpost-f"><i>Closes ' + closes(p.d) + '</i><u>Notification</u></span></div>';
         }).join('');
       var rows = panel.querySelectorAll('.dt-mpost');
-      var detail = kit.el('div', 'dt-mdetail', null, stage);
-      place(detail, L.detail);
+      var detail = kit.el('div', 'dt-mdetail', null, col);
+      if (col === stage) place(detail, L.detail);
       detail.innerHTML = '<em class="dt-mdetail-k">Opens on Home →</em>' +
         '<b>' + POSTS[0].t + '</b><span>' + POSTS[0].o + ' · ' + FOCUS + '</span>' +
         '<span class="dt-trow-chips"><i>Level 8</i><i class="dt-open">Open to L-7 · 3 yrs</i><i class="dt-days">12d left</i></span>' +

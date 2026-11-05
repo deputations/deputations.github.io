@@ -1082,7 +1082,10 @@
 .dt-mpost { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(165, 243, 252, 0.1); }
 .dt-mpost b { font: 700 14px/1.2 "Sora", system-ui, sans-serif; color: #fff; }
 .dt-mpost > span:not(.dt-mpost-h):not(.dt-mpost-f) { font-size: 11.5px; color: var(--dt-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dt-mpost-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.dt-mside { position: absolute; z-index: 5; display: flex; flex-direction: column; gap: 12px; }
+.dt-mside > .dt-mposts, .dt-mside > .dt-mdetail { position: relative; }
+.dt-mpost-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.dt-mpost-h b { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dt-mbadge { flex-shrink: 0; font: 600 11px/1 var(--dt-ui-font); font-style: normal; padding: 4px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); color: #cbd5e1; }
 .dt-mpost-f { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; font: 600 11.5px/1 var(--dt-ui-font); }
 .dt-mpost-f i { font-style: normal; color: #fcd34d; }
