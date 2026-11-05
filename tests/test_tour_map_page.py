@@ -6,6 +6,7 @@ Run:
 """
 from __future__ import annotations
 
+import re
 from urllib.parse import urlparse
 
 import pytest
@@ -59,6 +60,8 @@ def test_map_tour_titles_in_order(page: Page, base_url: str):
     for i, title in enumerate(TITLES):
         page.evaluate(f"DepTour.goTo({i})")
         expect(page.locator("#dt-title")).to_have_text(title)
+        # visitors can jump to any step, so no "STEP n" label is shown
+        assert not re.search(r"\bSTEP\s*\d", page.evaluate("document.querySelector('.dt-overlay').innerText"), re.I)
 
 
 def test_hover_tooltip(page: Page, base_url: str):

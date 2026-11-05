@@ -109,7 +109,6 @@
   /* ---------- 1. every state at a glance ---------- */
   var glance = {
     key: 'glance',
-    label: 'STEP 1',
     title: 'Every state at a glance',
     summary: "The map shows every state's vacancies at a glance; hover a state to see its details.",
     build: function (stage, kit) {
@@ -143,7 +142,6 @@
   /* ---------- 2. filter the whole map ---------- */
   var filters = {
     key: 'mfilters',
-    label: 'STEP 2',
     title: 'Filter the whole map',
     summary: 'Use the filters — For me, Pay Level, Ministry and more — and the whole map recolours.',
     build: function (stage, kit) {
@@ -181,7 +179,6 @@
   /* ---------- 3. dive into a state ---------- */
   var dive = {
     key: 'dive',
-    label: 'STEP 3',
     title: 'Dive into a state',
     summary: 'Tap a state to dive in and see its districts.',
     build: function (stage, kit) {
@@ -206,7 +203,6 @@
   /* ---------- 4. posts in every district ---------- */
   var posts = {
     key: 'posts',
-    label: 'STEP 4',
     title: 'Posts in every district',
     summary: 'Tap a district to see its posts. Each one opens on Home, where you can save it.',
     build: function (stage, kit) {
@@ -261,7 +257,6 @@
   /* ---------- 5. zoom, list and go back ---------- */
   var zoom = {
     key: 'zoom',
-    label: 'STEP 5',
     title: 'Zoom, list and go back',
     summary: 'See every post in a state as a list, zoom in or out, and go back to the whole of India.',
     build: function (stage, kit) {
