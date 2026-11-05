@@ -48,11 +48,13 @@
   }
 
   /* ---------- the map ---------- */
-  function drawIndia(parent, data, kit) {
+  // box (optional, scene units): where the map goes; default fills the stage.
+  function drawIndia(parent, data, kit, box) {
     var tall = kit.layout === 'tall';
     var margin = tall ? { x: 10, top: 64, bottom: 56 } : { x: 20, top: 10, bottom: 10 };
-    var vw = kit.width - margin.x * 2;
-    var vh = kit.height - margin.top - margin.bottom;
+    if (box) margin = { x: box.x, top: box.y };
+    var vw = box ? box.w : kit.width - margin.x * 2;
+    var vh = box ? box.h : kit.height - margin.top - margin.bottom;
     var INSET = 0.05;                                   // map sits inside the plane's soft-faded edges
     var sw = vw * (1 - 2 * INSET), sh = vh * (1 - 2 * INSET);
 
@@ -101,9 +103,11 @@
       .to(paths, { strokeDashoffset: 0, duration: 1.3, ease: 'power2.inOut', stagger: 0.02 }, 0.1);
     paths.forEach(function (p, i) {
       var t = Math.log(1 + (heat[p.getAttribute('data-abbr')] || 0)) / Math.log(1 + max);
-      p.style.fill = heatColour(t);
-      tl.to(p, { fillOpacity: 0.22 + 0.62 * t, duration: 0.8, ease: 'power1.out' }, 1.15 + i * 0.012);
+      p.style.fill = p._dtColour = heatColour(t);
+      p._dtOpacity = 0.22 + 0.62 * t;
+      tl.to(p, { fillOpacity: p._dtOpacity, duration: 0.8, ease: 'power1.out' }, 1.15 + i * 0.012);
     });
+    view.baseUnits = view.unitsPerPx;
     tl.to(plane, { rotationX: 28, duration: 1.5, ease: 'power2.inOut' }, 1.3)
       .fromTo(hot, { opacity: 0 }, { opacity: 1, duration: 0.4, stagger: 0.09, ease: 'power1.out' }, 2.0)
       .fromTo(scan, { yPercent: -120, opacity: 0 }, { yPercent: 320, opacity: 0.9, duration: 1.5, ease: 'power1.inOut' }, 2.1)
@@ -179,6 +183,40 @@
   }
 
   /* ---------- the teaser scene (Home, step 3) ---------- */
+  // Recolour every state for a new set of counts (e.g. after a filter).
+  function recolour(view, heat, kit) {
+    var keys = Object.keys(heat);
+    var max = Math.max.apply(null, keys.map(function (k) { return heat[k]; }).concat([1]));
+    var tl = gsap.timeline();
+    if (view.hot) tl.to(view.hot, { opacity: 0, duration: 0.3 }, 0);
+    Array.from(view.states.values()).forEach(function (p, i) {
+      var t = Math.log(1 + (heat[p.getAttribute('data-abbr')] || 0)) / Math.log(1 + max);
+      p._dtColour = heatColour(t);
+      p._dtOpacity = 0.12 + 0.72 * t;
+      tl.to(p, { fill: p._dtColour, fillOpacity: p._dtOpacity, duration: 0.7, ease: 'power2.inOut' }, 0.05 + i * 0.01);
+    });
+    return tl;
+  }
+
+  // Fly back out to the whole of India (the page's "Back to India").
+  function flyOut(view, kit) {
+    var paths = Array.from(view.states.values());
+    var tl = gsap.timeline();
+    tl.to(view.svg, { attr: { viewBox: view.data.viewBox }, duration: 1.6, ease: 'power3.inOut' }, 0)
+      .to(view.gStates, { attr: { 'stroke-width': 1.1 }, duration: 1.6, ease: 'power3.inOut' }, 0)
+      .to(view.districts || [], { opacity: 0, duration: 0.5, ease: 'power1.out' }, 0)
+      .to(view.gMarks.querySelectorAll('.dt-pin'), { opacity: 0, duration: 0.3 }, 0)
+      .add(kit.camera({ z: 1, ry: 0 }, { duration: 1.6, ease: 'power3.inOut' }), 0)
+      .to(view.plane, { rotationX: 28, duration: 1.4, ease: 'power2.inOut' }, 0.3);
+    paths.forEach(function (p) {
+      tl.to(p, { fill: p._dtColour || '#0b2233', fillOpacity: p._dtOpacity == null ? 0.5 : p._dtOpacity,
+                 strokeOpacity: 1, duration: 1.0, ease: 'power1.out' }, 0.4);
+    });
+    view.unitsPerPx = view.baseUnits || view.unitsPerPx;
+    view.focusAbbr = null;
+    return tl;
+  }
+
   var teaserScene = {
     key: 'mapTeaser',
     label: 'STEP 3',
@@ -239,6 +277,9 @@
     diveTo: diveTo,
     raiseDistricts: raiseDistricts,
     pin: pin,
+    recolour: recolour,
+    flyOut: flyOut,
+    heatColour: heatColour,
     teaserScene: teaserScene
   };
   window.DepTourMap = api;
