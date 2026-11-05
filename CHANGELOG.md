@@ -26,6 +26,11 @@ counter_convention:
 
 ## [Unreleased]
 
+### Changed - reduce-motion visitors get the tour as steps (2026-11-05)
+Every browser gets each page's tour once, whether or not it visited before the
+tours existed. Visitors with "Reduce motion" turned on were skipped; they now
+get the calm step-by-step version once. Tour assets move to `?v=3`.
+
 ### Added - first-visit tour on the India Map page (2026-11-05)
 A ~45 s tour plays once on a visitor's first plain visit to `india-map.html`,
 with the same controls and rules as the Home tour. It opens on "Vacancies

@@ -98,7 +98,7 @@ def test_should_autoplay_rules(page: Page, base_url: str):
         "seenOther": True,
         "off": False,
         "webdriver": False,
-        "reduced": False,
+        "reduced": True,          # Reduce-motion visitors get the calm step-by-step view once
         "intent": False,
         "saveData": False,
         "forced": True,
@@ -256,4 +256,35 @@ def test_tour_asset_version_bumped_and_consistent():
     for page_file in ("index.html", "india-map.html"):
         tag = re.search(r'/tour/tour-loader\.js\?v=(\d+)"', Path(page_file).read_text(encoding="utf-8")).group(1)
         assert tag == v, (page_file, tag, v)
-    assert int(v) >= 2, v
+    assert int(v) >= 3, v      # 3: the nudge changed the loader (2026-11-05 evening)
+
+
+# ---- skipped visitors (owner, 2026-11-05): no "New · 1-min tour" bubble ----
+
+REAL_VISIT = "Object.defineProperty(navigator, 'webdriver', { get: () => false });"
+
+
+def _no_tour_no_bubble(page: Page) -> None:
+    _wait_for_loader(page)
+    page.wait_for_timeout(3500)
+    assert page.locator(".dt-overlay").count() == 0
+    assert page.locator(".dt-replay-tip").count() == 0
+    expect(page.locator(".dt-replay")).not_to_have_class(re.compile(r"\bis-nudge\b"))
+
+
+def test_skipped_visitors_get_no_bubble(page: Page, base_url: str):
+    """A visitor already typing as the page loads, or arriving from a shared
+    link, is left alone: no tour this visit and no suggestion bubble."""
+    page.add_init_script(REAL_VISIT)
+    page.goto(f"{base_url}/index.html", wait_until="domcontentloaded")
+    page.keyboard.press("Tab")
+    _no_tour_no_bubble(page)
+    page.goto(f"{base_url}/index.html?search=director")
+    _no_tour_no_bubble(page)
+
+
+def test_reduced_motion_visitor_gets_the_step_view(page: Page, base_url: str):
+    page.add_init_script(REAL_VISIT)
+    page.emulate_media(reduced_motion="reduce")
+    page.goto(f"{base_url}/index.html")
+    expect(page.locator(".dt-steps h3")).to_be_visible(timeout=30000)

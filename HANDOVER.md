@@ -7315,3 +7315,25 @@ focus:          site tour stage 2 — India Map page tour (every map feature)
 - A page with its own async start-up gets `data-tour-ready="<event>"` on its loader tag (india-map.html: `map:drawInComplete`, capped at 12 s after load).
 - The real map has no save button: the tour's post opens "on Home" and is saved there. Mirror the real page's wording and controls in every tour.
 - Tests that close a tour and navigate again use `close_and_settle(page)` (waits for the engine's delayed history.back), or the next goto is aborted under load.
+
+## session shq-2026-11-05-tour-nudge
+```
+started:        2026-11-05
+ended:          2026-11-05
+model:          claude-opus-5-5
+driver:         solo
+branch:         feature/tour-nudge
+starting_head:  7a4d25b (both tours live: #35, #36)
+focus:          reach visitors the tour auto-play skips (reduce motion)
+```
+
+### owner's brief
+- "Those who visited before the tour don't get to see it; show it to all users once." (They do: the rule is per-browser `dep_tour_seen_v1`, not first-ever visit; previewing with `?tour=play` marks it seen in that browser.) Owner first chose a gentle nudge for the skipped cases, then said the "New · 1-min tour" bubble is not needed; it was removed before merge.
+
+### work done
+- `tour/tour-loader.js`: reduce-motion no longer blocks auto-play (the engine shows the steps view). `?v=3` everywhere. Test `test_skipped_visitors_get_no_bubble` keeps the bubble out.
+
+### gotchas for next session
+- Any tour asset change: bump `?v=` in the loader's `VERSION` and every page's loader tag (test `test_tour_asset_version_bumped_and_consistent`).
+- To see the tour as a first-time visitor, use a private window; `?tour=play` and Skip mark it seen.
+
