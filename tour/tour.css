@@ -980,6 +980,60 @@
 .dt-theme-light .dt-tm-rows span { background: #fff; border: 1px solid rgba(15, 23, 42, 0.08); }
 .dt-tm-rows i { font-style: normal; font-weight: 600; font-size: 12px; color: #d97706; }
 
+/* ---------- Home · explore more pages (montage) ---------- */
+.dt-page-card {
+  position: absolute; z-index: 2; display: flex; flex-direction: column; overflow: hidden; text-decoration: none;
+  border-radius: 18px; border: 1px solid rgba(165, 243, 252, 0.18); color: #e2e8f0;
+  background: linear-gradient(155deg, rgba(31, 44, 72, 0.97), rgba(12, 18, 34, 0.97));
+  box-shadow: 0 22px 50px -26px rgba(0, 0, 0, 0.9), 0 0 40px -26px rgba(34, 211, 238, 0.6);
+  transform-origin: 50% 50%;
+}
+.dt-page-card.is-big { z-index: 4; box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.95), 0 0 70px -20px rgba(34, 211, 238, 0.7); }
+.dt-finale-on .dt-page-card { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.dt-finale-on .dt-page-card:hover,
+.dt-finale-on .dt-page-card:focus-visible { border-color: rgba(34, 211, 238, 0.8); box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.5), 0 0 40px -6px rgba(34, 211, 238, 0.7); }
+.dt-page-art { position: relative; flex: 1; display: grid; place-items: center; min-height: 0; padding: 12px 14px 4px; }
+.dt-page-art > svg { width: 100%; height: 100%; }
+.dt-page-meta { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 10px 40px 14px 16px; }
+.dt-page-meta b { font: 800 17px/1.15 "Sora", system-ui, sans-serif; color: #fff; }
+.dt-page-meta > span { font: 500 12px/1.3 var(--dt-ui-font); color: var(--dt-dim); }
+.dt-page-go { position: absolute; right: 14px; bottom: 14px; font-style: normal; font-weight: 700; color: #22d3ee; }
+.dt-page-card.is-tall .dt-page-meta { padding: 8px 28px 10px 12px; }
+.dt-page-card.is-tall .dt-page-meta b { font-size: 14px; }
+.dt-page-card.is-tall .dt-page-meta > span { font-size: 10.5px; }
+.dt-page-card.is-tall .dt-page-art { padding: 8px 10px 2px; }
+/* mini art */
+.dt-pm-state { fill: rgba(34, 211, 238, 0.28); stroke: #a5f3fc; stroke-width: 2.4; stroke-linejoin: round; }
+.dt-pm-state.is-hot { fill: rgba(167, 139, 250, 0.7); }
+.dt-pm-arc { fill: none; stroke: rgba(255, 255, 255, 0.12); stroke-width: 14; stroke-linecap: round; }
+.dt-pm-arc.is-fg { stroke: url(#none); stroke: #22d3ee; filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.8)); }
+.dt-pm-needle line { stroke: #fff; stroke-width: 4; stroke-linecap: round; }
+.dt-pm-needle circle { fill: #a78bfa; }
+.dt-pm-score { fill: #fff; font: 800 30px/1 "Sora", system-ui, sans-serif; text-anchor: middle; }
+.dt-pm-track { position: relative; width: 100%; display: flex; justify-content: space-between; padding: 0 4px; }
+.dt-pm-rail { position: absolute; left: 14px; right: 14px; top: 9px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); }
+.dt-pm-rail b { position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(90deg, var(--dt-cyan), var(--dt-violet)); }
+.dt-pm-track span { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.dt-pm-track span i { width: 22px; height: 22px; border-radius: 50%; background: #1e293b; border: 2px solid rgba(255, 255, 255, 0.2); }
+.dt-pm-track span.is-on i { background: linear-gradient(135deg, var(--dt-cyan), var(--dt-violet)); border-color: transparent; box-shadow: 0 0 12px rgba(34, 211, 238, 0.8); }
+.dt-pm-track em { font: 600 10px/1 var(--dt-ui-font); font-style: normal; color: #cbd5e1; }
+.dt-pm-drop { display: grid; place-items: center; width: 70%; height: 62%; border-radius: 12px; border: 2px dashed rgba(165, 243, 252, 0.4); }
+.dt-pm-pdf { padding: 14px 10px 8px; border-radius: 6px; background: #f8fafc; color: #e11d48; font: 800 13px/1 "Sora", system-ui, sans-serif; box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.8); }
+.dt-pm-status { margin-top: 6px; font: 700 11px/1 var(--dt-ui-font); color: #86efac; }
+.dt-page-art:has(.dt-pm-drop) { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.dt-pm-book { position: relative; width: 56%; height: 76%; perspective: 500px; }
+.dt-pm-sheet { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 7px; padding: 14px 12px; border-radius: 6px; background: #e2e8f0; box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.7); backface-visibility: hidden; }
+.dt-pm-sheet i { height: 5px; border-radius: 3px; background: #94a3b8; }
+.dt-pm-sheet i:nth-child(2) { width: 80%; }
+.dt-pm-sheet i:nth-child(3) { width: 60%; }
+.dt-pm-sheet em { margin-top: auto; align-self: flex-end; font: 700 10px/1 var(--dt-ui-font); font-style: normal; color: #475569; }
+.dt-pm-faq { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+.dt-pm-faq span { display: flex; flex-direction: column; gap: 4px; padding: 7px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.06); }
+.dt-pm-faq span.is-open { background: rgba(34, 211, 238, 0.12); border: 1px solid rgba(34, 211, 238, 0.3); }
+.dt-pm-faq b { font: 700 10.5px/1.2 var(--dt-ui-font); color: #f1f5f9; }
+.dt-pm-faq em { font: 500 9.5px/1.3 var(--dt-ui-font); font-style: normal; color: #a5f3fc; }
+.dt-page-card.is-tall .dt-pm-faq span:not(.is-open) { display: none; }
+
 .dt-paused *,
 .dt-paused *::before,
 .dt-paused *::after { animation-play-state: paused !important; }

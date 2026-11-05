@@ -308,3 +308,86 @@ def test_bookmark_badge_hidden_until_saved(page: Page, base_url: str):
     page.evaluate("DepTour.seek(DepTour.state().sceneDuration - 0.01)")
     page.wait_for_timeout(80)
     assert page.evaluate("getComputedStyle(document.querySelector('.dt-badge-count')).opacity") == "1"
+
+
+# ---- Home v2: the page montage and the full order ----
+
+PAGES = [("India Map", "/india-map.html"), ("DeFeX", "/defex.html"), ("My Deputation", "/my-deputation.html"),
+         ("Report Vacancy", "/report-vacancy.html"), ("Rules", "/rules.html"), ("FAQs", "/faq.html")]
+
+
+def test_every_step_in_order(page: Page, base_url: str):
+    _open_home(page, base_url)
+    for i, title in enumerate(TITLES):
+        page.evaluate(f"DepTour.goTo({i})")
+        expect(page.locator("#dt-title")).to_have_text(title)
+
+
+def test_steps_view_lists_every_step(page: Page, base_url: str):
+    _open_home(page, base_url)
+    page.locator(".dt-skip").click()
+    page.wait_for_function("() => !DepTour.isOpen()", polling=100)
+    page.evaluate("window.__res = null; DepTour.play('home', { mode: 'steps' }).then(r => { window.__res = r; })")
+    titles = []
+    for _ in TITLES:
+        titles.append(page.locator(".dt-steps h3").text_content())
+        page.locator(".dt-next").click()
+    assert titles == TITLES
+
+
+def test_montage_cards_and_links(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _scene_end(page, 7)
+    cards = page.evaluate("""() => [...document.querySelectorAll('a.dt-page-card.dt-page-link')]
+      .map(a => [a.querySelector('.dt-page-meta b').textContent, a.getAttribute('href')])""")
+    assert cards == [list(p) for p in PAGES]
+
+
+def _grid(page: Page):
+    return page.evaluate("""() => [...document.querySelectorAll('a.dt-page-card')].map(a => {
+      const r = a.getBoundingClientRect();
+      return { t: a.querySelector('.dt-page-meta b').textContent, x: r.left, y: r.top, w: r.width, h: r.height };
+    })""")
+
+
+def _rows(cards):
+    rows = []
+    for c in sorted(cards, key=lambda c: (round(c["y"] / 20), c["x"])):
+        if rows and abs(rows[-1][0]["y"] - c["y"]) < 20:
+            rows[-1].append(c)
+        else:
+            rows.append([c])
+    return rows
+
+
+def _no_overlap(cards):
+    for i, a in enumerate(cards):
+        for b in cards[i + 1:]:
+            if a["x"] < b["x"] + b["w"] - 1 and b["x"] < a["x"] + a["w"] - 1 and \
+               a["y"] < b["y"] + b["h"] - 1 and b["y"] < a["y"] + a["h"] - 1:
+                return False
+    return True
+
+
+def test_montage_grid_layout(page: Page, base_url: str):
+    for (w, h), per_row in [((1440, 900), 3), ((390, 844), 2)]:
+        page.set_viewport_size({"width": w, "height": h})
+        _open_home(page, base_url)
+        _scene_end(page, 7)
+        cards = _grid(page)
+        rows = _rows(cards)
+        assert [len(r) for r in rows] == [per_row] * (6 // per_row), (w, rows)
+        order = [c["t"] for r in rows for c in sorted(r, key=lambda c: c["x"])]
+        assert order == [p[0] for p in PAGES], (w, order)
+        assert _no_overlap(cards), (w, cards)
+        assert all(0 <= c["x"] and c["x"] + c["w"] <= w and c["y"] >= 0 and c["y"] + c["h"] <= h for c in cards), (w, cards)
+        page.locator(".dt-skip").click()
+
+
+def test_finale_card_opens_the_map_page(page: Page, base_url: str):
+    _open_home(page, base_url)
+    for _ in range(12):
+        page.keyboard.press("ArrowRight")
+    expect(page.locator(".dt-cta")).to_be_visible(timeout=10000)
+    page.locator("a.dt-page-card", has_text="India Map").click()
+    page.wait_for_url("**/india-map.html", timeout=15000)
