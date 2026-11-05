@@ -97,16 +97,21 @@ The India map journey (former Home step 3) moves to the India Map page tour (§3
 0. **Intro** (~3 s): *"Vacancies across India, on one map"*.
 1. **"Every state at a glance"** (~8 s): the map draws itself, tilts into the
    hologram table and glows as a heat map; the sample counter rolls up; the
-   cursor hovers a state and its tooltip card appears (name, sample posts,
-   top ministries).
+   cursor hovers a state and its tooltip card appears (name and sample
+   count, as the real tooltip shows; review 2026-11-05).
+   Auto-play on this page waits for the page's own draw-in
+   (`map:drawInComplete`, at most 12 s after load) so it never covers the
+   page's intro or races its history.replaceState.
 2. **"Filter the whole map"** (~8 s): a filters panel (mirroring the page's:
    For me, Pay Level, Ministry …); picking Pay Level 8 and then Finance
    recolours every state and rolls the counter down at each pick.
 3. **"Dive into a state"** (~9 s): tapping Karnataka dives in, its districts
    rise one by one, "Back to India" and the state title appear.
 4. **"Posts in every district"** (~9 s): tapping Bengaluru Urban drops a pin;
-   a list of its sample posts slides up; one opens into a detail card and its
-   heart saves it.
+   its sample posts slide up as the real district cards (Level-N badge,
+   "Closes <date>", Notification); one opens — on Home, as on the real page —
+   into a detail card labelled "Opens on Home →" whose heart saves it (the map
+   itself has no save button; review 2026-11-05).
 5. **"Zoom, list and go back"** (~8 s): "View all 96 vacancies in Karnataka" opens the
    state's list; the zoom buttons zoom in and reset; "Back to India" flies
    back out to the whole map.

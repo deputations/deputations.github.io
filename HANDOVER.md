@@ -7306,7 +7306,12 @@ focus:          site tour stage 2 — India Map page tour (every map feature)
 - Map helpers in `tour/scenes/map.js`: `drawIndia(..., box)`, `recolour`, `flyOut`, `heatColour`.
 - `tour/scenes/map-page.js` registers `map` (5 steps + "Explore the map"); `SCENES.map` in the loader; loader tag in `india-map.html`.
 - Spec §3.2 revised; plan `docs/superpowers/plans/2026-11-05-site-tour-stage2-map.md`.
+- Independent review (opus): 5 Important fixed with tests (odometer start, real tooltip/cards, wait for page draw-in, test close race, ?v=2); minors deferred (listed in the PR).
 
 ### gotchas for next session
 - `M.diveTo` pushes the camera to z 1.04, scaling the scene about its centre: tall-layout panels must end above ~y 700 (of 720) to stay on screen.
 - The filtered total is 58 (not 96) so it can't be confused with Karnataka's 96.
+- Bump `?v=` (loader `VERSION` and every page's loader tag) whenever any tour asset changes: sw.js serves same-origin JS/CSS cache-first by URL. Now `?v=2`.
+- A page with its own async start-up gets `data-tour-ready="<event>"` on its loader tag (india-map.html: `map:drawInComplete`, capped at 12 s after load).
+- The real map has no save button: the tour's post opens "on Home" and is saved there. Mirror the real page's wording and controls in every tour.
+- Tests that close a tour and navigate again use `close_and_settle(page)` (waits for the engine's delayed history.back), or the next goto is aborted under load.
