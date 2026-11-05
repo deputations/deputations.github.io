@@ -98,7 +98,7 @@ def test_should_autoplay_rules(page: Page, base_url: str):
         "seenOther": True,
         "off": False,
         "webdriver": False,
-        "reduced": False,
+        "reduced": True,          # Reduce-motion visitors get the calm step-by-step view once
         "intent": False,
         "saveData": False,
         "forced": True,
@@ -256,4 +256,80 @@ def test_tour_asset_version_bumped_and_consistent():
     for page_file in ("index.html", "india-map.html"):
         tag = re.search(r'/tour/tour-loader\.js\?v=(\d+)"', Path(page_file).read_text(encoding="utf-8")).group(1)
         assert tag == v, (page_file, tag, v)
-    assert int(v) >= 2, v
+    assert int(v) >= 3, v      # 3: the nudge changed the loader (2026-11-05 evening)
+
+
+# ---- the gentle nudge (owner, 2026-11-05): reach visitors the auto-play skips ----
+
+REAL_VISIT = "Object.defineProperty(navigator, 'webdriver', { get: () => false });"
+TIP = ".dt-replay-tip"
+
+
+def _seen(page: Page) -> dict:
+    return page.evaluate("() => JSON.parse(localStorage.getItem('dep_tour_seen_v1') || '{}')")
+
+
+def _expect_nudge(page: Page) -> None:
+    expect(page.locator(TIP)).to_be_visible(timeout=20000)
+    expect(page.locator(TIP)).to_contain_text("New · 1-min tour")
+    expect(page.locator(".dt-replay")).to_have_class(re.compile(r"\bis-nudge\b"))
+    assert page.locator(".dt-overlay").count() == 0          # nothing was interrupted
+
+
+def test_busy_visitor_gets_a_nudge_not_the_tour(page: Page, base_url: str):
+    page.add_init_script(REAL_VISIT)
+    page.goto(f"{base_url}/index.html", wait_until="domcontentloaded")
+    page.keyboard.press("Tab")                                # already busy before the page settles
+    _expect_nudge(page)
+
+
+def test_shared_link_gets_a_nudge_not_the_tour(page: Page, base_url: str):
+    page.add_init_script(REAL_VISIT)
+    page.goto(f"{base_url}/index.html?search=director")
+    _expect_nudge(page)
+
+
+def test_nudge_plays_the_tour_then_goes_away(page: Page, base_url: str):
+    page.add_init_script(REAL_VISIT)
+    page.goto(f"{base_url}/index.html?search=director")
+    _expect_nudge(page)
+    page.locator(".dt-replay-tip-go").click()
+    page.wait_for_selector(".dt-overlay", state="attached", timeout=30000)
+    page.wait_for_function("() => window.DepTour && DepTour.isOpen()", polling=100, timeout=20000)
+    page.evaluate("DepTour.close()")
+    page.wait_for_function("() => !DepTour.isOpen()", polling=100, timeout=10000)
+    expect(page.locator(TIP)).to_have_count(0)
+    expect(page.locator(".dt-replay")).not_to_have_class(re.compile(r"\bis-nudge\b"))
+    assert _seen(page).get("home") == 1
+
+
+def test_nudge_can_be_dismissed_for_good(page: Page, base_url: str):
+    page.add_init_script(REAL_VISIT)
+    page.goto(f"{base_url}/index.html?search=director")
+    _expect_nudge(page)
+    page.locator(".dt-replay-tip-x").click()
+    expect(page.locator(TIP)).to_have_count(0)
+    assert _seen(page).get("home") == 1
+    page.goto(f"{base_url}/index.html")                       # a later plain visit: no tour, no nudge
+    _wait_for_loader(page)
+    page.wait_for_timeout(3000)
+    assert page.locator(".dt-overlay").count() == 0 and page.locator(TIP).count() == 0
+
+
+def test_no_nudge_once_the_tour_is_seen_or_off(page: Page, base_url: str):
+    page.add_init_script(REAL_VISIT)
+    for store in ("localStorage.setItem('dep_tour_seen_v1', JSON.stringify({home: 1}))",
+                  "localStorage.setItem('dep_tour_off_v1', '1')"):
+        page.goto(f"{base_url}/index.html?search=director")
+        page.evaluate(f"() => {{ localStorage.clear(); {store}; }}")
+        page.goto(f"{base_url}/index.html?search=director")
+        _wait_for_loader(page)
+        page.wait_for_timeout(3000)
+        assert page.locator(TIP).count() == 0, store
+
+
+def test_reduced_motion_visitor_gets_the_step_view(page: Page, base_url: str):
+    page.add_init_script(REAL_VISIT)
+    page.emulate_media(reduced_motion="reduce")
+    page.goto(f"{base_url}/index.html")
+    expect(page.locator(".dt-steps h3")).to_be_visible(timeout=30000)

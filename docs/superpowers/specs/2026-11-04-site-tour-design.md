@@ -173,8 +173,16 @@ tests/test_tour_*.py          Playwright smoke tests (existing suite conventions
   is the site's visitor counter); it fades out while the footer trust line is on
   screen, so it never covers it.
 - Auto-play rule, all must hold: page key not in `dep_tour_seen_v1`;
-  `dep_tour_off_v1` not set; `navigator.webdriver` is false; not
-  `prefers-reduced-motion: reduce`. `?tour=play` forces play and bypasses all four.
+  `dep_tour_off_v1` not set; `navigator.webdriver` is false; no intent link
+  (`?v=`, `?search=`…); no Save-Data / 2g. `?tour=play` forces play and bypasses
+  all of them. Whether someone visited before the tour existed does not matter:
+  every browser gets it once. Reduce-motion visitors get the steps view
+  (revised 2026-11-05 evening; they used to be skipped).
+- Gentle nudge (owner, 2026-11-05 evening): a visitor the auto-play skips because
+  of an intent link or Save-Data, or because they were already tapping/typing
+  before the page settled, gets a "New · 1-min tour" bubble (with ×) above the
+  replay button and a glow on it. Tapping it plays the tour; × marks the page
+  seen. It shows on every visit until they watch or dismiss it.
 - Starts after `window.load` plus one idle callback (fallback 800 ms), so the
   page's own load and the WebGL hero finish first.
 - On play: loads, in order, `vendor/gsap.min.js`, `tour/tour.css`,
@@ -236,9 +244,9 @@ URL: `?tour=play` (force play), `&tourSpeed=N` (timeScale, tests only).
 
 ## 5. Accessibility, motion and performance
 
-- Reduced motion: no auto-play. The button opens a **steps view** instead: the
-  same overlay with each scene's title and a one-line description, advanced with
-  Next / Back, fades only.
+- Reduced motion: the tour auto-plays once as a **steps view** (no animation):
+  the same overlay with each scene's title and a one-line description, advanced
+  with Next / Back, fades only. The button opens the same view.
 - Everything is reachable by keyboard; buttons have visible focus rings.
 - Text inside the stage is real DOM text (not canvas), so it stays crisp at any zoom.
 - Particle counts and card-wall size are reduced in `tall` layout and when
