@@ -231,3 +231,80 @@ def test_ask_shows_what_the_ai_understood(page: Page, base_url: str):
     _open_home(page, base_url)
     _scene_end(page, 2)
     assert page.evaluate("document.querySelector('.dt-ask-chips .dt-ask-understood').textContent") == "Understood"
+
+
+# ---- Home v2 steps 4–7 ----
+
+def _go(page: Page, index: int) -> None:
+    page.evaluate(f"DepTour.goTo({index}); DepTour.pause();")
+    page.wait_for_function(f"() => DepTour.state().sceneIndex === {index} && DepTour.state().phase === 'scene'",
+                           polling=100)
+
+
+def test_table_sorts_then_becomes_cards(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _go(page, 3)
+    page.evaluate("DepTour.seek(3.6)")                     # sorted, still a table
+    page.wait_for_timeout(100)
+    row_h = page.evaluate("document.querySelector('.dt-trow').getBoundingClientRect().height")
+    page.evaluate("DepTour.seek(DepTour.state().sceneDuration - 0.01)")
+    page.wait_for_timeout(100)
+    days = page.evaluate("""() => [...document.querySelectorAll('.dt-trow')]
+      .map(r => ({ r: r.getBoundingClientRect(), d: +r.dataset.days }))
+      .sort((a, b) => (a.r.top - b.r.top) || (a.r.left - b.r.left)).map(x => x.d)""")
+    assert len(days) == 6 and days == sorted(days), days
+    assert page.locator(".dt-th.is-sorted").text_content().startswith("Days left")
+    expect(page.locator(".dt-table.is-cards")).to_have_count(1)
+    card_h = page.evaluate("Math.min(...[...document.querySelectorAll('.dt-trow')].map(r => r.getBoundingClientRect().height))")
+    assert card_h >= 1.6 * row_h, (row_h, card_h)
+    lefts = page.evaluate("new Set([...document.querySelectorAll('.dt-trow')].map(r => Math.round(r.getBoundingClientRect().left))).size")
+    assert lefts >= 2
+
+
+def test_bookmark_counts_one(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _scene_end(page, 4)
+    expect(page.locator(".dt-heart.is-saved")).to_have_count(1)
+    assert page.evaluate("document.querySelector('.dt-badge-count').getAttribute('aria-label')") == "1"
+    assert page.evaluate("document.querySelector('.dt-badge-count').textContent") == "1"
+
+
+def test_alert_arrives_on_the_phone(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _scene_end(page, 5)
+    expect(page.locator(".dt-bell.is-on")).to_have_count(1)
+    push = page.locator(".dt-phone .dt-push")
+    expect(push).to_be_visible()
+    text = push.inner_text()
+    assert "Level 8" in text and "Delhi" in text, text
+
+
+def _wipe_radius(page: Page) -> float:
+    clip = page.evaluate("getComputedStyle(document.querySelector('.dt-theme-light')).clipPath")
+    assert clip.startswith("circle("), clip
+    return float(clip[len("circle("):].split("px")[0])
+
+
+def test_theme_wipes_to_light_and_back(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _go(page, 6)
+    page.evaluate("DepTour.seek(0.5)")
+    page.wait_for_timeout(80)
+    assert _wipe_radius(page) == 0
+    page.evaluate("DepTour.seek(3.0)")
+    page.wait_for_timeout(80)
+    assert _wipe_radius(page) > 200
+    page.evaluate("DepTour.seek(DepTour.state().sceneDuration - 0.01)")
+    page.wait_for_timeout(80)
+    assert _wipe_radius(page) == 0
+
+
+def test_bookmark_badge_hidden_until_saved(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _go(page, 4)
+    page.evaluate("DepTour.seek(1.0)")
+    page.wait_for_timeout(80)
+    assert page.evaluate("getComputedStyle(document.querySelector('.dt-badge-count')).opacity") == "0"
+    page.evaluate("DepTour.seek(DepTour.state().sceneDuration - 0.01)")
+    page.wait_for_timeout(80)
+    assert page.evaluate("getComputedStyle(document.querySelector('.dt-badge-count')).opacity") == "1"
