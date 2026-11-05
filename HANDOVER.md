@@ -7254,3 +7254,32 @@ focus:          v7.5.0 candidate — site tour stage 1: tour engine + cinematic 
 - The machine's `hardwareConcurrency <= 4` counts as low-power (halved particles, 72-card wall); tests that need full effects pin it to 8.
 
 ## session shq-2026-11-05-site-tour-stage1 end
+
+## session shq-2026-11-05-site-tour-home-v2
+```
+started:        2026-11-05
+ended:          2026-11-05
+model:          claude-opus-5-5
+driver:         solo
+branch:         feature/site-tour
+starting_head:  01b0250
+ending_head:    <see the PR merge commit on main>
+focus:          site tour — independent review fixes + Home tour v2 (every Home feature + page montage)
+```
+
+### inbound context read
+- shq-2026-11-05-site-tour-stage1 (block above); independent review of 371c17e..01b0250.
+
+### owner's brief
+- Show all Home features on the Home tour (other filters, table/card toggle, bookmark, themes, sorting by header, alerts); other pages only as a small mention — cards that appear one by one and shrink into a grid. Intro: "Your one stop solution to Deputation", then a big full-screen "ALL Deputations.com".
+
+### work done
+- Review fixes (commit dd918b2): no auto-play on ?v=/filter links, early interaction, Save-Data; keys inside page dialogs left alone; page inert; Back closes; Shift+Tab contained; aria; feeder-grade sample data; sample labels; "Understood" tags; hero pauses (deptour:open/close); low-memory = low power; landscape phones → steps view with CTA; aurora isolation (keeps the backdrop blur working).
+- Home v2: engine brand intro + keepScene finale with `a.dt-page-link`; `tour/scenes/home.js` (steps 1–3), `home-more.js` (4–7), `pages.js` (8). Spec §3.1 revised; plan `docs/superpowers/plans/2026-11-05-site-tour-home-v2.md`.
+
+### gotchas for next session
+- `page.evaluate("...DepTour.play(...).then(...)")` returns the promise and Playwright waits for the tour to end — wrap in a block-bodied arrow function.
+- Under `-n 2` this GPU-less box paints ~1 fps; tests that sample a short on-screen moment run the tour at `speed=0.25`.
+- Blend modes on overlay children must stay inside an isolated group, or Chrome silently drops the backdrop blur.
+
+## session shq-2026-11-05-site-tour-home-v2 end

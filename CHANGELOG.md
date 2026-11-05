@@ -27,19 +27,23 @@ counter_convention:
 ## [Unreleased]
 
 ### Added - first-visit "how to use" tour on the Home page (2026-11-05)
-A short cinematic demo plays once on a visitor's first visit to the Home page,
-over the page, with sample data marked "Demo · sample data": the card wall
-narrowing to the posts a Level 7 officer with 4 years can apply for, a
-plain-words AI search turning into filter chips and ranked matches, and the
-India map diving into a state. It ends on "Try it with your pay level", which
-opens the real pay-level control. Skip, Esc and "Don't show tours again" are
-always available; a "How this works" button (bottom right) replays it.
-Reduced-motion visitors get a step-by-step card view instead, and automated
-browsers never see it (`?tour=play` forces it, `&tourSpeed=N` speeds it up).
+A ~75 s cinematic demo plays once on a visitor's first plain visit to the Home
+page, over the page, with sample data marked "Demo · sample data". It opens on
+"Your one stop solution to Deputation" and a full-screen ALL Deputations.com,
+then shows every Home feature: posts you can apply for (pay level + years, by
+the site's feeder-grade rule), other filters and quick chips, the AI search,
+sorting and table/card views, bookmarks, alerts and the light/dark theme. It
+ends on a grid of the other pages (India Map, DeFeX, My Deputation, Report
+Vacancy, Rules, FAQs; each card links to its page) and "Try it with your pay
+level", which opens the real pay-level control. Skip, Esc, ←/→, Back and
+"Don't show tours again" always work; "How this works" (bottom right) replays it.
+It does not auto-play on shared vacancy/filter links, for visitors already
+tapping or typing, with data-saver on, under reduced motion (they get a
+step-by-step view) or for automated browsers. The 3D hero pauses while it plays
+(hero-wave.js ?v=3 on every page). `?tour=play` forces it, `&tourSpeed=N` speeds it up.
 Files: `tour/` (loader, engine, kit, scenes, pre-baked `tour-map.json`),
 `vendor/gsap.min.js` (GSAP 3.15.1, loaded only when a tour plays),
-`scripts/build_tour_map.py`, `tests/test_tour_*.py`. Counters: every new asset
-starts at `?v=1`.
+`scripts/build_tour_map.py`, `tests/test_tour_*.py`. New assets start at `?v=1`.
 
 ### Added - Verify queue filters (2026-10-19)
 The pending-verification queue now has the same search, source and sort controls
