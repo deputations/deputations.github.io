@@ -6,8 +6,9 @@
    2 "Filter the whole map": Pay Level 8, then Finance; every state
      recolours and the count rolls down.
    3 "Dive into a state": Karnataka; its districts rise; Back to India.
-   4 "Posts in every district": Bengaluru Urban; posts slide up; one
-     opens and is saved.
+   4 "Posts in every district": Bengaluru Urban; its posts slide up as
+     the real district cards (level, closing date, Notification); one
+     opens on Home, where it is saved (the map itself has no save).
    5 "Zoom, list and go back": the state's list, zoom in and reset,
      then Back to India flies out to the whole map.
 
@@ -35,6 +36,12 @@
 
   function esc(s) {
     return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+  }
+  // A closing date `d` days from today, as the real cards print it (ISO).
+  function closes(d) {
+    var t = new Date(Date.now() + d * 864e5);
+    function two(n) { return (n < 10 ? '0' : '') + n; }
+    return t.getFullYear() + '-' + two(t.getMonth() + 1) + '-' + two(t.getDate());
   }
   function place(el, xy) { el.style.left = xy[0] + 'px'; el.style.top = xy[1] + 'px'; if (xy[2]) el.style.width = xy[2] + 'px'; }
   function localCentre(el, scene, kit) {
@@ -110,8 +117,9 @@
       var v = M.drawIndia(stage, M.data, kit, L.map);
       var cnt = counter(stage, kit, L, 1240);
       var mh = v.states.get('MH');
+      // as the real tooltip: the state's name and its vacancy count
       var tip = kit.el('div', 'dt-maptip', '<b>Maharashtra</b><span>' + (kit.sample.heat.MH || 0) +
-        ' sample posts</span><em>Most from Finance · Railways</em>', stage);
+        ' sample vacancies</span>', stage);
       var c = null;
       function C() { return c || (c = localCentre(mh, stage, kit)); }
       var tipW = kit.layout === 'tall' ? 190 : 230;
@@ -200,7 +208,7 @@
     key: 'posts',
     label: 'STEP 4',
     title: 'Posts in every district',
-    summary: 'Tap a district to see its posts, open one and save it.',
+    summary: 'Tap a district to see its posts. Each one opens on Home, where you can save it.',
     build: function (stage, kit) {
       var L = layout(kit);
       var v = mapAt(stage, kit, L, true);
@@ -213,13 +221,15 @@
       place(panel, L.posts);
       panel.innerHTML = '<div class="dt-mposts-h"><b>' + FOCUS + '</b><span>24 sample posts</span></div>' +
         POSTS.map(function (p) {
-          return '<div class="dt-mpost"><b>' + esc(p.t) + '</b><span>' + esc(p.o) + '</span>' +
-            '<span class="dt-trow-chips"><i>Level ' + p.l + '</i><i class="dt-days">' + p.d + 'd left</i></span></div>';
+          return '<div class="dt-mpost"><span class="dt-mpost-h"><b>' + esc(p.t) + '</b><i class="dt-mbadge">Level-' + p.l +
+            '</i></span><span>' + esc(p.o) + '</span>' +
+            '<span class="dt-mpost-f"><i>Closes ' + closes(p.d) + '</i><u>Notification</u></span></div>';
         }).join('');
       var rows = panel.querySelectorAll('.dt-mpost');
       var detail = kit.el('div', 'dt-mdetail', null, stage);
       place(detail, L.detail);
-      detail.innerHTML = '<b>' + POSTS[0].t + '</b><span>' + POSTS[0].o + ' · ' + FOCUS + '</span>' +
+      detail.innerHTML = '<em class="dt-mdetail-k">Opens on Home →</em>' +
+        '<b>' + POSTS[0].t + '</b><span>' + POSTS[0].o + ' · ' + FOCUS + '</span>' +
         '<span class="dt-trow-chips"><i>Level 8</i><i class="dt-open">Open to L-7 · 3 yrs</i><i class="dt-days">12d left</i></span>' +
         '<span class="dt-heart">' + HEART + '</span>';
       var heart = detail.querySelector('.dt-heart');

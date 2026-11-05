@@ -102,3 +102,14 @@ def seen(page: Page) -> dict:
         "() => { try { return JSON.parse(localStorage.getItem('dep_tour_seen_v1') || '{}'); }"
         " catch (e) { return {}; } }"
     )
+
+
+def close_and_settle(page: Page) -> None:
+    """Skip the open tour and wait until it is fully gone, including the
+    engine's delayed history.back(). Navigating sooner races that Back and
+    the new page load is aborted (net::ERR_ABORTED) on a busy machine."""
+    page.evaluate("DepTour.close()")
+    page.wait_for_function(
+        "() => !DepTour.isOpen() && !document.querySelector('.dt-overlay')"
+        " && !(history.state && history.state.dtTour)",
+        polling=100, timeout=10000)

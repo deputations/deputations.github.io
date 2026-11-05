@@ -1048,7 +1048,6 @@
 .dt-is-tall .dt-maptip { width: 190px; }
 .dt-maptip b { font: 800 16px/1.2 "Sora", system-ui, sans-serif; color: #fff; }
 .dt-maptip span { font: 700 13px/1.2 var(--dt-ui-font); color: #a5f3fc; }
-.dt-maptip em { font: 500 12px/1.3 var(--dt-ui-font); font-style: normal; color: var(--dt-dim); }
 .dt-mfilter {
   position: absolute; z-index: 5; display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 18px;
   border: 1px solid var(--dt-line); background: linear-gradient(160deg, rgba(22, 33, 56, 0.95), rgba(12, 19, 36, 0.95));
@@ -1082,11 +1081,16 @@
 .dt-mposts-h span, .dt-mlist-h span { font: 600 12px/1 var(--dt-ui-font); color: var(--dt-dim); }
 .dt-mpost { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(165, 243, 252, 0.1); }
 .dt-mpost b { font: 700 14px/1.2 "Sora", system-ui, sans-serif; color: #fff; }
-.dt-mpost > span:not(.dt-trow-chips) { font-size: 11.5px; color: var(--dt-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dt-mpost .dt-trow-chips { margin-top: 2px; }
+.dt-mpost > span:not(.dt-mpost-h):not(.dt-mpost-f) { font-size: 11.5px; color: var(--dt-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dt-mpost-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.dt-mbadge { flex-shrink: 0; font: 600 11px/1 var(--dt-ui-font); font-style: normal; padding: 4px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); color: #cbd5e1; }
+.dt-mpost-f { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; font: 600 11.5px/1 var(--dt-ui-font); }
+.dt-mpost-f i { font-style: normal; color: #fcd34d; }
+.dt-mpost-f u { text-decoration: none; color: #a5f3fc; }
+.dt-mdetail-k { font: 700 10.5px/1 var(--dt-ui-font); font-style: normal; letter-spacing: 0.08em; text-transform: uppercase; color: #a5f3fc; }
 .dt-is-tall .dt-mposts { padding: 10px; gap: 6px; }
 .dt-is-tall .dt-mpost { padding: 7px 10px; }
-.dt-is-tall .dt-mpost > span:not(.dt-trow-chips) { display: none; }
+.dt-is-tall .dt-mpost > span:not(.dt-mpost-h):not(.dt-mpost-f) { display: none; }
 .dt-mdetail { gap: 8px; padding: 18px 18px 16px; }
 .dt-mdetail > b { font: 800 19px/1.2 "Sora", system-ui, sans-serif; color: #fff; padding-right: 50px; }
 .dt-mdetail > span:not(.dt-trow-chips):not(.dt-heart) { font-size: 12.5px; color: var(--dt-dim); padding-right: 50px; }

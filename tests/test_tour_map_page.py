@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 from playwright.sync_api import Page, expect
 
-from tests.tour_helpers import no_hero_wave, seen  # noqa: F401
+from tests.tour_helpers import close_and_settle, no_hero_wave, seen  # noqa: F401
 
 TITLES = ["Every state at a glance", "Filter the whole map", "Dive into a state",
           "Posts in every district", "Zoom, list and go back"]
@@ -58,8 +58,8 @@ def test_map_tour_titles_in_order(page: Page, base_url: str):
 def test_hover_tooltip(page: Page, base_url: str):
     _open_map(page, base_url)
     _end(page, 0)
-    tip = _text(page, ".dt-maptip")
-    assert "Maharashtra" in tip and "sample posts" in tip, tip
+    tip = page.evaluate("[...document.querySelectorAll('.dt-maptip > :not(.dt-sweep)')].map(e => e.textContent)")
+    assert tip == ["Maharashtra", "128 sample vacancies"], tip     # the real tooltip: name and count only
     assert page.evaluate("+getComputedStyle(document.querySelector('.dt-maptip')).opacity") > 0.9
     assert page.evaluate("document.querySelector('.dt-mcount').getAttribute('aria-label')") == "1240"
 
@@ -71,6 +71,7 @@ def test_filters_recolour_the_map(page: Page, base_url: str):
     page.evaluate("DepTour.seek(0.3)")
     page.wait_for_timeout(80)
     before = page.evaluate(fills)
+    assert _text(page, ".dt-mcount") == "1,240"                   # no filter picked yet
     page.evaluate("DepTour.seek(DepTour.state().sceneDuration - 0.01)")
     page.wait_for_timeout(120)
     after = page.evaluate(fills)
@@ -78,6 +79,7 @@ def test_filters_recolour_the_map(page: Page, base_url: str):
     panel = _text(page, ".dt-mfilter")
     assert "Level 8" in panel and "Finance" in panel, panel
     assert page.evaluate("document.querySelector('.dt-mcount').getAttribute('aria-label')") == "58"
+    assert _text(page, ".dt-mcount") == "58"
 
 
 def test_dive_into_karnataka(page: Page, base_url: str):
@@ -100,6 +102,10 @@ def test_posts_in_bengaluru(page: Page, base_url: str):
     _end(page, 3)
     assert page.evaluate("[...document.querySelectorAll('.dt-pin')].some(p => +getComputedStyle(p).opacity > 0.9)")
     expect(page.locator(".dt-mpost")).to_have_count(3)
+    expect(page.locator(".dt-mpost .dt-heart")).to_have_count(0)    # the real map cards have no save button
+    for row in page.evaluate("[...document.querySelectorAll('.dt-mpost')].map(e => e.textContent)"):
+        assert "Level-" in row and "Closes 20" in row and "Notification" in row, row
+    assert "Opens on Home" in _text(page, ".dt-mdetail")
     expect(page.locator(".dt-mdetail .dt-heart.is-saved")).to_have_count(1)
     assert "Bengaluru Urban" in _text(page, ".dt-mposts")
     clear = page.evaluate("""() => {
@@ -167,7 +173,7 @@ def test_map_tour_panels_never_overlap(page: Page, base_url: str):
                 page.evaluate(f"DepTour.seek({t})")
                 page.wait_for_timeout(100)
                 assert page.evaluate(OVERLAPS, PANELS) == [], (vp["width"], TITLES[i], round(t, 2))
-        page.evaluate("DepTour.close()")
+        close_and_settle(page)
 
 
 def test_map_page_loads_in_order(page: Page, base_url: str):
@@ -199,6 +205,28 @@ def test_map_autoplays_on_a_plain_visit_but_not_a_shared_link(page: Page, base_u
     assert page.locator(".dt-overlay").count() == 0
     page.goto(f"{base_url}/india-map.html")
     page.wait_for_selector(".dt-overlay", state="attached", timeout=30000)
+
+
+def test_map_autoplay_waits_for_the_page_to_finish_drawing(page: Page, base_url: str):
+    """The page's own map (stubbed here) signals map:drawInComplete after its
+    intro; the tour holds until then, so it never covers that intro or races
+    the page's history.replaceState."""
+    page.add_init_script(REAL_VISIT)
+    page.route("**/india-map-view.js*", lambda r: r.fulfill(body="", content_type="application/javascript"))
+    page.goto(f"{base_url}/india-map.html")
+    page.wait_for_load_state("load", timeout=30000)
+    page.wait_for_function("() => !!window.DepTourLoader", polling=100, timeout=30000)
+    page.wait_for_timeout(3000)
+    assert page.locator(".dt-overlay").count() == 0                # still waiting for the page
+    page.evaluate("document.dispatchEvent(new CustomEvent('map:drawInComplete'))")
+    page.wait_for_selector(".dt-overlay", state="attached", timeout=15000)
+
+
+def test_map_autoplay_still_starts_if_the_page_never_finishes(page: Page, base_url: str):
+    page.add_init_script(REAL_VISIT)
+    page.route("**/india-map-view.js*", lambda r: r.fulfill(body="", content_type="application/javascript"))
+    page.goto(f"{base_url}/india-map.html")
+    page.wait_for_selector(".dt-overlay", state="attached", timeout=40000)
 
 
 def test_map_cta_closes_onto_the_map(page: Page, base_url: str):

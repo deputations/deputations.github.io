@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from playwright.sync_api import Page, expect
 
-from tests.tour_helpers import no_hero_wave, seen  # noqa: F401
+from tests.tour_helpers import close_and_settle, no_hero_wave, seen  # noqa: F401
 
 TITLES = ["Only the posts you can apply for", "Narrow it down", "Just ask", "Sort and switch views",
           "Save posts you like", "Never miss a vacancy", "Light or dark — your choice", "Explore more pages"]
@@ -387,7 +387,7 @@ def test_montage_grid_layout(page: Page, base_url: str):
         assert order == [p[0] for p in PAGES], (w, order)
         assert _no_overlap(cards), (w, cards)
         assert all(0 <= c["x"] and c["x"] + c["w"] <= w and c["y"] >= 0 and c["y"] + c["h"] <= h for c in cards), (w, cards)
-        page.locator(".dt-skip").click()
+        close_and_settle(page)
 
 
 def test_finale_card_opens_the_map_page(page: Page, base_url: str):
@@ -407,7 +407,7 @@ def test_off_button_fits_on_small_phones(page: Page, base_url: str):
         _open_home(page, base_url)
         box = page.locator(".dt-off").bounding_box()
         assert box and box["x"] >= 0 and box["x"] + box["width"] <= w, (w, box)
-        page.locator(".dt-skip").click()
+        close_and_settle(page)
 
 
 def test_theme_step_uses_sample_numbers(page: Page, base_url: str):

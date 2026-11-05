@@ -273,6 +273,9 @@
     function odometer(el, from, to, opts) {
       opts = opts || {};
       el.setAttribute('aria-label', String(to));
+      // A later odometer on the same element (1240→312, then 312→58) must not
+      // overwrite what the element shows before the first one has run.
+      var first = !el.classList.contains('dt-odo');
       el.classList.add('dt-odo');
       var val = from;
       function plain(x) { el.classList.remove('dt-odo-rolling'); el.textContent = Math.round(x).toLocaleString('en-IN'); }
@@ -302,7 +305,7 @@
         get: function () { return val; },
         set: function (x) { val = x; draw(x); }
       });
-      plain(from);
+      if (first) plain(from);
       return gsap.timeline().to(proxy, { v: to, duration: opts.duration || 1.6, ease: opts.ease || 'power2.inOut' });
     }
 
