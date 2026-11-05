@@ -6,11 +6,13 @@ Run:
 """
 from __future__ import annotations
 
+import re
+
 from playwright.sync_api import Page, expect
 
 from tests.tour_helpers import close_and_settle, no_hero_wave, seen  # noqa: F401
 
-TITLES = ["Only the posts you can apply for", "Narrow it down", "Just ask", "Sort and switch views",
+TITLES = ["Find deputation opportunities matching your eligibility", "Narrow it down", "Just ask", "Sort and switch views",
           "Save posts you like", "Never miss a vacancy", "Light or dark — your choice", "Explore more pages"]
 HEADLINE = "Your one stop solution to Deputation"
 BRAND = "ALL Deputations.com"
@@ -437,7 +439,7 @@ def test_rules_card_describes_the_rules_page(page: Page, base_url: str):
     _open_home(page, base_url)
     _scene_end(page, 7)
     text = page.evaluate("document.querySelector('a.dt-page-card[href=\"/rules.html\"] .dt-page-meta span').textContent")
-    assert "Every circular" not in text and "DoPT" in text, text
+    assert text == "All rules at one place, easy to search", text
 
 
 def test_home_tour_plays_even_if_map_data_fails(page: Page, base_url: str):
@@ -447,3 +449,76 @@ def test_home_tour_plays_even_if_map_data_fails(page: Page, base_url: str):
         page.evaluate(f"DepTour.goTo({i})")
         expect(page.locator("#dt-title")).to_have_text(title)
     expect(page.locator("a.dt-page-card")).to_have_count(6)
+
+
+# ---- owner's changes, 2026-11-05 evening ----
+
+STEP_N = re.compile(r"\bSTEP\s*\d", re.I)
+
+
+def test_no_step_numbers_on_screen(page: Page, base_url: str):
+    """Visitors can jump to any step from the dots, so no "STEP n" label is shown."""
+    _open_home(page, base_url)
+    for i in (0, 4, 7):
+        _scene_end(page, i)
+        text = page.evaluate("document.querySelector('.dt-overlay').innerText")
+        assert not STEP_N.search(text), (i, text[:160])
+    close_and_settle(page)
+    page.evaluate("() => { DepTour.play('home', { mode: 'steps' }); }")
+    page.wait_for_selector(".dt-steps h3", timeout=10000)
+    text = page.evaluate("document.querySelector('.dt-steps').innerText")
+    assert not STEP_N.search(text), text
+
+
+def _meta(page: Page, key: str) -> str:
+    return page.evaluate(f"document.querySelector('a.dt-pc-{key} .dt-page-meta > span').textContent")
+
+
+def test_defex_card_says_beta(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _scene_end(page, 7)
+    assert page.evaluate("(document.querySelector('a.dt-pc-defex .dt-beta') || {}).textContent") == "Beta"
+
+
+def test_report_card_offers_a_link_or_a_pdf(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _scene_end(page, 7)
+    assert _meta(page, "report") == "Just paste the vacancy link, or upload the PDF"
+    art = page.evaluate("document.querySelector('a.dt-pc-report .dt-page-art').textContent")
+    assert "https://" in art and "PDF" in art, art
+
+
+WA = "a.dt-wa-bar.dt-page-link"
+
+
+def _to_finale(page: Page) -> None:
+    for _ in range(12):
+        page.keyboard.press("ArrowRight")
+    expect(page.locator(".dt-cta")).to_be_visible(timeout=10000)
+    page.wait_for_timeout(300)
+
+
+def test_whatsapp_bar_joins_channel_and_group(page: Page, base_url: str):
+    for w, h in [(1440, 900), (390, 844)]:
+        page.set_viewport_size({"width": w, "height": h})
+        _open_home(page, base_url)
+        _to_finale(page)
+        bar = page.locator(WA)
+        expect(bar).to_have_attribute("href", "/contact.html")
+        text = bar.text_content()
+        for words in ("WhatsApp", "Channel", "latest updates", "Group", "discussions"):
+            assert words in text, (w, text)
+        assert page.evaluate(f"+getComputedStyle(document.querySelector('{WA}')).opacity") > 0.9
+        b, cta = bar.bounding_box(), page.locator(".dt-cta").bounding_box()
+        cards = _grid(page)
+        assert b["y"] >= max(c["y"] + c["h"] for c in cards) - 1, (w, b, cards)    # under the page grid
+        assert b["y"] + b["height"] <= cta["y"] + 1, (w, b, cta)                     # above the button
+        assert b["x"] >= 0 and b["x"] + b["width"] <= w, (w, b)
+        close_and_settle(page)
+
+
+def test_whatsapp_bar_opens_the_contact_page(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _to_finale(page)
+    page.locator(WA).click()
+    page.wait_for_url("**/contact.html", timeout=15000)

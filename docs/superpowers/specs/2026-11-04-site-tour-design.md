@@ -63,7 +63,7 @@ is labelled as sample.
    (fitted to ~90 % of the viewport width; on phones "ALL" over
    "Deputations.com"), a light sweep crosses it and it holds long enough to be
    remembered before flying into step 1.
-1. **"Only the posts you can apply for"** (~11 s): card wall; Display
+1. **"Find deputation opportunities matching your eligibility"** (~11 s): card wall; Display
    deputations for me → Level 7 → 4 years; ineligible cards fall away;
    survivors ("Open to L-7 · 3 yrs") fly into a list; 1,240 → 86.
 2. **"Narrow it down"** (~8 s): Ministry / Organisation / Location dropdown
@@ -81,14 +81,19 @@ is labelled as sample.
    phone slides in and a push alert drops down on it ("New · Level 8 · Delhi").
 7. **"Light or dark — your choice"** (~6 s): a mini page flips to the light
    theme with a circular wipe from the theme toggle, then wipes back.
-8. **"Explore more pages"** (~16 s): each page appears large for ~2 s with a
+8. **"Explore more pages"** (~19 s): each page appears large for ~2 s with a
    mini animation, then shrinks into a grid slot (wide 3 × 2; phone 2 × 3):
-   India Map (map draws itself) → top-left; DeFeX (gauge needle sweeps) →
-   top-centre; My Deputation (tracker steps) → top-right; Report Vacancy (PDF
-   drops in) → bottom-left; Rules (pages flip) → bottom-centre; FAQs (a
-   question expands) → bottom-right.
-9. **Finale**: the grid stays; each card is a real link to its page; CTA
-   **"Try it with your pay level"** sits below it and opens `#filterMyPayLevelBtn`.
+   India Map (map draws itself) → top-left; DeFeX, tagged **Beta** (gauge
+   needle sweeps) → top-centre; My Deputation (tracker steps) → top-right;
+   Report Vacancy, "Just paste the vacancy link, or upload the PDF" (a link
+   types in, then "or" a PDF drops in) → bottom-left; Rules, "All rules at one
+   place, easy to search" (pages flip) → bottom-centre; FAQs (a question
+   expands) → bottom-right. Last, **"Join us on WhatsApp"** (Channel · latest
+   updates, Group · discussions) appears large with chat bubbles, then becomes
+   a full-width bar under the grid linking to `/contact.html`.
+   (Owner's changes, 2026-11-05 evening.)
+9. **Finale**: the grid and the WhatsApp bar stay; each is a real link; CTA
+   **"Try it with your pay level"** sits below them and opens `#filterMyPayLevelBtn`.
 
 The India map journey (former Home step 3) moves to the India Map page tour (§3.2).
 
@@ -180,7 +185,8 @@ tests/test_tour_*.py          Playwright smoke tests (existing suite conventions
 **tour-engine.js** — exposes `window.DepTour`:
 - `DepTour.register(key, { scenes: [Scene...], cta })`
 - `DepTour.play(key, { speed })` → builds overlay, runs scenes, resolves on close.
-- Overlay chrome: scene label + title, scene dots (click to jump), progress bar,
+- Overlay chrome: scene title (no "STEP n" label: visitors can jump to any step
+  from the dots, in any order), scene dots (click to jump), progress bar,
   Skip, "Don't show tours again", Demo badge.
 - Keyboard: Esc = skip, ←/→ = previous/next scene, Space = pause; focus is
   trapped in the overlay; `role="dialog"`, `aria-modal="true"`, labelled by the title.
@@ -192,7 +198,7 @@ tests/test_tour_*.py          Playwright smoke tests (existing suite conventions
 
 **Scene contract** (each `tour/scenes/*.js` file registers its scenes):
 ```js
-{ key: 'eligibility', label: 'STEP 1', title: 'Only the posts you can apply for',
+{ key: 'eligibility', title: 'Find deputation opportunities matching your eligibility',
   build(stage, kit) { /* create DOM in stage, return a gsap.timeline() */ } }
 ```
 `kit` is the engine toolbox every scene uses, so scenes stay small:

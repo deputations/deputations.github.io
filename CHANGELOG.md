@@ -45,12 +45,15 @@ in `tour/scenes/map.js`, loader tags in `index.html` and `india-map.html`,
 A ~75 s cinematic demo plays once on a visitor's first plain visit to the Home
 page, over the page, with sample data marked "Demo · sample data". It opens on
 "Your one stop solution to Deputation" and a full-screen ALL Deputations.com,
-then shows every Home feature: posts you can apply for (pay level + years, by
-the site's feeder-grade rule), other filters and quick chips, the AI search,
-sorting and table/card views, bookmarks, alerts and the light/dark theme. It
-ends on a grid of the other pages (India Map, DeFeX, My Deputation, Report
-Vacancy, Rules, FAQs; each card links to its page) and "Try it with your pay
-level", which opens the real pay-level control. Skip, Esc, ←/→, Back and
+then shows every Home feature: deputation opportunities matching your
+eligibility (pay level + years, by the site's feeder-grade rule), other filters
+and quick chips, the AI search, sorting and table/card views, bookmarks, alerts
+and the light/dark theme. It ends on a grid of the other pages (India Map, DeFeX
+(beta), My Deputation, Report Vacancy (a link or a PDF), Rules (all rules at one
+place, easy to search), FAQs; each card links to its page), a "Join us on
+WhatsApp" bar (Channel for latest updates, Group for discussions; links to
+Contact) and "Try it with your pay level", which opens the real pay-level
+control. No "STEP n" labels: visitors can jump between steps in any order. Skip, Esc, ←/→, Back and
 "Don't show tours again" always work; "How this works" (bottom right) replays it.
 It does not auto-play on shared vacancy/filter links, for visitors already
 tapping or typing, with data-saver on, under reduced motion (they get a

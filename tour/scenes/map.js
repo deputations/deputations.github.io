@@ -219,7 +219,6 @@
 
   var teaserScene = {
     key: 'mapTeaser',
-    label: 'STEP 3',
     title: "See India's vacancies on a map",
     summary: 'Open the India Map to see vacancies state by state and district by district.',
     build: function (stage, kit) {

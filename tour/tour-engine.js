@@ -190,7 +190,6 @@
     if (S.mode === 'cinematic') {
       S.head = h('div', 'dt-head', null, chrome);
       S.head.setAttribute('aria-live', 'polite');
-      S.labelEl = h('span', 'dt-label', null, S.head);
       S.titleEl = h('h2', 'dt-title', null, S.head);
       S.titleEl.id = 'dt-title';
     }
@@ -312,7 +311,6 @@
     S.phase = 'intro';
     var text = String(S.tour.intro.headline);
     S.titleEl.textContent = text;
-    S.labelEl.textContent = '';
     S.head.classList.add('is-hidden');
     var hl = S.headline;
     hl.innerHTML = '';
@@ -379,7 +377,6 @@
   /* ---------- scenes ---------- */
   function setChrome(i) {
     var sc = S.scenes[i];
-    if (S.labelEl) S.labelEl.textContent = sc.label || '';
     if (S.titleEl) S.titleEl.textContent = sc.title || '';
     S.dots.forEach(function (d, k) {
       d.classList.toggle('is-active', k === i);
@@ -540,7 +537,6 @@
     var sc = S.scenes[i];
     if (!S.stepsEl) {
       var card = S.stepsEl = h('div', 'dt-steps', null, S.overlay);
-      S.stepLabel = h('span', 'dt-steps-label', null, card);
       S.stepTitle = h('h3', null, null, card);
       S.stepTitle.id = 'dt-title';
       S.stepText = h('p', null, null, card);
@@ -555,7 +551,6 @@
         else goTo(S.index + 1);
       });
     }
-    S.stepLabel.textContent = sc.label || '';
     S.stepTitle.textContent = sc.title || '';
     S.stepText.textContent = sc.summary || '';
     S.backBtn.disabled = i === 0;

@@ -3,7 +3,7 @@
    steps 1–3 and the registration of the whole tour.
 
    Intro: "Your one stop solution to Deputation", then the brand.
-   Step 1 "Only the posts you can apply for": card wall; Level 7 +
+   Step 1 "Find deputation opportunities matching your eligibility": card wall; Level 7 +
    4 years; ineligible cards fall away (feeder-grade rule).
    Step 2 "Narrow it down": ministry / organisation / location
    filters and the quick chips.
@@ -50,8 +50,7 @@
      --------------------------------------------------------------- */
   var eligibility = {
     key: 'eligibility',
-    label: 'STEP 1',
-    title: 'Only the posts you can apply for',
+    title: 'Find deputation opportunities matching your eligibility',
     summary: 'Set your pay level and years of experience to see only the posts you can apply for.',
     build: function (stage, kit) {
       var tall = kit.layout === 'tall';
@@ -209,7 +208,6 @@
 
   var filters = {
     key: 'filters',
-    label: 'STEP 2',
     title: 'Narrow it down',
     summary: 'Pick ministries, organisations and locations, or tap a quick chip like Delhi/NCR or Closing in 7 days.',
     build: function (stage, kit) {
@@ -305,7 +303,6 @@
 
   var ask = {
     key: 'ask',
-    label: 'STEP 3',
     title: 'Just ask',
     summary: 'Type what you want in plain words — AI understands it and ranks the best matches.',
     build: function (stage, kit) {
