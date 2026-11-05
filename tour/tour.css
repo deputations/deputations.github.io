@@ -394,7 +394,8 @@
 .dt-is-tall .dt-label { font-size: 10px; letter-spacing: 0.24em; }
 .dt-is-tall .dt-title { font-size: 19px; }
 .dt-is-tall .dt-skip { top: 16px; right: 14px; padding: 9px 14px; font-size: 12px; }
-.dt-is-tall .dt-foot { left: 14px; right: 14px; bottom: 18px; gap: 10px; }
+.dt-is-tall .dt-foot { left: 14px; right: 14px; bottom: 14px; gap: 10px; flex-wrap: wrap; row-gap: 10px; }
+.dt-is-tall .dt-dots { order: -1; flex: 1 0 100%; justify-content: center; }   /* own row: Off always fits */
 .dt-is-tall .dt-badge { padding: 6px 9px; font-size: 10px; }
 .dt-is-tall .dt-dots { gap: 6px; }
 .dt-is-tall .dt-dots button { width: 16px; }
@@ -933,6 +934,7 @@
 }
 .dt-apop-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font: 700 14px/1.2 "Sora", system-ui, sans-serif; color: #fff; }
 .dt-apop .dt-trow-chips { margin-top: 0; }
+.dt-apop-note { font: 500 12px/1.3 var(--dt-ui-font); color: var(--dt-dim); }
 .dt-phone {
   position: absolute; z-index: 3; overflow: hidden; border-radius: 38px; border: 6px solid #1e293b;
   background: radial-gradient(120% 80% at 30% 0%, #1e3a5f, #0b1020 60%), #0b1020;

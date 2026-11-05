@@ -19,7 +19,7 @@
     { key: 'defex', title: 'DeFeX', text: 'Deputation Friendliness Index', href: '/defex.html' },
     { key: 'mydep', title: 'My Deputation', text: 'Track applications and dates', href: '/my-deputation.html' },
     { key: 'report', title: 'Report Vacancy', text: 'Share a notification you found', href: '/report-vacancy.html' },
-    { key: 'rules', title: 'Rules', text: 'Every circular in one place', href: '/rules.html' },
+    { key: 'rules', title: 'Rules', text: 'Deputation rules and DoPT OMs, searchable', href: '/rules.html' },
     { key: 'faq', title: 'FAQs', text: 'Answers to common questions', href: '/faq.html' }
   ];
 

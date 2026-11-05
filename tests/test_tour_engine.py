@@ -574,3 +574,46 @@ def test_replay_right_after_closing_stays_open(page: Page, base_url: str):
     page.go_back()
     page.wait_for_function("() => window.__res2 === 'skip'", polling=100, timeout=10000)
     assert page.url == url
+
+
+# ---- Home v2 review fixes ----
+
+def test_skipping_during_the_brand_removes_it(page: Page, base_url: str):
+    open_engine(page, base_url)
+    page.evaluate("""() => DepTour.register('t', {
+      intro: { headline: 'Hello tour', brand: 'ALL Deputations.com' },
+      scenes: [__probeScene('a', 'Alpha', { duration: 20 })] })""")
+    start(page, speed=0.25)
+    page.wait_for_function("""() => { const b = document.querySelector('.dt-brand');
+                                     return b && +getComputedStyle(b).opacity > 0.5; }""", polling=50, timeout=30000)
+    page.locator(".dt-overlay").focus()
+    page.keyboard.press("ArrowRight")
+    page.wait_for_function("() => DepTour.state().sceneIndex === 0", polling=100, timeout=5000)
+    expect(page.locator(".dt-brand")).to_have_count(0)
+
+
+def test_keep_scene_finale_stays_until_the_visitor_acts(page: Page, base_url: str):
+    open_engine(page, base_url)
+    page.evaluate(LINK_SCENE, "t")
+    start(page, speed=2)
+    expect(page.locator(".dt-cta")).to_be_visible(timeout=10000)
+    page.wait_for_timeout(5000)                       # the old finale closed itself after 6 s / speed 2 = 3 s
+    assert page.evaluate("DepTour.isOpen()") is True
+    expect(page.locator(".probe-link")).to_be_visible()
+
+
+def test_going_back_from_the_finale_leaves_finale_mode(page: Page, base_url: str):
+    open_engine(page, base_url)
+    page.evaluate("""() => DepTour.register('t', {
+      scenes: [__probeScene('a', 'Alpha', { duration: 0.3 }),
+               { key: 'p', label: 'L', title: 'Pages', summary: 'S', build(stage) {
+                   const a = document.createElement('a'); a.className = 'dt-page-link probe-link'; a.href = '/x.html';
+                   a.textContent = 'X'; stage.appendChild(a); return gsap.timeline().to({}, { duration: 0.3 }); } }],
+      cta: { label: 'Go', keepScene: true } })""")
+    start(page)
+    expect(page.locator(".dt-cta")).to_be_visible(timeout=10000)
+    page.locator(".dt-overlay").focus()
+    page.keyboard.press("ArrowLeft")
+    page.wait_for_function("() => DepTour.state().phase === 'scene'", polling=100, timeout=5000)
+    expect(page.locator(".dt-overlay.dt-finale-on")).to_have_count(0)
+    expect(page.locator(".dt-stage")).to_have_attribute("aria-hidden", "true")

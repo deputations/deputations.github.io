@@ -137,8 +137,14 @@ def test_full_run_fast(page: Page, base_url: str):
     page.on("console", lambda m: m.type == "error" and (
         "/tour/" in m.text or "/tour/" in ((m.location or {}).get("url") or "")) and console_errors.append(m.text))
     _open_home(page, base_url, speed=20)
-    page.wait_for_function("() => !!window.__closed", polling=100, timeout=15000)
-    assert page.evaluate("window.__closed.reason") == "end"
+    # the whole tour plays to its finale, which then waits for the visitor
+    expect(page.locator(".dt-cta")).to_be_visible(timeout=20000)
+    expect(page.locator("a.dt-page-card")).to_have_count(6)
+    page.wait_for_timeout(1500)
+    assert page.evaluate("DepTour.isOpen()") is True
+    page.locator(".dt-cta").click()
+    page.wait_for_function("() => !!window.__closed", polling=100, timeout=10000)
+    assert page.evaluate("window.__closed.reason") == "cta"
     assert errors == [] and console_errors == []
 
 
@@ -391,3 +397,53 @@ def test_finale_card_opens_the_map_page(page: Page, base_url: str):
     expect(page.locator(".dt-cta")).to_be_visible(timeout=10000)
     page.locator("a.dt-page-card", has_text="India Map").click()
     page.wait_for_url("**/india-map.html", timeout=15000)
+
+
+# ---- Home v2 review fixes ----
+
+def test_off_button_fits_on_small_phones(page: Page, base_url: str):
+    for w, h in [(390, 844), (360, 740)]:
+        page.set_viewport_size({"width": w, "height": h})
+        _open_home(page, base_url)
+        box = page.locator(".dt-off").bounding_box()
+        assert box and box["x"] >= 0 and box["x"] + box["width"] <= w, (w, box)
+        page.locator(".dt-skip").click()
+
+
+def test_theme_step_uses_sample_numbers(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _scene_end(page, 6)
+    text = page.evaluate("document.querySelector('.dt-theme-dark .dt-tm-kpis').textContent")
+    assert "Sample" in text and "405" not in text, text
+
+
+def test_alerts_match_how_the_site_sends_them(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _scene_end(page, 5)
+    chips = page.evaluate("[...document.querySelectorAll('.dt-apop .dt-trow-chips i')].map(i => i.textContent)")
+    assert chips == ["Level 8"], chips
+    assert "daily" in page.evaluate("document.querySelector('.dt-apop').textContent").lower()
+
+
+def test_phone_lock_screen_shows_today(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _scene_end(page, 5)
+    expected = page.evaluate("""new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', weekday: 'long',
+                                  day: 'numeric', month: 'long' }).format(new Date()).replace(',', '')""")
+    assert page.evaluate("document.querySelector('.dt-phone-date').textContent") == expected
+
+
+def test_rules_card_describes_the_rules_page(page: Page, base_url: str):
+    _open_home(page, base_url)
+    _scene_end(page, 7)
+    text = page.evaluate("document.querySelector('a.dt-page-card[href=\"/rules.html\"] .dt-page-meta span').textContent")
+    assert "Every circular" not in text and "DoPT" in text, text
+
+
+def test_home_tour_plays_even_if_map_data_fails(page: Page, base_url: str):
+    page.route("**/tour/tour-map.json*", lambda r: r.abort())
+    _open_home(page, base_url)
+    for i, title in enumerate(TITLES):
+        page.evaluate(f"DepTour.goTo({i})")
+        expect(page.locator("#dt-title")).to_have_text(title)
+    expect(page.locator("a.dt-page-card")).to_have_count(6)

@@ -1,14 +1,14 @@
 /* ============================================================
-   tour/scenes/home.js — the Home page intro (index.html).
+   tour/scenes/home.js — the Home page tour (index.html): intro,
+   steps 1–3 and the registration of the whole tour.
 
-   Scene 1 "Only the posts you can apply for": a 3D wall of vacancy
-   cards; the cursor sets Pay Level 7 + 4 years; ineligible cards
-   flip and fall into depth, the survivors fly into a list and the
-   counter rolls 1,240 -> 86.
-   Scene 2 "Just ask": a plain-words query types itself, its key
-   phrases fly as light into filter chips, AI-ranked matches slide
-   in with score rings.
-   Scene 3: the India map teaser (tour/scenes/map.js).
+   Intro: "Your one stop solution to Deputation", then the brand.
+   Step 1 "Only the posts you can apply for": card wall; Level 7 +
+   4 years; ineligible cards fall away (feeder-grade rule).
+   Step 2 "Narrow it down": ministry / organisation / location
+   filters and the quick chips.
+   Step 3 "Just ask": the AI search ("Understood" tags, matches).
+   Steps 4–7 come from home-more.js, step 8 from pages.js.
 
    Design: docs/superpowers/specs/2026-11-04-site-tour-design.md §3.1
    ============================================================ */
@@ -435,9 +435,14 @@
     });
   }
 
+  // The map data only draws the montage's mini map, which copes without it:
+  // register either way so a failed fetch never costs the whole Home tour.
   if (window.DepTourMap) {
-    window.DepTourMap.load().then(register).catch(function (err) {
+    window.DepTourMap.load().then(register, function (err) {
       try { console.warn('[tour] map data unavailable:', err && err.message); } catch (e) {}
+      register();
     });
+  } else {
+    register();
   }
 })();

@@ -396,6 +396,9 @@
   function clearScenes() {
     kill(S.introTl); S.introTl = null;
     if (S.headline) S.headline.innerHTML = '';
+    if (S.brandEl) { S.brandEl.remove(); S.brandEl = null; }       // skipped mid-intro
+    if (S.overlay) S.overlay.classList.remove('dt-finale-on');     // leaving a keep-scene finale
+    if (S.stage) S.stage.setAttribute('aria-hidden', 'true');
     if (S.head) S.head.classList.remove('is-hidden');
     kill(S.wrap); S.wrap = null;
     if (S.sceneEl) S.sceneEl.remove();
@@ -514,7 +517,8 @@
     h('span', 'dt-cta-arrow', '→', btn).setAttribute('aria-hidden', 'true');
     btn.addEventListener('click', function () { close('cta'); });
 
-    var tl = S.finaleTl = track(gsap.timeline({ onComplete: function () { close('end'); } }));
+    // A keep-scene finale is a page of links: it stays until the visitor acts.
+    var tl = S.finaleTl = track(gsap.timeline({ onComplete: keep ? null : function () { close('end'); } }));
     if (S.camera && !keep) tl.to(S.camera, { opacity: 0.32, filter: 'blur(4px)', duration: 0.7, ease: 'power2.out' }, 0);
     tl.fromTo(btn, { opacity: 0, scale: 0.8, y: 24 },
       { opacity: 1, scale: 1, y: 0, duration: 0.8, ease: 'back.out(1.8)' }, 0.1);
@@ -524,7 +528,7 @@
       try { tl.add(kit.burst(r.left + r.width / 2, r.top + r.height / 2, { count: 40 }), 0.45); }
       catch (err) { warn('burst failed:', err && err.message); }
     }
-    tl.to({}, { duration: 6 });
+    if (!keep) tl.to({}, { duration: 6 });
     try { btn.focus({ preventScroll: true }); } catch (e) {}
   }
 

@@ -34,6 +34,10 @@
     cards: icon('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>' +
                 '<rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>')
   };
+  function todayLong() {
+    return new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'long' })
+      .format(new Date()).replace(',', '');
+  }
   // Centre of `el` in scene units (valid while the camera is level).
   function localCentre(el, scene, kit) {
     var r = el.getBoundingClientRect(), s = scene.getBoundingClientRect();
@@ -205,20 +209,20 @@
     key: 'alerts',
     label: 'STEP 6',
     title: 'Never miss a vacancy',
-    summary: 'Turn on alerts and get a notification as soon as a matching vacancy is posted.',
+    summary: 'Turn on alerts for your pay level and get a daily notification of new vacancies.',
     build: function (stage, kit) {
       var tall = kit.layout === 'tall';
       var hdr = tall ? miniHeader(kit, stage, 10, 0, 370) : miniHeader(kit, stage, 110, 10, 880);
       var pop = kit.el('div', 'dt-apop', null, stage);
       if (tall) place(pop, 90, 66, 290); else place(pop, 690, 78, 300);
-      pop.innerHTML = '<div class="dt-apop-row"><span>Alerts for new posts</span><span class="dt-switch dt-aswitch">' +
+      pop.innerHTML = '<div class="dt-apop-row"><span>Daily alerts for new posts</span><span class="dt-switch dt-aswitch">' +
         '<i class="dt-switch-on"></i><i class="dt-switch-knob"></i></span></div>' +
-        '<div class="dt-trow-chips"><i>Level 8</i><i>Delhi</i></div>';
+        '<div class="dt-trow-chips"><i>Level 8</i></div><span class="dt-apop-note">For your pay level \u00B7 every morning</span>';
       var sw = pop.querySelector('.dt-aswitch');
       var phone = kit.el('div', 'dt-phone', null, stage);
       if (tall) place(phone, 85, 236, 220, 440); else place(phone, 300, 96, 230, 470);
       phone.innerHTML = '<i class="dt-phone-notch"></i><span class="dt-phone-time">9:41</span>' +
-        '<span class="dt-phone-date">Thursday, 5 November</span>' +
+        '<span class="dt-phone-date">' + todayLong() + '</span>' +
         '<div class="dt-push"><span class="dt-push-app">AD</span><div class="dt-push-body">' +
         '<b>New vacancy · Level 8 · Delhi</b><span>Section Officer — Department of Expenditure</span>' +
         '<em>ALL Deputations · now</em></div></div>';
@@ -249,7 +253,7 @@
      Step 7 — light or dark
      --------------------------------------------------------------- */
   function pageMock(themeCls, tall) {
-    var cards = [['Active vacancies', '405'], ['Closing soon', '111'], ['Ministries', '40']];
+    var cards = [['Sample \u00B7 Active', '1,240'], ['Closing soon', '86'], ['Ministries', '24']];
     return '<div class="dt-tm-head"><span class="dt-mlogo"><b>ALL</b> Deputations</span>' +
       '<span class="dt-mi dt-tm-toggle">' + (themeCls === 'dark' ? ICON.moon : ICON.sun) + '</span></div>' +
       '<b class="dt-tm-title">All Deputation Vacancies</b>' +
