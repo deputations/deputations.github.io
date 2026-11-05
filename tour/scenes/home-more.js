@@ -75,7 +75,6 @@
      --------------------------------------------------------------- */
   var views = {
     key: 'views',
-    label: 'STEP 4',
     title: 'Sort and switch views',
     summary: 'Click a column header to sort the table, and switch between the table and card views.',
     build: function (stage, kit) {
@@ -158,7 +157,6 @@
      --------------------------------------------------------------- */
   var bookmark = {
     key: 'bookmark',
-    label: 'STEP 5',
     title: 'Save posts you like',
     summary: 'Tap the heart on any post to save it; your bookmarks are kept in My Deputation.',
     build: function (stage, kit) {
@@ -207,7 +205,6 @@
      --------------------------------------------------------------- */
   var alerts = {
     key: 'alerts',
-    label: 'STEP 6',
     title: 'Never miss a vacancy',
     summary: 'Turn on alerts for your pay level and get a daily notification of new vacancies.',
     build: function (stage, kit) {
@@ -267,7 +264,6 @@
 
   var theme = {
     key: 'theme',
-    label: 'STEP 7',
     title: 'Light or dark — your choice',
     summary: 'Switch between the dark and the light theme at any time.',
     build: function (stage, kit) {

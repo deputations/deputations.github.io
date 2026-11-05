@@ -191,23 +191,6 @@
   transition: opacity 0.35s ease;
 }
 .dt-head.is-hidden { opacity: 0; }
-.dt-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font: 700 11px/1 "Sora", system-ui, sans-serif;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: #7dd3fc;
-}
-.dt-label:not(:empty)::before {
-  content: "";
-  width: 26px;
-  height: 2px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, var(--dt-cyan), var(--dt-violet));
-  box-shadow: 0 0 10px rgba(34, 211, 238, 0.8);
-}
 .dt-title {
   margin: 0;
   font-family: var(--dt-head-font);
@@ -365,12 +348,6 @@
   backdrop-filter: blur(18px);
   box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.7), 0 0 60px -30px rgba(34, 211, 238, 0.6);
 }
-.dt-steps-label {
-  font: 700 11px/1 "Sora", system-ui, sans-serif;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: #7dd3fc;
-}
 .dt-steps h3 {
   margin: 14px 0 10px;
   font-family: var(--dt-head-font);
@@ -391,7 +368,6 @@
 
 /* ---------- phone layout ---------- */
 .dt-is-tall .dt-head { left: 18px; right: 104px; top: 20px; gap: 8px; }
-.dt-is-tall .dt-label { font-size: 10px; letter-spacing: 0.24em; }
 .dt-is-tall .dt-title { font-size: 19px; }
 .dt-is-tall .dt-skip { top: 16px; right: 14px; padding: 9px 14px; font-size: 12px; }
 .dt-is-tall .dt-foot { left: 14px; right: 14px; bottom: 14px; gap: 10px; flex-wrap: wrap; row-gap: 10px; }
@@ -1023,6 +999,61 @@
 .dt-pm-pdf { padding: 14px 10px 8px; border-radius: 6px; background: #f8fafc; color: #e11d48; font: 800 13px/1 "Sora", system-ui, sans-serif; box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.8); }
 .dt-pm-status { margin-top: 6px; font: 700 11px/1 var(--dt-ui-font); color: #86efac; }
 .dt-page-art:has(.dt-pm-drop) { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.dt-page-art:has(.dt-pm-rv) { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.dt-pm-rv { display: flex; align-items: center; justify-content: center; gap: 8px; width: 92%; }
+.dt-pm-url { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; padding: 7px 9px; border-radius: 9px;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(165, 243, 252, 0.35); font: 600 10.5px/1 var(--dt-ui-font); color: #e2e8f0; }
+.dt-pm-url i { font-style: normal; font-size: 10px; }
+.dt-pm-url em { font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.dt-pm-or { font: 600 10px/1 var(--dt-ui-font); color: var(--dt-dim); }
+.dt-pm-rv .dt-pm-pdf { flex-shrink: 0; padding: 9px 7px 6px; font-size: 10px; }
+.dt-page-card.is-tall .dt-pm-url { padding: 5px 6px; font-size: 8.5px; }
+.dt-page-card.is-tall .dt-pm-rv .dt-pm-pdf { padding: 6px 5px 4px; font-size: 8px; }
+.dt-page-card.is-tall .dt-pm-or { font-size: 8px; }
+.dt-beta { position: absolute; top: 12px; right: 12px; z-index: 1; padding: 4px 9px; border-radius: 999px; font: 800 10px/1 var(--dt-ui-font);
+  font-style: normal; letter-spacing: 0.12em; text-transform: uppercase; color: #1e1b4b; background: linear-gradient(90deg, #fcd34d, #f9a8d4); }
+.dt-page-card.is-tall .dt-beta { top: 8px; right: 8px; padding: 3px 7px; font-size: 8.5px; }
+
+/* "Join us on WhatsApp": a big card first, then a full-width bar under the grid */
+.dt-wa-bar {
+  position: absolute; z-index: 2; display: flex; align-items: center; gap: 14px; padding: 0 46px 0 16px; overflow: hidden;
+  text-decoration: none; color: #e2e8f0; border-radius: 18px; border: 1px solid rgba(37, 211, 102, 0.4);
+  background: linear-gradient(120deg, rgba(14, 58, 42, 0.97), rgba(12, 18, 34, 0.97));
+  box-shadow: 0 22px 50px -26px rgba(0, 0, 0, 0.9), 0 0 40px -24px rgba(37, 211, 102, 0.7);
+}
+.dt-wa-art { display: none; }
+.dt-wa-ico { flex-shrink: 0; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #25d366; color: #fff; }
+.dt-wa-ico svg { width: 19px; height: 19px; }
+.dt-wa-meta { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.dt-wa-meta b { font: 800 17px/1.15 "Sora", system-ui, sans-serif; color: #fff; white-space: nowrap; }
+.dt-wa-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.dt-wa-pills i { font: 600 12px/1 var(--dt-ui-font); font-style: normal; white-space: nowrap; padding: 6px 10px; border-radius: 999px;
+  background: rgba(37, 211, 102, 0.15); color: #bbf7d0; }
+.dt-wa-bar .dt-page-go { position: absolute; right: 16px; top: 50%; bottom: auto; transform: translateY(-50%); }
+.dt-wa-bar.is-card { flex-direction: column; align-items: stretch; gap: 0; padding: 0; }
+.dt-wa-bar.is-card .dt-wa-art { display: grid; place-items: center; flex: 1; min-height: 0; padding: 18px 18px 6px; }
+.dt-wa-bar.is-card .dt-wa-ico { position: absolute; left: 16px; top: 16px; }
+.dt-wa-bar.is-card .dt-wa-meta { flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 40px 16px 16px; }
+.dt-wa-bar.is-card .dt-page-go { top: auto; bottom: 14px; transform: none; }
+.dt-wa-bar.is-big { z-index: 4; box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.95), 0 0 70px -20px rgba(37, 211, 102, 0.7); }
+.dt-wa-chat { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.dt-wa-msg { max-width: 82%; padding: 8px 11px; border-radius: 12px; font: 500 12.5px/1.3 var(--dt-ui-font); color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.08); }
+.dt-wa-msg em { display: block; margin-bottom: 3px; font: 700 10px/1 var(--dt-ui-font); font-style: normal; letter-spacing: 0.08em;
+  text-transform: uppercase; color: #86efac; }
+.dt-wa-msg.is-ch { border-left: 3px solid #25d366; }
+.dt-wa-msg.is-out { align-self: flex-end; background: rgba(37, 211, 102, 0.22); color: #f0fdf4; }
+.dt-wa-bar.is-tall { gap: 10px; padding: 0 30px 0 12px; }
+.dt-wa-bar.is-tall .dt-wa-ico { width: 30px; height: 30px; }
+.dt-wa-bar.is-tall:not(.is-card) .dt-wa-meta { flex-direction: column; align-items: flex-start; gap: 5px; }
+.dt-wa-bar.is-tall .dt-wa-meta b { font-size: 14px; }
+.dt-wa-bar.is-tall .dt-wa-pills { gap: 5px; flex-wrap: nowrap; }
+.dt-wa-bar.is-tall .dt-wa-pills i { font-size: 10px; padding: 4px 7px; }
+.dt-wa-bar.is-tall .dt-page-go { right: 12px; }
+.dt-wa-bar.is-tall.is-card .dt-wa-msg { font-size: 11px; }
+.dt-finale-on .dt-wa-bar { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.dt-finale-on .dt-wa-bar:hover,
+.dt-finale-on .dt-wa-bar:focus-visible { border-color: rgba(37, 211, 102, 0.9); box-shadow: 0 0 0 1px rgba(37, 211, 102, 0.5), 0 0 40px -6px rgba(37, 211, 102, 0.8); }
 .dt-pm-book { position: relative; width: 56%; height: 76%; perspective: 500px; }
 .dt-pm-sheet { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 7px; padding: 14px 12px; border-radius: 6px; background: #e2e8f0; box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.7); backface-visibility: hidden; }
 .dt-pm-sheet i { height: 5px; border-radius: 3px; background: #94a3b8; }
