@@ -21,7 +21,8 @@
   var VERSION = '?v=1';
   var CORE = ['/vendor/gsap.min.js', '/tour/tour.css', '/tour/tour-engine.js', '/tour/tour-kit.js'];
   var SCENES = {
-    home: ['/tour/scenes/map.js', '/tour/scenes/pages.js', '/tour/scenes/home-more.js', '/tour/scenes/home.js']
+    home: ['/tour/scenes/map.js', '/tour/scenes/pages.js', '/tour/scenes/home-more.js', '/tour/scenes/home.js'],
+    map: ['/tour/scenes/map.js', '/tour/scenes/map-page.js']
   };
 
   /* ---------- storage (every access guarded) ---------- */
