@@ -33,8 +33,10 @@ test('startup fetches only current data; archived deep link loads one pinned sha
   const f=fixture();assert.equal((await f.api.load()).length,1);
   assert.equal(f.context.document.getElementById('snapshot-status'),undefined);
   assert.equal(f.calls.length,2);assert(!f.calls.some(p=>p.includes('archive-')));
-  assert.equal((await f.api.load({ids:['B']})).length,2);assert.equal(f.calls.length,3);
-  await f.api.load({all:true});assert.equal(f.calls.length,3);assert(f.api.archiveLoaded());
+  // An id-targeted load first (attempting) the alias map, then the pinned shard.
+  assert.equal((await f.api.load({ids:['B']})).length,2);
+  assert.equal(f.calls.length,4);assert(f.calls.some(p=>p.includes('vacancy-aliases')));
+  await f.api.load({all:true});assert.equal(f.calls.length,4);assert(f.api.archiveLoaded());
 });
 test('checksum failure rejects archive without destroying current data',async()=>{
   const f=fixture({corrupt:true});await f.api.load();
@@ -44,6 +46,18 @@ test('checksum failure rejects archive without destroying current data',async()=
 test('missing manifest falls back to last public compatibility file without Supabase',async()=>{
   const f=fixture({failManifest:true});assert.equal((await f.api.load()).length,2);
   assert(f.api.archiveLoaded());assert(f.calls.every(p=>p.startsWith('data/')));
+});
+test('a renamed id resolves to its current row through the published alias map',async()=>{
+  const f=fixture();
+  f.paths['data/vacancy-aliases.json']={schema:1,aliases:{B:'A'}};
+  // B was renamed to A by migration 0027; a stored old id must open row A.
+  const rows=await f.api.load({ids:['B']});
+  // Scalar asserts only: `rows` comes back from the VM context, so its
+  // arrays are cross-realm and deepStrictEqual would reject them.
+  assert.equal(rows.length,1);
+  assert.equal(rows[0].Vacancy_ID,'A');
+  assert.equal(f.api.resolveId('B'),'A');
+  assert.equal(f.api.resolveId('C'),'C');  // unknown id = identity
 });
 test('deadline stays active until midnight Kolkata independent of browser timezone',()=>{
   const f=fixture();const row={Last_Date_To_Apply:'2026-10-17'};

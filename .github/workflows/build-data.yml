@@ -48,7 +48,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/vacancies.json data/meta.json data/filters.json data/stats.json data/vacancies-manifest.json data/snapshots feed.xml
+          git add data/vacancies.json data/meta.json data/filters.json data/stats.json data/vacancy-aliases.json data/vacancies-manifest.json data/snapshots feed.xml
           if ! git diff --cached --quiet; then
             git commit -m "chore: publish verified vacancy snapshot"
             pushed=false

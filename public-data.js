@@ -83,7 +83,45 @@
     }
     return Array.from(rows.values()).map(function (r) { return classify(r); });
   }
-  window.PublicVacancies = { load: load, classify: classify,
+  /* Renamed-id resolution. Migration 0027 backfilled the intake app's opaque
+   * "AUTO-<uuid>" vacancy ids to the readable scheme and recorded every
+   * rename in public.vacancy_id_aliases; the snapshot build ships that map
+   * as data/vacancy-aliases.json. Old ?v= links and watchlists keep opening
+   * the same vacancy through it. Fetched only when ids are requested, and
+   * treated as identity when the file is absent (0027 not applied yet). */
+  var aliasPromise, aliasMap = {};
+  function loadAliases() {
+    if (!aliasPromise) aliasPromise = json('data/vacancy-aliases.json')
+      .then(function (d) { aliasMap = (d && d.aliases) || {}; })
+      .catch(function () { /* no alias file yet — identity resolution */ });
+    return aliasPromise;
+  }
+  function resolveId(id) {
+    var s = String(id || '');
+    return Object.prototype.hasOwnProperty.call(aliasMap, s) ? aliasMap[s] : s;
+  }
+
+  // Wrap load(): when the caller names specific ids (?v= deep link, watchlist
+  // restoration, AI-search row click), load the alias map first and map each
+  // id to its current form before shard selection. Plain loads never pay the
+  // extra fetch — and never block on it.
+  var baseLoad = load;
+  load = function (options) {
+    options = options || {};
+    if (options.ids && options.ids.length) {
+      return loadAliases().then(function () {
+        options.ids = options.ids.map(function (id) { return resolveId(id); });
+        return baseLoad(options);
+      });
+    }
+    return baseLoad(options);
+  };
+
+  window.PublicVacancies = { load: load, classify: classify, resolveId: resolveId,
+    // old-id -> current-id map (post-migration-0027). Lets pages that store
+    // ids in localStorage key a lookup map on the OLD value and have it
+    // resolve to the row. Empty until an id-targeted load fetches the file.
+    aliases: function () { return aliasMap; },
     archiveLoaded: function () { return legacy || !!manifest && Object.keys(manifest.archive).every(function (key) { return loaded.has(key); }); },
     metadata: function () { return manifest; },
     showError: function () { status('The archive could not be loaded. Current vacancies remain available. Please retry.'); }

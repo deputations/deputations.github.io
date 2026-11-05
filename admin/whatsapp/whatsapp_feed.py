@@ -48,6 +48,7 @@ DATA_DIR = REPO_ROOT / "data"
 CONFIG_JS = REPO_ROOT / "config.js"
 VACANCIES_JSON = DATA_DIR / "vacancies.json"
 LEDGER_PATH = DATA_DIR / "whatsapp_posted.json"
+ALIAS_FILE = DATA_DIR / "vacancy-aliases.json"   # published by scripts/build_data.py (migration 0027)
 
 SITE_BASE = "deputations.github.io"  # WhatsApp linkifies a bare domain
 
@@ -452,8 +453,41 @@ def save_ledger(ledger: dict) -> None:
     )
 
 
+def _alias_map() -> dict:
+    """old -> new public Vacancy_ID (migration 0027's rename log, published
+    as data/vacancy-aliases.json by scripts/build_data.py). Empty when the
+    file is absent or unreadable — identity resolution, same as the website."""
+    try:
+        data = json.loads(ALIAS_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    aliases = data.get("aliases") if isinstance(data, dict) else None
+    return aliases if isinstance(aliases, dict) else {}
+
+
+def posted_keys(ledger: dict) -> set:
+    """Ledger keys to treat as already posted. After 0027 renamed the AUTO-
+    vacancy ids, a row posted under its old JSON composite key
+    (<old Vacancy_ID>|<last_iso>|<Post_Name>) must not be re-posted under
+    the new key — bridge old key -> new key through the published alias
+    map. Supabase-source ledgers key on the row's uuid, which the rename
+    does not touch, so only composite keys need the bridge."""
+    keys = set((ledger.get("posted") or {}))
+    aliases = _alias_map()
+    if not aliases:
+        return keys
+    for key in list(keys):
+        parts = key.split("|", 2)
+        if len(parts) != 3:
+            continue
+        new_vid = aliases.get(parts[0])
+        if new_vid:
+            keys.add(new_vid + "|" + parts[1] + "|" + parts[2])
+    return keys
+
+
 def compute_pending(rows, ledger):
-    posted = ledger.get("posted", {})
+    posted = posted_keys(ledger)
     out = []
     seen = set()
     for nrow in rows:
