@@ -7212,3 +7212,74 @@ focus:          Phone filter sheet no longer covers the map; multi-select dropdo
 - `animateViewBox` supersedes an earlier glide; `onFilterSheet` counts a view still gliding home (`sheetGlide === viewBoxAnimId`) as at home, so opening the sheet and tapping a tab at once still ends above the sheet.
 
 ## session shq-2026-10-23-phone-filter-sheet end
+
+## session shq-2026-11-05-site-tour-stage1
+```
+started:        2026-11-04
+ended:          2026-11-05
+model:          claude-opus-5-5
+driver:         solo
+branch:         feature/site-tour
+starting_head:  371c17e
+ending_head:    <see the PR merge commit on main>
+focus:          v7.5.0 candidate — site tour stage 1: tour engine + cinematic Home intro
+```
+
+### inbound context read
+- shq-2026-10-23-phone-filter-sheet (block above); TECHNICAL.md §2, §4, §7–§10.
+- india-map-view.js `computeProjection` / `project` (reused by the map builder).
+
+### owner's brief
+- An ultra-modern, "wow" demo of how to use the site, auto-playing on first visit — the Home page first, then one per page (map, My Deputation, DeFeX, Report Vacancy). Map page in the style of a guided job-search journey.
+
+### work done
+- Design spec `docs/superpowers/specs/2026-11-04-site-tour-design.md` and plan `docs/superpowers/plans/2026-11-04-site-tour-stage1.md` (owner approved both).
+- `tour/tour-loader.js` (always loaded; decides auto-play, "How this works" replay button bottom-right, lazy-loads in order), `tour/tour-engine.js` (overlay, chrome, wide 1100×620 / tall 390×720 canvases, keyboard, steps view for reduced motion, `expect()`, `deptour:open/close` events), `tour/tour-kit.js` (cursor, tap, type, odometer, camera, burst, sweep, seeded sample data), `tour/scenes/map.js` (map helpers + teaser), `tour/scenes/home.js` (eligibility wall, "Just ask", map teaser, CTA → real pay-level picker), `tour/tour.css`.
+- `scripts/build_tour_map.py` → `tour/tour-map.json` (53 KB: 36 states + Karnataka's 31 districts in the national projection).
+- `vendor/gsap.min.js` GSAP 3.15.1 (standard no-charge licence header kept).
+- index.html: one `<script defer src="/tour/tour-loader.js?v=1" data-tour="home">` block before `</body>`.
+- Tests: `tests/test_tour_map.py`, `_loader`, `_engine`, `_kit`, `_map_scene`, `_home` + `tests/tour_helpers.py` (60 tests).
+
+### decisions
+- VERSION left at 7.4.6: entry added under [Unreleased] like every change since August; cut 7.5.0 when releasing.
+- Dive zoom animates the SVG viewBox (crisp), not a CSS scale.
+- Map JSON failure → no tour at all (spec §6).
+
+### handoff state
+- PR (draft) from `feature/site-tour`; stage 2 (India Map page demo) and stage 3 (My Deputation, DeFeX, Report Vacancy) not started — add their keys to `SCENES` in tour-loader.js with their scene files.
+
+### gotchas for next session
+- Tour tests stub `/hero-wave.js` (autouse `no_hero_wave` fixture): in GPU-less containers the software-rendered hero drops index.html to ~1–5 fps, which starves rAF-based polling and GSAP's clock. They also poll `wait_for_function` on a 100 ms timer and set `gsap.ticker.lagSmoothing(0)`.
+- New `.py` files must be `git add -f` (.gitignore ignores `scripts/` and `*.py`; existing ones are force-tracked).
+- The machine's `hardwareConcurrency <= 4` counts as low-power (halved particles, 72-card wall); tests that need full effects pin it to 8.
+
+## session shq-2026-11-05-site-tour-stage1 end
+
+## session shq-2026-11-05-site-tour-home-v2
+```
+started:        2026-11-05
+ended:          2026-11-05
+model:          claude-opus-5-5
+driver:         solo
+branch:         feature/site-tour
+starting_head:  01b0250
+ending_head:    <see the PR merge commit on main>
+focus:          site tour — independent review fixes + Home tour v2 (every Home feature + page montage)
+```
+
+### inbound context read
+- shq-2026-11-05-site-tour-stage1 (block above); independent review of 371c17e..01b0250.
+
+### owner's brief
+- Show all Home features on the Home tour (other filters, table/card toggle, bookmark, themes, sorting by header, alerts); other pages only as a small mention — cards that appear one by one and shrink into a grid. Intro: "Your one stop solution to Deputation", then a big full-screen "ALL Deputations.com".
+
+### work done
+- Review fixes (commit dd918b2): no auto-play on ?v=/filter links, early interaction, Save-Data; keys inside page dialogs left alone; page inert; Back closes; Shift+Tab contained; aria; feeder-grade sample data; sample labels; "Understood" tags; hero pauses (deptour:open/close); low-memory = low power; landscape phones → steps view with CTA; aurora isolation (keeps the backdrop blur working).
+- Home v2: engine brand intro + keepScene finale with `a.dt-page-link`; `tour/scenes/home.js` (steps 1–3), `home-more.js` (4–7), `pages.js` (8). Spec §3.1 revised; plan `docs/superpowers/plans/2026-11-05-site-tour-home-v2.md`.
+
+### gotchas for next session
+- `page.evaluate("...DepTour.play(...).then(...)")` returns the promise and Playwright waits for the tour to end — wrap in a block-bodied arrow function.
+- Under `-n 2` this GPU-less box paints ~1 fps; tests that sample a short on-screen moment run the tour at `speed=0.25`.
+- Blend modes on overlay children must stay inside an isolated group, or Chrome silently drops the backdrop blur.
+
+## session shq-2026-11-05-site-tour-home-v2 end

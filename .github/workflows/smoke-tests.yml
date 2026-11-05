@@ -39,7 +39,9 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The suite took ~12.5 min before the site tour added ~110 browser tests;
+    # 30 min leaves room for both without skipping anything.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 

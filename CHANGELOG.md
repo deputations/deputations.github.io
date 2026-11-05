@@ -26,6 +26,28 @@ counter_convention:
 
 ## [Unreleased]
 
+### Added - first-visit "how to use" tour on the Home page (2026-11-05)
+A ~75 s cinematic demo plays once on a visitor's first plain visit to the Home
+page, over the page, with sample data marked "Demo · sample data". It opens on
+"Your one stop solution to Deputation" and a full-screen ALL Deputations.com,
+then shows every Home feature: deputation opportunities matching your
+eligibility (pay level + years, by the site's feeder-grade rule), other filters
+and quick chips, the AI search, sorting and table/card views, bookmarks, alerts
+and the light/dark theme. It ends on a grid of the other pages (India Map, DeFeX
+(beta), My Deputation, Report Vacancy (a link or a PDF), Rules (all rules at one
+place, easy to search), FAQs; each card links to its page), a "Join us on
+WhatsApp" bar (Channel for latest updates, Group for discussions; links to
+Contact) and "Try it with your pay level", which opens the real pay-level
+control. No "STEP n" labels: visitors can jump between steps in any order. Skip, Esc, ←/→, Back and
+"Don't show tours again" always work; "How this works" (bottom right) replays it.
+It does not auto-play on shared vacancy/filter links, for visitors already
+tapping or typing, with data-saver on, under reduced motion (they get a
+step-by-step view) or for automated browsers. The 3D hero pauses while it plays
+(hero-wave.js ?v=3 on every page). `?tour=play` forces it, `&tourSpeed=N` speeds it up.
+Files: `tour/` (loader, engine, kit, scenes, pre-baked `tour-map.json`),
+`vendor/gsap.min.js` (GSAP 3.15.1, loaded only when a tour plays),
+`scripts/build_tour_map.py`, `tests/test_tour_*.py`. New assets start at `?v=1`.
+
 ### Added - Verify queue filters (2026-10-19)
 The pending-verification queue now has the same search, source and sort controls
 as Manage data. Filters are applied locally to the already-loaded pending set.
