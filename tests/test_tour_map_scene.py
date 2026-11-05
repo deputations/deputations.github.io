@@ -65,7 +65,7 @@ def test_districts_and_pin(page: Page, base_url: str):
 def test_teaser_meta(page: Page, base_url: str):
     _open_teaser(page, base_url)
     expect(page.locator("#dt-title")).to_have_text("See India's vacancies on a map")
-    assert page.evaluate("DepTourMap.teaserScene.label") == "STEP 3"
+    assert page.evaluate("'label' in DepTourMap.teaserScene") is False   # no "STEP n" labels (owner, 2026-11-05)
     assert page.evaluate("DepTourMap.teaserScene.summary") == (
         "Open the India Map to see vacancies state by state and district by district.")
 
