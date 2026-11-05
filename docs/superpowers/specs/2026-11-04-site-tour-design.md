@@ -178,11 +178,10 @@ tests/test_tour_*.py          Playwright smoke tests (existing suite conventions
   all of them. Whether someone visited before the tour existed does not matter:
   every browser gets it once. Reduce-motion visitors get the steps view
   (revised 2026-11-05 evening; they used to be skipped).
-- Gentle nudge (owner, 2026-11-05 evening): a visitor the auto-play skips because
-  of an intent link or Save-Data, or because they were already tapping/typing
-  before the page settled, gets a "New · 1-min tour" bubble (with ×) above the
-  replay button and a glow on it. Tapping it plays the tour; × marks the page
-  seen. It shows on every visit until they watch or dismiss it.
+- Visitors the auto-play skips (intent link, Save-Data, or already tapping/typing
+  before the page settles) get no prompt: the tour waits for a later plain visit,
+  and "How this works" is always there (owner declined a suggestion bubble,
+  2026-11-05 evening).
 - Starts after `window.load` plus one idle callback (fallback 800 ms), so the
   page's own load and the WebGL hero finish first.
 - On play: loads, in order, `vendor/gsap.min.js`, `tour/tour.css`,

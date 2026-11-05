@@ -26,14 +26,10 @@ counter_convention:
 
 ## [Unreleased]
 
-### Added - tour nudge for visitors the auto-play skips (2026-11-05)
+### Changed - reduce-motion visitors get the tour as steps (2026-11-05)
 Every browser gets each page's tour once, whether or not it visited before the
-tours existed. Visitors the auto-play deliberately skips (already tapping or
-typing as the page loads, arriving from a shared vacancy/filter link, or with
-Data Saver on) now get a "New · 1-min tour" bubble above the glowing "How this
-works" button instead of nothing; tapping it plays the tour, × hides it for good.
-Reduce-motion visitors get the calm step-by-step version once instead of being
-skipped. Tour assets move to `?v=3`.
+tours existed. Visitors with "Reduce motion" turned on were skipped; they now
+get the calm step-by-step version once. Tour assets move to `?v=3`.
 
 ### Added - first-visit tour on the India Map page (2026-11-05)
 A ~45 s tour plays once on a visitor's first plain visit to `india-map.html`,

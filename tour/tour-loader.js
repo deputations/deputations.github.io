@@ -64,11 +64,6 @@
     if (env.force) return true;
     return !(env.seen && env.seen[key]) && !env.off && !env.webdriver && !env.intent && !env.saveData;
   }
-  // Visitors the auto-play skips (shared link, Data Saver; and, at settle time,
-  // anyone already tapping or typing) get a gentle nudge on the replay button.
-  function shouldNudge(env, key) {
-    return !env.force && !(env.seen && env.seen[key]) && !env.off && !env.webdriver && (env.intent || env.saveData);
-  }
 
   // A link that carries anything beyond tracking tags (?v=<vacancy> from a share,
   // ?search=... filters) means the visitor came for something specific; the
@@ -135,22 +130,6 @@
     '.dt-replay--hidden{opacity:0;transform:translateY(10px);pointer-events:none}' +
     'html.dt-open .dt-replay{display:none}' +
     '@media (prefers-reduced-motion: reduce){.dt-replay{transition:opacity .2s ease}.dt-replay--hidden{transform:none}}' +
-    '.dt-replay.is-nudge{border-color:rgba(34,211,238,.8);animation:dtNudge 2.4s ease-in-out infinite}' +
-    '@keyframes dtNudge{0%,100%{box-shadow:0 8px 28px -8px rgba(34,211,238,.5),0 0 0 0 rgba(34,211,238,.5)}' +
-    '50%{box-shadow:0 10px 34px -6px rgba(34,211,238,.75),0 0 0 9px rgba(34,211,238,0)}}' +
-    '.dt-replay-tip{position:fixed;right:16px;bottom:66px;z-index:69;display:flex;align-items:center;padding:3px;' +
-    'border-radius:14px;background:linear-gradient(135deg,#22d3ee,#a78bfa);box-shadow:0 12px 30px -10px rgba(34,211,238,.75);' +
-    'transition:opacity .25s ease}' +
-    '.dt-replay-tip::after{content:"";position:absolute;right:30px;bottom:-5px;width:11px;height:11px;background:#8fb4f8;' +
-    'transform:rotate(45deg);border-radius:2px}' +
-    '.dt-replay-tip button{position:relative;z-index:1;border:0;background:transparent;color:#02040b;cursor:pointer;' +
-    'font:800 12.5px/1 "Plus Jakarta Sans",system-ui,sans-serif;letter-spacing:.01em;padding:8px 6px 8px 10px;border-radius:11px}' +
-    '.dt-replay-tip .dt-replay-tip-x{padding:6px 9px;font-size:16px;font-weight:700}' +
-    '.dt-replay-tip button:hover{background:rgba(255,255,255,.22)}' +
-    '.dt-replay-tip button:focus-visible{outline:2px solid #02040b;outline-offset:1px}' +
-    '.dt-replay--hidden+.dt-replay-tip{opacity:0;pointer-events:none}' +
-    'html.dt-open .dt-replay-tip{display:none}' +
-    '@media (prefers-reduced-motion: reduce){.dt-replay.is-nudge{animation:none;box-shadow:0 0 0 3px rgba(34,211,238,.5)}}' +
     '@media print{.dt-replay{display:none}}';
 
   function injectButton() {
@@ -165,39 +144,9 @@
     btn.className = 'dt-replay';
     btn.setAttribute('aria-label', 'Play the how-to demo for this page');
     btn.innerHTML = '<span class="dt-replay-ico" aria-hidden="true">▶</span>How this works';
-    btn.addEventListener('click', function () { play(KEY, { mode: 'auto' }).then(clearNudge); });
+    btn.addEventListener('click', function () { play(KEY, { mode: 'auto' }); });
     document.body.appendChild(btn);
     watchFooter(btn);
-  }
-
-  /* ---------- gentle nudge: "New · 1-min tour" over the replay button ---------- */
-  function nudge() {
-    var btn = document.querySelector('.dt-replay');
-    if (!btn || document.querySelector('.dt-replay-tip')) return;
-    btn.classList.add('is-nudge');
-    var tip = document.createElement('div');
-    tip.className = 'dt-replay-tip';
-    tip.setAttribute('role', 'group');
-    tip.setAttribute('aria-label', 'New: a one-minute tour of this page');
-    var go = document.createElement('button');
-    go.type = 'button';
-    go.className = 'dt-replay-tip-go';
-    go.textContent = 'New · 1-min tour';
-    go.addEventListener('click', function () { play(KEY, { mode: 'auto' }).then(clearNudge); });
-    var x = document.createElement('button');
-    x.type = 'button';
-    x.className = 'dt-replay-tip-x';
-    x.setAttribute('aria-label', 'No thanks, hide the tour suggestion');
-    x.textContent = '×';
-    x.addEventListener('click', function () { markSeen(KEY); clearNudge(); });
-    tip.appendChild(go);
-    tip.appendChild(x);
-    btn.parentNode.insertBefore(tip, btn.nextSibling);       // sibling, so the footer fade hides it too
-  }
-  function clearNudge() {
-    var btn = document.querySelector('.dt-replay'), tip = document.querySelector('.dt-replay-tip');
-    if (tip) tip.remove();
-    if (btn) btn.classList.remove('is-nudge');
   }
 
   // Never cover the footer trust line: fade the button out while the footer is on screen.
@@ -252,21 +201,17 @@
       saveData: wantsLessData(),
       force: force
     };
-    if (!shouldAutoplay(env, KEY)) {
-      if (shouldNudge(env, KEY)) whenSettled(nudge);
-      return;
-    }
+    if (!shouldAutoplay(env, KEY)) return;
 
     // Someone already tapping or typing before the page settles is busy: don't
-    // pull the page out from under them; nudge instead (and auto-play on a
-    // later visit until they watch or dismiss it).
+    // pull the page out from under them; the tour plays on a later visit.
     var busy = false;
     var EVENTS = ['pointerdown', 'keydown'];
     function onBusy() { busy = true; }
     EVENTS.forEach(function (t) { window.addEventListener(t, onBusy, true); });
     whenSettled(function () {
       EVENTS.forEach(function (t) { window.removeEventListener(t, onBusy, true); });
-      if (busy && !force) return nudge();
+      if (busy && !force) return;
       play(KEY, { speed: speed > 0 ? speed : 1, mode: force ? 'cinematic' : 'auto' });
     });
   }
@@ -274,7 +219,6 @@
   window.DepTourLoader = {
     key: KEY,
     shouldAutoplay: shouldAutoplay,
-    shouldNudge: shouldNudge,
     readSeen: readSeen,
     markSeen: markSeen,
     setOff: setOff,
