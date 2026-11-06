@@ -89,9 +89,19 @@
   }
   var REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // On a first visit the site tour may hold the page (html[data-tour-pending]);
+  // its start-up animations then wait until the tour is over (deptour:release).
+  function afterTour(fn) {
+    if (!document.documentElement.hasAttribute("data-tour-pending")) return fn();
+    document.addEventListener("deptour:release", function () { fn(); }, { once: true });
+  }
+
   function countUp(el, target) {
     target = Number(target) || 0;
     if (REDUCED) { el.textContent = fmt(target); return; }
+    afterTour(function () { runCount(el, target); });
+  }
+  function runCount(el, target) {
     var dur = 1100, start = performance.now();
     function tick(now) {
       var p = Math.min((now - start) / dur, 1);
@@ -709,7 +719,7 @@
       el.appendChild(txt);
       el.appendChild(caret);
       var i = 0;
-      (function tick() {
+      afterTour(function tick() {
         if (i <= full.length) {
           txt.textContent = full.slice(0, i);
           i++;
@@ -719,7 +729,7 @@
           el.textContent = full;
           el.classList.add("tw-flow");
         }
-      })();
+      });
     });
   }
 

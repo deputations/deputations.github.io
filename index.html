@@ -74,6 +74,39 @@
   >
 
   <script>(function(){try{var t=localStorage.getItem('deputation_theme_v1')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
+  <!-- BEGIN tour-early-hold
+       First visit only (owner, 2026-11-06): the Home tour comes before the page,
+       so hide the page before its first paint. /tour/tour-loader.js has the final
+       say (it lets the page show at once when it won't play) and fades it in after
+       the tour. Mirrors the loader's rules: not seen, not switched off, no
+       webdriver or crawler, nothing but tracking tags in the URL. If the loader
+       never arrives, the page shows on load. -->
+  <style>html[data-tour-pending="page"] body>:not(.dt-overlay){visibility:hidden;opacity:0}</style>
+  <script>
+    (function () {
+      try {
+        var d = document.documentElement, n = navigator;
+        if (n.webdriver === true || /bot|crawl|spider|slurp|lighthouse/i.test(n.userAgent || '')) return;
+        var p = new URLSearchParams(location.search), intent = false;
+        p.forEach(function (_, k) { if (!/^(tour|tourSpeed|utm_[a-z_]+|fbclid|gclid|ref)$/i.test(k)) intent = true; });
+        if (p.get('tour') !== 'play') {                    // ?tour=play (preview) always plays
+          if (intent) return;
+          var c = n.connection;
+          if (c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || ''))) return;
+          if (localStorage.getItem('dep_tour_off_v1') === '1') return;
+          var seen = JSON.parse(localStorage.getItem('dep_tour_seen_v1') || '{}');
+          if (seen && seen.home) return;
+        }
+        d.setAttribute('data-tour-pending', 'page');
+        addEventListener('load', function () {
+          if (window.DepTourLoader || !d.hasAttribute('data-tour-pending')) return;
+          d.removeAttribute('data-tour-pending');
+          try { document.dispatchEvent(new CustomEvent('deptour:release')); } catch (e) {}
+        });
+      } catch (e) { /* storage blocked or bad JSON: show the page normally */ }
+    })();
+  </script>
+  <!-- END tour-early-hold -->
   <link rel="stylesheet" href="style.css?v=ms76">
   <link rel="stylesheet" href="navbar.css?v=10">
   <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the script below to revert) -->
@@ -529,7 +562,7 @@
   <!-- vacancy push alerts (review P1-3); no-op unless Push is supported + VAPID configured -->
   <script defer src="push-client.js?v=1"></script>
   <!-- BEGIN home-flourish (Tier A+B enhancements; remove this line + the stylesheet above to revert) -->
-  <script defer src="home-flourish.js?v=2"></script>
+  <script defer src="home-flourish.js?v=3"></script>
   <!-- END home-flourish -->
   <!-- BEGIN liquid-glass (capability detection + the single pointer/scroll engine;
        remove this line + the stylesheet above to fully revert) -->
@@ -538,12 +571,12 @@
   <!-- BEGIN realtime-toast (P3-1: show toast when new vacancies arrive) -->
   <script defer src="realtime-toast.js?v=2"></script>
   <!-- END realtime-toast -->
-  <script defer src="site-widgets.js?v=34"></script>
+  <script defer src="site-widgets.js?v=35"></script>
   <!-- BEGIN hero-wave -->
-  <script type="module" src="/hero-wave.js?v=3"></script>
+  <script type="module" src="/hero-wave.js?v=4"></script>
   <!-- END hero-wave -->
   <!-- BEGIN site-tour (first-visit "how to use" demo; remove this block to revert) -->
-  <script defer src="/tour/tour-loader.js?v=7" data-tour="home"></script>
+  <script defer src="/tour/tour-loader.js?v=8" data-tour="home" data-tour-hold="page"></script>
   <!-- END site-tour -->
 </body>
 </html>

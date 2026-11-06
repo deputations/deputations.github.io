@@ -26,6 +26,18 @@ counter_convention:
 
 ## [Unreleased]
 
+### Changed - Home tour before the page; slow fade; "How this works" stays (2026-11-06)
+- First visit to Home: only the background shows until the tour opens; when the
+  tour is over the page fades in and its own animations play then (title typing,
+  visitor counters, title shine, the wave). Crawlers and page-speed tools see the
+  page as usual.
+- Closing a tour (Skip, Esc, the final button) fades it out over about 1.2 s, on
+  Home and the India Map page.
+- "How this works" counts its 10 s only while it is on screen, so first-time
+  visitors see it after the tour. With the footer in view it sits above it rather
+  than hiding (on the map page it used to vanish almost at once). Tour assets
+  move to `?v=8`.
+
 ### Changed - map tour plays before the map draws; "first visit only" tag (2026-11-06)
 - On a first visit to the India Map page the tour opens straight away; the map's
   own state-by-state drawing waits and plays once the tour closes (or at once if

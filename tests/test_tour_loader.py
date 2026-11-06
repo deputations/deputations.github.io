@@ -66,8 +66,11 @@ def test_replay_button(page: Page, base_url: str):
     page.goto(f"{base_url}/index.html")
     btn = page.locator(".dt-replay")
     expect(btn).to_be_visible(timeout=10000)
-    expect(btn).to_contain_text("How this works")
-    expect(btn).to_have_attribute("aria-label", "Play the how-to demo for this page")
+    # one read: the button only lives 10 s, which a loaded box can spend on separate checks
+    text, label = page.evaluate("(() => { const b = document.querySelector('.dt-replay');"
+                                " return [b.textContent, b.getAttribute('aria-label')]; })()")
+    assert "How this works" in text
+    assert label == "Play the how-to demo for this page"
 
 
 def test_should_autoplay_rules(page: Page, base_url: str):
@@ -84,6 +87,7 @@ def test_should_autoplay_rules(page: Page, base_url: str):
             seenOther: f({seen: {map: 1}}),
             off: f({off: true}),
             webdriver: f({webdriver: true}),
+            bot: f({bot: true}),
             reduced: f({reducedMotion: true}),
             intent: f({intent: true}),
             saveData: f({saveData: true}),
@@ -98,6 +102,7 @@ def test_should_autoplay_rules(page: Page, base_url: str):
         "seenOther": True,
         "off": False,
         "webdriver": False,
+        "bot": False,             # crawlers and page-speed tools see the page itself
         "reduced": True,          # Reduce-motion visitors get the calm step-by-step view once
         "intent": False,
         "saveData": False,
@@ -174,13 +179,17 @@ def test_corrupt_seen_reads_empty(page: Page, base_url: str):
     assert page.evaluate("DepTourLoader.readSeen()") == {}
 
 
-def test_replay_hides_over_footer(page: Page, base_url: str):
+def test_replay_sits_above_the_footer(page: Page, base_url: str):
+    """Never covers the footer trust line: with the footer on screen the button
+    moves up above it (it used to hide, which on the map page meant at once)."""
     page.goto(f"{base_url}/index.html")
     btn = page.locator(".dt-replay")
     expect(btn).to_be_visible(timeout=10000)
     page.wait_for_selector(".sw-footer", state="attached", timeout=10000)
     page.evaluate("document.querySelector('.sw-footer').scrollIntoView({block: 'end'})")
-    expect(btn).to_have_class(re.compile(r"\bdt-replay--hidden\b"), timeout=15000)
+    page.wait_for_function("""() => { const b = document.querySelector('.dt-replay'); if (!b) return false;
+      const r = b.getBoundingClientRect(), f = document.querySelector('.sw-footer').getBoundingClientRect();
+      return r.bottom <= f.top && !b.classList.contains('dt-replay--hidden'); }""", polling=100, timeout=5000)
 
 
 # ---- auto-play must never get in the way of what the visitor came for ----
@@ -244,7 +253,7 @@ def test_tour_asset_version_bumped_and_consistent():
     for page_file in ("index.html", "india-map.html"):
         tag = re.search(r'/tour/tour-loader\.js\?v=(\d+)"', Path(page_file).read_text(encoding="utf-8")).group(1)
         assert tag == v, (page_file, tag, v)
-    assert int(v) >= 7, v      # 7: first-visit tag; map tour plays before the map draws (2026-11-06)
+    assert int(v) >= 8, v      # 8: Home tour before the page; slow fade; button on-screen time (2026-11-06)
 
 
 # ---- skipped visitors (owner, 2026-11-05): no "New · 1-min tour" bubble ----

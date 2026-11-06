@@ -180,8 +180,11 @@ tests/test_tour_*.py          Playwright smoke tests (existing suite conventions
 **tour-loader.js** — the only always-loaded piece.
 - Read by `<script defer src="/tour/tour-loader.js?v=1" data-tour="home"></script>`.
 - Injects a small floating "▶ How this works" button (bottom-right — bottom-left
-  is the site's visitor counter); it fades out while the footer trust line is on
-  screen, so it never covers it.
+  is the site's visitor counter); while the footer trust line is on screen the
+  button sits just above it, so it never covers it (it used to fade out there,
+  which on the map page, where the footer is always in view, meant at once;
+  owner, 2026-11-06). The same goes for page controls marked `data-tour-keepclear`
+  (the map's zoom buttons). Only a lift of over half the screen still hides it.
 - Auto-play rule, all must hold: page key not in `dep_tour_seen_v1`;
   `dep_tour_off_v1` not set; `navigator.webdriver` is false; no intent link
   (`?v=`, `?search=`…); no Save-Data / 2g. `?tour=play` forces play and bypasses
@@ -194,10 +197,27 @@ tests/test_tour_*.py          Playwright smoke tests (existing suite conventions
   last 2.5 s is not interrupted; the tour starts once they pause (gives up after
   20 s of steady use). Tour files download while the page settles.
 - "How this works" shows for 10 s per page load, then fades out (owner, 2026-11-06).
+  Only on-screen time counts (not under the tour, not while the page is held for
+  it, not in a background tab), so first-time visitors get their 10 s after the
+  tour (owner, 2026-11-06).
+- Crawlers and page-speed tools (`bot|crawl|spider|slurp|lighthouse` in the user
+  agent) never auto-play, so they see the page itself.
 - India Map, first visit: the tour plays first; the page's own map draw-in waits
   (loader `data-tour-hold` → `html[data-tour-pending]`, `[data-tour-hidden]` stays
   hidden; `deptour:release` after the tour closes and its Back step is done, or at
   once if the visitor is busy / the tour can't load; 3-minute safety) (owner, 2026-11-06).
+- Home, first visit (owner, 2026-11-06): the tour comes before the page. An inline
+  check in `<head>` (same rules as the loader) sets `html[data-tour-pending="page"]`
+  before the first paint, so only the background shows; `data-tour-hold="page"`
+  on the loader tag keeps it, fetches the tour at once and opens it as soon as it
+  is ready (no settle wait). On release the page fades in over 1 s
+  (`html[data-tour-reveal]`) and its start-up animations run then: title
+  typewriter and visitor counters (site-widgets.js `afterTour`), title sheen
+  (home-flourish.js) and the hero wave (hero-wave.js). The loader lets the page
+  show at once when it won't play; if the loader never arrives, the page shows on
+  `load`.
+- Closing fades the tour out over ~1.2 s (scaled by how far the finale has already
+  faded; leaving through a link stays at 0.3 s), on both pages (owner, 2026-11-06).
 - Footer tag: "Shows on first visit only · replay via How this works" (phones:
   "First visit only") (owner, 2026-11-06).
 - The last screen fades away by itself over 3 s once fully shown, unless the

@@ -14,10 +14,16 @@
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
   /* ---- A2: one-shot title sheen, fired after the typewriter settles ---- */
-  setTimeout(function () {
-    var t = document.querySelector(".header-logo h1 .gradient-text[data-tw]");
-    if (t) t.classList.add("hf-sheen");
-  }, 1800);
+  function sheen() {
+    setTimeout(function () {
+      var t = document.querySelector(".header-logo h1 .gradient-text[data-tw]");
+      if (t) t.classList.add("hf-sheen");
+    }, 1800);
+  }
+  // first visit: the site tour holds the page; the typewriter (and so the sheen) waits for it
+  if (document.documentElement.hasAttribute("data-tour-pending")) {
+    document.addEventListener("deptour:release", sheen, { once: true });
+  } else sheen();
 
   /* ---- A3 + B1: bookmark haptic + fly-to-watchlist bead ----
      Capture phase so it runs BEFORE app.js's stopPropagation on the same click. */
