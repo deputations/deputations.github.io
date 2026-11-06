@@ -7283,3 +7283,147 @@ focus:          restore readable vacancy IDs (option 2: forward fix + backfill o
   it; the clobber path was the pending-queue "duplicate" proposal only.
 
 ## session shq-2026-11-04-readable-vacancy-ids end
+## session shq-2026-11-05-site-tour-stage1
+```
+started:        2026-11-04
+ended:          2026-11-05
+model:          claude-opus-5-5
+driver:         solo
+branch:         feature/site-tour
+starting_head:  371c17e
+ending_head:    <see the PR merge commit on main>
+focus:          v7.5.0 candidate — site tour stage 1: tour engine + cinematic Home intro
+```
+
+### inbound context read
+- shq-2026-10-23-phone-filter-sheet (block above); TECHNICAL.md §2, §4, §7–§10.
+- india-map-view.js `computeProjection` / `project` (reused by the map builder).
+
+### owner's brief
+- An ultra-modern, "wow" demo of how to use the site, auto-playing on first visit — the Home page first, then one per page (map, My Deputation, DeFeX, Report Vacancy). Map page in the style of a guided job-search journey.
+
+### work done
+- Design spec `docs/superpowers/specs/2026-11-04-site-tour-design.md` and plan `docs/superpowers/plans/2026-11-04-site-tour-stage1.md` (owner approved both).
+- `tour/tour-loader.js` (always loaded; decides auto-play, "How this works" replay button bottom-right, lazy-loads in order), `tour/tour-engine.js` (overlay, chrome, wide 1100×620 / tall 390×720 canvases, keyboard, steps view for reduced motion, `expect()`, `deptour:open/close` events), `tour/tour-kit.js` (cursor, tap, type, odometer, camera, burst, sweep, seeded sample data), `tour/scenes/map.js` (map helpers + teaser), `tour/scenes/home.js` (eligibility wall, "Just ask", map teaser, CTA → real pay-level picker), `tour/tour.css`.
+- `scripts/build_tour_map.py` → `tour/tour-map.json` (53 KB: 36 states + Karnataka's 31 districts in the national projection).
+- `vendor/gsap.min.js` GSAP 3.15.1 (standard no-charge licence header kept).
+- index.html: one `<script defer src="/tour/tour-loader.js?v=1" data-tour="home">` block before `</body>`.
+- Tests: `tests/test_tour_map.py`, `_loader`, `_engine`, `_kit`, `_map_scene`, `_home` + `tests/tour_helpers.py` (60 tests).
+
+### decisions
+- VERSION left at 7.4.6: entry added under [Unreleased] like every change since August; cut 7.5.0 when releasing.
+- Dive zoom animates the SVG viewBox (crisp), not a CSS scale.
+- Map JSON failure → no tour at all (spec §6).
+
+### handoff state
+- PR (draft) from `feature/site-tour`; stage 2 (India Map page demo) and stage 3 (My Deputation, DeFeX, Report Vacancy) not started — add their keys to `SCENES` in tour-loader.js with their scene files.
+
+### gotchas for next session
+- Tour tests stub `/hero-wave.js` (autouse `no_hero_wave` fixture): in GPU-less containers the software-rendered hero drops index.html to ~1–5 fps, which starves rAF-based polling and GSAP's clock. They also poll `wait_for_function` on a 100 ms timer and set `gsap.ticker.lagSmoothing(0)`.
+- New `.py` files must be `git add -f` (.gitignore ignores `scripts/` and `*.py`; existing ones are force-tracked).
+- The machine's `hardwareConcurrency <= 4` counts as low-power (halved particles, 72-card wall); tests that need full effects pin it to 8.
+
+## session shq-2026-11-05-site-tour-stage1 end
+
+## session shq-2026-11-05-site-tour-home-v2
+```
+started:        2026-11-05
+ended:          2026-11-05
+model:          claude-opus-5-5
+driver:         solo
+branch:         feature/site-tour
+starting_head:  01b0250
+ending_head:    <see the PR merge commit on main>
+focus:          site tour — independent review fixes + Home tour v2 (every Home feature + page montage)
+```
+
+### inbound context read
+- shq-2026-11-05-site-tour-stage1 (block above); independent review of 371c17e..01b0250.
+
+### owner's brief
+- Show all Home features on the Home tour (other filters, table/card toggle, bookmark, themes, sorting by header, alerts); other pages only as a small mention — cards that appear one by one and shrink into a grid. Intro: "Your one stop solution to Deputation", then a big full-screen "ALL Deputations.com".
+
+### work done
+- Review fixes (commit dd918b2): no auto-play on ?v=/filter links, early interaction, Save-Data; keys inside page dialogs left alone; page inert; Back closes; Shift+Tab contained; aria; feeder-grade sample data; sample labels; "Understood" tags; hero pauses (deptour:open/close); low-memory = low power; landscape phones → steps view with CTA; aurora isolation (keeps the backdrop blur working).
+- Home v2: engine brand intro + keepScene finale with `a.dt-page-link`; `tour/scenes/home.js` (steps 1–3), `home-more.js` (4–7), `pages.js` (8). Spec §3.1 revised; plan `docs/superpowers/plans/2026-11-05-site-tour-home-v2.md`.
+
+### gotchas for next session
+- `page.evaluate("...DepTour.play(...).then(...)")` returns the promise and Playwright waits for the tour to end — wrap in a block-bodied arrow function.
+- Under `-n 2` this GPU-less box paints ~1 fps; tests that sample a short on-screen moment run the tour at `speed=0.25`.
+- Blend modes on overlay children must stay inside an isolated group, or Chrome silently drops the backdrop blur.
+
+## session shq-2026-11-05-site-tour-home-v2 end
+
+## session shq-2026-11-05-site-tour-map
+```
+started:        2026-11-05
+ended:          2026-11-05
+model:          claude-opus-5-5
+driver:         solo
+branch:         feature/site-tour-map (stacked on feature/site-tour, PR #35)
+starting_head:  1aad472
+ending_head:    <see the PR merge commit>
+focus:          site tour stage 2 — India Map page tour (every map feature)
+```
+
+### inbound context read
+- shq-2026-11-05-site-tour-home-v2 (block above).
+
+### owner's brief
+- Stage 2: the India Map page gets its own tour; the owner chose "All map features" (hover, filters, dive, district posts and save, state list, zoom, Back to India).
+
+### work done
+- Map helpers in `tour/scenes/map.js`: `drawIndia(..., box)`, `recolour`, `flyOut`, `heatColour`.
+- `tour/scenes/map-page.js` registers `map` (5 steps + "Explore the map"); `SCENES.map` in the loader; loader tag in `india-map.html`.
+- Spec §3.2 revised; plan `docs/superpowers/plans/2026-11-05-site-tour-stage2-map.md`.
+- Independent review (opus): 5 Important fixed with tests (odometer start, real tooltip/cards, wait for page draw-in, test close race, ?v=2); minors deferred (listed in the PR).
+
+### gotchas for next session
+- `M.diveTo` pushes the camera to z 1.04, scaling the scene about its centre: tall-layout panels must end above ~y 700 (of 720) to stay on screen.
+- The filtered total is 58 (not 96) so it can't be confused with Karnataka's 96.
+- Bump `?v=` (loader `VERSION` and every page's loader tag) whenever any tour asset changes: sw.js serves same-origin JS/CSS cache-first by URL. Now `?v=2`.
+- A page with its own async start-up gets `data-tour-ready="<event>"` on its loader tag (india-map.html: `map:drawInComplete`, capped at 12 s after load).
+- The real map has no save button: the tour's post opens "on Home" and is saved there. Mirror the real page's wording and controls in every tour.
+- Tests that close a tour and navigate again use `close_and_settle(page)` (waits for the engine's delayed history.back), or the next goto is aborted under load.
+
+## session shq-2026-11-05-tour-nudge
+```
+started:        2026-11-05
+ended:          2026-11-05
+model:          claude-opus-5-5
+driver:         solo
+branch:         feature/tour-nudge
+starting_head:  7a4d25b (both tours live: #35, #36)
+focus:          reach visitors the tour auto-play skips (reduce motion)
+```
+
+### owner's brief
+- "Those who visited before the tour don't get to see it; show it to all users once." (They do: the rule is per-browser `dep_tour_seen_v1`, not first-ever visit; previewing with `?tour=play` marks it seen in that browser.) Owner first chose a gentle nudge for the skipped cases, then said the "New · 1-min tour" bubble is not needed; it was removed before merge.
+
+### work done
+- `tour/tour-loader.js`: reduce-motion no longer blocks auto-play (the engine shows the steps view). `?v=3` everywhere. Test `test_skipped_visitors_get_no_bubble` keeps the bubble out.
+
+### gotchas for next session
+- Any tour asset change: bump `?v=` in the loader's `VERSION` and every page's loader tag (test `test_tour_asset_version_bumped_and_consistent`).
+- To see the tour as a first-time visitor, use a private window; `?tour=play` and Skip mark it seen.
+
+## session shq-2026-11-05-tour-search
+```
+started:        2026-11-05
+ended:          2026-11-05
+model:          claude-opus-5-5
+driver:         solo
+branch:         feature/tour-search
+starting_head:  4ec17d7
+focus:          Home tour: show the normal search, then AI search as the even better option
+```
+
+### owner's brief
+- "Show the normal search feature as well, it is very powerful; after that show AI search as an even better option." Clubbed into the existing AI step.
+
+### work done
+- `tour/scenes/home.js`: `classicSearch()` (box, rotating hint, "Searches" strip, "UDC" short form, "acountant" typo, sample results) runs first in the `ask` step; the AI part is a sub-timeline added at `CLASSIC_END` (7.6 s) under an "Even better: just ask" chip. CSS `.dt-qs*`, `.dt-even`. `?v=4`.
+
+### gotchas for next session
+- The search demo mirrors `shared/vacancy-filters.js` (`fuzzyIncludes`: one typo for single-word queries of 4+ letters; every word must match for multi-word queries; `search_text` carries short forms). Keep the demo truthful if that changes.
+

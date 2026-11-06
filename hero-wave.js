@@ -280,13 +280,18 @@ function initWave(canvas) {
   document.addEventListener("visibilitychange", () => {
     visible = !document.hidden;
   });
+  // The site tour (tour/) covers the page almost opaquely: stop drawing the
+  // wave underneath it so the tour's own animation gets the GPU on phones.
+  let tourOpen = false;
+  document.addEventListener("deptour:open", () => (tourOpen = true));
+  document.addEventListener("deptour:close", () => (tourOpen = false));
 
   // paint one frame immediately so there's no blank first paint (and so the
   // buffer is readable even before the animation loop starts ticking)
   renderAll();
 
   renderer.setAnimationLoop(() => {
-    if (!visible) return;
+    if (!visible || tourOpen) return;
     const t = clock.getElapsedTime();
     uniforms.uTime.value = reducedMotion ? 0 : t;
 

@@ -26,6 +26,54 @@ counter_convention:
 
 ## [Unreleased]
 
+### Changed - Home tour shows the normal search before AI search (2026-11-05)
+Step 3 is now "Search anything — or just ask". It first shows the normal search
+box: what it searches (post, organisation, ministry, location, level,
+qualification, short forms), a short form ("UDC" finds Upper Division Clerk
+posts) and a forgiven typo ("acountant" finds Accountant posts). Then "Even
+better: just ask" shows the AI search as before. Tour assets move to `?v=4`.
+
+### Changed - reduce-motion visitors get the tour as steps (2026-11-05)
+Every browser gets each page's tour once, whether or not it visited before the
+tours existed. Visitors with "Reduce motion" turned on were skipped; they now
+get the calm step-by-step version once. Tour assets move to `?v=3`.
+
+### Added - first-visit tour on the India Map page (2026-11-05)
+A ~45 s tour plays once on a visitor's first plain visit to `india-map.html`,
+with the same controls and rules as the Home tour. It opens on "Vacancies
+across India, on one map", then shows every map feature: hovering a state for
+its count, filters (Pay Level, Ministry) recolouring the whole map, diving into
+Karnataka's districts, Bengaluru Urban's posts as the real district cards (one
+opens on Home, where it is saved), the state's list ("View all 96 vacancies in
+Karnataka"), zoom in and reset, and "Back to India". It ends on "Explore the
+map". It waits for the page's own map intro to finish (`data-tour-ready`, at
+most 12 s), and shared map links (`?state=KA`) don't auto-play. The Home tour's
+step 2 counter no longer shows the filtered count before a filter is picked.
+Tour assets move to `?v=2`. Files: `tour/scenes/map-page.js` (new), map helpers
+in `tour/scenes/map.js`, loader tags in `index.html` and `india-map.html`,
+`tests/test_tour_map_page.py`.
+
+### Added - first-visit "how to use" tour on the Home page (2026-11-05)
+A ~75 s cinematic demo plays once on a visitor's first plain visit to the Home
+page, over the page, with sample data marked "Demo · sample data". It opens on
+"Your one stop solution to Deputation" and a full-screen ALL Deputations.com,
+then shows every Home feature: deputation opportunities matching your
+eligibility (pay level + years, by the site's feeder-grade rule), other filters
+and quick chips, the AI search, sorting and table/card views, bookmarks, alerts
+and the light/dark theme. It ends on a grid of the other pages (India Map, DeFeX
+(beta), My Deputation, Report Vacancy (a link or a PDF), Rules (all rules at one
+place, easy to search), FAQs; each card links to its page), a "Join us on
+WhatsApp" bar (Channel for latest updates, Group for discussions; links to
+Contact) and "Try it with your pay level", which opens the real pay-level
+control. No "STEP n" labels: visitors can jump between steps in any order. Skip, Esc, ←/→, Back and
+"Don't show tours again" always work; "How this works" (bottom right) replays it.
+It does not auto-play on shared vacancy/filter links, for visitors already
+tapping or typing, with data-saver on, under reduced motion (they get a
+step-by-step view) or for automated browsers. The 3D hero pauses while it plays
+(hero-wave.js ?v=3 on every page). `?tour=play` forces it, `&tourSpeed=N` speeds it up.
+Files: `tour/` (loader, engine, kit, scenes, pre-baked `tour-map.json`),
+`vendor/gsap.min.js` (GSAP 3.15.1, loaded only when a tour plays),
+`scripts/build_tour_map.py`, `tests/test_tour_*.py`. New assets start at `?v=1`.
 ### Fixed - restore readable vacancy IDs and keep old links working (2026-11-04)
 The local intake application had been minting opaque public vacancy IDs
 (`AUTO-<uuid fragment>`) and hard-coding `min_code` to `DEP`, replacing the

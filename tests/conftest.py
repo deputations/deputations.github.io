@@ -107,6 +107,11 @@ def page(context: BrowserContext, base_url: str, request: pytest.FixtureRequest)
         p.close()
 
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "real_hero: tour test that keeps the real WebGL hero (tour tests stub it by default)")
+
+
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):  # noqa: ARG001 (pytest signature)
     """Stash a `_failed` flag on the test node so fixtures can detect failures."""
