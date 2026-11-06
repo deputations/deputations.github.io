@@ -194,6 +194,12 @@ tests/test_tour_*.py          Playwright smoke tests (existing suite conventions
   last 2.5 s is not interrupted; the tour starts once they pause (gives up after
   20 s of steady use). Tour files download while the page settles.
 - "How this works" shows for 10 s per page load, then fades out (owner, 2026-11-06).
+- India Map, first visit: the tour plays first; the page's own map draw-in waits
+  (loader `data-tour-hold` → `html[data-tour-pending]`, `[data-tour-hidden]` stays
+  hidden; `deptour:release` after the tour closes and its Back step is done, or at
+  once if the visitor is busy / the tour can't load; 3-minute safety) (owner, 2026-11-06).
+- Footer tag: "Shows on first visit only · replay via How this works" (phones:
+  "First visit only") (owner, 2026-11-06).
 - The last screen fades away by itself over 3 s once fully shown, unless the
   visitor points at a link/button or tabs (then it stays) (owner, 2026-11-06).
 - Starts after `window.load` plus one idle callback (fallback 800 ms), so the

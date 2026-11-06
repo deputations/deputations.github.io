@@ -2636,6 +2636,13 @@
   }
 
   // ----- Main init -----
+  function tourReleased() {
+    return new Promise(resolve => {
+      if (!document.documentElement.hasAttribute('data-tour-pending')) return resolve();
+      document.addEventListener('deptour:release', () => resolve(), { once: true });
+    });
+  }
+
   window.initIndiaMap = async function() {
     if (mapInitialised) return;
     mapInitialised = true;
@@ -2691,6 +2698,10 @@
     const deepDistrict = urlParams.get('district'); // already decoded
     const deepAbbr = deepState ? deepState.toUpperCase() : '';
     const isDeepLink = !!(deepAbbr && ABBR_TO_NAME[deepAbbr]);
+
+    // First visit: the site tour plays first (tour/tour-loader.js holds the
+    // page with html[data-tour-pending]); the map draws once it is over.
+    await tourReleased();
 
     // The tricolour intro plays on a plain visit only: a deep link goes
     // straight to its state, and reduced motion gets the map at once

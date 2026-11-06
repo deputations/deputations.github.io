@@ -223,22 +223,42 @@ def test_map_autoplays_on_a_plain_visit_but_not_a_shared_link(page: Page, base_u
     page.wait_for_selector(".dt-overlay", state="attached", timeout=30000)
 
 
-def test_map_autoplay_waits_for_the_page_to_finish_drawing(page: Page, base_url: str):
-    """The page's own map (stubbed here) signals map:drawInComplete after its
-    intro; the tour holds until then, so it never covers that intro or races
-    the page's history.replaceState."""
+# ---- owner, 2026-11-06: first visit = tour first, then the map draws state by state ----
+
+TIMES = """(() => { const t0 = performance.now(); window.__t = {};
+  const at = k => () => { if (window.__t[k] == null) window.__t[k] = Math.round(performance.now() - t0); };
+  document.addEventListener('map:drawInComplete', at('drawn'));
+  document.addEventListener('deptour:open', at('open'));
+  document.addEventListener('deptour:close', at('closed'));
+})();"""
+
+
+def test_map_tour_plays_first_then_the_map_draws(page: Page, base_url: str):
     page.add_init_script(REAL_VISIT)
-    page.route("**/india-map-view.js*", lambda r: r.fulfill(body="", content_type="application/javascript"))
-    asked = []
-    page.on("request", lambda r: asked.append(urlparse(r.url).path))
+    page.add_init_script(TIMES)
     page.goto(f"{base_url}/india-map.html")
-    page.wait_for_load_state("load", timeout=30000)
-    page.wait_for_function("() => !!window.DepTourLoader", polling=100, timeout=30000)
-    page.wait_for_timeout(3000)
-    assert page.locator(".dt-overlay").count() == 0                # still waiting for the page
-    assert "/tour/scenes/map-page.js" in asked, asked              # …but the tour files are already here
-    page.evaluate("document.dispatchEvent(new CustomEvent('map:drawInComplete'))")
-    page.wait_for_selector(".dt-overlay", state="attached", timeout=6000)   # so it opens right away
+    page.wait_for_selector(".dt-overlay", state="attached", timeout=30000)
+    page.wait_for_timeout(1500)
+    assert page.evaluate("window.__t.drawn") is None                       # the map waits for the tour
+    assert page.evaluate("getComputedStyle(document.getElementById('mapSvgWrap')).visibility") == "hidden"
+    page.evaluate("DepTour.close()")
+    page.wait_for_function("() => window.__t.drawn != null", polling=200, timeout=45000)
+    t = page.evaluate("window.__t")
+    assert t["drawn"] > t["closed"], t                                      # …then draws state by state
+    assert page.evaluate("getComputedStyle(document.getElementById('mapSvgWrap')).visibility") == "visible"
+    assert page.evaluate("!(history.state && history.state.dtTour)")
+
+
+def test_busy_visitor_still_gets_the_map(page: Page, base_url: str):
+    """Someone tapping as the page opens is not kept waiting behind a hidden map."""
+    page.add_init_script(REAL_VISIT)
+    page.add_init_script(TIMES)
+    page.add_init_script("""(() => { const id = setInterval(() =>
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' })), 400);
+      setTimeout(() => clearInterval(id), 30000); })();""")
+    page.goto(f"{base_url}/india-map.html")
+    page.wait_for_function("() => window.__t.drawn != null", polling=200, timeout=45000)
+    assert page.evaluate("window.__t.open") is None
 
 
 def test_map_autoplay_still_starts_if_the_page_never_finishes(page: Page, base_url: str):

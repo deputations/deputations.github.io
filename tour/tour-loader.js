@@ -6,7 +6,7 @@
    the engine, the kit and the page's scenes only when a demo plays.
 
    Wire on a page with:
-     <script defer src="/tour/tour-loader.js?v=6" data-tour="home"></script>
+     <script defer src="/tour/tour-loader.js?v=7" data-tour="home"></script>
    A page with its own async start-up (data fetch, intro animation) adds
    data-tour-ready="<document event>": auto-play then waits for that event
    (at most READY_WAIT ms after load) so the tour never covers the page's
@@ -25,6 +25,30 @@
   var KEY = (script && script.dataset && script.dataset.tour) || '';
   var READY_EVENT = (script && script.dataset && script.dataset.tourReady) || '';
   var READY_WAIT = 12000;
+  // data-tour-hold: on a first visit the page holds its own start-up animation
+  // (elements marked data-tour-hidden stay hidden) until the tour is over.
+  var HOLD = !!(script && script.dataset && script.dataset.tourHold != null);
+  var held = false;
+  function hold() {
+    if (!HOLD || held) return;
+    held = true;
+    document.documentElement.setAttribute('data-tour-pending', '');
+    // once the tour has closed and its Back step is done, let the page start
+    document.addEventListener('deptour:close', function () {
+      var until = Date.now() + 1500;
+      (function wait() {
+        if (history.state && history.state.dtTour && Date.now() < until) return setTimeout(wait, 50);
+        release();
+      })();
+    }, { once: true });
+    setTimeout(release, 180000);                      // never hold the page forever
+  }
+  function release() {
+    if (!held) return;
+    held = false;
+    document.documentElement.removeAttribute('data-tour-pending');
+    try { document.dispatchEvent(new CustomEvent('deptour:release')); } catch (e) {}
+  }
   var BUTTON_LIFE = 10000;      // "How this works" shows for 10 s per page load
   var IDLE_MS = 2500;           // busy = touched the page in the last 2.5 s
   var BUSY_GIVE_UP = 20000;     // still busy this long after the page settled: try a later visit   // the map page's own intro takes ~5-10 s after load
@@ -32,7 +56,7 @@
   if (READY_EVENT) document.addEventListener(READY_EVENT, function () { pageReady = true; }, { once: true });
   var SEEN_KEY = 'dep_tour_seen_v1';
   var OFF_KEY = 'dep_tour_off_v1';
-  var VERSION = '?v=6';
+  var VERSION = '?v=7';
   var CORE = ['/vendor/gsap.min.js', '/tour/tour.css', '/tour/tour-engine.js', '/tour/tour-kit.js'];
   var SCENES = {
     home: ['/tour/scenes/map.js', '/tour/scenes/pages.js', '/tour/scenes/home-more.js', '/tour/scenes/home.js'],
@@ -133,6 +157,7 @@
     '.dt-replay--hidden{opacity:0;transform:translateY(10px);pointer-events:none}' +
     '.dt-replay.dt-replay--gone{opacity:0;transform:translateY(12px) scale(.9);pointer-events:none;transition:opacity .8s ease,transform .8s ease}' +
     'html.dt-open .dt-replay{display:none}' +
+    'html[data-tour-pending] [data-tour-hidden]{visibility:hidden}' +
     '@media (prefers-reduced-motion: reduce){.dt-replay{transition:opacity .2s ease}.dt-replay--hidden{transform:none}}' +
     '@media print{.dt-replay{display:none}}';
 
@@ -209,6 +234,7 @@
       force: force
     };
     if (!shouldAutoplay(env, KEY)) return;
+    hold();
 
     // Busy means busy *now*: someone touching the page in the last IDLE_MS is
     // not interrupted; the tour waits until they pause (or, if they never do,
@@ -229,8 +255,10 @@
         var quiet = Date.now() - lastInput;
         if (force || quiet >= IDLE_MS) {
           stop();
-          return play(KEY, { speed: speed > 0 ? speed : 1, mode: force ? 'cinematic' : 'auto' });
+          return play(KEY, { speed: speed > 0 ? speed : 1, mode: force ? 'cinematic' : 'auto' })
+            .then(function (r) { if (r === 'unavailable') release(); });
         }
+        release();                                    // busy: show them the page now
         if (Date.now() > giveUp) return stop();
         setTimeout(check, IDLE_MS - quiet + 50);
       })();

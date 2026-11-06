@@ -655,3 +655,21 @@ def test_leaving_the_finale_removes_the_ending(page: Page, base_url: str):
     assert page.locator(".dt-signoff").count() == 0
     page.wait_for_timeout(500)
     assert _g(page, ".dt-mark")["o"] > 0.9
+
+
+# ---- owner, 2026-11-06: say that the tour shows on the first visit only ----
+
+def test_first_visit_only_tag(page: Page, base_url: str):
+    for w, h, text in [(1440, 900, "Shows on first visit only · replay via How this works"), (390, 844, "First visit only")]:
+        page.set_viewport_size({"width": w, "height": h})
+        _open_home(page, base_url)
+        _scene_end(page, 1)
+        tag = _g(page, ".dt-first")
+        assert tag and tag["o"] > 0.9 and tag["l"] >= 0 and tag["r"] <= w and tag["b"] <= h, (w, tag)
+        assert page.evaluate("document.querySelector('.dt-first').innerText.trim()") == text
+        for other in (".dt-badge", ".dt-off"):
+            o = _g(page, other)
+            assert tag["r"] <= o["l"] + 1 or tag["l"] >= o["r"] - 1 or tag["b"] <= o["t"] + 1 or tag["t"] >= o["b"] - 1, (w, other)
+        bd, off = _g(page, ".dt-badge"), _g(page, ".dt-off")
+        assert abs((bd["t"] + bd["b"]) / 2 - (off["t"] + off["b"]) / 2) <= 6, (w, bd, off)   # no extra footer row
+        close_and_settle(page)

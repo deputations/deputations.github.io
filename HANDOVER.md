@@ -7464,3 +7464,11 @@ focus:          "Deputations" headline; self-fading finale; 10 s replay button; 
 ### gotchas for next session
 - Timing tests (button life, busy typing) measure inside the page (init scripts); Playwright-side waits run seconds late under `-n 2`.
 
+## session shq-2026-11-06-tour-first-visit
+```
+branch:         feature/tour-first-visit
+focus:          map tour before the map's draw-in; "first visit only" tag
+```
+- Loader: `hold()` / `release()` (data-tour-hold). india-map-view.js `tourReleased()` awaited before the first render, so the page's `history.replaceState` runs after the tour's Back step (no history race).
+- Phone footer is tight: logo + Demo tag + "First visit only" + "Don't show tours again" on one row at 390 px (test `test_first_visit_only_tag`).
+

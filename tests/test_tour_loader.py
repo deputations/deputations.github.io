@@ -244,7 +244,7 @@ def test_tour_asset_version_bumped_and_consistent():
     for page_file in ("index.html", "india-map.html"):
         tag = re.search(r'/tour/tour-loader\.js\?v=(\d+)"', Path(page_file).read_text(encoding="utf-8")).group(1)
         assert tag == v, (page_file, tag, v)
-    assert int(v) >= 6, v      # 6: fading finale, button timeout, map tour start fixes (2026-11-06)
+    assert int(v) >= 7, v      # 7: first-visit tag; map tour plays before the map draws (2026-11-06)
 
 
 # ---- skipped visitors (owner, 2026-11-05): no "New · 1-min tour" bubble ----
