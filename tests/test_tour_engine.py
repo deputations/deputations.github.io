@@ -176,11 +176,22 @@ def test_tall_layout_at_390(page: Page, base_url: str):
     assert page.evaluate("DepTour.state().layout") == "tall"
 
 
-def test_steps_mode_reduced_motion(page: Page, base_url: str):
+def test_reduced_motion_still_plays_the_animation(page: Page, base_url: str):
+    """Owner, 2026-11-06: office PCs often have Windows animation effects off
+    (the browser then reports reduced motion); the tour animates anyway."""
     page.emulate_media(reduced_motion="reduce")
     open_engine(page, base_url)
     register_probe_tour(page)
     start(page)
+    assert page.evaluate("DepTour.state().mode") == "cinematic"
+    expect(page.locator(".dt-stage")).to_have_count(1)
+    assert page.locator(".dt-steps").count() == 0
+
+
+def test_steps_mode(page: Page, base_url: str):
+    open_engine(page, base_url)
+    register_probe_tour(page)
+    start(page, mode="steps")
     assert page.evaluate("DepTour.state().mode") == "steps"
     expect(page.locator(".dt-steps h3")).to_have_text("Alpha")
     expect(page.locator(".dt-steps p")).to_have_text("Summary of Alpha")
@@ -388,10 +399,9 @@ def test_layout_is_chosen_by_readable_scale(page: Page, base_url: str):
 
 
 def test_steps_view_ends_on_the_cta(page: Page, base_url: str):
-    page.emulate_media(reduced_motion="reduce")
     open_engine(page, base_url)
     register_probe_tour(page, cta="Go")
-    start(page)
+    start(page, mode="steps")
     page.locator(".dt-next").click()
     expect(page.locator(".dt-next")).to_have_text("Go")
     page.locator(".dt-next").click()

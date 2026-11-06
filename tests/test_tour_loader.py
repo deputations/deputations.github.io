@@ -103,7 +103,7 @@ def test_should_autoplay_rules(page: Page, base_url: str):
         "off": False,
         "webdriver": False,
         "bot": False,             # crawlers and page-speed tools see the page itself
-        "reduced": True,          # Reduce-motion visitors get the calm step-by-step view once
+        "reduced": True,          # Reduce-motion visitors get the tour too (animated, owner 2026-11-06)
         "intent": False,
         "saveData": False,
         "forced": True,
@@ -326,8 +326,12 @@ def test_how_this_works_vanishes_after_10_seconds(page: Page, base_url: str):
     expect(page.locator(".dt-replay")).to_be_visible()          # back on reload
 
 
-def test_reduced_motion_visitor_gets_the_step_view(page: Page, base_url: str):
+def test_reduced_motion_visitor_gets_the_animated_tour(page: Page, base_url: str):
+    """Owner, 2026-11-06: a PC with Windows animation effects off showed only the
+    step cards; the tour now animates there too."""
     page.add_init_script(REAL_VISIT)
     page.emulate_media(reduced_motion="reduce")
     page.goto(f"{base_url}/index.html")
-    expect(page.locator(".dt-steps h3")).to_be_visible(timeout=30000)
+    expect(page.locator(".dt-stage")).to_be_attached(timeout=30000)
+    assert page.evaluate("DepTour.state().mode") == "cinematic"
+    assert page.locator(".dt-steps").count() == 0
