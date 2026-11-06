@@ -229,13 +229,16 @@ def test_map_autoplay_waits_for_the_page_to_finish_drawing(page: Page, base_url:
     the page's history.replaceState."""
     page.add_init_script(REAL_VISIT)
     page.route("**/india-map-view.js*", lambda r: r.fulfill(body="", content_type="application/javascript"))
+    asked = []
+    page.on("request", lambda r: asked.append(urlparse(r.url).path))
     page.goto(f"{base_url}/india-map.html")
     page.wait_for_load_state("load", timeout=30000)
     page.wait_for_function("() => !!window.DepTourLoader", polling=100, timeout=30000)
     page.wait_for_timeout(3000)
     assert page.locator(".dt-overlay").count() == 0                # still waiting for the page
+    assert "/tour/scenes/map-page.js" in asked, asked              # …but the tour files are already here
     page.evaluate("document.dispatchEvent(new CustomEvent('map:drawInComplete'))")
-    page.wait_for_selector(".dt-overlay", state="attached", timeout=15000)
+    page.wait_for_selector(".dt-overlay", state="attached", timeout=6000)   # so it opens right away
 
 
 def test_map_autoplay_still_starts_if_the_page_never_finishes(page: Page, base_url: str):

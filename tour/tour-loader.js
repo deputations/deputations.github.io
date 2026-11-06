@@ -6,7 +6,7 @@
    the engine, the kit and the page's scenes only when a demo plays.
 
    Wire on a page with:
-     <script defer src="/tour/tour-loader.js?v=5" data-tour="home"></script>
+     <script defer src="/tour/tour-loader.js?v=6" data-tour="home"></script>
    A page with its own async start-up (data fetch, intro animation) adds
    data-tour-ready="<document event>": auto-play then waits for that event
    (at most READY_WAIT ms after load) so the tour never covers the page's
@@ -24,12 +24,15 @@
   var script = document.currentScript;
   var KEY = (script && script.dataset && script.dataset.tour) || '';
   var READY_EVENT = (script && script.dataset && script.dataset.tourReady) || '';
-  var READY_WAIT = 12000;   // the map page's own intro takes ~5-10 s after load
+  var READY_WAIT = 12000;
+  var BUTTON_LIFE = 10000;      // "How this works" shows for 10 s per page load
+  var IDLE_MS = 2500;           // busy = touched the page in the last 2.5 s
+  var BUSY_GIVE_UP = 20000;     // still busy this long after the page settled: try a later visit   // the map page's own intro takes ~5-10 s after load
   var pageReady = !READY_EVENT;
   if (READY_EVENT) document.addEventListener(READY_EVENT, function () { pageReady = true; }, { once: true });
   var SEEN_KEY = 'dep_tour_seen_v1';
   var OFF_KEY = 'dep_tour_off_v1';
-  var VERSION = '?v=5';
+  var VERSION = '?v=6';
   var CORE = ['/vendor/gsap.min.js', '/tour/tour.css', '/tour/tour-engine.js', '/tour/tour-kit.js'];
   var SCENES = {
     home: ['/tour/scenes/map.js', '/tour/scenes/pages.js', '/tour/scenes/home-more.js', '/tour/scenes/home.js'],
@@ -128,6 +131,7 @@
     '.dt-replay .dt-replay-ico{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;font-size:9px;' +
     'background:linear-gradient(135deg,#22d3ee,#a78bfa);color:#02040b;padding-left:2px}' +
     '.dt-replay--hidden{opacity:0;transform:translateY(10px);pointer-events:none}' +
+    '.dt-replay.dt-replay--gone{opacity:0;transform:translateY(12px) scale(.9);pointer-events:none;transition:opacity .8s ease,transform .8s ease}' +
     'html.dt-open .dt-replay{display:none}' +
     '@media (prefers-reduced-motion: reduce){.dt-replay{transition:opacity .2s ease}.dt-replay--hidden{transform:none}}' +
     '@media print{.dt-replay{display:none}}';
@@ -147,6 +151,9 @@
     btn.addEventListener('click', function () { play(KEY, { mode: 'auto' }); });
     document.body.appendChild(btn);
     watchFooter(btn);
+    // Owner, 2026-11-06: the button bows out after 10 s (back on the next load).
+    setTimeout(function () { btn.classList.add('dt-replay--gone'); }, BUTTON_LIFE - 800);
+    setTimeout(function () { btn.remove(); }, BUTTON_LIFE);
   }
 
   // Never cover the footer trust line: fade the button out while the footer is on screen.
@@ -203,16 +210,30 @@
     };
     if (!shouldAutoplay(env, KEY)) return;
 
-    // Someone already tapping or typing before the page settles is busy: don't
-    // pull the page out from under them; the tour plays on a later visit.
-    var busy = false;
-    var EVENTS = ['pointerdown', 'keydown'];
-    function onBusy() { busy = true; }
-    EVENTS.forEach(function (t) { window.addEventListener(t, onBusy, true); });
+    // Busy means busy *now*: someone touching the page in the last IDLE_MS is
+    // not interrupted; the tour waits until they pause (or, if they never do,
+    // tries again on a later visit). A tap while the page loads no longer
+    // cancels it (owner, 2026-11-06: the map tour was always skipped).
+    var lastInput = -Infinity;
+    var EVENTS = ['pointerdown', 'keydown', 'wheel', 'touchstart'];
+    function onInput() { lastInput = Date.now(); }
+    EVENTS.forEach(function (t) { window.addEventListener(t, onInput, { capture: true, passive: true }); });
+    function stop() { EVENTS.forEach(function (t) { window.removeEventListener(t, onInput, { capture: true, passive: true }); }); }
+    // Fetch the tour while the page finishes its own start-up, so it opens at once.
+    function preload() { loadAssets(KEY).catch(function () {}); }
+    if (document.readyState === 'complete') preload();
+    else window.addEventListener('load', preload, { once: true });
     whenSettled(function () {
-      EVENTS.forEach(function (t) { window.removeEventListener(t, onBusy, true); });
-      if (busy && !force) return;
-      play(KEY, { speed: speed > 0 ? speed : 1, mode: force ? 'cinematic' : 'auto' });
+      var giveUp = Date.now() + BUSY_GIVE_UP;
+      (function check() {
+        var quiet = Date.now() - lastInput;
+        if (force || quiet >= IDLE_MS) {
+          stop();
+          return play(KEY, { speed: speed > 0 ? speed : 1, mode: force ? 'cinematic' : 'auto' });
+        }
+        if (Date.now() > giveUp) return stop();
+        setTimeout(check, IDLE_MS - quiet + 50);
+      })();
     });
   }
 

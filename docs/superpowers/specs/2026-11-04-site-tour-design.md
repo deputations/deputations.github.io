@@ -58,7 +58,7 @@ Every Home feature gets its own short step; the other pages get only a
 Sample data follows the site's feeder-grade eligibility rule and every number
 is labelled as sample.
 
-0. **Intro** (~6 s): *"Your one stop solution to Deputation"* assembles letter
+0. **Intro** (~6 s): *"Your one stop solution to Deputations"* assembles letter
    by letter, then the brand **ALL Deputations.com** crashes in full-screen
    (fitted to ~90 % of the viewport width; on phones "ALL" over
    "Deputations.com"), a light sweep crosses it and it holds long enough to be
@@ -188,10 +188,14 @@ tests/test_tour_*.py          Playwright smoke tests (existing suite conventions
   all of them. Whether someone visited before the tour existed does not matter:
   every browser gets it once. Reduce-motion visitors get the steps view
   (revised 2026-11-05 evening; they used to be skipped).
-- Visitors the auto-play skips (intent link, Save-Data, or already tapping/typing
-  before the page settles) get no prompt: the tour waits for a later plain visit,
-  and "How this works" is always there (owner declined a suggestion bubble,
-  2026-11-05 evening).
+- Visitors the auto-play skips (intent link, Save-Data) get no prompt: the tour
+  waits for a later plain visit (owner declined a suggestion bubble, 2026-11-05).
+- Busy means busy *now* (owner, 2026-11-06): someone who touched the page in the
+  last 2.5 s is not interrupted; the tour starts once they pause (gives up after
+  20 s of steady use). Tour files download while the page settles.
+- "How this works" shows for 10 s per page load, then fades out (owner, 2026-11-06).
+- The last screen fades away by itself over 3 s once fully shown, unless the
+  visitor points at a link/button or tabs (then it stays) (owner, 2026-11-06).
 - Starts after `window.load` plus one idle callback (fallback 800 ms), so the
   page's own load and the WebGL hero finish first.
 - On play: loads, in order, `vendor/gsap.min.js`, `tour/tour.css`,

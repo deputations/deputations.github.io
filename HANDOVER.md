@@ -7448,3 +7448,19 @@ focus:          V² logo on every tour step; "A V² product" ending on the Home 
 - The finale's burst now measures the CTA when it fires (the CTA appears after the ending).
 - `.dt-mark` has no CSS transition on purpose: tests measure it right after a step starts on a slow box.
 
+## session shq-2026-11-06-tour-fixes
+```
+started:        2026-11-06
+model:          claude-opus-5-5
+branch:         feature/tour-fixes-2
+starting_head:  f9fe7a7
+focus:          "Deputations" headline; self-fading finale; 10 s replay button; map tour never started
+```
+
+### root cause: the map tour never showed
+- It waited for the page's own map draw-in (~10 s) and only then downloaded the tour (~6 s more). Any tap/scroll in those ~16 s marked the visitor "busy" and cancelled the tour for the visit, so on phones it effectively never played.
+- Fix (`tour/tour-loader.js`): preload the tour files at `load`; "busy" = input in the last `IDLE_MS` (2.5 s), checked when the page has settled; wait for a pause up to `BUSY_GIVE_UP` (20 s).
+
+### gotchas for next session
+- Timing tests (button life, busy typing) measure inside the page (init scripts); Playwright-side waits run seconds late under `-n 2`.
+
