@@ -15,7 +15,7 @@ from tests.tour_helpers import close_and_settle, no_hero_wave, seen  # noqa: F40
 TITLES = ["Find deputation opportunities matching your eligibility", "Narrow it down", "Search anything — or just ask",
           "Sort and switch views",
           "Save posts you like", "Never miss a vacancy", "Light or dark — your choice", "Explore more pages"]
-HEADLINE = "Your one stop solution to Deputation"
+HEADLINE = "Your one stop solution to Deputations"
 BRAND = "ALL Deputations.com"
 FULL_POWER = ("Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });"
               "Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });")
@@ -140,14 +140,10 @@ def test_full_run_fast(page: Page, base_url: str):
     page.on("console", lambda m: m.type == "error" and (
         "/tour/" in m.text or "/tour/" in ((m.location or {}).get("url") or "")) and console_errors.append(m.text))
     _open_home(page, base_url, speed=20)
-    # the whole tour plays to its finale, which then waits for the visitor
-    expect(page.locator(".dt-cta")).to_be_visible(timeout=20000)
-    expect(page.locator("a.dt-page-card")).to_have_count(6)
-    page.wait_for_timeout(1500)
-    assert page.evaluate("DepTour.isOpen()") is True
-    page.locator(".dt-cta").click()
-    page.wait_for_function("() => !!window.__closed", polling=100, timeout=10000)
-    assert page.evaluate("window.__closed.reason") == "cta"
+    # the whole tour plays to its finale, which then fades away by itself (owner, 2026-11-06)
+    page.wait_for_selector(".dt-cta", state="attached", timeout=20000)
+    page.wait_for_function("() => !!window.__closed", polling=100, timeout=20000)
+    assert page.evaluate("window.__closed.reason") == "end"
     assert errors == [] and console_errors == []
 
 

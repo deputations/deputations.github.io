@@ -214,6 +214,16 @@
     S.progressBar = h('i', null, null, h('div', 'dt-progress', null, chrome));
 
     S.skipBtn.addEventListener('click', function () { close('skip'); });
+    // A visitor pointing at (or tabbing through) the finale keeps it on screen.
+    function engage(e) {
+      if (!S || S.phase !== 'finale' || S.engaged) return;
+      if (e.type === 'keydown' ? e.key !== 'Tab'
+          : !(e.target && e.target.closest && e.target.closest('a.dt-page-link, .dt-cta'))) return;
+      S.engaged = true;
+      if (S.fadeTw) { S.fadeTw.kill(); S.fadeTw = null; gsap.to(S.overlay, { opacity: 1, duration: 0.3 }); }
+    }
+    ov.addEventListener('pointerover', engage);
+    ov.addEventListener('keydown', engage);
     ov.addEventListener('click', function (e) {
       var a = e.target && e.target.closest ? e.target.closest('a.dt-page-link') : null;
       if (!a) return;
@@ -434,6 +444,8 @@
     S.retiring.forEach(function (r) { kill(r.wrap); r.el.remove(); });
     S.retiring = [];
     kill(S.finaleTl); S.finaleTl = null;
+    kill(S.fadeTw); S.fadeTw = null;
+    if (S.overlay) gsap.set(S.overlay, { clearProps: 'opacity' });
     if (S.finaleEl) { S.finaleEl.remove(); S.finaleEl = null; }
     if (S.markEl) gsap.set(S.markEl, { clearProps: 'opacity' });
     if (S.cursorLayer) S.cursorLayer.innerHTML = '';
@@ -548,7 +560,8 @@
     btn.addEventListener('click', function () { close('cta'); });
 
     // A keep-scene finale is a page of links: it stays until the visitor acts.
-    var tl = S.finaleTl = track(gsap.timeline({ onComplete: keep ? null : function () { close('end'); } }));
+    var tl = S.finaleTl = track(gsap.timeline());
+    S.engaged = false;
     if (S.camera && !keep) tl.to(S.camera, { opacity: 0.32, filter: 'blur(4px)', duration: 0.7, ease: 'power2.out' }, 0);
     var t0 = keep && S.mode === 'cinematic' && S.tour.signoff ? signoff(tl, fin, S.tour.signoff) : 0;
     tl.fromTo(btn, { opacity: 0, scale: 0.8, y: 24 },
@@ -562,7 +575,13 @@
         catch (err) { warn('burst failed:', err && err.message); }
       }, t0 + 0.45);
     }
-    if (!keep) tl.to({}, { duration: 6 });
+    // Owner, 2026-11-06: the last screen then vanishes slowly (3 s) by itself,
+    // unless the visitor points at a link/button or tabs to one: then it stays.
+    tl.add(function () {
+      if (!S || S.closing || S.engaged) return;
+      S.fadeTw = track(gsap.to(S.overlay, { opacity: 0, duration: 3, ease: 'power1.in',
+        onComplete: function () { if (S && !S.closing && !S.engaged) close('end'); } }));
+    }, t0 + 0.9);
     try { btn.focus({ preventScroll: true }); } catch (e) {}
   }
 

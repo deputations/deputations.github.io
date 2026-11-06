@@ -26,6 +26,16 @@ counter_convention:
 
 ## [Unreleased]
 
+### Changed - tour start, ending and replay button (2026-11-06)
+- The Home tour opens with "Your one stop solution to Deputations".
+- The last screen of each tour now fades away by itself over 3 seconds; pointing
+  at a page card or the button (or tabbing to one) keeps it on screen.
+- "How this works" shows for 10 seconds per page load, then fades out.
+- The India Map tour now actually plays: the tour downloads while the map draws
+  itself, and a tap or scroll while the page loads no longer cancels it (it waits
+  until the visitor pauses for 2.5 s; still busy after 20 s, it waits for a later
+  visit). Tour assets move to `?v=6`.
+
 ### Added - V² logo on every tour step; "A V² product" ends the Home tour (2026-11-05)
 Both tours show the V² (V Square) logo on every step: centred in the free band
 left of the tour on wide screens, and small beside "Demo · sample data" on

@@ -592,16 +592,6 @@ def test_skipping_during_the_brand_removes_it(page: Page, base_url: str):
     expect(page.locator(".dt-brand")).to_have_count(0)
 
 
-def test_keep_scene_finale_stays_until_the_visitor_acts(page: Page, base_url: str):
-    open_engine(page, base_url)
-    page.evaluate(LINK_SCENE, "t")
-    start(page, speed=2)
-    expect(page.locator(".dt-cta")).to_be_visible(timeout=10000)
-    page.wait_for_timeout(5000)                       # the old finale closed itself after 6 s / speed 2 = 3 s
-    assert page.evaluate("DepTour.isOpen()") is True
-    expect(page.locator(".probe-link")).to_be_visible()
-
-
 def test_going_back_from_the_finale_leaves_finale_mode(page: Page, base_url: str):
     open_engine(page, base_url)
     page.evaluate("""() => DepTour.register('t', {
@@ -617,3 +607,28 @@ def test_going_back_from_the_finale_leaves_finale_mode(page: Page, base_url: str
     page.wait_for_function("() => DepTour.state().phase === 'scene'", polling=100, timeout=5000)
     expect(page.locator(".dt-overlay.dt-finale-on")).to_have_count(0)
     expect(page.locator(".dt-stage")).to_have_attribute("aria-hidden", "true")
+
+
+# ---- owner, 2026-11-06: the last screen vanishes slowly (3 s) by itself ----
+
+def test_finale_fades_away_by_itself(page: Page, base_url: str):
+    open_engine(page, base_url)
+    page.evaluate(LINK_SCENE, "t")
+    start(page)
+    expect(page.locator(".dt-cta")).to_be_visible(timeout=10000)
+    page.wait_for_function("() => { const o = document.querySelector('.dt-overlay');"
+                           " return o && +getComputedStyle(o).opacity < 0.8 && +getComputedStyle(o).opacity > 0.05; }",
+                           polling=100, timeout=10000)          # fading slowly, not cut
+    assert result(page, timeout=15000) == "end"
+    expect(page.locator(".dt-overlay")).to_have_count(0)
+
+
+def test_finale_stays_while_the_visitor_points_at_it(page: Page, base_url: str):
+    open_engine(page, base_url)
+    page.evaluate(LINK_SCENE, "t")
+    start(page)
+    expect(page.locator(".dt-cta")).to_be_visible(timeout=10000)
+    page.locator(".probe-link").hover()
+    page.wait_for_timeout(6000)
+    assert page.evaluate("DepTour.isOpen()") is True
+    assert page.evaluate("+getComputedStyle(document.querySelector('.dt-overlay')).opacity") > 0.95

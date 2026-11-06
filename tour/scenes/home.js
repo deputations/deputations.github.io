@@ -2,7 +2,7 @@
    tour/scenes/home.js — the Home page tour (index.html): intro,
    steps 1–3 and the registration of the whole tour.
 
-   Intro: "Your one stop solution to Deputation", then the brand.
+   Intro: "Your one stop solution to Deputations", then the brand.
    Step 1 "Find deputation opportunities matching your eligibility": card wall; Level 7 +
    4 years; ineligible cards fall away (feeder-grade rule).
    Step 2 "Narrow it down": ministry / organisation / location
@@ -17,7 +17,7 @@
   if (!window.DepTour) return;
   DepTour.expect('home');
 
-  var HEADLINE = 'Your one stop solution to Deputation';
+  var HEADLINE = 'Your one stop solution to Deputations';
   var BRAND = 'ALL Deputations.com';
   var LEVEL = 7, YEARS = 4;
 
