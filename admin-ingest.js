@@ -3494,10 +3494,33 @@ function updateCard(u) {
   const effective = () => (built ? { ...(u.proposed || {}), ...collectPatch(editor) } : (u.proposed || {}));
 
   const del = () => api(`/rest/v1/vacancy_updates?id=eq.${u.id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+  // 0027: queue writes enrich a live row — they must never rewrite its public
+  // identity (vacancy_id is the ?v= link/bookmark key) or downgrade a curated
+  // min_code to the intake app's 'DEP' placeholder. Strip both here, at the
+  // single choke point every Apply/Merge PATCH goes through. `live` is the
+  // target row (or its known fields).
+  const noClobber = (patch, live) => {
+    const out = { ...patch };
+    delete out.vacancy_id;   // queue writes enrich; they never rename a live row
+    const liveMc = live ? String(live.min_code || '').toUpperCase() : '';
+    const outMc = String(out.min_code ?? '').toUpperCase();
+    // Only a real (non-DEP, non-blank) curated code is protected; overwriting
+    // an empty/'DEP' live value with 'DEP' is not a downgrade.
+    if (liveMc && liveMc !== 'DEP' && (outMc === 'DEP' || out.min_code === undefined || out.min_code === null || outMc === '')) delete out.min_code;
+    return out;
+  };
   const patchTarget = async (patch) => {
+    // The Apply path's target select has no min_code; when the patch carries
+    // one, fetch it so the no-clobber check has something to protect.
+    let live = t;
+    if (patch.min_code !== undefined && live.min_code === undefined) {
+      const tr = await api(`/rest/v1/vacancies?id=eq.${u.target_id}&select=min_code`);
+      const rows = await tr.json().catch(() => []);
+      live = { ...live, min_code: rows[0]?.min_code };
+    }
     const r = await api(`/rest/v1/vacancies?id=eq.${u.target_id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify(patch),
+      body: JSON.stringify(noClobber(patch, live)),
     });
     if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + (await r.text()));
   };

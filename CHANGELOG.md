@@ -81,6 +81,25 @@ step-by-step view) or for automated browsers. The 3D hero pauses while it plays
 Files: `tour/` (loader, engine, kit, scenes, pre-baked `tour-map.json`),
 `vendor/gsap.min.js` (GSAP 3.15.1, loaded only when a tour plays),
 `scripts/build_tour_map.py`, `tests/test_tour_*.py`. New assets start at `?v=1`.
+### Fixed - restore readable vacancy IDs and keep old links working (2026-11-04)
+The local intake application had been minting opaque public vacancy IDs
+(`AUTO-<uuid fragment>`) and hard-coding `min_code` to `DEP`, replacing the
+readable `CODE-YYYY-LLEVEL-NNN` scheme used in `?v=` links, bookmarks and
+push alerts. Migration `0027_readable_vacancy_ids.sql` (apply in Supabase,
+before the next snapshot publication) renames every live `AUTO-` row back to
+the legacy scheme — the ID prefix follows the legacy ministry-initials
+algorithm (`Development of North Eastern Region` → `DONER`, matching every
+pre-`AUTO` link), while the curated `min_code` column is repaired from the
+canonical 53-ministry table. Every rename is recorded in
+`public.vacancy_id_aliases` (auto-maintained by a trigger) and the snapshot
+build publishes that map as `data/vacancy-aliases.json`; `public-data.js`
+and `app.js` resolve old `?v=` deep links and stored watchlists through it,
+so shared links keep opening the same vacancy. The pending-update queue is
+scrubbed and the admin "Apply update"/"Merge" path can no longer clobber a
+live row's `vacancy_id` or downgrade a curated `min_code`. The intake
+application now mints readable IDs with the correct `min_code` going
+forward. Cache counters: `public-data.js?v=3`, `app.js?v=aliases-20261104a`,
+`admin-ingest.js?v=sb56`.
 
 ### Added - Verify queue filters (2026-10-19)
 The pending-verification queue now has the same search, source and sort controls

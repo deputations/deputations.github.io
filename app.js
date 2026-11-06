@@ -566,9 +566,18 @@ function buildShareUrl(vacancyId) {
     return `${window.location.origin}/?v=${encodeURIComponent(safe(vacancyId))}`;
 }
 
+// Migration 0027 renamed the intake app's "AUTO-" ids to the readable
+// scheme; the old ids survive in shared links and bookmarks. The snapshot
+// ships data/vacancy-aliases.json and public-data.js exposes resolveId().
+// Resolve (no-op when the id is current) before every id lookup.
+function resolveVacancyId(id) {
+    try { return window.PublicVacancies && window.PublicVacancies.resolveId ? window.PublicVacancies.resolveId(id) : id; }
+    catch (e) { return id; }
+}
+
 // Open the detail view for a ?v= deep link on cold load (data just rendered).
 function openVacancyFromUrl() {
-    const id = getUrlVacancyId();
+    const id = resolveVacancyId(getUrlVacancyId());
     if (!id) return;
     if (getItemById(id)) {
         openVacancyModal(id, { push: false });
@@ -3163,7 +3172,11 @@ function syncCardSortUI() {
             return;
         }
         const validIds = new Set(rawData.map(item => safe(item.Vacancy_ID)).filter(Boolean));
-        watchlist = new Set([...watchlist].filter(id => validIds.has(id)));
+        // Renamed ids: a stored pre-0027 id resolves to the row's current id,
+        // and the watchlist is repersisted in current form so UI + lookups
+        // always agree.
+        watchlist = new Set([...watchlist].map(id => resolveVacancyId(safe(id)))
+            .filter(id => id && validIds.has(id)));
         persistWatchlist();
         updateWatchlistUI();
     }

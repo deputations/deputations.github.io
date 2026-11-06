@@ -7213,6 +7213,76 @@ focus:          Phone filter sheet no longer covers the map; multi-select dropdo
 
 ## session shq-2026-10-23-phone-filter-sheet end
 
+## session shq-2026-11-04-readable-vacancy-ids
+```
+started:        2026-11-04
+model:          Claude Code
+driver:         solo
+branch:         codex/reduce-supabase-egress
+focus:          restore readable vacancy IDs (option 2: forward fix + backfill of the AUTO- rows)
+```
+
+### owner's brief
+- Deep links used to be readable (`?v=DONER-2026-L10-004`); since ~2026-10-10
+  new Employment News rows land as opaque `AUTO-<uuid fragment>` ids and the
+  pending-update queue shows `min_code: MDONER → DEP` downgrades. Owner chose
+  option 2: fix the generator AND backfill the 427+ live rows, keeping old
+  links working.
+
+### work done
+- **Root cause**: `D:\My documents\deputation-automation\integrated_app\connections.py`
+  (the local intake app) mints `vacancy_id = "AUTO-" + rid[:12]` (rid =
+  deterministic uuid5 row key, kept for retry-safety) and hard-codes
+  `min_code="DEP"`. All 5 weekly EN editions since Oct 2026 carry it; 427
+  rows are already published (none have an Ingest_Job_ID in the snapshot
+  export — a fingerprint of this path).
+- **Migration `supabase/migrations/0027_readable_vacancy_ids.sql`** (NEW,
+  not yet applied to Supabase): alias table `public.vacancy_id_aliases`
+  (trigger-maintained for any future rename incl. 0024's `~N` renumbering)
+  + backfill loop renaming every `LIKE 'AUTO-%'` row to
+  `<initials-code>-<year>-L<level>-<NNN>` (prefix = the LEGACY
+  ministry-initials algorithm, `vacancy_id_code_for`, matching pre-AUTO
+  links; `min_code` column repaired via the canonical 53-pair table,
+  `vacancy_min_code_for`, byte-identical to MINISTRIES in admin-ingest.js)
+  + cascade into push_log / vacancy_flags / vacancy_embeddings + scrub of
+  pending vacancy_updates (no `vacancy_id` in update-kind payloads;
+  duplicate-kind candidate's `DEP` min_code repaired from its own
+  ministry). Idempotent.
+- **Intake app forward fix**: `integrated_app/ministry_codes.py` (NEW —
+  `readable_vacancy_id(row, seq)`, `min_code_for_row(row)`, the 53-pair
+  table) + one-line change in `connections.py`. Intake suite 241/241.
+- **Old-link survival**: `scripts/build_data.py` publishes
+  `data/vacancy-aliases.json` (added to build-data.yml `git add`);
+  `public-data.js?v=3` lazy-fetches it and exposes `resolveId()`;
+  `app.js?v=aliases-20261104a` resolves the `?v=` link + watchlist;
+  `admin-ingest.js?v=sb56` `patchTarget` strips `vacancy_id` and protects
+  a curated non-DEP `min_code` on Apply/Merge.
+- **Tests**: PGlite regression `tests/test_vacancy_access.cjs::0027…`
+  (rename/alias/cascade/scrub/idempotency), `tests/test_public_data.js`
+  alias-resolution test. Node suites 6/6 + 4/4; map data 205/205.
+
+### apply order (for the owner)
+1. Intake app: nothing to deploy — files are in place locally.
+2. Supabase: run `supabase/migrations/0027_readable_vacancy_ids.sql`
+   (SQL Editor or `supabase db push`) BEFORE the next snapshot
+   publication, so rebuilt artifacts already carry new ids.
+3. Publish repo changes; the snapshot job ships `vacancy-aliases.json`.
+4. Check queries at the foot of 0027 (`AUTO-%` count → 0, alias count).
+5. Existing `data/whatsapp_posted.json` (git-ignored local ledger) still
+   holds pre-rename keys — the one-shot key fallback in whatsapp_feed.py
+   covers it; it self-heals on the next post.
+
+### gotchas for next session
+- pandas is NOT in `.venv-smoke` → 3 `test_public_snapshots.py::ExportTests`
+  failures are pre-existing locally (CI installs pandas==2.2.3).
+- 191 Playwright ERRORs locally = missing Chromium binary; fixed with
+  `.venv-smoke/Scripts/python.exe -m playwright install chromium`.
+- `min_code` (curated column) and the ID prefix intentionally differ
+  (MDONER vs DONER) — do not "unify" them.
+- `vacancy_id` is absent from CONTENT_FIELDS, so smartMerge never rewrites
+  it; the clobber path was the pending-queue "duplicate" proposal only.
+
+## session shq-2026-11-04-readable-vacancy-ids end
 ## session shq-2026-11-05-site-tour-stage1
 ```
 started:        2026-11-04

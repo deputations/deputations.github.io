@@ -21,6 +21,7 @@ OUTPUT_VACANCIES = DATA_DIR / "vacancies.json"
 OUTPUT_FILTERS = DATA_DIR / "filters.json"
 OUTPUT_STATS = DATA_DIR / "stats.json"
 OUTPUT_META = DATA_DIR / "meta.json"
+OUTPUT_ALIAS = DATA_DIR / "vacancy-aliases.json"   # old -> current Vacancy_ID (migration 0027)
 OUTPUT_FEED = Path("feed.xml")          # site root, next to sitemap.xml
 SITE_URL = "https://alldeputations.com"
 
@@ -443,6 +444,41 @@ SUPABASE_TO_TITLE_MAP: dict[str, str] = {
     # bundled JSON too — NIC users are served from that file, not from the API.
     "admin_verified":            "Admin_Verified",
 }
+
+
+def fetch_vacancy_id_aliases(supabase_url: str, supabase_key: str) -> dict[str, str]:
+    """old -> current public Vacancy_ID, from migration 0027's
+    public.vacancy_id_aliases. The service key bypasses the table's RLS
+    (anon has no read on purpose — this published JSON IS the public copy).
+    The trigger keeps new_id pointing at the row's CURRENT id, so the map
+    needs no transitive resolution. A missing table (0027 not applied yet)
+    is not an error: an empty map means identity resolution everywhere."""
+    import urllib.error
+    api = supabase_url.rstrip("/") + "/rest/v1/vacancy_id_aliases"
+    rows: list[dict[str, str]] = []
+    offset = 0
+    while True:
+        req = urllib.request.Request(
+            api + f"?select=old_id,new_id&order=old_id.asc&limit=1000&offset={offset}",
+            headers={"apikey": supabase_key, "Authorization": "Bearer " + supabase_key, "Accept-Profile": "public"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                page = json.load(resp)
+        except urllib.error.HTTPError as exc:
+            if offset == 0 and exc.code in (404, 400, 42501):
+                print(f"vacancy_id_aliases unreadable (HTTP {exc.code}) — publishing an empty alias map")
+                return {}
+            raise
+        if not isinstance(page, list):
+            raise RuntimeError(f"vacancy_id_aliases returned non-list payload: {type(page).__name__}")
+        rows.extend(page)
+        if len(page) < 1000:
+            break
+        offset += 1000
+    aliases = {str(r["old_id"]): str(r["new_id"]) for r in rows if r.get("old_id") and r.get("new_id")}
+    print(f"Alias export: {len(aliases)} renamed ids")
+    return aliases
 
 
 def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> tuple[list[dict[str, str]], str | None]:
@@ -885,10 +921,15 @@ def main() -> None:
     vacancies = [status_row(r) for r in vacancies]
     filters = build_filters(vacancies)
     stats = build_stats(vacancies)
+    # Renamed-id map (migration 0027): old -> current public Vacancy_ID.
+    # An empty map is a valid state (no renames / 0027 not applied yet);
+    # the client treats it as identity resolution, so it never blocks a
+    # snapshot build.
+    aliases = {"schema": 1, "aliases": fetch_vacancy_id_aliases(url, key)}
     meta = build_meta(vacancies, filters, stats, source="supabase_verified_snapshot", vacancies_updated_at=updated)
     manifest = publish(vacancies, DATA_DIR, updated,
                        allow_large_change=os.getenv("ALLOW_LARGE_SNAPSHOT_CHANGE") == "true",
-                       metadata=meta, extras={OUTPUT_FILTERS: filters, OUTPUT_STATS: stats})
+                       metadata=meta, extras={OUTPUT_FILTERS: filters, OUTPUT_STATS: stats, OUTPUT_ALIAS: aliases})
     # Feed generation is a pure local operation; it never gates the manifest.
     OUTPUT_FEED.write_text(build_feed(vacancies), encoding="utf-8")
     print(f"Published snapshot {manifest['version']}: {len(vacancies)} records; {date_fixes} date fixes")

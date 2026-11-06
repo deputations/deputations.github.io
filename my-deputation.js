@@ -143,6 +143,16 @@
       .then(data => {
         vacancies = Array.isArray(data) ? data : [];
         vacancyById = new Map(vacancies.map(v => [String(v.Vacancy_ID), v]));
+        // 0027 renamed the intake app's "AUTO-" ids; stored bookmarks/tracker
+        // entries may still hold the pre-rename form. Index each old alias
+        // key to the row it now points at, so a lookup by either form works.
+        try {
+          const aliases = (window.PublicVacancies && window.PublicVacancies.aliases) ? window.PublicVacancies.aliases() : {};
+          Object.entries(aliases).forEach(function ([oldId, newId]) {
+            const row = vacancyById.get(String(newId));
+            if (row) vacancyById.set(String(oldId), row);
+          });
+        } catch (_) { /* alias map not loaded yet — current-id lookup only */ }
       })
       .catch(err => { console.error('vacancies load failed', err); vacancies = []; });
   }
