@@ -31,6 +31,8 @@ counter_convention:
   own state-by-state drawing waits and plays once the tour closes (or at once if
   the visitor is busy or the tour can't load). `india-map-view.js` waits for the
   loader's `deptour:release`; the loader tag carries `data-tour-hold`.
+- The busy check now runs one task after the tour has downloaded, so taps queued
+  behind a slow phone's freeze still count and the tour doesn't open over them.
 - The tour footer says "Shows on first visit only · replay via How this works"
   ("First visit only" on phones). Tour assets move to `?v=7`.
 

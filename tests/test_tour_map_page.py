@@ -233,6 +233,13 @@ TIMES = """(() => { const t0 = performance.now(); window.__t = {};
 })();"""
 
 
+# A visitor typing from the moment the page opens: a key on `load` (the
+# loader is listening by then) and every 300 ms after, for 30 s.
+TYPING = """(() => { const key = () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' }));
+  window.addEventListener('load', key);
+  const id = setInterval(key, 300); setTimeout(() => clearInterval(id), 30000); })();"""
+
+
 def test_map_tour_plays_first_then_the_map_draws(page: Page, base_url: str):
     page.add_init_script(REAL_VISIT)
     page.add_init_script(TIMES)
@@ -257,15 +264,34 @@ def test_busy_visitor_still_gets_the_map(page: Page, base_url: str):
     page.add_init_script(REAL_VISIT)
     page.add_init_script(TIMES + """
       document.addEventListener('deptour:release', () => { if (window.__t.released == null) window.__t.released = 1; });""")
-    page.add_init_script("""(() => { const id = setInterval(() =>
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' })), 400);
-      setTimeout(() => clearInterval(id), 30000); })();""")
+    page.add_init_script(TYPING)
     page.route("**/india-map-view.js*", lambda r: r.fulfill(body="", content_type="application/javascript"))
     page.goto(f"{base_url}/india-map.html")
-    page.wait_for_function("() => window.__t.released != null", polling=200, timeout=30000)
+    page.wait_for_function("() => window.__t.released != null || window.__t.open != null",
+                           polling=200, timeout=30000)
     assert page.evaluate("window.__t.open") is None                        # no tour over a busy visitor
     assert page.evaluate("document.documentElement.hasAttribute('data-tour-pending')") is False
     assert page.evaluate("getComputedStyle(document.getElementById('mapSvgWrap')).visibility") == "visible"
+
+
+def test_typing_through_a_slow_moment_still_counts_as_busy(page: Page, base_url: str):
+    """A slow phone (or CI box) can freeze for a few seconds while the tour's
+    last script runs; the visitor's keys queue up behind that freeze. The
+    loader must hear them before deciding, not judge the visitor idle."""
+    page.add_init_script(REAL_VISIT)
+    page.add_init_script(TIMES + """
+      document.addEventListener('deptour:release', () => { if (window.__t.released == null) window.__t.released = 1; });""")
+    page.add_init_script(TYPING)
+    page.route("**/india-map-view.js*", lambda r: r.fulfill(body="", content_type="application/javascript"))
+
+    def slow(route):
+        body = route.fetch().text() + "\n;(() => { const e = Date.now() + 3000; while (Date.now() < e); })();"
+        route.fulfill(body=body, content_type="application/javascript")
+    page.route("**/tour/scenes/map-page.js*", slow)
+    page.goto(f"{base_url}/india-map.html")
+    page.wait_for_function("() => window.__t.released != null || window.__t.open != null",
+                           polling=200, timeout=30000)
+    assert page.evaluate("window.__t.open") is None, "tour opened over a visitor who was typing"
 
 
 def test_map_autoplay_still_starts_if_the_page_never_finishes(page: Page, base_url: str):

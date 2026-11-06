@@ -252,7 +252,10 @@
     whenSettled(function () {
       // Decide once the tour is actually ready to show: someone who started
       // tapping while it downloaded is busy then, and gets the page instead.
-      loadAssets(KEY).then(start, function () { stop(); release(); });
+      // The first look waits one task: on a slow phone the last script can
+      // freeze the page for seconds, and taps made meanwhile are queued
+      // behind it; they must count before the visitor is judged idle.
+      loadAssets(KEY).then(function () { setTimeout(start, 50); }, function () { stop(); release(); });
     });
     function start() {
       var giveUp = Date.now() + BUSY_GIVE_UP;

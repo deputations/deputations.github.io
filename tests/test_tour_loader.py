@@ -257,7 +257,8 @@ def _no_tour_no_bubble(page: Page) -> None:
     page.wait_for_timeout(3500)
     assert page.locator(".dt-overlay").count() == 0
     assert page.locator(".dt-replay-tip").count() == 0
-    expect(page.locator(".dt-replay")).not_to_have_class(re.compile(r"\bis-nudge\b"))
+    # (the button itself may already be gone: it lives 10 s, and a loaded box gets there)
+    assert page.locator(".dt-replay.is-nudge").count() == 0
 
 
 def test_skipped_visitors_get_no_bubble(page: Page, base_url: str):
