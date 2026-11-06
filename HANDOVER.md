@@ -7472,3 +7472,14 @@ focus:          map tour before the map's draw-in; "first visit only" tag
 - Loader: `hold()` / `release()` (data-tour-hold). india-map-view.js `tourReleased()` awaited before the first render, so the page's `history.replaceState` runs after the tour's Back step (no history race).
 - Phone footer is tight: logo + Demo tag + "First visit only" + "Don't show tours again" on one row at 390 px (test `test_first_visit_only_tag`).
 
+## session shq-2026-11-06-tour-home-first
+```
+branch:         feature/tour-home-first
+focus:          Home tour before the page; slow fade; "How this works" on-screen time
+```
+- index.html `<head>`: BEGIN/END `tour-early-hold` (inline style + script) mirrors the loader's auto-play rules and sets `html[data-tour-pending="page"]` before first paint. The loader (tag `data-tour-hold="page"`) is authoritative: `release()` if it won't play; the head script itself releases on `load` if `window.DepTourLoader` never appeared.
+- Page start-up waits for `deptour:release`: site-widgets.js `afterTour()` (typewriter, countUp), home-flourish.js sheen, hero-wave.js render loop.
+- Engine `close()`: fade `CLOSE_FADE` 1.2 s × current overlay opacity (`link` stays 0.3 s).
+- Replay button: 200 ms ticker counts on-screen time to `BUTTON_LIFE`; `place()` lifts it above `.sw-footer` and any `[data-tour-keepclear]` (map zoom buttons) that is on screen *under* it, via `--dt-lift` (hides only if the lift is over half the screen).
+- Asset versions: tour `?v=8`, site-widgets.js `?v=35`, hero-wave.js `?v=4`, home-flourish.js `?v=3`.
+- Tests: `tests/test_tour_home_hold.py`. Held-page checks wait inside the page (`_shown`): Playwright polling starves on the busy Home page under `-n 3`.

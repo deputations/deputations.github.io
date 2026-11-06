@@ -709,6 +709,7 @@
   }
 
   /* ---------- closing ---------- */
+  var CLOSE_FADE = 1.2;                     // seconds, from a fully shown tour
   function close(reason) {
     if (!S || S.closing) return;
     var sess = S;
@@ -757,8 +758,14 @@
     }
     try {
       if (sess.overlay && window.gsap) {
-        gsap.to(sess.overlay, { opacity: 0, duration: 0.3, ease: 'power1.out', onComplete: done });
-        setTimeout(done, 800);                 // safety net if the ticker is throttled
+        // Owner, 2026-11-06: the tour fades away slowly (~1.2 s from full), then
+        // the page comes in. Leaving through a link stays quick. A finale that
+        // has already faded part-way only finishes its fade.
+        var op = parseFloat(getComputedStyle(sess.overlay).opacity);
+        if (!(op >= 0)) op = 1;
+        var dur = reason === 'link' ? 0.3 : Math.max(0.15, CLOSE_FADE * op);
+        gsap.to(sess.overlay, { opacity: 0, duration: dur, ease: 'power1.inOut', onComplete: done });
+        setTimeout(done, dur * 1000 + 600);    // safety net if the ticker is throttled
       } else { done(); }
     } catch (e) { done(); }
   }
