@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import re
 
+import pytest
+
 from playwright.sync_api import Page, expect
 
 from tests.tour_helpers import close_and_settle, no_hero_wave, seen  # noqa: F401
@@ -655,3 +657,29 @@ def test_leaving_the_finale_removes_the_ending(page: Page, base_url: str):
     assert page.locator(".dt-signoff").count() == 0
     page.wait_for_timeout(500)
     assert _g(page, ".dt-mark")["o"] > 0.9
+
+
+# ---- owner, 2026-11-06: say that the tour shows on the first visit only ----
+
+WIDE_FONT = ("document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style');"
+             " s.textContent = '.dt-overlay, .dt-overlay * { font-family: \"DejaVu Sans\", sans-serif !important; }';"
+             " document.head.appendChild(s); });")
+
+
+@pytest.mark.parametrize("font", ["site", "dejavu"])     # CI renders the fallback DejaVu Sans
+def test_first_visit_only_tag(page: Page, base_url: str, font: str):
+    if font == "dejavu":
+        page.add_init_script(WIDE_FONT)
+    for w, h, text in [(1440, 900, "Shows on first visit only · replay via How this works"), (390, 844, "First visit only")]:
+        page.set_viewport_size({"width": w, "height": h})
+        _open_home(page, base_url)
+        _scene_end(page, 1)
+        tag = _g(page, ".dt-first")
+        assert tag and tag["o"] > 0.9 and tag["l"] >= 0 and tag["r"] <= w and tag["b"] <= h, (w, tag)
+        assert page.evaluate("document.querySelector('.dt-first').innerText.trim()") == text
+        for other in (".dt-badge", ".dt-off"):
+            o = _g(page, other)
+            assert tag["r"] <= o["l"] + 1 or tag["l"] >= o["r"] - 1 or tag["b"] <= o["t"] + 1 or tag["t"] >= o["b"] - 1, (w, other)
+        bd, off = _g(page, ".dt-badge"), _g(page, ".dt-off")
+        assert abs((bd["t"] + bd["b"]) / 2 - (off["t"] + off["b"]) / 2) <= 6, (w, bd, off)   # no extra footer row
+        close_and_settle(page)

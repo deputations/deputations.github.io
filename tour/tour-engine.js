@@ -199,6 +199,9 @@
     var foot = S.footEl = h('div', 'dt-foot', null, chrome);
     S.footLeft = h('span', 'dt-foot-l', null, foot);
     h('span', 'dt-badge', 'Demo · sample data', S.footLeft);
+    // owner, 2026-11-06: say that the tour only plays on a first visit
+    h('span', 'dt-first', '<span class="dt-first-l">Shows on first visit only · replay via How this works</span>' +
+      '<span class="dt-first-s">First visit only</span>', S.footLeft);
     // V² logo on every step: in the free band left of the stage, or (phones) beside the Demo tag
     S.markEl = h('div', 'dt-mark', '<img src="' + LOGO + '" alt="" decoding="async">', chrome);
     S.markEl.setAttribute('aria-hidden', 'true');
@@ -210,6 +213,7 @@
       d.addEventListener('click', function () { goTo(i); });
       return d;
     });
+    h('span', 'dt-foot-br', null, foot);                 // phones: ends the dots row
     S.offBtn = button('dt-off', "Don't show tours again", foot);
     S.progressBar = h('i', null, null, h('div', 'dt-progress', null, chrome));
 

@@ -223,22 +223,75 @@ def test_map_autoplays_on_a_plain_visit_but_not_a_shared_link(page: Page, base_u
     page.wait_for_selector(".dt-overlay", state="attached", timeout=30000)
 
 
-def test_map_autoplay_waits_for_the_page_to_finish_drawing(page: Page, base_url: str):
-    """The page's own map (stubbed here) signals map:drawInComplete after its
-    intro; the tour holds until then, so it never covers that intro or races
-    the page's history.replaceState."""
+# ---- owner, 2026-11-06: first visit = tour first, then the map draws state by state ----
+
+TIMES = """(() => { const t0 = performance.now(); window.__t = {};
+  const at = k => () => { if (window.__t[k] == null) window.__t[k] = Math.round(performance.now() - t0); };
+  document.addEventListener('map:drawInComplete', at('drawn'));
+  document.addEventListener('deptour:open', at('open'));
+  document.addEventListener('deptour:close', at('closed'));
+})();"""
+
+
+# A visitor typing from the moment the page opens: a key on `load` (the
+# loader is listening by then) and every 300 ms after, for 30 s.
+TYPING = """(() => { const key = () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' }));
+  window.addEventListener('load', key);
+  const id = setInterval(key, 300); setTimeout(() => clearInterval(id), 30000); })();"""
+
+
+def test_map_tour_plays_first_then_the_map_draws(page: Page, base_url: str):
     page.add_init_script(REAL_VISIT)
-    page.route("**/india-map-view.js*", lambda r: r.fulfill(body="", content_type="application/javascript"))
-    asked = []
-    page.on("request", lambda r: asked.append(urlparse(r.url).path))
+    page.add_init_script(TIMES)
     page.goto(f"{base_url}/india-map.html")
-    page.wait_for_load_state("load", timeout=30000)
-    page.wait_for_function("() => !!window.DepTourLoader", polling=100, timeout=30000)
-    page.wait_for_timeout(3000)
-    assert page.locator(".dt-overlay").count() == 0                # still waiting for the page
-    assert "/tour/scenes/map-page.js" in asked, asked              # …but the tour files are already here
-    page.evaluate("document.dispatchEvent(new CustomEvent('map:drawInComplete'))")
-    page.wait_for_selector(".dt-overlay", state="attached", timeout=6000)   # so it opens right away
+    page.wait_for_selector(".dt-overlay", state="attached", timeout=30000)
+    page.wait_for_timeout(1500)
+    assert page.evaluate("window.__t.drawn") is None                       # the map waits for the tour
+    assert page.evaluate("getComputedStyle(document.getElementById('mapSvgWrap')).visibility") == "hidden"
+    page.evaluate("DepTour.close()")
+    page.wait_for_function("() => window.__t.drawn != null", polling=200, timeout=45000)
+    t = page.evaluate("window.__t")
+    assert t["drawn"] > t["closed"], t                                      # …then draws state by state
+    assert page.evaluate("getComputedStyle(document.getElementById('mapSvgWrap')).visibility") == "visible"
+    assert page.evaluate("!(history.state && history.state.dtTour)")
+
+
+def test_busy_visitor_still_gets_the_map(page: Page, base_url: str):
+    """Someone tapping as the page opens is not kept waiting behind a hidden map."""
+    # The heavy map script is swapped out so the simulated typing is never
+    # starved by a busy main thread (on slow CI a long render task made the
+    # "visitor" look idle); this tests the loader's decision, not the drawing.
+    page.add_init_script(REAL_VISIT)
+    page.add_init_script(TIMES + """
+      document.addEventListener('deptour:release', () => { if (window.__t.released == null) window.__t.released = 1; });""")
+    page.add_init_script(TYPING)
+    page.route("**/india-map-view.js*", lambda r: r.fulfill(body="", content_type="application/javascript"))
+    page.goto(f"{base_url}/india-map.html")
+    page.wait_for_function("() => window.__t.released != null || window.__t.open != null",
+                           polling=200, timeout=30000)
+    assert page.evaluate("window.__t.open") is None                        # no tour over a busy visitor
+    assert page.evaluate("document.documentElement.hasAttribute('data-tour-pending')") is False
+    assert page.evaluate("getComputedStyle(document.getElementById('mapSvgWrap')).visibility") == "visible"
+
+
+def test_typing_through_a_slow_moment_still_counts_as_busy(page: Page, base_url: str):
+    """A slow phone (or CI box) can freeze for a few seconds while the tour's
+    last script runs; the visitor's keys queue up behind that freeze. The
+    loader must hear them before deciding, not judge the visitor idle."""
+    page.add_init_script(REAL_VISIT)
+    page.add_init_script(TIMES + """
+      document.addEventListener('deptour:release', () => { if (window.__t.released == null) window.__t.released = 1; });""")
+    page.add_init_script(TYPING)
+    page.route("**/india-map-view.js*", lambda r: r.fulfill(body="", content_type="application/javascript"))
+
+    def slow(route):
+        body = route.fetch().text() + "\n;(() => { const e = Date.now() + 3000; while (Date.now() < e); })();"
+        route.fulfill(body=body, content_type="application/javascript")
+    page.route("**/tour/scenes/map-page.js*", slow)
+    page.goto(f"{base_url}/india-map.html")
+    page.wait_for_function("() => window.__t.released != null || window.__t.open != null",
+                           polling=200, timeout=30000)
+    assert page.evaluate("window.__t.open") is None, "tour opened over a visitor who was typing"
 
 
 def test_map_autoplay_still_starts_if_the_page_never_finishes(page: Page, base_url: str):
