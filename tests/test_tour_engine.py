@@ -576,10 +576,14 @@ def test_replay_right_after_closing_stays_open(page: Page, base_url: str):
       const t = setInterval(() => {            // replay the moment the first tour is gone
         if (DepTour.isOpen()) return;
         clearInterval(t);
+        window.__replayAt = performance.now();
         DepTour.play('t').then(r => { window.__res2 = r; });
       }, 5);
     }""")
-    page.wait_for_timeout(1500)
+    # The first tour fades out (~1.2 s) before the replay starts: wait for the replay
+    # itself, then as long as the old fixed wait gave it (0.3 s), then press Back.
+    page.wait_for_function("() => window.__replayAt != null", polling=50, timeout=10000)
+    page.evaluate("() => new Promise(r => setTimeout(r, Math.max(0, window.__replayAt + 300 - performance.now())))")
     assert page.evaluate("DepTour.isOpen()") is True
     page.go_back()
     page.wait_for_function("() => window.__res2 === 'skip'", polling=100, timeout=10000)
