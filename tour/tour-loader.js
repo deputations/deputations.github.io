@@ -250,6 +250,11 @@
     if (document.readyState === 'complete') preload();
     else window.addEventListener('load', preload, { once: true });
     whenSettled(function () {
+      // Decide once the tour is actually ready to show: someone who started
+      // tapping while it downloaded is busy then, and gets the page instead.
+      loadAssets(KEY).then(start, function () { stop(); release(); });
+    });
+    function start() {
       var giveUp = Date.now() + BUSY_GIVE_UP;
       (function check() {
         var quiet = Date.now() - lastInput;
@@ -262,7 +267,7 @@
         if (Date.now() > giveUp) return stop();
         setTimeout(check, IDLE_MS - quiet + 50);
       })();
-    });
+    }
   }
 
   window.DepTourLoader = {

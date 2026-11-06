@@ -213,6 +213,7 @@
       d.addEventListener('click', function () { goTo(i); });
       return d;
     });
+    h('span', 'dt-foot-br', null, foot);                 // phones: ends the dots row
     S.offBtn = button('dt-off', "Don't show tours again", foot);
     S.progressBar = h('i', null, null, h('div', 'dt-progress', null, chrome));
 

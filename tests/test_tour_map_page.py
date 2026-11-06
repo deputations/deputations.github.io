@@ -251,14 +251,21 @@ def test_map_tour_plays_first_then_the_map_draws(page: Page, base_url: str):
 
 def test_busy_visitor_still_gets_the_map(page: Page, base_url: str):
     """Someone tapping as the page opens is not kept waiting behind a hidden map."""
+    # The heavy map script is swapped out so the simulated typing is never
+    # starved by a busy main thread (on slow CI a long render task made the
+    # "visitor" look idle); this tests the loader's decision, not the drawing.
     page.add_init_script(REAL_VISIT)
-    page.add_init_script(TIMES)
+    page.add_init_script(TIMES + """
+      document.addEventListener('deptour:release', () => { if (window.__t.released == null) window.__t.released = 1; });""")
     page.add_init_script("""(() => { const id = setInterval(() =>
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' })), 400);
       setTimeout(() => clearInterval(id), 30000); })();""")
+    page.route("**/india-map-view.js*", lambda r: r.fulfill(body="", content_type="application/javascript"))
     page.goto(f"{base_url}/india-map.html")
-    page.wait_for_function("() => window.__t.drawn != null", polling=200, timeout=45000)
-    assert page.evaluate("window.__t.open") is None
+    page.wait_for_function("() => window.__t.released != null", polling=200, timeout=30000)
+    assert page.evaluate("window.__t.open") is None                        # no tour over a busy visitor
+    assert page.evaluate("document.documentElement.hasAttribute('data-tour-pending')") is False
+    assert page.evaluate("getComputedStyle(document.getElementById('mapSvgWrap')).visibility") == "visible"
 
 
 def test_map_autoplay_still_starts_if_the_page_never_finishes(page: Page, base_url: str):
