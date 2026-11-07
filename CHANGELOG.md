@@ -26,6 +26,12 @@ counter_convention:
 
 ## [Unreleased]
 
+### Changed - the tour animates on every computer (2026-11-06)
+- A PC with Windows animation effects off (Settings → Ease of Access → Display →
+  "Show animations in Windows") showed only the step cards, in every browser.
+  The tour now plays its animation there too; the step cards remain only for a
+  window too small to show it. Tour assets move to `?v=9`.
+
 ### Changed - Home tour before the page; slow fade; "How this works" stays (2026-11-06)
 - First visit to Home: only the background shows until the tour opens; when the
   tour is over the page fades in and its own animations play then (title typing,
