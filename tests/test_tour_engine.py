@@ -176,11 +176,22 @@ def test_tall_layout_at_390(page: Page, base_url: str):
     assert page.evaluate("DepTour.state().layout") == "tall"
 
 
-def test_steps_mode_reduced_motion(page: Page, base_url: str):
+def test_reduced_motion_still_plays_the_animation(page: Page, base_url: str):
+    """Owner, 2026-11-06: office PCs often have Windows animation effects off
+    (the browser then reports reduced motion); the tour animates anyway."""
     page.emulate_media(reduced_motion="reduce")
     open_engine(page, base_url)
     register_probe_tour(page)
     start(page)
+    assert page.evaluate("DepTour.state().mode") == "cinematic"
+    expect(page.locator(".dt-stage")).to_have_count(1)
+    assert page.locator(".dt-steps").count() == 0
+
+
+def test_steps_mode(page: Page, base_url: str):
+    open_engine(page, base_url)
+    register_probe_tour(page)
+    start(page, mode="steps")
     assert page.evaluate("DepTour.state().mode") == "steps"
     expect(page.locator(".dt-steps h3")).to_have_text("Alpha")
     expect(page.locator(".dt-steps p")).to_have_text("Summary of Alpha")
@@ -388,10 +399,9 @@ def test_layout_is_chosen_by_readable_scale(page: Page, base_url: str):
 
 
 def test_steps_view_ends_on_the_cta(page: Page, base_url: str):
-    page.emulate_media(reduced_motion="reduce")
     open_engine(page, base_url)
     register_probe_tour(page, cta="Go")
-    start(page)
+    start(page, mode="steps")
     page.locator(".dt-next").click()
     expect(page.locator(".dt-next")).to_have_text("Go")
     page.locator(".dt-next").click()
@@ -566,10 +576,14 @@ def test_replay_right_after_closing_stays_open(page: Page, base_url: str):
       const t = setInterval(() => {            // replay the moment the first tour is gone
         if (DepTour.isOpen()) return;
         clearInterval(t);
+        window.__replayAt = performance.now();
         DepTour.play('t').then(r => { window.__res2 = r; });
       }, 5);
     }""")
-    page.wait_for_timeout(1500)
+    # The first tour fades out (~1.2 s) before the replay starts: wait for the replay
+    # itself, then as long as the old fixed wait gave it (0.3 s), then press Back.
+    page.wait_for_function("() => window.__replayAt != null", polling=50, timeout=10000)
+    page.evaluate("() => new Promise(r => setTimeout(r, Math.max(0, window.__replayAt + 300 - performance.now())))")
     assert page.evaluate("DepTour.isOpen()") is True
     page.go_back()
     page.wait_for_function("() => window.__res2 === 'skip'", polling=100, timeout=10000)
