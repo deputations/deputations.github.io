@@ -401,7 +401,10 @@
   }
   function placeWordmark() {
     const container = document.getElementById('map-wordmark');
-    const spans = container ? Array.from(container.querySelectorAll('span')) : [];
+    // Only the 4 top-level segments — not the .wm-ch characters the
+    // typewriter nests inside them (a re-run after the reveal would
+    // otherwise measure the characters too)
+    const spans = container ? Array.from(container.querySelectorAll(':scope > span')) : [];
     if (!spans.length) return;
     const svg = document.getElementById('map-svg');
     const wrap = document.getElementById('mapSvgWrap');
@@ -462,26 +465,46 @@
     container.style.paddingBottom = '0px';
   }
 
-  // ----- Wordmark reveal: www. → All → Deputations → .com, a beat between -----
-  // After the map's intro settles (map:drawInComplete), each segment fades
-  // in one at a time, slow and unhurried. Reduced motion gets it all at
-  // once.
-  const WM_REVEAL = { start: 600, step: 1500, fade: 1400 };
+  // ----- Wordmark reveal: typewriter, www. → All → Deputations → .com -----
+  // After the map's intro settles (map:drawInComplete), each segment is
+  // printed character by character, the next segment starting after a
+  // beat — a slow typewriter across the whole line. The CSS hides the
+  // line until .wm-typing is set, so nothing flashes; every character
+  // fades in on its own delay. Reduced motion gets the entire line at
+  // once (.wm-shown).
+  const WM_REVEAL = { start: 400, chStep: 140, gap: 1100 };
   let wmRevealed = false;
   function revealWordmark() {
     if (wmRevealed) return;
     wmRevealed = true;
     const container = document.getElementById('map-wordmark');
-    const spans = container ? Array.from(container.querySelectorAll('span')) : [];
-    if (!spans.length) return;
+    const parts = container ? Array.from(container.querySelectorAll(':scope > span')) : [];
+    if (!parts.length) return;
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       container.classList.add('wm-shown');
       return;
     }
-    spans.forEach((s, i) => {
-      s.style.transition = `opacity ${WM_REVEAL.fade}ms ease`;
-      setTimeout(() => { s.style.opacity = '1'; }, WM_REVEAL.start + i * WM_REVEAL.step);
+    let t = WM_REVEAL.start;
+    parts.forEach(part => {
+      const chars = part.textContent;
+      part.textContent = '';
+      [...chars].forEach(ch => {
+        const c = document.createElement('span');
+        c.className = 'wm-ch';
+        c.textContent = ch;
+        // The .wm-typing class flips every .wm-ch to opacity 1 and these
+        // per-character delays stagger that fade into the typewriter cadence
+        c.style.transitionDelay = (t / 1000).toFixed(2) + 's';
+        part.appendChild(c);
+        t += WM_REVEAL.chStep;
+      });
+      t += WM_REVEAL.gap; // the beat between one word and the next
     });
+    // Two frames: first paints .wm-typing (chars at opacity 0), the
+    // second flips .wm-go so each char's transition runs on its own delay
+    container.classList.add('wm-typing');
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      container.classList.add('wm-go')));
   }
   // ----- Tour's "How this works" pill: above the + - zoom controls -----
   // tour-loader.js injects it at the viewport's bottom-right (over the

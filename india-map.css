@@ -87,10 +87,18 @@ body.map-entry {
     0 0.022em 0 #F1E9DB,
     0 0.054em 0 #E6DCC8,
     0 0.11em 0.24em rgba(29, 36, 51, 0.18);
-  /* Hidden until revealWordmark() lights the segments in sequence —
-     www. → All → Deputations.com — with a beat between each */
+  /* Hidden until revealWordmark() types the line in —
+     www. → All → Deputations → .com, character by character, with a beat
+     between one word and the next */
   opacity: 0;
 }
+/* Typing: .wm-typing makes the 4 segments visible while each nested
+   letter (.wm-ch, added by revealWordmark()) sits at opacity 0 with a 120ms
+   fade armed on its own delay; .wm-go then flips every letter to 1, and
+   those staggered delays make it read as a typewriter */
+#map-wordmark.wm-typing > span { opacity: 1; }
+#map-wordmark.wm-typing .wm-ch { opacity: 0; transition: opacity 120ms linear; }
+#map-wordmark.wm-go .wm-ch { opacity: 1; }
 /* Reduced motion: no sequence, the whole line is simply there (or shown
    together by the JS .wm-shown path) */
 @media (prefers-reduced-motion: reduce) {
