@@ -183,7 +183,10 @@ body.map-active .app-container { overflow: hidden; }
 .map-tooltip-meta:empty { display: none; }
 
 /* ----- Controls: segmented filter + zoom, floating at the map's foot ----- */
-.map-controls { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; justify-content: flex-end; align-items: flex-end; padding: 14px 20px; gap: 12px; pointer-events: none; }
+/* Hovered bottom edge: the "About AD.com" corner chip (right) and the
+   wordmark's bottom clearance both live in the footer row — the controls
+   sit above them instead of overlapping */
+.map-controls { position: absolute; left: 0; right: 0; bottom: 64px; z-index: 3; display: flex; justify-content: flex-end; align-items: flex-end; padding: 14px 20px; gap: 12px; pointer-events: none; }
 .map-controls > * { pointer-events: auto; }
 .map-zoom-controls { display: flex; gap: 4px; }
 .map-zoom-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--map-hairline); background: var(--map-surface); color: var(--map-text-2); font-size: 15px; cursor: pointer; transition: background var(--map-dur) var(--map-ease), color var(--map-dur) var(--map-ease); display: flex; align-items: center; justify-content: center; font-family: var(--map-font); }

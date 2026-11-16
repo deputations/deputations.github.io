@@ -434,27 +434,42 @@
     // mock) — it never needs a cap: the span is already inside the map area
     const size = (target * 100) / w100;
     spans.forEach(s => { s.style.fontSize = size.toFixed(2) + 'px'; });
-    const L = w100 * size / 100;                  // the line's width at this size
     // The container is inset:0 in the map area (pinned by 100dvh, so no
     // scroll offset): position the row with its padding instead of the
     // spans — the flex fallback stays the pre-JS centred look
     const cr = container.getBoundingClientRect();
-    const tailVy = box.top + ay;
     const tailVx = box.left + ax;
-    const lineH = spans[spans.length - 1].getBoundingClientRect().height;
+    // The footer on this page is a small bottom-right corner chip, so the
+    // gap's bottom reference is the chip's top edge (capped at the screen
+    // edge) — not the full-width footer line the other pages have
     const foot = document.querySelector('.sw-footer');
-    const footTop = foot ? foot.getBoundingClientRect().top : window.innerHeight;
+    const hi = Math.min(foot ? foot.getBoundingClientRect().top : window.innerHeight, window.innerHeight);
     // Vertically centre the line in the gap between the map's lowest point
-    // (the wrap's bottom edge) and the footer text — the "not crammed"
-    // look. When the gap is smaller than the line, it overlaps both sides
-    // symmetrically instead of hugging the map. Position the container
-    // itself (not via padding): a padding-bottom clamps at 0, which would
-    // drag the line back down to the container's bottom edge
+    // and the footer chip. Position the container itself (not via padding):
+    // a padding-bottom clamps at 0, which would drag the line back down to
+    // the container's bottom edge
     const mapBottom = box.top + box.height;
     // The container's containing block is #map-view: a stable reference
     // across re-runs (the container's own box moves with the placement)
     const mvTop = document.getElementById('map-view').getBoundingClientRect().top;
-    const top = Math.max(mvTop, (mapBottom + footTop) / 2 - lineH / 2);
+    // When the gap is thinner than the line, shrink the whole line (the
+    // tail-centre / islands-right-end anchors keep their share) so nothing
+    // clips at the screen edge
+    let lineH = spans[spans.length - 1].getBoundingClientRect().height;
+    const slack = 24;
+    const gap = hi - mapBottom;
+    if (gap > 0 && lineH > gap + slack) {
+      const k = (gap + slack) / lineH;
+      spans.forEach(s => { s.style.fontSize = (parseFloat(s.style.fontSize) * k).toFixed(2) + 'px'; });
+      lineH = spans[spans.length - 1].getBoundingClientRect().height;
+    }
+    const L = spans.reduce((a, s) => a + s.offsetWidth, 0);  // the line's width at this size
+    // Centre in the gap; when the gap is negative (short viewports: the map's
+    // bottom overlaps the footer chip) the line instead sits just above the
+    // chip rather than drifting off the screen edge
+    let top = (mapBottom + hi) / 2 - lineH / 2;
+    if (top + lineH > hi) top = hi - lineH;
+    top = Math.max(mvTop, top);
     container.style.justifyContent = 'flex-start';
     container.style.alignItems = 'flex-start';
     container.style.left = '0px';
