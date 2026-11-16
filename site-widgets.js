@@ -476,11 +476,15 @@
     var foot = document.createElement("div");
     foot.className = "sw-footer";
     foot.innerHTML =
-      "<span>© alldeputations.com</span>" +
-      "<span class='sep'>·</span>" +
+      (document.body.classList.contains("map-entry")
+        ? ""
+        : "<span>© alldeputations.com</span>" +
+          "<span class='sep'>·</span>") +
       "<button type='button' class='disc'>About AD.com</button>" +
-      "<span class='sep'>·</span>" +
-      "<a class='flink' href='" + rootPrefix() + "contact.html'>Contact</a>";
+      (document.body.classList.contains("map-entry")
+        ? ""
+        : "<span class='sep'>·</span>" +
+          "<a class='flink' href='" + rootPrefix() + "contact.html'>Contact</a>");
     document.body.appendChild(foot);
 
     var paras = [

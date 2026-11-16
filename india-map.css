@@ -501,10 +501,13 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
   /* The like / dislike pill floats just under the nav: start the map's overlays below it */
   body.map-entry .map-header { padding-top: 52px; }
 }
+/* The shared footer carries only "About AD.com" on this page; pin it to the
+   bottom-right corner instead of the centred static line on other pages. */
+body.map-entry .sw-footer { position: fixed; left: auto; right: 16px; bottom: 12px; top: auto; margin: 0; justify-content: flex-end; }
 @media (max-width: 640px) {
   /* On phones the visitor count and footer sit in the page flow; keep the map's screen for the map */
   body.map-entry .sw-counter { display: none !important; }
-  body.map-entry .sw-footer { margin: 4px auto 6px; font-size: .68rem; gap: 0 8px; line-height: 1.4; }
+  body.map-entry .sw-footer { font-size: .68rem; }
 }
 
 /* ----- Filter panel (india-map-filters.js): the home page's filters ----- */
