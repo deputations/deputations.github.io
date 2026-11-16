@@ -387,8 +387,10 @@
     // on the two corners), a touch generous so the bevels don't clip
     const size = Math.min((diag * 105) / w, diag * 0.55);
     el.style.fontSize = size.toFixed(2) + 'px';
-    // Angle of the box diagonal, bottom-left to top-right
-    const rot = Math.atan2(box.height, box.width) * 180 / Math.PI;
+    // Angle of the box's bottom-left → top-right diagonal. In CSS a
+    // NEGATIVE rotation runs that way (positive tilts top-left → bottom-right),
+    // hence the minus: the line's left end dips down, its right end climbs up
+    const rot = -Math.atan2(box.height, box.width) * 180 / Math.PI;
     el.style.setProperty('--wm-rot', rot.toFixed(2) + 'deg');
   }
   fitWordmark();
