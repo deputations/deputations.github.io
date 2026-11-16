@@ -44,24 +44,25 @@ body.map-entry {
 }
 
 /* ----- Map wordmark: www.AllDeputations.com, in a large embossed
-   (raised, light-toned) 3D type, set straight across the top of the map
-   BEHIND it. It sits at z-index 1, below the map container (z-index 2);
-   the map's own background is transparent, so the wordmark shows through
-   wherever the states don't cover the screen. Rendered softly (low
-   opacity) so it stays a quiet backdrop. The size follows the display
-   (fitWordmark(): fitted to the screen width, clamped to the box).
+   (raised, light-toned) 3D type, set straight BELOW the map, BEHIND it.
+   It sits at z-index 1, below the map container (z-index 2); the map's
+   own background is transparent, so the wordmark shows through wherever
+   the states don't cover the screen. Rendered softly (low opacity) so it
+   stays a quiet backdrop. placeWordmark() anchors the line to the map:
+   India's tail (the southern tip) at its centre, the Andaman & Nicobar
+   islands (the rightmost point) at its right end, fitted to that span.
    Purely decorative, so it is out of the a11y tree and never intercepts
    pointer events. */
 #map-wordmark {
   position: absolute;
   inset: 0;
   z-index: 1;                          /* behind the map container (z-index 2) */
-  opacity: 0.55;                       /* the soft, transparent backdrop look */
+  opacity: 0.35;                       /* more transparent backdrop look */
   display: flex;
   overflow: hidden;                    /* letters run off the edges, never scroll */
-  align-items: flex-start;
+  align-items: flex-end;               /* pre-JS fallback: below the map */
   justify-content: center;
-  padding-top: 0%;                    /* flush with the map's top edge, as in the mock */
+  padding-bottom: 2%;
   pointer-events: none;
   user-select: none;
   text-align: center;
@@ -71,9 +72,9 @@ body.map-entry {
   white-space: nowrap;
   font-family: "Unbounded", var(--map-font);
   font-weight: 800;
-  /* fitWordmark() sizes this to the diagonal of the map area on every
+  /* placeWordmark() sizes this to the tail→islands span on every
      display; the clamp value is the pre-JS estimate so the first frame
-     is close even before the fit runs */
+     is close even before the placement runs */
   font-size: clamp(14px, 3.2vw, 64px);
   letter-spacing: 0.01em;
   color: #FBF8F1;
@@ -87,6 +88,14 @@ body.map-entry {
     0 0.054em 0 #E6DCC8,
     0 0.11em 0.24em rgba(29, 36, 51, 0.18);
 }
+
+/* ----- Tour's "How this works" pill on this one-screen page -----
+   tour-loader.js injects it fixed at the viewport's bottom-right and fades
+   it out while the footer is on screen; on the map the footer never
+   leaves the screen, so the pill would be invisible forever. The map's
+   own script repositions it just above the + - zoom controls, and this
+   override keeps the footer-hide state from cancelling it. */
+body.map-entry .dt-replay--hidden { opacity: 1; transform: none; pointer-events: auto; }
 
 /* Neutralize home page layout */
 /* The page is exactly one screen: the nav, then the map filling the rest */

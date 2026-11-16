@@ -468,8 +468,6 @@
     foot.innerHTML =
       "<span>© alldeputations.com</span>" +
       "<span class='sep'>·</span>" +
-      "<span class='src'>Unofficial site — verify with the original notification</span>" +
-      "<span class='sep'>·</span>" +
       "<button type='button' class='disc'>About AD.com</button>" +
       "<span class='sep'>·</span>" +
       "<a class='flink' href='" + rootPrefix() + "contact.html'>Contact</a>";

@@ -364,39 +364,123 @@
   function stateColor(abbr) { return STATE_COLORS[abbr] || 'slate'; }
   function stateFill(abbr) { return `var(--map-c-${stateColor(abbr)})`; }
 
-  // ----- Map wordmark: fit www.AllDeputations.com across the screen width -----
-  // The decorative 3D-text line behind the map (#map-wordmark), set
-  // straight (horizontal) near the top of the map area and scaled to span
-  // the display's width. Re-measured when the Unbounded webfont finishes
-  // loading (the fallback has different metrics) and on resize. Purely
-  // visual — never intercepts anything.
-  function fitWordmark() {
+  // ----- Map wordmark: www.AllDeputations.com, straight, below the map -----
+  // The decorative 3D-text line behind the map (#map-wordmark) is anchored
+  // to the map's own geometry: its centre sits on India's tail (the
+  // southernmost tip) and its right end on the Andaman & Nicobar islands —
+  // India's rightmost points — so it reads as the map's baseline. The line
+  // is fitted to the span between those two anchors (capped by the box),
+  // and placed just below the tip so the states paint over its top edge.
+  // Re-measured when the Unbounded webfont finishes loading, on resize, and
+  // after each national render (the projection can change the anchors).
+  const WM_FALLBACK = { tailX: 500, anX: 672, tailY: 770 }; // 1000×800 canvas
+  function wordmarkAnchors() {
+    // National view only: the anchors live in the current projection's
+    // units, which is national only while that view is on screen (a state
+    // view re-projects its districts, so it keeps the last national
+    // placement)
+    if (viewMode !== 'national' || !currentProjection) return WM_FALLBACK;
+    let tailX = WM_FALLBACK.tailX, tailY = -Infinity, anX = -Infinity;
+    // The tail is the MAINLAND's southern tip (Kanyakumari): the island UTs
+    // reach further south than it does and would steal the anchor. The right
+    // end is the Andaman & Nicobar islands — the owner's rightmost point,
+    // not the global max (Arunachal Pradesh's border reaches further east)
+    const isAN = n => /andaman/i.test(n || '');
+    const isIsleUT = n => /andaman|nicobar|lakshadweep/i.test(n || '');
+    ((window._indiaGeoData || {}).features || []).forEach(f => {
+      if (!f.geometry) return;
+      const name = f.properties && f.properties.NAME_1;
+      flattenCoords(f.geometry).forEach(([lon, lat]) => {
+        const [x, y] = project(lon, lat);
+        if (isAN(name) && x > anX) anX = x;   // rightmost point: the AN islands
+        if (!isIsleUT(name) && y > tailY) { tailY = y; tailX = x; }
+      });
+    });
+    if (isFinite(tailY) && isFinite(anX)) return { tailX, anX, tailY };
+    return WM_FALLBACK;
+  }
+  function placeWordmark() {
     const el = document.querySelector('#map-wordmark span');
     if (!el) return;
-    // Fit to the wordmark box's width, falling back to the viewport when the
-    // box measures 0 (the pane is not laid out yet — the ResizeObserver
-    // below re-runs the fit as soon as it is)
-    const box = el.parentElement.getBoundingClientRect();
-    const width = Math.max(box.width, window.innerWidth);
-    if (!width) return;
-    // The line's length at 100px font
+    const svg = document.getElementById('map-svg');
+    const wrap = document.getElementById('mapSvgWrap');
+    if (!svg || !wrap || !wrap.clientWidth) return; // not laid out yet; a later call re-runs
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const box = wrap.getBoundingClientRect();
+    const toPx = ([x, y]) => {
+      const p = svg.createSVGPoint();
+      p.x = x; p.y = y;
+      const s = p.matrixTransform(ctm);
+      return [s.x - box.left, s.y - box.top];
+    };
+    const { tailX, anX, tailY } = wordmarkAnchors();
+    const [ax, ay] = toPx([tailX, tailY]);       // the tail: the line's centre
+    const [bx] = toPx([anX, 0]);                 // the islands: the line's right end
+    // Pre-JS fallback: just under full width (the 80% look), so the first
+    // frame is close even before the anchors are known
     const prevSize = el.style.fontSize;
     el.style.fontSize = '100px';
-    const w = el.offsetWidth;
+    const w100 = el.offsetWidth;
     el.style.fontSize = prevSize;
-    if (!w) return;
-    // Fit the line to well under the full width — the smaller look the owner
-    // asked for — so it reads as a quiet backdrop, not a banner
-    const size = Math.min((width * 80) / w, width * 0.5);
+    if (!w100) return;
+    // Tail is the line's CENTRE, the islands its RIGHT end, so the line's
+    // half-width is the tail→islands distance and its full width is 2× it
+    const target = Math.max(120, 2 * (bx - ax));
+    // The line runs the FULL tail → islands span (the arrow's extent in the
+    // mock) — it never needs a cap: the span is already inside the map area
+    const size = (target * 100) / w100;
     el.style.fontSize = size.toFixed(2) + 'px';
+    const L = w100 * size / 100;                  // the line's width at this size
+    // Placed in viewport terms (the wrap's box is pinned by 100dvh, so no
+    // scroll offset to add). Centre on the tail; hang the line just below the
+    // tip (the map's lowest point), but keep its bottom edge clear of the
+    // footer that sits in-flow under the map — measured from the wrap's own
+    // size, because the footer is injected async by site-widgets.js
+    const tailVy = box.top + ay;
+    const lineH = el.getBoundingClientRect().height;
+    const foot = document.querySelector('.sw-footer');
+    const footTop = foot ? foot.getBoundingClientRect().top : box.top + box.height;
+    // Nudged down (the owner's "a bit more"): the line hangs closer to the
+    // tip when there is room, and runs close to the footer when clamped
+    let top = tailVy + Math.min(14, lineH * 0.25);
+    const maxTop = footTop - 1 - lineH;
+    if (top > maxTop) top = Math.max(tailVy, maxTop);
+    el.style.position = 'fixed';
+    el.style.left = Math.max(0, box.left + ax - L / 2) + 'px';
+    el.style.top = top + 'px';
   }
-  fitWordmark();
-  window.addEventListener('resize', fitWordmark);
-  document.fonts?.ready?.then(fitWordmark);
-  // The box can start 0-sized (hidden preview pane); fit it the moment it
+  // ----- Tour's "How this works" pill: above the + - zoom controls -----
+  // tour-loader.js injects it at the viewport's bottom-right (over the
+  // footer) on every page. On this one-screen map it lives just above the
+  // zoom controls instead; the map-page CSS keeps it out of the footer-hide
+  // state. The tour script is deferred, so poll for the button rather than
+  // assuming it is there at this script's run time.
+  function placeReplayButton() {
+    const btn = document.querySelector('.dt-replay');
+    const zoom = document.querySelector('.map-zoom-controls');
+    if (!btn || !zoom) return;
+    const zt = zoom.getBoundingClientRect().top;
+    btn.style.bottom = Math.max(10, window.innerHeight - zt + 10) + 'px';
+  }
+  {
+    let tries = 0;
+    const arm = () => { placeReplayButton(); if (!document.querySelector('.dt-replay') && ++tries < 40) setTimeout(arm, 300); };
+    arm();
+  }
+  placeWordmark();
+  window.addEventListener('resize', () => { placeWordmark(); placeReplayButton(); });
+  // fonts.ready resolves before the Unbounded webfont (the wordmark's face) is
+  // actually fetched — its metrics differ from the fallback, so wait for the
+  // real face explicitly and re-fit on it
+  document.fonts?.load?.('800 100px "Unbounded"')?.then(() => placeWordmark());
+  // The box can start 0-sized (hidden preview pane); place it the moment it
   // gets a real size instead of waiting for a window resize
   const wmBox = document.getElementById('map-wordmark');
-  if (wmBox && 'ResizeObserver' in window) new ResizeObserver(fitWordmark).observe(wmBox);
+  if (wmBox && 'ResizeObserver' in window) new ResizeObserver(placeWordmark).observe(wmBox);
+  // The projection changes when the national view re-renders (a filter
+  // change) — re-anchor to the new map
+  document.addEventListener('map:drawInComplete', placeWordmark);
 
   // ----- Build / clear SVG -----
   function buildSvg() {
