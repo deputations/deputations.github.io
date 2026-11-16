@@ -443,33 +443,25 @@
     // gap's bottom reference is the chip's top edge (capped at the screen
     // edge) — not the full-width footer line the other pages have
     const foot = document.querySelector('.sw-footer');
-    const hi = Math.min(foot ? foot.getBoundingClientRect().top : window.innerHeight, window.innerHeight);
-    // Vertically centre the line in the gap between the map's lowest point
-    // and the footer chip. Position the container itself (not via padding):
-    // a padding-bottom clamps at 0, which would drag the line back down to
-    // the container's bottom edge
-    const mapBottom = box.top + box.height;
+    const fr = foot ? foot.getBoundingClientRect() : null;
+    const hi = Math.min(fr ? fr.top : window.innerHeight, window.innerHeight);
+    const lo = fr ? fr.bottom : window.innerHeight;  // the chip's row: top→bottom
+    // Position the container itself (not via padding): a padding-bottom
+    // clamps at 0, which would drag the line back down to the container's
+    // bottom edge
     // The container's containing block is #map-view: a stable reference
     // across re-runs (the container's own box moves with the placement)
     const mvTop = document.getElementById('map-view').getBoundingClientRect().top;
-    // When the gap is thinner than the line, shrink the whole line (the
-    // tail-centre / islands-right-end anchors keep their share) so nothing
-    // clips at the screen edge
+    // No shrinking here: the line is meant to overlap the map's lower part
+    // (the SVG, z-2, stays above the wordmark's z-1), so a thin gap is fine
     let lineH = spans[spans.length - 1].getBoundingClientRect().height;
-    const slack = 24;
-    const gap = hi - mapBottom;
-    if (gap > 0 && lineH > gap + slack) {
-      const k = (gap + slack) / lineH;
-      spans.forEach(s => { s.style.fontSize = (parseFloat(s.style.fontSize) * k).toFixed(2) + 'px'; });
-      lineH = spans[spans.length - 1].getBoundingClientRect().height;
-    }
     const L = spans.reduce((a, s) => a + s.offsetWidth, 0);  // the line's width at this size
-    // Sit in the gap, biased toward the footer side (a little below the
-    // middle of the gap, below the map body); when the gap is negative
-    // (short viewports: the map's bottom overlaps the footer chip) the line
-    // instead sits just above the chip rather than drifting off the edge
-    let top = mapBottom + (hi - mapBottom) * 0.7 - lineH / 2;
-    if (top + lineH > hi) top = hi - lineH;
+    // Vertically centred on the "About AD.com" chip's row — same line, the
+    // wordmark just runs across the map's lower part behind the islands.
+    // (The chip is z-5 above, so it stays legible where they meet.)
+    const rowMid = (hi + lo) / 2;
+    let top = rowMid - lineH / 2;
+    if (top + lineH > lo) top = lo - lineH;      // never past the screen edge
     top = Math.max(mvTop, top);
     container.style.justifyContent = 'flex-start';
     container.style.alignItems = 'flex-start';
