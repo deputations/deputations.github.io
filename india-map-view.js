@@ -364,38 +364,39 @@
   function stateColor(abbr) { return STATE_COLORS[abbr] || 'slate'; }
   function stateFill(abbr) { return `var(--map-c-${stateColor(abbr)})`; }
 
-  // ----- Map wordmark: fit www.alldeputations.com along the screen diagonal -----
-  // The decorative 3D-text line behind the map (#map-wordmark), running
-  // bottom-left corner to top-right. Scaled to the diagonal of the map area
-  // (clamped to the box) and tilted to that same angle, so the line runs
-  // corner to corner at any display aspect ratio. Re-measured when the
-  // Unbounded webfont finishes loading (the fallback has different metrics)
-  // and on resize. Purely visual — never intercepts anything.
+  // ----- Map wordmark: fit www.AllDeputations.com across the screen width -----
+  // The decorative 3D-text line behind the map (#map-wordmark), set
+  // straight (horizontal) near the top of the map area and scaled to span
+  // the display's width. Re-measured when the Unbounded webfont finishes
+  // loading (the fallback has different metrics) and on resize. Purely
+  // visual — never intercepts anything.
   function fitWordmark() {
     const el = document.querySelector('#map-wordmark span');
     if (!el) return;
+    // Fit to the wordmark box's width, falling back to the viewport when the
+    // box measures 0 (the pane is not laid out yet — the ResizeObserver
+    // below re-runs the fit as soon as it is)
     const box = el.parentElement.getBoundingClientRect();
-    if (!box.width) return;
+    const width = Math.max(box.width, window.innerWidth);
+    if (!width) return;
     // The line's length at 100px font
     const prevSize = el.style.fontSize;
     el.style.fontSize = '100px';
     const w = el.offsetWidth;
     el.style.fontSize = prevSize;
     if (!w) return;
-    const diag = Math.hypot(box.width, box.height);
-    // Size the line to about 70% of the box's diagonal (the reduced look the
-    // owner asked for), clamped so the bevels never run off the corners
-    const size = Math.min((diag * 70) / w, diag * 0.4);
+    // Fit the line to well under the full width — the smaller look the owner
+    // asked for — so it reads as a quiet backdrop, not a banner
+    const size = Math.min((width * 80) / w, width * 0.5);
     el.style.fontSize = size.toFixed(2) + 'px';
-    // Angle of the box's bottom-left → top-right diagonal. In CSS a
-    // NEGATIVE rotation runs that way (positive tilts top-left → bottom-right),
-    // hence the minus: the line's left end dips down, its right end climbs up
-    const rot = -Math.atan2(box.height, box.width) * 180 / Math.PI;
-    el.style.setProperty('--wm-rot', rot.toFixed(2) + 'deg');
   }
   fitWordmark();
   window.addEventListener('resize', fitWordmark);
   document.fonts?.ready?.then(fitWordmark);
+  // The box can start 0-sized (hidden preview pane); fit it the moment it
+  // gets a real size instead of waiting for a window resize
+  const wmBox = document.getElementById('map-wordmark');
+  if (wmBox && 'ResizeObserver' in window) new ResizeObserver(fitWordmark).observe(wmBox);
 
   // ----- Build / clear SVG -----
   function buildSvg() {
