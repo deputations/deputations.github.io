@@ -440,21 +440,33 @@
     const tailVx = box.left + ax;
     const lineH = spans[spans.length - 1].getBoundingClientRect().height;
     const foot = document.querySelector('.sw-footer');
-    const footTop = foot ? foot.getBoundingClientRect().top : box.top + box.height;
-    // Hang the line just below the tip (the map's lowest point), but keep
-    // its bottom edge clear of the footer that sits in-flow under the map
-    let top = tailVy + Math.min(14, lineH * 0.25);
-    const maxTop = footTop - 1 - lineH;
-    if (top > maxTop) top = Math.max(tailVy, maxTop);
+    const footTop = foot ? foot.getBoundingClientRect().top : window.innerHeight;
+    // Vertically centre the line in the gap between the map's lowest point
+    // (the wrap's bottom edge) and the footer text — the "not crammed"
+    // look. When the gap is smaller than the line, it overlaps both sides
+    // symmetrically instead of hugging the map. Position the container
+    // itself (not via padding): a padding-bottom clamps at 0, which would
+    // drag the line back down to the container's bottom edge
+    const mapBottom = box.top + box.height;
+    // The container's containing block is #map-view: a stable reference
+    // across re-runs (the container's own box moves with the placement)
+    const mvTop = document.getElementById('map-view').getBoundingClientRect().top;
+    const top = Math.max(mvTop, (mapBottom + footTop) / 2 - lineH / 2);
     container.style.justifyContent = 'flex-start';
-    container.style.alignItems = 'flex-end';
+    container.style.alignItems = 'flex-start';
+    container.style.left = '0px';
+    container.style.right = '0px';
+    container.style.top = (top - mvTop) + 'px';
+    container.style.bottom = 'auto';
     container.style.paddingLeft = Math.max(0, tailVx - L / 2 - cr.left) + 'px';
-    container.style.paddingBottom = Math.max(0, cr.bottom - top - lineH) + 'px';
+    container.style.paddingBottom = '0px';
   }
 
-  // ----- Wordmark reveal: www. → All → Deputations.com, a beat between -----
+  // ----- Wordmark reveal: www. → All → Deputations → .com, a beat between -----
   // After the map's intro settles (map:drawInComplete), each segment fades
-  // in one at a time. Reduced motion gets it all at once.
+  // in one at a time, slow and unhurried. Reduced motion gets it all at
+  // once.
+  const WM_REVEAL = { start: 600, step: 1500, fade: 1400 };
   let wmRevealed = false;
   function revealWordmark() {
     if (wmRevealed) return;
@@ -467,8 +479,8 @@
       return;
     }
     spans.forEach((s, i) => {
-      s.style.transition = 'opacity 500ms ease';
-      setTimeout(() => { s.style.opacity = '1'; }, 200 + i * 650);
+      s.style.transition = `opacity ${WM_REVEAL.fade}ms ease`;
+      setTimeout(() => { s.style.opacity = '1'; }, WM_REVEAL.start + i * WM_REVEAL.step);
     });
   }
   // ----- Tour's "How this works" pill: above the + - zoom controls -----
