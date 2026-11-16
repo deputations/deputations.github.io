@@ -400,8 +400,9 @@
     return WM_FALLBACK;
   }
   function placeWordmark() {
-    const el = document.querySelector('#map-wordmark span');
-    if (!el) return;
+    const container = document.getElementById('map-wordmark');
+    const spans = container ? Array.from(container.querySelectorAll('span')) : [];
+    if (!spans.length) return;
     const svg = document.getElementById('map-svg');
     const wrap = document.getElementById('mapSvgWrap');
     if (!svg || !wrap || !wrap.clientWidth) return; // not laid out yet; a later call re-runs
@@ -417,12 +418,11 @@
     const { tailX, anX, tailY } = wordmarkAnchors();
     const [ax, ay] = toPx([tailX, tailY]);       // the tail: the line's centre
     const [bx] = toPx([anX, 0]);                 // the islands: the line's right end
-    // Pre-JS fallback: just under full width (the 80% look), so the first
-    // frame is close even before the anchors are known
-    const prevSize = el.style.fontSize;
-    el.style.fontSize = '100px';
-    const w100 = el.offsetWidth;
-    el.style.fontSize = prevSize;
+    // The three-segment line's width at 100px font
+    const prevSizes = spans.map(s => s.style.fontSize);
+    spans.forEach(s => { s.style.fontSize = '100px'; });
+    const w100 = spans.reduce((a, s) => a + s.offsetWidth, 0);
+    spans.forEach((s, i) => { s.style.fontSize = prevSizes[i]; });
     if (!w100) return;
     // Tail is the line's CENTRE, the islands its RIGHT end, so the line's
     // half-width is the tail→islands distance and its full width is 2× it
@@ -430,25 +430,46 @@
     // The line runs the FULL tail → islands span (the arrow's extent in the
     // mock) — it never needs a cap: the span is already inside the map area
     const size = (target * 100) / w100;
-    el.style.fontSize = size.toFixed(2) + 'px';
+    spans.forEach(s => { s.style.fontSize = size.toFixed(2) + 'px'; });
     const L = w100 * size / 100;                  // the line's width at this size
-    // Placed in viewport terms (the wrap's box is pinned by 100dvh, so no
-    // scroll offset to add). Centre on the tail; hang the line just below the
-    // tip (the map's lowest point), but keep its bottom edge clear of the
-    // footer that sits in-flow under the map — measured from the wrap's own
-    // size, because the footer is injected async by site-widgets.js
+    // The container is inset:0 in the map area (pinned by 100dvh, so no
+    // scroll offset): position the row with its padding instead of the
+    // spans — the flex fallback stays the pre-JS centred look
+    const cr = container.getBoundingClientRect();
     const tailVy = box.top + ay;
-    const lineH = el.getBoundingClientRect().height;
+    const tailVx = box.left + ax;
+    const lineH = spans[spans.length - 1].getBoundingClientRect().height;
     const foot = document.querySelector('.sw-footer');
     const footTop = foot ? foot.getBoundingClientRect().top : box.top + box.height;
-    // Nudged down (the owner's "a bit more"): the line hangs closer to the
-    // tip when there is room, and runs close to the footer when clamped
+    // Hang the line just below the tip (the map's lowest point), but keep
+    // its bottom edge clear of the footer that sits in-flow under the map
     let top = tailVy + Math.min(14, lineH * 0.25);
     const maxTop = footTop - 1 - lineH;
     if (top > maxTop) top = Math.max(tailVy, maxTop);
-    el.style.position = 'fixed';
-    el.style.left = Math.max(0, box.left + ax - L / 2) + 'px';
-    el.style.top = top + 'px';
+    container.style.justifyContent = 'flex-start';
+    container.style.alignItems = 'flex-end';
+    container.style.paddingLeft = Math.max(0, tailVx - L / 2 - cr.left) + 'px';
+    container.style.paddingBottom = Math.max(0, cr.bottom - top - lineH) + 'px';
+  }
+
+  // ----- Wordmark reveal: www. → All → Deputations.com, a beat between -----
+  // After the map's intro settles (map:drawInComplete), each segment fades
+  // in one at a time. Reduced motion gets it all at once.
+  let wmRevealed = false;
+  function revealWordmark() {
+    if (wmRevealed) return;
+    wmRevealed = true;
+    const container = document.getElementById('map-wordmark');
+    const spans = container ? Array.from(container.querySelectorAll('span')) : [];
+    if (!spans.length) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      container.classList.add('wm-shown');
+      return;
+    }
+    spans.forEach((s, i) => {
+      s.style.transition = 'opacity 500ms ease';
+      setTimeout(() => { s.style.opacity = '1'; }, 200 + i * 650);
+    });
   }
   // ----- Tour's "How this works" pill: above the + - zoom controls -----
   // tour-loader.js injects it at the viewport's bottom-right (over the
@@ -479,8 +500,12 @@
   const wmBox = document.getElementById('map-wordmark');
   if (wmBox && 'ResizeObserver' in window) new ResizeObserver(placeWordmark).observe(wmBox);
   // The projection changes when the national view re-renders (a filter
-  // change) — re-anchor to the new map
-  document.addEventListener('map:drawInComplete', placeWordmark);
+  // change) — re-anchor to the new map; the first completion also starts
+  // the wordmark's staged reveal (www. → All → Deputations.com)
+  document.addEventListener('map:drawInComplete', () => { placeWordmark(); revealWordmark(); });
+  // Safety: if the draw-in event never fires (a deep link's state view),
+  // reveal anyway after the intro window
+  setTimeout(() => revealWordmark(), 7000);
 
   // ----- Build / clear SVG -----
   function buildSvg() {

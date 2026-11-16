@@ -87,7 +87,16 @@ body.map-entry {
     0 0.022em 0 #F1E9DB,
     0 0.054em 0 #E6DCC8,
     0 0.11em 0.24em rgba(29, 36, 51, 0.18);
+  /* Hidden until revealWordmark() lights the segments in sequence —
+     www. → All → Deputations.com — with a beat between each */
+  opacity: 0;
 }
+/* Reduced motion: no sequence, the whole line is simply there (or shown
+   together by the JS .wm-shown path) */
+@media (prefers-reduced-motion: reduce) {
+  #map-wordmark span { opacity: 1; transition: none; }
+}
+#map-wordmark.wm-shown span { opacity: 1; }
 
 /* ----- Tour's "How this works" pill on this one-screen page -----
    tour-loader.js injects it fixed at the viewport's bottom-right and fades
