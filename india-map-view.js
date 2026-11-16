@@ -383,9 +383,9 @@
     el.style.fontSize = prevSize;
     if (!w) return;
     const diag = Math.hypot(box.width, box.height);
-    // Size the line to span the box's full diagonal (the two ends then land
-    // on the two corners), a touch generous so the bevels don't clip
-    const size = Math.min((diag * 105) / w, diag * 0.55);
+    // Size the line to about 70% of the box's diagonal (the reduced look the
+    // owner asked for), clamped so the bevels never run off the corners
+    const size = Math.min((diag * 70) / w, diag * 0.4);
     el.style.fontSize = size.toFixed(2) + 'px';
     // Angle of the box's bottom-left → top-right diagonal. In CSS a
     // NEGATIVE rotation runs that way (positive tilts top-left → bottom-right),
