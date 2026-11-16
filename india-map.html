@@ -32,7 +32,7 @@
 
   <link rel="stylesheet" href="/style.css?v=ms74">
   <link rel="stylesheet" href="/navbar.css?v=10">
-  <link rel="stylesheet" href="/india-map.css?v=wordmark-behind-20261116">
+  <link rel="stylesheet" href="/india-map.css?v=wordmark-front-20261116">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Unbounded:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -56,11 +56,11 @@
 
   <main id="map-view">
     <h1 class="map-sr-only">India Map — active Central deputation vacancies</h1>
-    <!-- Decorative wordmark behind the map: light-toned 3D type, centred,
-         with a few letters running past the map's coasts (z-index 1, below
-         the map container's z-index 2; pointer events pass straight through) -->
-    <div id="map-wordmark" aria-hidden="true"><span>www.alldeputations.com</span></div>
     <div class="map-container" id="mapContainer">
+      <!-- Decorative wordmark painted OVER the map (z 2: above the map's SVG,
+           below the floating chrome at z 3+), light-toned 3D type with a
+           few letters running past the coasts. Pointer events pass through. -->
+      <div id="map-wordmark" aria-hidden="true"><span>www.alldeputations.com</span></div>
       <div class="map-header">
         <button id="btn-back" class="map-back-btn" aria-label="Back to India" hidden>
           <span>‹</span>
