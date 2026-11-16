@@ -364,6 +364,37 @@
   function stateColor(abbr) { return STATE_COLORS[abbr] || 'slate'; }
   function stateFill(abbr) { return `var(--map-c-${stateColor(abbr)})`; }
 
+  // ----- Map wordmark: fit www.alldeputations.com along the screen diagonal -----
+  // The decorative 3D-text line behind the map (#map-wordmark), running
+  // bottom-left corner to top-right. Scaled to the diagonal of the map area
+  // (clamped to the box) and tilted to that same angle, so the line runs
+  // corner to corner at any display aspect ratio. Re-measured when the
+  // Unbounded webfont finishes loading (the fallback has different metrics)
+  // and on resize. Purely visual — never intercepts anything.
+  function fitWordmark() {
+    const el = document.querySelector('#map-wordmark span');
+    if (!el) return;
+    const box = el.parentElement.getBoundingClientRect();
+    if (!box.width) return;
+    // The line's length at 100px font
+    const prevSize = el.style.fontSize;
+    el.style.fontSize = '100px';
+    const w = el.offsetWidth;
+    el.style.fontSize = prevSize;
+    if (!w) return;
+    const diag = Math.hypot(box.width, box.height);
+    // Size the line to span the box's full diagonal (the two ends then land
+    // on the two corners), a touch generous so the bevels don't clip
+    const size = Math.min((diag * 105) / w, diag * 0.55);
+    el.style.fontSize = size.toFixed(2) + 'px';
+    // Angle of the box diagonal, bottom-left to top-right
+    const rot = Math.atan2(box.height, box.width) * 180 / Math.PI;
+    el.style.setProperty('--wm-rot', rot.toFixed(2) + 'deg');
+  }
+  fitWordmark();
+  window.addEventListener('resize', fitWordmark);
+  document.fonts?.ready?.then(fitWordmark);
+
   // ----- Build / clear SVG -----
   function buildSvg() {
     const ns = 'http://www.w3.org/2000/svg';

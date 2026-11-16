@@ -43,6 +43,50 @@ body.map-entry {
   background-attachment: fixed;
 }
 
+/* ----- Map wordmark: www.alldeputations.com, in a large embossed
+   (raised, light-toned) 3D type, running diagonally bottom-left corner
+   to top-right BEHIND the map. It sits at z-index 1, below the map
+   container (z-index 2); the map's own background is transparent, so the
+   wordmark shows through wherever the states don't cover the screen. The
+   angle and size follow the display (fitWordmark(): along the screen
+   diagonal, clamped to the box). Purely decorative, so it is out of the
+   a11y tree and never intercepts pointer events. */
+#map-wordmark {
+  position: absolute;
+  inset: 0;
+  z-index: 1;                          /* behind the map container (z-index 2) */
+  display: flex;
+  overflow: hidden;                    /* letters run off the edges, never scroll */
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  user-select: none;
+  text-align: center;
+}
+#map-wordmark span {
+  display: inline-block;
+  white-space: nowrap;
+  font-family: "Unbounded", var(--map-font);
+  font-weight: 800;
+  /* fitWordmark() sizes this to the diagonal of the map area on every
+     display; the clamp value is the pre-JS estimate so the first frame
+     is close even before the fit runs */
+  font-size: clamp(18px, 4.6vw, 96px);
+  letter-spacing: 0.01em;
+  color: #FBF8F1;
+  /* Default angle for the first frame; fitWordmark() recomputes it from
+     the actual box so the line runs corner to corner at any aspect ratio */
+  transform: rotate(var(--wm-rot, -12deg));
+  /* In ems so the bevel scales with the fitted size: a raised cream
+     block, two deeper cream steps, one long soft fall-off that grounds
+     the slab */
+  text-shadow:
+    0 0 0.022em rgba(255, 255, 255, 0.95),
+    0 0.022em 0 #F1E9DB,
+    0 0.054em 0 #E6DCC8,
+    0 0.11em 0.24em rgba(29, 36, 51, 0.18);
+}
+
 /* Neutralize home page layout */
 /* The page is exactly one screen: the nav, then the map filling the rest */
 body.map-entry { margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
@@ -409,7 +453,7 @@ body.map-entry #map-view { opacity: 1; transform: none; transition: none; }
 #map-svg, #mapSvgWrap svg { overflow: visible; }
 
 /* Map viewport fill */
-.map-container { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
+.map-container { position: relative; z-index: 2; width: 100%; height: 100%; display: flex; flex-direction: column; }
 .map-svg-wrap { flex: 1; position: relative; overflow: hidden; }
 
 /* ===== Phones (<768px) ===== */
