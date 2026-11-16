@@ -464,10 +464,11 @@
       lineH = spans[spans.length - 1].getBoundingClientRect().height;
     }
     const L = spans.reduce((a, s) => a + s.offsetWidth, 0);  // the line's width at this size
-    // Centre in the gap; when the gap is negative (short viewports: the map's
-    // bottom overlaps the footer chip) the line instead sits just above the
-    // chip rather than drifting off the screen edge
-    let top = (mapBottom + hi) / 2 - lineH / 2;
+    // Sit in the gap, biased toward the footer side (a little below the
+    // middle of the gap, below the map body); when the gap is negative
+    // (short viewports: the map's bottom overlaps the footer chip) the line
+    // instead sits just above the chip rather than drifting off the edge
+    let top = mapBottom + (hi - mapBottom) * 0.7 - lineH / 2;
     if (top + lineH > hi) top = hi - lineH;
     top = Math.max(mvTop, top);
     container.style.justifyContent = 'flex-start';
