@@ -26,6 +26,45 @@ counter_convention:
 
 ## [Unreleased]
 
+### Changed - Home tour before the page; slow fade; "How this works" stays (2026-11-06)
+- First visit to Home: only the background shows until the tour opens; when the
+  tour is over the page fades in and its own animations play then (title typing,
+  visitor counters, title shine, the wave). Crawlers and page-speed tools see the
+  page as usual.
+- Closing a tour (Skip, Esc, the final button) fades it out over about 1.2 s, on
+  Home and the India Map page.
+- "How this works" counts its 10 s only while it is on screen, so first-time
+  visitors see it after the tour. With the footer in view it sits above it rather
+  than hiding (on the map page it used to vanish almost at once). Tour assets
+  move to `?v=8`.
+
+### Changed - map tour plays before the map draws; "first visit only" tag (2026-11-06)
+- On a first visit to the India Map page the tour opens straight away; the map's
+  own state-by-state drawing waits and plays once the tour closes (or at once if
+  the visitor is busy or the tour can't load). `india-map-view.js` waits for the
+  loader's `deptour:release`; the loader tag carries `data-tour-hold`.
+- The busy check now runs one task after the tour has downloaded, so taps queued
+  behind a slow phone's freeze still count and the tour doesn't open over them.
+- The tour footer says "Shows on first visit only · replay via How this works"
+  ("First visit only" on phones). Tour assets move to `?v=7`.
+
+### Changed - tour start, ending and replay button (2026-11-06)
+- The Home tour opens with "Your one stop solution to Deputations".
+- The last screen of each tour now fades away by itself over 3 seconds; pointing
+  at a page card or the button (or tabbing to one) keeps it on screen.
+- "How this works" shows for 10 seconds per page load, then fades out.
+- The India Map tour now actually plays: the tour downloads while the map draws
+  itself, and a tap or scroll while the page loads no longer cancels it (it waits
+  until the visitor pauses for 2.5 s; still busy after 20 s, it waits for a later
+  visit). Tour assets move to `?v=6`.
+
+### Added - V² logo on every tour step; "A V² product" ends the Home tour (2026-11-05)
+Both tours show the V² (V Square) logo on every step: centred in the free band
+left of the tour on wide screens, and small beside "Demo · sample data" on
+phones. The Home tour now ends with "A V² product" filling the screen over the
+last screen, then settling to the left of the page grid (under the title on
+phones) before "Try it with your pay level" appears. Tour assets move to `?v=5`.
+
 ### Changed - Home tour shows the normal search before AI search (2026-11-05)
 Step 3 is now "Search anything — or just ask". It first shows the normal search
 box: what it searches (post, organisation, ministry, location, level,

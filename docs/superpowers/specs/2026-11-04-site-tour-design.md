@@ -58,7 +58,7 @@ Every Home feature gets its own short step; the other pages get only a
 Sample data follows the site's feeder-grade eligibility rule and every number
 is labelled as sample.
 
-0. **Intro** (~6 s): *"Your one stop solution to Deputation"* assembles letter
+0. **Intro** (~6 s): *"Your one stop solution to Deputations"* assembles letter
    by letter, then the brand **ALL Deputations.com** crashes in full-screen
    (fitted to ~90 % of the viewport width; on phones "ALL" over
    "Deputations.com"), a light sweep crosses it and it holds long enough to be
@@ -98,8 +98,12 @@ is labelled as sample.
    updates, Group · discussions) appears large with chat bubbles, then becomes
    a full-width bar under the grid linking to `/contact.html`.
    (Owner's changes, 2026-11-05 evening.)
-9. **Finale**: the grid and the WhatsApp bar stay; each is a real link; CTA
+9. **Finale**: **"A V² product"** (the V² logo between the words, as in the site
+   header) fills the screen over the dimmed last screen for ~2 s, then shrinks
+   to the left of the page grid (phones: just under the title) and stays. Then
+   the grid and the WhatsApp bar stay; each is a real link; CTA
    **"Try it with your pay level"** sits below them and opens `#filterMyPayLevelBtn`.
+   (Owner, 2026-11-05 night; Home tour only.)
 
 The India map journey (former Home step 3) moves to the India Map page tour (§3.2).
 
@@ -176,18 +180,48 @@ tests/test_tour_*.py          Playwright smoke tests (existing suite conventions
 **tour-loader.js** — the only always-loaded piece.
 - Read by `<script defer src="/tour/tour-loader.js?v=1" data-tour="home"></script>`.
 - Injects a small floating "▶ How this works" button (bottom-right — bottom-left
-  is the site's visitor counter); it fades out while the footer trust line is on
-  screen, so it never covers it.
+  is the site's visitor counter); while the footer trust line is on screen the
+  button sits just above it, so it never covers it (it used to fade out there,
+  which on the map page, where the footer is always in view, meant at once;
+  owner, 2026-11-06). The same goes for page controls marked `data-tour-keepclear`
+  (the map's zoom buttons). Only a lift of over half the screen still hides it.
 - Auto-play rule, all must hold: page key not in `dep_tour_seen_v1`;
   `dep_tour_off_v1` not set; `navigator.webdriver` is false; no intent link
   (`?v=`, `?search=`…); no Save-Data / 2g. `?tour=play` forces play and bypasses
   all of them. Whether someone visited before the tour existed does not matter:
   every browser gets it once. Reduce-motion visitors get the steps view
   (revised 2026-11-05 evening; they used to be skipped).
-- Visitors the auto-play skips (intent link, Save-Data, or already tapping/typing
-  before the page settles) get no prompt: the tour waits for a later plain visit,
-  and "How this works" is always there (owner declined a suggestion bubble,
-  2026-11-05 evening).
+- Visitors the auto-play skips (intent link, Save-Data) get no prompt: the tour
+  waits for a later plain visit (owner declined a suggestion bubble, 2026-11-05).
+- Busy means busy *now* (owner, 2026-11-06): someone who touched the page in the
+  last 2.5 s is not interrupted; the tour starts once they pause (gives up after
+  20 s of steady use). Tour files download while the page settles.
+- "How this works" shows for 10 s per page load, then fades out (owner, 2026-11-06).
+  Only on-screen time counts (not under the tour, not while the page is held for
+  it, not in a background tab), so first-time visitors get their 10 s after the
+  tour (owner, 2026-11-06).
+- Crawlers and page-speed tools (`bot|crawl|spider|slurp|lighthouse` in the user
+  agent) never auto-play, so they see the page itself.
+- India Map, first visit: the tour plays first; the page's own map draw-in waits
+  (loader `data-tour-hold` → `html[data-tour-pending]`, `[data-tour-hidden]` stays
+  hidden; `deptour:release` after the tour closes and its Back step is done, or at
+  once if the visitor is busy / the tour can't load; 3-minute safety) (owner, 2026-11-06).
+- Home, first visit (owner, 2026-11-06): the tour comes before the page. An inline
+  check in `<head>` (same rules as the loader) sets `html[data-tour-pending="page"]`
+  before the first paint, so only the background shows; `data-tour-hold="page"`
+  on the loader tag keeps it, fetches the tour at once and opens it as soon as it
+  is ready (no settle wait). On release the page fades in over 1 s
+  (`html[data-tour-reveal]`) and its start-up animations run then: title
+  typewriter and visitor counters (site-widgets.js `afterTour`), title sheen
+  (home-flourish.js) and the hero wave (hero-wave.js). The loader lets the page
+  show at once when it won't play; if the loader never arrives, the page shows on
+  `load`.
+- Closing fades the tour out over ~1.2 s (scaled by how far the finale has already
+  faded; leaving through a link stays at 0.3 s), on both pages (owner, 2026-11-06).
+- Footer tag: "Shows on first visit only · replay via How this works" (phones:
+  "First visit only") (owner, 2026-11-06).
+- The last screen fades away by itself over 3 s once fully shown, unless the
+  visitor points at a link/button or tabs (then it stays) (owner, 2026-11-06).
 - Starts after `window.load` plus one idle callback (fallback 800 ms), so the
   page's own load and the WebGL hero finish first.
 - On play: loads, in order, `vendor/gsap.min.js`, `tour/tour.css`,
@@ -198,6 +232,9 @@ tests/test_tour_*.py          Playwright smoke tests (existing suite conventions
 **tour-engine.js** — exposes `window.DepTour`:
 - `DepTour.register(key, { scenes: [Scene...], cta })`
 - `DepTour.play(key, { speed })` → builds overlay, runs scenes, resolves on close.
+- V² logo (`/assets/brand/v2-logo.png`) on every step of every tour: centred in
+  the free band left of the stage on wide screens; on phones (no band), small,
+  beside the "Demo · sample data" tag (owner, 2026-11-05 night).
 - Overlay chrome: scene title (no "STEP n" label: visitors can jump to any step
   from the dots, in any order), scene dots (click to jump), progress bar,
   Skip, "Don't show tours again", Demo badge.

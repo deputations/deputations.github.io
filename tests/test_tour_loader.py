@@ -66,8 +66,11 @@ def test_replay_button(page: Page, base_url: str):
     page.goto(f"{base_url}/index.html")
     btn = page.locator(".dt-replay")
     expect(btn).to_be_visible(timeout=10000)
-    expect(btn).to_contain_text("How this works")
-    expect(btn).to_have_attribute("aria-label", "Play the how-to demo for this page")
+    # one read: the button only lives 10 s, which a loaded box can spend on separate checks
+    text, label = page.evaluate("(() => { const b = document.querySelector('.dt-replay');"
+                                " return [b.textContent, b.getAttribute('aria-label')]; })()")
+    assert "How this works" in text
+    assert label == "Play the how-to demo for this page"
 
 
 def test_should_autoplay_rules(page: Page, base_url: str):
@@ -84,6 +87,7 @@ def test_should_autoplay_rules(page: Page, base_url: str):
             seenOther: f({seen: {map: 1}}),
             off: f({off: true}),
             webdriver: f({webdriver: true}),
+            bot: f({bot: true}),
             reduced: f({reducedMotion: true}),
             intent: f({intent: true}),
             saveData: f({saveData: true}),
@@ -98,6 +102,7 @@ def test_should_autoplay_rules(page: Page, base_url: str):
         "seenOther": True,
         "off": False,
         "webdriver": False,
+        "bot": False,             # crawlers and page-speed tools see the page itself
         "reduced": True,          # Reduce-motion visitors get the calm step-by-step view once
         "intent": False,
         "saveData": False,
@@ -174,13 +179,17 @@ def test_corrupt_seen_reads_empty(page: Page, base_url: str):
     assert page.evaluate("DepTourLoader.readSeen()") == {}
 
 
-def test_replay_hides_over_footer(page: Page, base_url: str):
+def test_replay_sits_above_the_footer(page: Page, base_url: str):
+    """Never covers the footer trust line: with the footer on screen the button
+    moves up above it (it used to hide, which on the map page meant at once)."""
     page.goto(f"{base_url}/index.html")
     btn = page.locator(".dt-replay")
     expect(btn).to_be_visible(timeout=10000)
     page.wait_for_selector(".sw-footer", state="attached", timeout=10000)
     page.evaluate("document.querySelector('.sw-footer').scrollIntoView({block: 'end'})")
-    expect(btn).to_have_class(re.compile(r"\bdt-replay--hidden\b"), timeout=15000)
+    page.wait_for_function("""() => { const b = document.querySelector('.dt-replay'); if (!b) return false;
+      const r = b.getBoundingClientRect(), f = document.querySelector('.sw-footer').getBoundingClientRect();
+      return r.bottom <= f.top && !b.classList.contains('dt-replay--hidden'); }""", polling=100, timeout=5000)
 
 
 # ---- auto-play must never get in the way of what the visitor came for ----
@@ -225,18 +234,6 @@ def test_tracking_only_link_still_autoplays(page: Page, base_url: str):
     page.wait_for_selector(".dt-overlay", state="attached", timeout=30000)
 
 
-def test_early_interaction_defers_autoplay(page: Page, base_url: str):
-    page.add_init_script(REAL_VISIT + """
-      document.addEventListener('DOMContentLoaded', () => {
-        document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-      });
-    """)
-    requested = []
-    page.on("request", lambda r: requested.append(r.url))
-    page.goto(f"{base_url}/index.html")
-    _assert_no_tour_after_load(page, requested)
-
-
 def test_save_data_skips_autoplay(page: Page, base_url: str):
     page.add_init_script(REAL_VISIT + """
       Object.defineProperty(navigator, 'connection', { get: () => ({ saveData: true, effectiveType: '4g' }) });
@@ -256,7 +253,7 @@ def test_tour_asset_version_bumped_and_consistent():
     for page_file in ("index.html", "india-map.html"):
         tag = re.search(r'/tour/tour-loader\.js\?v=(\d+)"', Path(page_file).read_text(encoding="utf-8")).group(1)
         assert tag == v, (page_file, tag, v)
-    assert int(v) >= 4, v      # 4: normal search added to the Home tour (2026-11-05 evening)
+    assert int(v) >= 8, v      # 8: Home tour before the page; slow fade; button on-screen time (2026-11-06)
 
 
 # ---- skipped visitors (owner, 2026-11-05): no "New · 1-min tour" bubble ----
@@ -269,18 +266,64 @@ def _no_tour_no_bubble(page: Page) -> None:
     page.wait_for_timeout(3500)
     assert page.locator(".dt-overlay").count() == 0
     assert page.locator(".dt-replay-tip").count() == 0
-    expect(page.locator(".dt-replay")).not_to_have_class(re.compile(r"\bis-nudge\b"))
+    # (the button itself may already be gone: it lives 10 s, and a loaded box gets there)
+    assert page.locator(".dt-replay.is-nudge").count() == 0
 
 
 def test_skipped_visitors_get_no_bubble(page: Page, base_url: str):
-    """A visitor already typing as the page loads, or arriving from a shared
-    link, is left alone: no tour this visit and no suggestion bubble."""
+    """A visitor arriving from a shared link is left alone: no tour this
+    visit and no suggestion bubble."""
+    page.add_init_script(REAL_VISIT)
+    page.goto(f"{base_url}/index.html?search=director")
+    _no_tour_no_bubble(page)
+
+
+# ---- owner, 2026-11-06: the map tour never showed; busy means busy *now* ----
+
+def test_an_early_tap_does_not_cancel_the_tour(page: Page, base_url: str):
+    """A tap or key while the page loads used to skip the tour for the whole
+    visit; now the tour still plays once the visitor pauses."""
     page.add_init_script(REAL_VISIT)
     page.goto(f"{base_url}/index.html", wait_until="domcontentloaded")
     page.keyboard.press("Tab")
-    _no_tour_no_bubble(page)
-    page.goto(f"{base_url}/index.html?search=director")
-    _no_tour_no_bubble(page)
+    page.wait_for_selector(".dt-overlay", state="attached", timeout=40000)
+
+
+def test_tour_waits_while_the_visitor_is_busy(page: Page, base_url: str):
+    """Typing from the moment the page opens (every 0.4 s for 6 s, timed in the
+    page itself): the tour opens only after the typing stops, never during it."""
+    page.add_init_script(REAL_VISIT)
+    page.add_init_script("""(() => {
+      const t0 = performance.now(); window.__lastKey = 0;
+      const id = setInterval(() => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' }));
+        window.__lastKey = performance.now() - t0;
+      }, 400);
+      setTimeout(() => clearInterval(id), 6000);
+      document.addEventListener('deptour:open', () => { window.__opened = performance.now() - t0; });
+    })();""")
+    page.goto(f"{base_url}/index.html", wait_until="domcontentloaded")
+    page.wait_for_selector(".dt-overlay", state="attached", timeout=40000)
+    last, opened = page.evaluate("[window.__lastKey, window.__opened]")
+    assert last > 5000 and opened >= last + 2000, (last, opened)
+
+
+def test_how_this_works_vanishes_after_10_seconds(page: Page, base_url: str):
+    page.add_init_script("""(() => {
+      const t0 = performance.now(); window.__btn = {};
+      new MutationObserver(() => {
+        const b = document.querySelector('.dt-replay');
+        if (b && window.__btn.shown == null) window.__btn.shown = performance.now() - t0;
+        if (!b && window.__btn.shown != null && window.__btn.gone == null) window.__btn.gone = performance.now() - t0;
+      }).observe(document, { subtree: true, childList: true });
+    })();""")
+    page.goto(f"{base_url}/index.html", wait_until="domcontentloaded")
+    page.wait_for_function("() => window.__btn && window.__btn.gone != null", polling=250, timeout=30000)
+    shown, gone = page.evaluate("[window.__btn.shown, window.__btn.gone]")
+    assert 9500 <= gone - shown <= 11500, (shown, gone)
+    page.reload()
+    _wait_for_loader(page)
+    expect(page.locator(".dt-replay")).to_be_visible()          # back on reload
 
 
 def test_reduced_motion_visitor_gets_the_step_view(page: Page, base_url: str):

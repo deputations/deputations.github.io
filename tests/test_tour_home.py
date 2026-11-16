@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import re
 
+import pytest
+
 from playwright.sync_api import Page, expect
 
 from tests.tour_helpers import close_and_settle, no_hero_wave, seen  # noqa: F401
@@ -15,7 +17,7 @@ from tests.tour_helpers import close_and_settle, no_hero_wave, seen  # noqa: F40
 TITLES = ["Find deputation opportunities matching your eligibility", "Narrow it down", "Search anything — or just ask",
           "Sort and switch views",
           "Save posts you like", "Never miss a vacancy", "Light or dark — your choice", "Explore more pages"]
-HEADLINE = "Your one stop solution to Deputation"
+HEADLINE = "Your one stop solution to Deputations"
 BRAND = "ALL Deputations.com"
 FULL_POWER = ("Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });"
               "Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });")
@@ -140,14 +142,10 @@ def test_full_run_fast(page: Page, base_url: str):
     page.on("console", lambda m: m.type == "error" and (
         "/tour/" in m.text or "/tour/" in ((m.location or {}).get("url") or "")) and console_errors.append(m.text))
     _open_home(page, base_url, speed=20)
-    # the whole tour plays to its finale, which then waits for the visitor
-    expect(page.locator(".dt-cta")).to_be_visible(timeout=20000)
-    expect(page.locator("a.dt-page-card")).to_have_count(6)
-    page.wait_for_timeout(1500)
-    assert page.evaluate("DepTour.isOpen()") is True
-    page.locator(".dt-cta").click()
-    page.wait_for_function("() => !!window.__closed", polling=100, timeout=10000)
-    assert page.evaluate("window.__closed.reason") == "cta"
+    # the whole tour plays to its finale, which then fades away by itself (owner, 2026-11-06)
+    page.wait_for_selector(".dt-cta", state="attached", timeout=20000)
+    page.wait_for_function("() => !!window.__closed", polling=100, timeout=20000)
+    assert page.evaluate("window.__closed.reason") == "end"
     assert errors == [] and console_errors == []
 
 
@@ -582,3 +580,106 @@ def test_search_step_fits_on_phone(page: Page, base_url: str):
             .map(([c]) => c);
         }""")
         assert out == [], (t, out)
+
+
+# ---- owner, 2026-11-05 night: the V² logo on every step, and "A V² product" at the end ----
+
+GEOM = """(sel) => { const e = document.querySelector(sel); if (!e) return null;
+  const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, h: r.height,
+  o: +getComputedStyle(e).opacity }; }"""
+
+
+def _g(page: Page, sel: str):
+    return page.evaluate(GEOM, sel)
+
+
+def test_v2_logo_on_every_step(page: Page, base_url: str):
+    for w, h in [(1440, 900), (390, 844)]:
+        page.set_viewport_size({"width": w, "height": h})
+        _open_home(page, base_url)
+        for i in range(len(TITLES)):
+            _scene_end(page, i)
+            m, cv = _g(page, ".dt-mark"), _g(page, ".dt-canvas")
+            assert m and m["o"] > 0.9, (w, i, m)
+            assert page.evaluate("document.querySelector('.dt-mark img').getAttribute('src')").startswith(
+                "/assets/brand/v2-logo.png")
+            if w == 1440:          # in the free band left of the stage, vertically centred
+                assert m["r"] <= cv["l"] + 1 and m["l"] >= 0, (i, m, cv)
+                assert abs((m["t"] + m["b"]) / 2 - (cv["t"] + cv["b"]) / 2) <= 3, (i, m, cv)
+            else:                  # phones: small, bottom-left, beside the Demo tag
+                bd = _g(page, ".dt-badge")
+                assert m["r"] <= bd["l"] + 1 and abs((m["t"] + m["b"]) / 2 - (bd["t"] + bd["b"]) / 2) <= 4, (i, m, bd)
+        close_and_settle(page)
+
+
+def _finale_signoff(page: Page) -> None:
+    for _ in range(12):
+        page.keyboard.press("ArrowRight")
+    page.wait_for_selector(".dt-signoff", state="attached", timeout=15000)
+
+
+def test_a_v2_product_ends_the_home_tour(page: Page, base_url: str):
+    page.set_viewport_size({"width": 1440, "height": 900})
+    _open_home(page, base_url, speed=0.5)
+    _finale_signoff(page)
+    so = _g(page, ".dt-signoff")
+    assert so["w"] > 1440 * 0.45, so                               # starts full-screen, over the last screen
+    assert page.evaluate("document.querySelector('.dt-signoff').textContent.replace(/\\s+/g, ' ').trim()") == "A product"
+    assert page.locator(".dt-signoff img[src^='/assets/brand/v2-logo.png']").count() == 1
+    page.wait_for_selector(".dt-signoff.is-docked", state="attached", timeout=30000)
+    page.wait_for_timeout(300)
+    so, grid = _g(page, ".dt-signoff"), page.evaluate(
+        "Math.min(...[...document.querySelectorAll('a.dt-page-card')].map(a => a.getBoundingClientRect().left))")
+    cv = _g(page, ".dt-canvas")
+    assert so["o"] > 0.9 and so["r"] <= grid - 4 and so["l"] >= 0, (so, grid)   # stays on the left of the grid
+    assert abs((so["t"] + so["b"]) / 2 - (cv["t"] + cv["b"]) / 2) <= 40, (so, cv)
+    assert _g(page, ".dt-so-dim")["o"] < 0.05
+    assert _g(page, ".dt-mark")["o"] < 0.05                         # the ending takes the logo's place
+    expect(page.locator(".dt-cta")).to_be_visible()
+
+
+def test_a_v2_product_on_phone_stays_under_the_title(page: Page, base_url: str):
+    page.set_viewport_size({"width": 390, "height": 844})
+    _open_home(page, base_url, speed=0.5)
+    _finale_signoff(page)
+    page.wait_for_selector(".dt-signoff.is-docked", state="attached", timeout=30000)
+    page.wait_for_timeout(300)
+    so, title, cv = _g(page, ".dt-signoff"), _g(page, ".dt-title"), _g(page, ".dt-canvas")
+    assert so["t"] >= title["b"] - 1 and so["b"] <= cv["t"] + 1 and so["l"] >= 0 and so["r"] <= 390, (so, title, cv)
+
+
+def test_leaving_the_finale_removes_the_ending(page: Page, base_url: str):
+    page.set_viewport_size({"width": 1440, "height": 900})
+    _open_home(page, base_url, speed=0.5)
+    _finale_signoff(page)
+    page.keyboard.press("ArrowLeft")
+    page.wait_for_function("() => DepTour.state().phase === 'scene'", polling=100, timeout=10000)
+    assert page.locator(".dt-signoff").count() == 0
+    page.wait_for_timeout(500)
+    assert _g(page, ".dt-mark")["o"] > 0.9
+
+
+# ---- owner, 2026-11-06: say that the tour shows on the first visit only ----
+
+WIDE_FONT = ("document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style');"
+             " s.textContent = '.dt-overlay, .dt-overlay * { font-family: \"DejaVu Sans\", sans-serif !important; }';"
+             " document.head.appendChild(s); });")
+
+
+@pytest.mark.parametrize("font", ["site", "dejavu"])     # CI renders the fallback DejaVu Sans
+def test_first_visit_only_tag(page: Page, base_url: str, font: str):
+    if font == "dejavu":
+        page.add_init_script(WIDE_FONT)
+    for w, h, text in [(1440, 900, "Shows on first visit only · replay via How this works"), (390, 844, "First visit only")]:
+        page.set_viewport_size({"width": w, "height": h})
+        _open_home(page, base_url)
+        _scene_end(page, 1)
+        tag = _g(page, ".dt-first")
+        assert tag and tag["o"] > 0.9 and tag["l"] >= 0 and tag["r"] <= w and tag["b"] <= h, (w, tag)
+        assert page.evaluate("document.querySelector('.dt-first').innerText.trim()") == text
+        for other in (".dt-badge", ".dt-off"):
+            o = _g(page, other)
+            assert tag["r"] <= o["l"] + 1 or tag["l"] >= o["r"] - 1 or tag["b"] <= o["t"] + 1 or tag["t"] >= o["b"] - 1, (w, other)
+        bd, off = _g(page, ".dt-badge"), _g(page, ".dt-off")
+        assert abs((bd["t"] + bd["b"]) / 2 - (off["t"] + off["b"]) / 2) <= 6, (w, bd, off)   # no extra footer row
+        close_and_settle(page)

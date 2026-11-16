@@ -7427,3 +7427,59 @@ focus:          Home tour: show the normal search, then AI search as the even be
 ### gotchas for next session
 - The search demo mirrors `shared/vacancy-filters.js` (`fuzzyIncludes`: one typo for single-word queries of 4+ letters; every word must match for multi-word queries; `search_text` carries short forms). Keep the demo truthful if that changes.
 
+## session shq-2026-11-05-tour-brand
+```
+started:        2026-11-05
+ended:          2026-11-05
+model:          claude-opus-5-5
+driver:         solo
+branch:         feature/tour-brand
+starting_head:  0ab5250
+focus:          V² logo on every tour step; "A V² product" ending on the Home tour
+```
+
+### owner's brief
+- V² (V Square) logo on every page of the tours, left side, vertically centred (owner's screenshot: the empty band left of the page grid). At the end of the Home tour, a few seconds of "A V² product" from full screen, layered over the last screen, then kept on the left of the last page. Logo in all tours; the ending only on Home.
+
+### work done
+- `tour/tour-engine.js`: `LOGO`, `.dt-mark` + `placeMark()` (gutter when ≥ 76 px, else footer beside the Demo tag; footer left group `.dt-foot-l`); `signoff(tl, fin, opts)` called from `finale()` when the tour registers `signoff: { left: <free design units> }` (home.js: `{ left: 66 }`). `?v=5`.
+
+### gotchas for next session
+- The finale's burst now measures the CTA when it fires (the CTA appears after the ending).
+- `.dt-mark` has no CSS transition on purpose: tests measure it right after a step starts on a slow box.
+
+## session shq-2026-11-06-tour-fixes
+```
+started:        2026-11-06
+model:          claude-opus-5-5
+branch:         feature/tour-fixes-2
+starting_head:  f9fe7a7
+focus:          "Deputations" headline; self-fading finale; 10 s replay button; map tour never started
+```
+
+### root cause: the map tour never showed
+- It waited for the page's own map draw-in (~10 s) and only then downloaded the tour (~6 s more). Any tap/scroll in those ~16 s marked the visitor "busy" and cancelled the tour for the visit, so on phones it effectively never played.
+- Fix (`tour/tour-loader.js`): preload the tour files at `load`; "busy" = input in the last `IDLE_MS` (2.5 s), checked when the page has settled; wait for a pause up to `BUSY_GIVE_UP` (20 s).
+
+### gotchas for next session
+- Timing tests (button life, busy typing) measure inside the page (init scripts); Playwright-side waits run seconds late under `-n 2`.
+
+## session shq-2026-11-06-tour-first-visit
+```
+branch:         feature/tour-first-visit
+focus:          map tour before the map's draw-in; "first visit only" tag
+```
+- Loader: `hold()` / `release()` (data-tour-hold). india-map-view.js `tourReleased()` awaited before the first render, so the page's `history.replaceState` runs after the tour's Back step (no history race).
+- Phone footer is tight: logo + Demo tag + "First visit only" + "Don't show tours again" on one row at 390 px (test `test_first_visit_only_tag`).
+
+## session shq-2026-11-06-tour-home-first
+```
+branch:         feature/tour-home-first
+focus:          Home tour before the page; slow fade; "How this works" on-screen time
+```
+- index.html `<head>`: BEGIN/END `tour-early-hold` (inline style + script) mirrors the loader's auto-play rules and sets `html[data-tour-pending="page"]` before first paint. The loader (tag `data-tour-hold="page"`) is authoritative: `release()` if it won't play; the head script itself releases on `load` if `window.DepTourLoader` never appeared.
+- Page start-up waits for `deptour:release`: site-widgets.js `afterTour()` (typewriter, countUp), home-flourish.js sheen, hero-wave.js render loop.
+- Engine `close()`: fade `CLOSE_FADE` 1.2 s × current overlay opacity (`link` stays 0.3 s).
+- Replay button: 200 ms ticker counts on-screen time to `BUTTON_LIFE`; `place()` lifts it above `.sw-footer` and any `[data-tour-keepclear]` (map zoom buttons) that is on screen *under* it, via `--dt-lift` (hides only if the lift is over half the screen).
+- Asset versions: tour `?v=8`, site-widgets.js `?v=35`, hero-wave.js `?v=4`, home-flourish.js `?v=3`.
+- Tests: `tests/test_tour_home_hold.py`. Held-page checks wait inside the page (`_shown`): Playwright polling starves on the busy Home page under `-n 3`.

@@ -245,6 +245,31 @@
   color: var(--dt-dim);
   white-space: nowrap;
 }
+/* V² (V Square) logo on every step; "A V² product" at the end of the Home tour */
+.dt-foot-l { display: inline-flex; align-items: center; gap: 8px; }
+.dt-first { font: 600 11px/1.2 var(--dt-ui-font); color: var(--dt-dim); white-space: nowrap; }
+.dt-first-s { display: none; }
+.dt-is-tall .dt-first { font-size: 9.5px; }
+.dt-is-tall .dt-foot { column-gap: 6px; }
+.dt-is-tall .dt-first-l { display: none; }
+.dt-is-tall .dt-first-s { display: inline; }
+.dt-mark { opacity: 0; pointer-events: none; }
+.dt-mark.is-on { opacity: 1; }
+.dt-mark img { display: block; width: 100%; height: 100%; object-fit: contain;
+  filter: drop-shadow(0 6px 18px rgba(34, 211, 238, 0.35)); }
+.dt-mark.is-side { position: absolute; }
+.dt-mark.is-foot { width: 28px; height: 28px; flex: none; }
+.dt-is-tall .dt-mark.is-foot { width: 24px; height: 24px; }
+.dt-so-dim { position: absolute; inset: 0; opacity: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(2, 6, 23, 0.55), rgba(2, 6, 23, 0.88));
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.dt-low .dt-so-dim { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.dt-signoff { position: absolute; left: 50%; top: 50%; display: inline-flex; align-items: center; gap: 0.22em;
+  font: 700 clamp(34px, 8vw, 128px)/1 "Sora", system-ui, sans-serif; letter-spacing: -0.02em; white-space: nowrap;
+  transform-origin: 50% 50%; will-change: transform; }
+.dt-so-w { background-image: linear-gradient(135deg, #22d3ee 0%, #a78bfa 50%, #f0abfc 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; padding-bottom: 0.08em; }
+.dt-so-logo { height: 1.9em; width: auto; filter: drop-shadow(0 10px 30px rgba(34, 211, 238, 0.45)); }
 .dt-dots { display: flex; align-items: center; gap: 10px; }
 .dt-dots button {
   width: 26px;
@@ -371,8 +396,14 @@
 .dt-is-tall .dt-title { font-size: 19px; }
 .dt-is-tall .dt-skip { top: 16px; right: 14px; padding: 9px 14px; font-size: 12px; }
 .dt-is-tall .dt-foot { left: 14px; right: 14px; bottom: 14px; gap: 10px; flex-wrap: wrap; row-gap: 10px; }
-.dt-is-tall .dt-dots { order: -1; flex: 1 0 100%; justify-content: center; }   /* own row: Off always fits */
-.dt-is-tall .dt-badge { padding: 6px 9px; font-size: 10px; }
+.dt-foot-br { display: none; }
+/* phones: row 1 = step dots + "First visit only"; row 2 = logo, Demo tag … Don't show tours again */
+.dt-is-tall .dt-foot-l { display: contents; }
+.dt-is-tall .dt-dots { order: -3; flex: 1 1 auto; justify-content: flex-start; }
+.dt-is-tall .dt-first { order: -2; }
+.dt-is-tall .dt-foot-br { display: block; order: -1; flex-basis: 100%; height: 0; }
+.dt-is-tall .dt-badge { margin-right: auto; }
+.dt-is-tall .dt-badge { padding: 6px 7px; font-size: 10px; letter-spacing: 0.02em; }
 .dt-is-tall .dt-dots { gap: 6px; }
 .dt-is-tall .dt-dots button { width: 16px; }
 .dt-is-tall .dt-dots button.is-active { width: 30px; }

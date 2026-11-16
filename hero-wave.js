@@ -282,9 +282,12 @@ function initWave(canvas) {
   });
   // The site tour (tour/) covers the page almost opaquely: stop drawing the
   // wave underneath it so the tour's own animation gets the GPU on phones.
-  let tourOpen = false;
+  // On a first visit the page is held behind the tour until deptour:release.
+  let tourOpen = document.documentElement.hasAttribute("data-tour-pending");
+  let held = tourOpen;
   document.addEventListener("deptour:open", () => (tourOpen = true));
-  document.addEventListener("deptour:close", () => (tourOpen = false));
+  document.addEventListener("deptour:close", () => { if (!held) tourOpen = false; });
+  document.addEventListener("deptour:release", () => { held = false; tourOpen = false; clock.start(); });
 
   // paint one frame immediately so there's no blank first paint (and so the
   // buffer is readable even before the animation loop starts ticking)

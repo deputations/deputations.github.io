@@ -74,7 +74,7 @@
           <span class="map-counter-value" id="mapCounterValue">—</span>
         </div>
       </div>
-      <div class="map-svg-wrap" id="mapSvgWrap"></div>
+      <div class="map-svg-wrap" id="mapSvgWrap" data-tour-hidden></div>
       <!-- The open state's name, beside the state (see showStateTitle) -->
       <h2 class="map-state-title" id="mapStateTitle" hidden></h2>
       <div class="map-tooltip" id="mapTooltip" hidden>
@@ -84,7 +84,7 @@
       </div>
       <div id="mapAnnounce" aria-live="polite" class="map-sr-only"></div>
       <div class="map-controls">
-        <div class="map-zoom-controls">
+        <div class="map-zoom-controls" data-tour-keepclear>
           <button id="zoomInBtn" class="map-zoom-btn" aria-label="Zoom in">+</button>
           <button id="zoomOutBtn" class="map-zoom-btn" aria-label="Zoom out">&minus;</button>
           <button id="zoomResetBtn" class="map-zoom-btn" aria-label="Reset view">&#8962;</button>
@@ -113,7 +113,7 @@
   <!-- shared site chrome: mobile menu, feedback, visitor count, offline cache -->
   <script defer src="/site-widgets.js?v=35"></script>
   <!-- BEGIN site-tour (first-visit "how to use" demo; remove this block to revert) -->
-  <script defer src="/tour/tour-loader.js?v=4" data-tour="map" data-tour-ready="map:drawInComplete"></script>
+  <script defer src="/tour/tour-loader.js?v=8" data-tour="map" data-tour-hold></script>
   <!-- END site-tour -->
 </body>
 </html>
