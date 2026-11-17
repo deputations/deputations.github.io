@@ -1,0 +1,326 @@
+{
+ "last_run": "2026-11-17T18:52:47Z",
+ "counts": {
+  "tracked": 6,
+  "fail": 2,
+  "structure_changed": 4,
+  "fetch_ok": 0
+ },
+ "sources_tracked": 6,
+ "unhealthy": [
+  {
+   "id": "SRC-0010",
+   "name": "Ministry of Commerce & Industry (Dept. of Commerce), Government of India",
+   "tier": "T0",
+   "state": "FETCH_FAIL",
+   "detail": "1",
+   "last_good_ts": null
+  },
+  {
+   "id": "SRC-0013",
+   "name": "Department of Posts / India Post, GoI",
+   "tier": "T0",
+   "state": "STRUCTURE_CHANGED",
+   "detail": "0",
+   "last_good_ts": "2026-11-17T18:50:23Z"
+  },
+  {
+   "id": "SRC-0072",
+   "name": "Ministry of Information & Broadcasting (MIB)",
+   "tier": "T0",
+   "state": "STRUCTURE_CHANGED",
+   "detail": "0",
+   "last_good_ts": "2026-11-17T18:50:25Z"
+  },
+  {
+   "id": "SRC-0088",
+   "name": "Department of Personnel & Training (DoPT), DoPT Orders/circulars listing (doptcirculars.nic.in)",
+   "tier": "T0",
+   "state": "STRUCTURE_CHANGED",
+   "detail": "0",
+   "last_good_ts": "2026-11-17T18:50:26Z"
+  },
+  {
+   "id": "SRC-0089",
+   "name": "Union Public Service Commission (UPSC), www.upsc.gov.in (statutory commission; functionally under the Ministry of Personnel, Public Grievances and Pensions)",
+   "tier": "T0",
+   "state": "FETCH_FAIL",
+   "detail": "1",
+   "last_good_ts": null
+  },
+  {
+   "id": "SRC-0101",
+   "name": "Railway Recruitment Boards (17 RRBs under the Railway Board)",
+   "tier": "T0",
+   "state": "STRUCTURE_CHANGED",
+   "detail": "0",
+   "last_good_ts": "2026-11-17T18:50:29Z"
+  }
+ ],
+ "gaps": [
+  {
+   "sno": 7,
+   "org": "Ministry of AYUSH, GoI (apex domain ayush.gov.in; www variant has a certificate mismatch)",
+   "verdict": "NO_PUBLIC_ROUTE_FOUND",
+   "next_action": "Confirm in a real browser whether ayush.gov.in exposes a recruitment route client-side that 404s server-side; if none, keep as broken - the Ministry currently has no discoverable public vacancy/deputa"
+  },
+  {
+   "sno": 9,
+   "org": "National Institute of Ayurveda (NIA), Jaipur (Deemed University) under Ministry of AYUSH. Its live notice site is nia.nic.in; the cited recruitment.ayush.gov.in subdomain is bot-blocked.",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Use nia.nic.in/notice.html (browser) as the primary NIA route; monitor the empty Vacancies category and the esic.niajaipur.com notification for deputation/short-term entries to confirm deputation evid"
+  },
+  {
+   "sno": 13,
+   "org": "Central Council for Research in Unani Medicine (CCRUM), HQ",
+   "verdict": "BROKEN_LINK_NO_CORRECTION",
+   "next_action": "keep URL (it is the correct CCRUM vacancy page); re-test ccrum.res.in live access later - likely transient server outage"
+  },
+  {
+   "sno": 22,
+   "org": "CFQCTI (institute under Dept of Fertilizers) — NOT Department of Pharmaceuticals",
+   "verdict": "NO_PUBLIC_ROUTE_FOUND",
+   "next_action": "CFQCTI is an independent publishing institute with no working public recruitment route; owner should confirm the institute's actual web domain or that it routes recruitment through a parent ministry p"
+  },
+  {
+   "sno": 45,
+   "org": "Tobacco Board of India",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Replace original URL with https://tobaccoboard.in/ (only live property; note it carries no recruitment content). Register the ministry feed as a parallel TDO source. Flag to owner: tobaccoboard.co.in "
+  },
+  {
+   "sno": 57,
+   "org": "Food Corporation of India (FCI)",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "flag TLS cert chain issue on fci.gov.in to FCI web team; no public static route found for deputation notices"
+  },
+  {
+   "sno": 77,
+   "org": "Sahitya Akademi",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Retry in 24-48h; if still refused, check Ministry of Culture forwarding page for Sahitya Akademi vacancy orders"
+  },
+  {
+   "sno": 78,
+   "org": "National Museum, New Delhi",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Retry; if persistent, look for National Museum vacancy orders on Ministry of Culture notices section"
+  },
+  {
+   "sno": 79,
+   "org": "Victoria Memorial Hall, Kolkata",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Open in a real browser to confirm the recruitment page renders; verify deputation postings via Employment News"
+  },
+  {
+   "sno": 80,
+   "org": "Indian Museum, Kolkata",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Open in a real browser; cross-check Indian Museum vacancy orders on Ministry of Culture forwarding pages"
+  },
+  {
+   "sno": 86,
+   "org": "DGQA / Chief Quality Assurance Establishments (under DDP, MoD)",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Re-probe the site from a different network to rule out local TLS interception; if still blocked, cite the 16-06-2024 wayback copy as the reference for the listing structure"
+  },
+  {
+   "sno": 95,
+   "org": "Bharat Electronics Limited (BEL)",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Re-audit from an India-resident connection or use a domestic mirror; treat as accessible only for IN users"
+  },
+  {
+   "sno": 103,
+   "org": "Ministry of Earth Sciences",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "verify /vacancies in a real browser; treat M/o ES row as umbrella of the child bodies in this batch"
+  },
+  {
+   "sno": 108,
+   "org": "INCOIS",
+   "verdict": "BROKEN_LINK_NO_CORRECTION",
+   "next_action": "load incois.gov.in in a real browser, find the careers/recruitment section from rendered nav, then re-audit deputation history"
+  },
+  {
+   "sno": 110,
+   "org": "Ministry of Education, Government of India",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "verify /vacancies in a real browser; M/o Education vacancy notices are typically forwarded to attached ministries/autonomous bodies which publish independently"
+  },
+  {
+   "sno": 113,
+   "org": "Central Tibetan Schools Administration",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Recheck when ctsa.nic.in host recovers; verify deputation history in archive"
+  },
+  {
+   "sno": 115,
+   "org": "AICTE",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Recheck aicte-india.org from a non-blocked network; confirm AICTE publishes its own deputation circulars"
+  },
+  {
+   "sno": 118,
+   "org": "National Testing Agency (NTA)",
+   "verdict": "NO_PUBLIC_ROUTE_FOUND",
+   "next_action": "Confirm NTA's current recruitment portal location from a non-blocked network; verify whether NTA runs deputation posts"
+  },
+  {
+   "sno": 134,
+   "org": "Central Pollution Control Board",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "re-audit when cpcb.nic.in is reachable; keep original URL"
+  },
+  {
+   "sno": 135,
+   "org": "National Biodiversity Authority, Thiruvananthapuram",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "re-audit after the domain's TLS certificate is renewed; switch the stored URL to https scheme"
+  },
+  {
+   "sno": 147,
+   "org": "Central Board of Direct Taxes (CBDT), Department of Revenue",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Re-fetch /recruitment-notices with a browser-like client or manual check; treat IDeAS + DOR OSD slots as the deputation evidence until a specific circular is citable"
+  },
+  {
+   "sno": 166,
+   "org": "ICAR (Indian Council of Agricultural Research) - vacancies page; animal/fisheries institutes (IVRI, NIAB, CIFA, NBFGR) publish on their own sites",
+   "verdict": "BROKEN_LINK_NO_CORRECTION",
+   "next_action": "Re-audit from a non-blocked network (site may geo/WAF-block this egress IP); check icar.org.in/en/vacancies in a real browser"
+  },
+  {
+   "sno": 170,
+   "org": "Ministry of Health and Family Welfare (MoHFW)",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Open /vacancy in a real browser and confirm the live table; check for any deputation entries; MoHFW central ministry vacancies are rare - most deputation ads come from its attached institutes"
+  },
+  {
+   "sno": 185,
+   "org": "Press Information Bureau",
+   "verdict": "BROKEN_LINK_NO_CORRECTION",
+   "next_action": "Drop or mark row: no public recruitment route at PIB. Any recruitment items will appear only as PIB press releases or on parent MIB's page - monitor mib.gov.in/offerings/vacancies instead."
+  },
+  {
+   "sno": 191,
+   "org": "Swachh Bharat Mission (Grameen) / Department of Drinking Water and Sanitation, Ministry of Jal Shakti",
+   "verdict": "BROKEN_LINK_NO_CORRECTION",
+   "next_action": "Re-audit: the DDWS/SBMG recruitment section has been dropped from the live site; check the Jal Shakti parent site (Letters/Circulars link from SBM homepage) manually in a browser, since the fetcher is"
+  },
+  {
+   "sno": 192,
+   "org": "Central Water Commission (CWC), Ministry of Jal Shakti",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "re-audit: cwc.gov.in was 502 on all paths at check time; re-fetch /en/vacancies and look for a deputation/contract post or a recruitment archive once the server recovers"
+  },
+  {
+   "sno": 193,
+   "org": "Central Ground Water Board (CGWB), Ministry of Jal Shakti",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "re-audit: open https://www.cgwb.gov.in/vacancies-0 in a browser and inspect the vacancy table for a deputation/contract post; the fetcher cannot complete the TLS handshake"
+  },
+  {
+   "sno": 194,
+   "org": "National Mission for Clean Ganga (NMCG), Ministry of Jal Shakti",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "re-audit: open nmcg.nic.in/application/ApplyNow.aspx in a browser and check the NMCG site's recruitment/notification section for deputation circulars; the fetcher cannot validate its certificate chain"
+  },
+  {
+   "sno": 196,
+   "org": "National Water Development Agency (NWDA), Ministry of Jal Shakti",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "re-audit: open https://www.nwda.gov.in/content/innerpage/vacancy_list.php in a browser; check whether the table ever lists deputation/contract posts (archive or past notices) since the fetcher cannot "
+  },
+  {
+   "sno": 197,
+   "org": "Ministry of Labour and Employment (ministry site)",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "re-audit in a browser: open https://labour.gov.in/vacancies, note the posting mechanism (JS-rendered listing/filters) and look for a deputation or contract post; the fetcher is bot-blocked with 403"
+  },
+  {
+   "sno": 209,
+   "org": "Coir Board, Kochi (Ministry of MSME) - NOT re-verifiable today",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "re-audit coirboard.gov.in from another network (site may be blocking this IP range or be down); if still down, look for Coir Board notices on dashboard.msme.gov.in or MSME ministry forwarding pages"
+  },
+  {
+   "sno": 212,
+   "org": "National Commission for Minorities (NCM)",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "recheck with a browser-class fetcher or later; NCM vacancy page may only be served to non-datacenter IPs"
+  },
+  {
+   "sno": 217,
+   "org": "National Institute of Wind Energy (NIWE), Thiruvananthapuram",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "re-audit later; if still refused, try https://niwe.res.in from a different egress or check niwe.res.in/hi and /en variants"
+  },
+  {
+   "sno": 221,
+   "org": "Ministry of Parliamentary Affairs, Government of India (site mpa.gov.in)",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "re-audit via alternate user-agent or after MPA WAF policy change; verify recruitment page content when accessible; also audit both House secretariats separately (see new_orgs - they publish on the sha"
+  },
+  {
+   "sno": 237,
+   "org": "Directorate General of Shipping",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "retry when DGS endpoint reachable; confirm current vacancy/deputation postings and any corrected path"
+  },
+  {
+   "sno": 238,
+   "org": "Inland Waterways Authority of India (IWAI)",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "retry iwai.nic.in when reachable; until then track IWAI deputation postings via shipmin.gov.in/orders/vacancies"
+  },
+  {
+   "sno": 241,
+   "org": "Central Electricity Authority (CEA), Ministry of Power",
+   "verdict": "BROKEN_LINK_NO_CORRECTION",
+   "next_action": "Watch CEA site for a new vacancy section; until then route CEA vacancy checks to parent Ministry of Power page https://powermin.gov.in/recruitment (S.No. 240) and Employment News"
+  },
+  {
+   "sno": 245,
+   "org": "Ministry of Railways, Government of India (Railway Board)",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Re-test the jsp deep link from an India-IP / browser session; meanwhile track board appointment/deputation circulars via What's New on the new-CMS homepage and Employment News"
+  },
+  {
+   "sno": 259,
+   "org": "Ministry of Skill Development & Entrepreneurship (MSDE)",
+   "verdict": "NO_PUBLIC_ROUTE_FOUND",
+   "next_action": "Do not treat as a cert problem (cert is valid now). The real gap is empty recruitment data + unreachable digifootprint backend; re-poll /cms/wp-json/post-page/post for published posts and re-audit onc"
+  },
+  {
+   "sno": 260,
+   "org": "National Skill Development Corporation Limited (NSDC)",
+   "verdict": "NO_PUBLIC_ROUTE_FOUND",
+   "next_action": "Keep /careers as the official contact point; track NSDC openings via its press-release channel / hr@nsdcindia.org rather than a public vacancy board; note the anti-fraud disclaimer when publishing NSD"
+  },
+  {
+   "sno": 265,
+   "org": "Ministry of Textiles (Government of India)",
+   "verdict": "BROKEN_LINK_NO_CORRECTION",
+   "next_action": "Confirm the ministry's current official domain from a live source (india.gov.in or NIC listing) and add as a row; until then keep row flagged dead - child-body rows cover the sector"
+  },
+  {
+   "sno": 268,
+   "org": "Textiles Committee (MoTextiles)",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Re-probe domain daily; if still down after 2 weeks, check whether TC migrated to the parent ministry site or publishes only via txcindia.gov.in"
+  },
+  {
+   "sno": 275,
+   "org": "NIPCCD (domain dead at DNS level)",
+   "verdict": "NO_PUBLIC_ROUTE_FOUND",
+   "next_action": "Drop or reassign the NIPCCD row; verify current legal home (WCD vs MoE) and route notices via parent ministry page; check Employment News for 'NIPCCD' deputation postings"
+  },
+  {
+   "sno": 277,
+   "org": "Sports Authority of India (site unreachable from audit network)",
+   "verdict": "ACCESS_RESTRICTED",
+   "next_action": "Re-test from a different network/ISP; verify via YAS forwarding page or EoG whether SAI posts deputation/FTS vacancies; keep row flagged ACCESS_RESTRICTED until reachable"
+  }
+ ]
+}

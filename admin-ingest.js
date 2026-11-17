@@ -1039,6 +1039,7 @@ function wireApp() {
       $('paneUpdates').classList.toggle('hidden', t !== 'updates');
       $('paneVerify').classList.toggle('hidden', t !== 'verify');
       $('paneProjects').classList.toggle('hidden', t !== 'projects');
+      $('paneMonitor').classList.toggle('hidden', t !== 'monitor');
       // leaving Manage by hand clears any flag-comparison context so it doesn't
       // re-trigger on a later manual visit (the flag's Open button re-sets it)
       if (t !== 'manage') ACTIVE_FLAG = null;
@@ -1050,6 +1051,7 @@ function wireApp() {
       if (t === 'updates') loadUpdates();
       if (t === 'verify') loadVerifyQueue();
       if (t === 'projects') loadProjectsAdmin();
+      if (t === 'monitor') loadMonitor();
     };
   });
 
@@ -1113,6 +1115,9 @@ function wireApp() {
     saveUI({ tab: 'manage' });
     loadManage();
   };
+
+  // Deputation source monitor (research-alldup/run_monitor.py -> data/monitor/)
+  wireMonitor();
 
   // Projects CMS (V² upcoming-projects) wiring
   if ($('projRefresh')) $('projRefresh').onclick = loadProjectsAdmin;
@@ -3579,5 +3584,114 @@ function updateCard(u) {
     catch (e) { toast('Discard failed: ' + e.message); }
   });
   return el;
+}
+
+/* --------------------------------------------------------------------------
+   Monitor tab — deputation source watch (research-alldup/run_monitor.py).
+   Reads data/monitor/status.json (source health + counts) and
+   data/monitor/events.json (new notices + same-URL revisions) written by the
+   monitor on each pass. The dashboard is a viewer only — it never mutates.
+   -------------------------------------------------------------------------- */
+let MON_STATE = { tier: 'all' };
+
+const MON_BASE = (typeof window !== 'undefined' && window.MONITOR_BASE) ? window.MONITOR_BASE : 'data/monitor/';
+
+async function monFetch(path) {
+  try {
+    const r = await fetch(MON_BASE + path + '?v=' + Date.now());
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+const monRel = (ts) => {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  const min = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (min < 1) return 'just now';
+  if (min < 60) return min + 'm ago';
+  const h = Math.floor(min / 60);
+  if (h < 48) return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
+};
+
+async function loadMonitor() {
+  const kpis = $('monKpis');
+  if (!kpis) return;
+  kpis.innerHTML = '<p class="muted">Loading monitor…</p>';
+  const [status, events, cfg] = await Promise.all([monFetch('status.json'), monFetch('events.json'), monFetch('config.json')]);
+
+  if (!status) {
+    kpis.innerHTML = '';
+    $('monEvents').innerHTML = '';
+    $('monHealth').innerHTML = '';
+    $('monGaps').innerHTML = '<p class="muted">No monitor data yet. Run <code>research-alldup/run_monitor.py</code> once to create <code>data/monitor/status.json</code> + <code>events.json</code>, commit, and refresh.</p>';
+    return;
+  }
+
+  $('monLastRun').textContent = status.last_run ? ('last pass ' + monRel(status.last_run)) : '';
+
+  // ---- KPI strip (pill vocabulary matches the Ingest overview) ----
+  const c = status.counts || {};
+  const rev = (events && events.revisions) || (status.recent_revisions) || [];
+  const news = (events && events.new_notices) || (status.recent_notices) || [];
+  const failN = c.fail || 0, chgN = c.structure_changed || 0;
+  const kpi = (n, label, tone) => `<div class="mon-kpi${tone ? ' ' + tone : ''}"><b>${n}</b><span>${label}</span></div>`;
+  kpis.innerHTML =
+    kpi(status.sources_tracked ?? c.tracked ?? 0, 'sources watched') +
+    kpi(news.length, 'new notices', news.length ? 'warn' : '') +
+    kpi(rev.length, 'revisions', rev.length ? 'warn' : '') +
+    kpi(failN, 'fetch-failed', failN ? 'bad' : 'ok') +
+    kpi(chgN, 'structure-changed', chgN ? 'bad' : 'ok');
+  if ($('monCount')) $('monCount').textContent = (failN + chgN + news.length) ? ` (${failN + chgN + news.length})` : '';
+
+  // ---- events table ----
+  const evBody = $('monEvents');
+  const allEvents = [...news, ...rev].map((e) => ({ ...e, _kind: (e.kind || (news.indexOf(e) >= 0 ? 'new' : 'revision')) }))
+    .sort((a, b) => new Date(b.ts || b.created_at || 0) - new Date(a.ts || a.created_at || 0));
+  evBody.innerHTML = allEvents.length ? allEvents.slice(0, 40).map((e) => {
+    const kind = e.kind || (e.revision ? 'revision' : 'new');
+    const tone = kind === 'new' ? 'warn' : '';
+    return `<tr>
+      <td>${escapeHtml(monRel(e.ts || e.created_at))}</td>
+      <td>${escapeHtml(e.source_name || e.source || e.org || '—')}</td>
+      <td><span class="chip ${tone}" style="font-size:11px">${escapeHtml(kind)}</span></td>
+      <td><a href="${escapeHtml(e.url || e.notice_url || '#')}" target="_blank" rel="noopener">${escapeHtml((e.title || e.notice || e.revision_type || 'new notice').slice(0, 64))}</a></td>
+      <td class="muted">${escapeHtml(e.revision_type || e.status || '')}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="5" class="muted">No new notices or revisions yet on this pass.</td></tr>';
+
+  // ---- unhealthy sources table ----
+  const unhealthy = (status.unhealthy || (cfg && cfg.sources ? cfg.sources : []) || []).filter((s) =>
+    MON_STATE.tier === 'all' || s.tier === 'T0');
+  const badRows = (status.unhealthy || []).filter((s) => s.state && s.state !== 'FETCH_OK');
+  const hb = $('monHealth');
+  hb.innerHTML = badRows.length ? badRows.map((s) => {
+    const tone = s.state === 'FETCH_FAIL' ? 'bad' : 'warn';
+    return `<tr>
+      <td>${escapeHtml(s.name || s.id)}</td>
+      <td>${escapeHtml(s.tier || 'T1')}</td>
+      <td><span class="chip ${tone}" style="font-size:11px">${escapeHtml(s.state)}</span></td>
+      <td class="muted">${escapeHtml((s.detail || s.consec_fail || '').toString())}</td>
+      <td class="muted">${escapeHtml(monRel(s.last_good_ts))}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="5" class="muted" style="color:var(--good,#37c46b)">All watched sources healthy ✓</td></tr>';
+
+  // ---- T3 gap queue ----
+  const gaps = (status.gaps || (cfg && cfg.t3_gaps) || []);
+  const gapsBody = $('monGaps');
+  if ($('monGapNote')) $('monGapNote').textContent = gaps.length ? `(${gaps.length})` : '';
+  gapsBody.innerHTML = gaps.length ? `<table class="vf-table"><thead><tr><th>Org</th><th>Gap</th><th>Next action</th></tr></thead><tbody>` +
+    gaps.slice(0, 30).map((g) => `<tr><td>${escapeHtml(g.org || g.name || '—')}</td><td><span class="chip" style="font-size:11px">${escapeHtml(g.verdict || g.state || 'gap')}</span></td><td class="muted">${escapeHtml((g.next_action || '').slice(0, 120))}</td></tr>`).join('') +
+    '</tbody></table>' : '<p class="muted">No open T3 gaps.</p>';
+}
+
+function wireMonitor() {
+  if ($('monRefresh')) $('monRefresh').onclick = loadMonitor;
+  if ($('monTierToggle')) $('monTierToggle').onclick = (e) => {
+    MON_STATE.tier = MON_STATE.tier === 'all' ? 'T0' : 'all';
+    e.target.textContent = 'Tier: ' + MON_STATE.tier;
+    loadMonitor();
+  };
 }
 
