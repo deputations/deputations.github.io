@@ -216,6 +216,7 @@ Deno.serve(async (req) => {
   // Use a provider's query embedding only with that provider's own index.
   // An unavailable OpenAI API or index falls through to the existing Gemini path.
   let matches: any[] | null = null;
+  let provider: "openai" | "gemini" = "gemini";
   async function search(vector: number[], rpc: string): Promise<any[]> {
     const { data, error } = await admin.rpc(rpc, {
       query_embedding: `[${vector.join(",")}]`, match_count: k,
@@ -227,6 +228,7 @@ Deno.serve(async (req) => {
   if (openaiReady) {
     try {
       matches = await search(await embedOpenAI(query), "search_vacancies_openai");
+      provider = "openai";
     } catch (e) {
       console.warn("[semantic] OpenAI unavailable; trying Gemini", (e as Error).message);
     }
@@ -249,7 +251,7 @@ Deno.serve(async (req) => {
   }
   const ids = (matches ?? []).map((m: any) => m.vacancy_id);
   if (ids.length === 0) {
-    const empty = { ok: true, results: [], cached_until: Date.now() + 30_000 };
+    const empty = { ok: true, results: [], provider, cached_until: Date.now() + 30_000 };
     if (cacheKey) cacheSet(cacheKey, empty, 30_000);
     return json(empty);
   }
@@ -285,7 +287,7 @@ Deno.serve(async (req) => {
     };
   });
 
-  const responseBody = { ok: true, results, cached_until: Date.now() + 60_000 };
+  const responseBody = { ok: true, results, provider, cached_until: Date.now() + 60_000 };
   if (cacheKey) cacheSet(cacheKey, responseBody, 60_000);
   return json(responseBody);
 });

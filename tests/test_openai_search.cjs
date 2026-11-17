@@ -45,9 +45,11 @@ async function run({ready = true, openaiFailure = false, openaiRpcFailure = fals
 (async () => {
   let r = await run({geminiDisabled:true});
   assert.equal(r.status, 200); assert.deepEqual(r.calls, ['openai','search_vacancies_openai']);
+  assert.equal(r.body.provider, 'openai');
   assert.equal(r.body.results[0].vacancy_id, 'V1');
   r = await run({openaiFailure:true});
   assert.equal(r.status, 200); assert.deepEqual(r.calls, ['openai','gemini','search_vacancies']);
+  assert.equal(r.body.provider, 'gemini');
   r = await run({openaiRpcFailure:true});
   assert.equal(r.status, 200); assert.deepEqual(r.calls, ['openai','search_vacancies_openai','gemini','search_vacancies']);
   r = await run({ready:false});
