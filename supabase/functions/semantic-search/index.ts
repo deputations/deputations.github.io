@@ -1,7 +1,7 @@
 // ============================================================================
 // Edge Function: semantic-search
 // Visitor types a natural-language query ("finance posts in NE"); the function
-// embeds it with Gemini and returns top-K matches from pgvector. Powers the
+// embeds it with OpenAI, falling back to Gemini, and returns matches from pgvector. Powers the
 // "✨ AI" toggle chip on the home page (PR 3 wires the UI; this function is
 // the backend).
 //
@@ -37,6 +37,8 @@ const SUPABASE_URL    = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY     = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const GEMINI_API_KEY  = Deno.env.get("GEMINI_API_KEY")!;
 const EMBED_MODEL     = Deno.env.get("GEMINI_EMBED_MODEL") ?? "gemini-embedding-001";
+const OPENAI_API_KEY  = Deno.env.get("OPENAI_API_KEY") ?? "";
+const OPENAI_MODEL    = "text-embedding-3-small";
 const EMBED_DIM       = 768;
 const GAPI_BASE       = "https://generativelanguage.googleapis.com/v1beta/models";
 
@@ -105,16 +107,33 @@ async function embedQuery(text: string, taskType: string | null): Promise<number
   return emb as number[];
 }
 
+async function embedOpenAI(text: string): Promise<number[]> {
+  const res = await fetch("https://api.openai.com/v1/embeddings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_API_KEY}` },
+    body: JSON.stringify({ model: OPENAI_MODEL, input: text, dimensions: EMBED_DIM }),
+    signal: AbortSignal.timeout(6000),
+  });
+  if (!res.ok) throw new Error(`OpenAI embedding request failed (${res.status})`);
+  const data = await res.json();
+  const vector = data?.data?.[0]?.embedding;
+  if (!Array.isArray(vector) || vector.length !== EMBED_DIM || !vector.every(Number.isFinite)) {
+    throw new Error("Invalid OpenAI embedding");
+  }
+  return vector;
+}
+
 // ---- State flag helpers (service-role client bypasses RLS) ----
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
 // One read for both flags we need per request — `disabled_until` (free-tier
 // valve) and `embed_task_type` (which vector space the stored corpus is in).
-async function readState(): Promise<{ disabledUntil: string | null; embedTaskType: string | null }> {
-  const { data } = await admin
+async function readState(): Promise<{ disabledUntil: string | null; embedTaskType: string | null; openaiReady: boolean }> {
+  const { data, error } = await admin
     .from("semantic_search_state")
     .select("key, value")
-    .in("key", ["disabled_until", "embed_task_type"]);
+    .in("key", ["disabled_until", "embed_task_type", "openai_embedding_model"]);
+  if (error) throw error;
   const byKey = new Map((data ?? []).map((r: any) => [r.key, r.value]));
 
   const rawDisabled = byKey.get("disabled_until");
@@ -129,7 +148,7 @@ async function readState(): Promise<{ disabledUntil: string | null; embedTaskTyp
   const rawTask = byKey.get("embed_task_type");
   const embedTaskType = rawTask === "RETRIEVAL_DOCUMENT" ? "RETRIEVAL_QUERY" : null;
 
-  return { disabledUntil, embedTaskType };
+  return { disabledUntil, embedTaskType, openaiReady: byKey.get("openai_embedding_model") === OPENAI_MODEL };
 }
 
 async function setDisabledUntil(iso: string): Promise<void> {
@@ -174,18 +193,13 @@ Deno.serve(async (req) => {
   // 1. Free-tier guard + corpus vector space (one cheap DB read)
   let disabledUntil: string | null = null;
   let queryTaskType: string | null = null;
+  let openaiReady = false;
   try {
     const state = await readState();
     disabledUntil = state.disabledUntil;
     queryTaskType = state.embedTaskType;
+    openaiReady = !!OPENAI_API_KEY && state.openaiReady;
   } catch (e) { console.warn("[semantic] state read failed:", e); }
-  if (disabledUntil && Date.parse(disabledUntil) > Date.now()) {
-    return json({
-      ok: false, code: "disabled",
-      message: "AI search temporarily disabled (free-tier limit). Try again after midnight UTC.",
-      disabled_until: disabledUntil,
-    }, 503);
-  }
 
   // 2. LRU cache lookup (key = sha256(query+filters+k+taskType))
   // taskType is part of the key: the same query embedded in a different
@@ -194,43 +208,44 @@ Deno.serve(async (req) => {
   let cacheKey: string | null = null;
   let cached: unknown = null;
   try {
-    cacheKey = await sha256Hex(`${query}|${fMinistry ?? ""}|${fLevel ?? ""}|${k}|${queryTaskType ?? ""}`);
+    cacheKey = await sha256Hex(`${query}|${fMinistry ?? ""}|${fLevel ?? ""}|${k}|${queryTaskType ?? ""}|${openaiReady}`);
     cached = cacheGet(cacheKey);
   } catch { /* caching is best-effort */ }
   if (cached) return json(cached as any);
 
-  // 3. Embed the query
-  let queryEmbedding: number[];
-  try {
-    queryEmbedding = await embedQuery(query, queryTaskType);
-  } catch (e) {
-    const msg = (e as Error).message;
-    if (msg === "RATE_LIMITED") {
-      const iso = tomorrowMidnightUtc();
-      try { await setDisabledUntil(iso); } catch (werr) {
-        console.warn("[semantic] state write failed:", werr);
-      }
-      return json({
-        ok: false, code: "disabled",
-        message: "AI search rate-limited — auto-disabled until tomorrow UTC.",
-        disabled_until: iso,
-      }, 503);
-    }
-    return json({ ok: false, code: "embed_failed", message: msg }, 502);
+  // Use a provider's query embedding only with that provider's own index.
+  // An unavailable OpenAI API or index falls through to the existing Gemini path.
+  let matches: any[] | null = null;
+  async function search(vector: number[], rpc: string): Promise<any[]> {
+    const { data, error } = await admin.rpc(rpc, {
+      query_embedding: `[${vector.join(",")}]`, match_count: k,
+      filter_ministry: fMinistry, filter_level: fLevel,
+    });
+    if (error) throw error;
+    return data ?? [];
   }
-
-  // 4. Top-K from pgvector via the RPC (joins on status in ('Active','approved')).
-  // pgvector params must be passed as the PostgreSQL literal string "[0.1,0.2,...]"
-  // — the JS array form is rejected by PostgREST.
-  const vectorLiteral = `[${queryEmbedding.join(",")}]`;
-  const { data: matches, error: rpcErr } = await admin.rpc("search_vacancies", {
-    query_embedding: vectorLiteral,
-    match_count: k,
-    filter_ministry: fMinistry,
-    filter_level: fLevel,
-  });
-  if (rpcErr) {
-    return json({ ok: false, code: "search_failed", message: rpcErr.message }, 500);
+  if (openaiReady) {
+    try {
+      matches = await search(await embedOpenAI(query), "search_vacancies_openai");
+    } catch (e) {
+      console.warn("[semantic] OpenAI unavailable; trying Gemini", (e as Error).message);
+    }
+  }
+  if (matches === null) {
+    if (disabledUntil && Date.parse(disabledUntil) > Date.now()) {
+      return json({ ok: false, code: "disabled", message: "AI search temporarily unavailable. Use keyword search.", disabled_until: disabledUntil }, 503);
+    }
+    try {
+      matches = await search(await embedQuery(query, queryTaskType), "search_vacancies");
+    } catch (e) {
+      if ((e as Error).message === "RATE_LIMITED") {
+        const iso = tomorrowMidnightUtc();
+        try { await setDisabledUntil(iso); } catch { /* best effort */ }
+        return json({ ok: false, code: "disabled", message: "AI search temporarily unavailable. Use keyword search.", disabled_until: iso }, 503);
+      }
+      console.warn("[semantic] Gemini backup unavailable");
+      return json({ ok: false, code: "embed_failed", message: "AI search temporarily unavailable. Use keyword search." }, 502);
+    }
   }
   const ids = (matches ?? []).map((m: any) => m.vacancy_id);
   if (ids.length === 0) {
