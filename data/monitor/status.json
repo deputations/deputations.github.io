@@ -1,5 +1,5 @@
 {
- "last_run": "2026-11-18T08:51:30Z",
+ "last_run": "2026-11-18T09:13:07Z",
  "counts": {
   "tracked": 8,
   "ok": 8,
@@ -7,7 +7,7 @@
   "fail": 0,
   "backoff": 0,
   "structure_changed": 0,
-  "new_candidates": 240,
+  "new_candidates": 200,
   "pass_interrupted": false
  },
  "sources_tracked": 8,
