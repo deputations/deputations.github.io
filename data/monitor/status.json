@@ -1,5 +1,5 @@
 {
- "last_run": "2026-11-18T05:24:27Z",
+ "last_run": "2026-11-18T05:25:58Z",
  "counts": {
   "tracked": 8,
   "ok": 7,
@@ -17,7 +17,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-18T05:24:11Z",
+   "last_attempt_ts": "2026-11-18T05:25:41Z",
    "requires_browser": false
   }
  ],
