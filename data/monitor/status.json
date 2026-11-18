@@ -1,5 +1,5 @@
 {
- "last_run": "2026-11-17T23:44:34Z",
+ "last_run": "2026-11-18T05:22:04Z",
  "counts": {
   "tracked": 8,
   "ok": 7,
@@ -15,9 +15,9 @@
    "name": "Railway Recruitment Boards (17 RRBs under the Railway Board)",
    "tier": "T0",
    "state": "FETCH_FAIL",
-   "detail": "consec_fail=1",
+   "detail": "consec_fail=2",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-17T23:39:07Z",
+   "last_attempt_ts": "2026-11-18T05:20:56Z",
    "requires_browser": false
   }
  ],
