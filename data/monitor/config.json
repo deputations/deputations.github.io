@@ -6008,6 +6008,35 @@
       "max_len": null
     },
     {
+      "id": "st-RJ-DOP",
+      "sno": null,
+      "jurisdiction": "Rajasthan",
+      "name": "Rajasthan - Dept of Personnel — Opportunities (Non-CSS Deputation)",
+      "url": "https://dop.rajasthan.gov.in/CombinedModule/20/Content/Opportunities.aspx?menu_id=223",
+      "tier": "T1",
+      "role": "original",
+      "access": "public",
+      "language": "en",
+      "scope": "",
+      "has_deputation_history": true,
+      "needs_review": false,
+      "owner_note": "Monitor as the Rajasthan deputation index; keep category filters (CSS/Inter-Cadre/Non-CSS) as sub-views.",
+      "js_shell": false,
+      "anchors": [
+        "vacancy",
+        "deputation",
+        "circular",
+        "recruitment",
+        "notice"
+      ],
+      "evidence": "VERIFIED LIVE in browser 2026-11-18: DOP 2.0 'Opportunities' page with category filters (CSS Deputation, Inter-Cadre Deputation, Non-CSS Deputation) + live deputation entries (NCST Assistant/Deputy Director, DRAT Registrar, BPR&D Group A/B/C, NCMEI, LBSNAA faculty). WebFetch times out on this host; browser fetch works.",
+      "last_hash": null,
+      "last_good_ts": null,
+      "consec_fail": 0,
+      "min_len": null,
+      "max_len": null
+    },
+    {
       "id": "st-SK-DOP-EN",
       "sno": null,
       "jurisdiction": "Sikkim",
@@ -6117,6 +6146,35 @@
         "notice"
       ],
       "evidence": "Departmental general notices incl. deputation faculty/vacancy material (Manus [24]).",
+      "last_hash": null,
+      "last_good_ts": null,
+      "consec_fail": 0,
+      "min_len": null,
+      "max_len": null
+    },
+    {
+      "id": "st-UP-DAP",
+      "sno": null,
+      "jurisdiction": "Uttar Pradesh",
+      "name": "Uttar Pradesh - Dept of Appointment & Personnel — Posts Advertised for Deputation",
+      "url": "https://niyuktionline.upsdc.gov.in/Pages/apply-for-deputation",
+      "tier": "T1",
+      "role": "original",
+      "access": "public",
+      "language": "en+hi",
+      "scope": "",
+      "has_deputation_history": true,
+      "needs_review": false,
+      "owner_note": "Monitor as the UP deputation index; watch for new rows (advt-date column) and deadline additions.",
+      "js_shell": false,
+      "anchors": [
+        "vacancy",
+        "deputation",
+        "circular",
+        "recruitment",
+        "notice"
+      ],
+      "evidence": "VERIFIED LIVE in browser 2026-11-18: 'POST ADVERTISED FOR DEPUTATION' table - 15+ rows with advert-date/post/scale/dept (30/09/2026 Secretary MoEFCC; 21/09/2026 Principal Secretary Medical; 08/09/2026 ED REC; 22/04/2026 Joint Secretary MoPower...). A true deputation index, state-origin.",
       "last_hash": null,
       "last_good_ts": null,
       "consec_fail": 0,
@@ -6441,6 +6499,24 @@
       "consec_fail": 0,
       "min_len": null,
       "max_len": null
+    },
+    {
+      "id": "TEST-FAIL-T0",
+      "name": "test-fail-t0",
+      "url": "https://definitely-not-a-real-host.example.invalid/",
+      "tier": "T0",
+      "role": "original",
+      "access": "public",
+      "has_deputation_history": false,
+      "needs_review": false,
+      "owner_note": "",
+      "js_shell": false,
+      "anchors": [
+        "vacancy"
+      ],
+      "last_hash": null,
+      "last_good_ts": null,
+      "consec_fail": 0
     }
   ],
   "pdf_watch": [
@@ -7261,13 +7337,13 @@
   "state_ut": {
     "jurisdictions": 36,
     "routes_total": 44,
-    "monitored": 30,
-    "verified": 9
+    "monitored": 32,
+    "verified": 11
   },
   "counts": {
-    "sources": 252,
+    "sources": 254,
     "T0": 8,
-    "T1": 244,
+    "T1": 246,
     "needs_review": 131,
     "pdf_watch": 54,
     "t3_gaps": 62,
