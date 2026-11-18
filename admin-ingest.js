@@ -3632,21 +3632,30 @@ async function loadMonitor() {
 
   $('monLastRun').textContent = status.last_run ? ('last pass ' + monRel(status.last_run)) : '';
 
-  // ---- KPI strip (pill vocabulary matches the Ingest overview) ----
+  // ---- KPI strip. HEALTH KPIs are CUMULATIVE (unhealthy/deferred arrays in
+  // status.json), so an evening T0-only pass still shows the morning full-scan's
+  // T1 failures; EVENT KPIs are this-pass. 'sources watched' = full register.
   const c = status.counts || {};
   const rev = (events && events.revisions) || [];
   const news = (events && events.new_notices) || [];
-  const failN = c.fail || 0, chgN = c.structure_changed || 0, jsN = c.js_shell || 0;
+  const badCum = status.unhealthy || [];
+  const defCum = status.deferred || [];
+  const failCum = badCum.filter((s) => s.state === 'FETCH_FAIL').length;
+  const chgCum = badCum.filter((s) => s.state === 'STRUCTURE_CHANGED').length;
+  const jsCum = badCum.filter((s) => s.requires_browser).length;
+  const regCount = (cfg && cfg.sources && cfg.sources.length) ?? status.sources_tracked ?? c.tracked ?? 0;
+  const thisPass = status.sources_tracked ?? c.tracked ?? 0;
   const kpi = (n, label, tone) => `<div class="mon-kpi${tone ? ' ' + tone : ''}"><b>${n}</b><span>${label}</span></div>`;
   kpis.innerHTML =
-    kpi(status.sources_tracked ?? c.tracked ?? 0, 'sources watched') +
-    kpi(c.ok || 0, 'healthy + extracted', 'ok') +
-    kpi(news.length, 'new notices', news.length ? 'warn' : '') +
-    kpi(rev.length, 'revisions', rev.length ? 'warn' : '') +
-    kpi(jsN, 'need browser', jsN ? 'warn' : '') +
-    kpi(failN, 'fetch-failed', failN ? 'bad' : 'ok') +
-    kpi(chgN, 'structure-changed', chgN ? 'bad' : 'ok');
-  if ($('monCount')) $('monCount').textContent = (failN + chgN + news.length) ? ` (${failN + chgN + news.length})` : '';
+    kpi(regCount, 'sources in register (last pass: ' + thisPass + ')') +
+    kpi(c.ok || 0, 'healthy + extracted (this pass)', 'ok') +
+    kpi(news.length, 'new notices (this pass)', news.length ? 'warn' : '') +
+    kpi(rev.length, 'revisions (this pass)', rev.length ? 'warn' : '') +
+    kpi(failCum, 'fetch-failed (all passes)', failCum ? 'bad' : 'ok') +
+    kpi(chgCum, 'structure-changed (all passes)', chgCum ? 'bad' : 'ok') +
+    kpi(jsCum, 'need browser', jsCum ? 'warn' : '') +
+    kpi(defCum.length, 'deferred (backoff, T3 review)', defCum.length ? 'warn' : '');
+  if ($('monCount')) $('monCount').textContent = (failCum + chgCum + news.length) ? ` (${failCum + chgCum + news.length})` : '';
 
   // ---- events table (new notices = candidate links the monitor saw; revisions = same-URL byte changes) ----
   const evBody = $('monEvents');
@@ -3686,6 +3695,21 @@ async function loadMonitor() {
       <td class="muted">good ${escapeHtml(monRel(s.last_good_ts))}<br>tried ${escapeHtml(monRel(s.last_attempt_ts))}</td>
     </tr>`;
   }).join('') : '<tr><td colspan="5" class="muted" style="color:var(--good,#37c46b)">All watched sources healthy ✓</td></tr>';
+
+  // ---- deferred-by-design (backoff) sources: retrying later, not alarming ----
+  if ($('monDeferred')) {
+    const dRows = (status.deferred || []).filter((s) => MON_STATE.tier === 'all' || s.tier === 'T0');
+    $('monDeferred').innerHTML = dRows.length ?
+      '<div class="mon-sec" style="margin-top:12px">Deferred (in backoff, T3 review)</div>' +
+      '<table class="vf-table"><thead><tr><th>Source</th><th>Tier</th><th>State</th><th>Retry window</th></tr></thead><tbody>' +
+      dRows.map((s) => `<tr>
+        <td>${escapeHtml(s.name || s.id)}</td>
+        <td>${escapeHtml(s.tier || 'T1')}</td>
+        <td><span class="chip warn" style="font-size:11px">${escapeHtml(s.state || 'BACKOFF')}</span></td>
+        <td class="muted">retried ${escapeHtml(monRel(s.last_attempt_ts))} — 72h backoff</td>
+      </tr>`).join('') + '</tbody></table>'
+      : '';
+  }
 
   // ---- T3 gap queue ----
   const gaps = (status.gaps || (cfg && cfg.t3_gaps) || []);
