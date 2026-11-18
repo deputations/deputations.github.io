@@ -6499,24 +6499,6 @@
       "consec_fail": 0,
       "min_len": null,
       "max_len": null
-    },
-    {
-      "id": "TEST-FAIL-T0",
-      "name": "test-fail-t0",
-      "url": "https://definitely-not-a-real-host.example.invalid/",
-      "tier": "T0",
-      "role": "original",
-      "access": "public",
-      "has_deputation_history": false,
-      "needs_review": false,
-      "owner_note": "",
-      "js_shell": false,
-      "anchors": [
-        "vacancy"
-      ],
-      "last_hash": null,
-      "last_good_ts": null,
-      "consec_fail": 0
     }
   ],
   "pdf_watch": [
