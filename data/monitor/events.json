@@ -3,66 +3,6 @@
   {
    "type": "NEW_NOTICE",
    "id": "st-PY-DPAR",
-   "url": "https://dpar.py.gov.in/SS2/deputation/DepuCirPUDA28Feb17.pdf",
-   "ts": "2026-11-18T06:44:08Z"
-  },
-  {
-   "type": "NEW_NOTICE",
-   "id": "st-PY-DPAR",
-   "url": "https://dpar.py.gov.in/SS2/deputation/DepuCirPWRO18June20.pdf",
-   "ts": "2026-11-18T06:44:08Z"
-  },
-  {
-   "type": "NEW_NOTICE",
-   "id": "st-PY-DPAR",
-   "url": "https://dpar.py.gov.in/SS2/deputation/DepuCirPajancoa18Dec20.pdf",
-   "ts": "2026-11-18T06:44:08Z"
-  },
-  {
-   "type": "NEW_NOTICE",
-   "id": "st-PY-DPAR",
-   "url": "https://dpar.py.gov.in/SS2/deputation/DepuCirPolytechnicYanam26Jun19.pdf",
-   "ts": "2026-11-18T06:44:08Z"
-  },
-  {
-   "type": "NEW_NOTICE",
-   "id": "st-PY-DPAR",
-   "url": "https://dpar.py.gov.in/SS2/deputation/DepuCirREAP13Dec19.pdf",
-   "ts": "2026-11-18T06:44:08Z"
-  },
-  {
-   "type": "NEW_NOTICE",
-   "id": "st-PY-DPAR",
-   "url": "https://dpar.py.gov.in/SS2/deputation/DepuCirRIVER6Aug19.pdf",
-   "ts": "2026-11-18T06:44:08Z"
-  },
-  {
-   "type": "NEW_NOTICE",
-   "id": "st-PY-DPAR",
-   "url": "https://dpar.py.gov.in/SS2/deputation/DepuCirSR5Aug21.pdf",
-   "ts": "2026-11-18T06:44:08Z"
-  },
-  {
-   "type": "NEW_NOTICE",
-   "id": "st-PY-DPAR",
-   "url": "https://dpar.py.gov.in/SS2/deputation/DepuCirSS27Nov20.pdf",
-   "ts": "2026-11-18T06:44:08Z"
-  },
-  {
-   "type": "NEW_NOTICE",
-   "id": "st-PY-DPAR",
-   "url": "https://dpar.py.gov.in/SS2/deputation/DepuCirSteno.Gr.I01Dec2017.pdf",
-   "ts": "2026-11-18T06:44:08Z"
-  },
-  {
-   "type": "NEW_NOTICE",
-   "id": "st-PY-DPAR",
-   "url": "https://dpar.py.gov.in/SS2/deputation/DepuCirWPC23Jul19.pdf",
-   "ts": "2026-11-18T06:44:08Z"
-  },
-  {
-   "type": "NEW_NOTICE",
-   "id": "st-PY-DPAR",
    "url": "https://dpar.py.gov.in/SS2/deputation/DepuCirYnm26Aug19.pdf",
    "ts": "2026-11-18T06:44:08Z"
   },
@@ -1433,6 +1373,48 @@
    "id": "st-PY-PANDR",
    "url": "https://pandr.py.gov.in/tenders",
    "ts": "2026-11-18T06:44:24Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/en/documents/notification/notices",
+   "ts": "2026-11-18T07:51:33Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/en/documents/reports",
+   "ts": "2026-11-18T07:51:33Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/FSCounsellorPMI%20WTOGenevaviceTanuSinghN8KGJ.pdf",
+   "ts": "2026-11-18T07:51:35Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-246",
+   "url": "https://rrb.indianrailways.gov.in/-/image/1790253798904HeadLinesImages.pdf/HeadLinesImages",
+   "ts": "2026-11-18T07:51:37Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-246",
+   "url": "https://rrb.indianrailways.gov.in/offrings/vacancy/exams",
+   "ts": "2026-11-18T07:51:37Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-246",
+   "url": "https://rrb.indianrailways.gov.in/offrings/vacancy/news-updates",
+   "ts": "2026-11-18T07:51:37Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-246",
+   "url": "https://rrb.indianrailways.gov.in/offrings/vacancy/recruitment-statistics",
+   "ts": "2026-11-18T07:51:37Z"
   }
  ],
  "revisions": []
