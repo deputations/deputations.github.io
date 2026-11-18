@@ -1,11 +1,11 @@
 {
- "last_run": "2026-11-18T10:16:18Z",
+ "last_run": "2026-11-18T10:17:35Z",
  "counts": {
   "tracked": 9,
   "ok": 8,
   "js_shell": 1,
-  "fail": 0,
-  "backoff": 1,
+  "fail": 1,
+  "backoff": 0,
   "structure_changed": 0,
   "new_candidates": 200,
   "pass_interrupted": false
@@ -643,6 +643,16 @@
    "requires_browser": false
   },
   {
+   "id": "TEST-FAIL-T0",
+   "name": "test-fail-t0",
+   "tier": "T0",
+   "state": "FETCH_FAIL",
+   "detail": "consec_fail=1",
+   "last_good_ts": null,
+   "last_attempt_ts": "2026-11-18T10:17:28Z",
+   "requires_browser": false
+  },
+  {
    "id": "st-AS-PERSONNEL",
    "name": "st-AS-PERSONNEL",
    "tier": "",
@@ -713,18 +723,7 @@
    "requires_browser": false
   }
  ],
- "deferred": [
-  {
-   "id": "TEST-FAIL-T0",
-   "name": "test-fail-t0",
-   "tier": "T0",
-   "state": "BACKOFF",
-   "detail": "consec_fail=2",
-   "last_good_ts": null,
-   "last_attempt_ts": "2026-11-18T10:13:43Z",
-   "requires_browser": false
-  }
- ],
+ "deferred": [],
  "pass_interrupted": false,
  "note": "counts/tracked = THIS pass only; unhealthy/deferred = cumulative across passes (last_good_ts shows when a source was last OK)",
  "gaps": [
