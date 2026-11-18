@@ -1,4 +1,1205 @@
 {
- "new_notices": [],
+ "new_notices": [
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-048",
+   "url": "https://www.indiapost.gov.in/",
+   "ts": "2026-11-17T23:39:01Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-048",
+   "url": "https://www.indiapost.gov.in/documents/CABE_Accessibility_Conformance_Certificate.pdf",
+   "ts": "2026-11-17T23:39:01Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-048",
+   "url": "https://www.indiapost.gov.in/documents/ordersandnotices",
+   "ts": "2026-11-17T23:39:01Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-048",
+   "url": "https://www.indiapost.gov.in/documents/recruitmentrules",
+   "ts": "2026-11-17T23:39:01Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-048",
+   "url": "https://www.indiapost.gov.in/tenders",
+   "ts": "2026-11-17T23:39:01Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-048",
+   "url": "https://www.indiapost.gov.in/vacancies",
+   "ts": "2026-11-17T23:39:01Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-048",
+   "url": "https://www.indiapost.gov.in/vacancies/franchise",
+   "ts": "2026-11-17T23:39:01Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-048",
+   "url": "https://www.indiapost.gov.in/vacancies/online-gds",
+   "ts": "2026-11-17T23:39:01Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-048",
+   "url": "https://www.indiapost.gov.in/vacancies/recruitments",
+   "ts": "2026-11-17T23:39:01Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/en",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/en/offerings/notification/tender-notices",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/en/offerings/schemes-monitoring",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/en/offerings/vacancies",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/hi/offerings/vacancies",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/index.php/en/documents/notification/notices",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/index.php/en/offerings/notification/tender-notices",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/index.php/en/offerings/schemes-monitoring",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/index.php/en/offerings/vacancies",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/sites/default/files/2026-06/prm_merged-1.pdf",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/sites/default/files/2026-08/document-30.pdf",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/sites/default/files/2026-09/notice.pdf",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/sites/default/files/2026-09/vacancy-circular-dated-17-09-2026-filling-up-the-post-of-regional-officers-ro-cbfc-chennai-cuttack-delhi-hyderabad-kolkata-and-aro-mumbai.pdf",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/sites/default/files/2026-10/cbc.pdf",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/sites/default/files/2026-10/notice_0001_merged.pdf",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/sites/default/files/2026-10/psp-division-engagement-of-legal-consultant-category-ii.pdf",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/themes/custom/unee/css/ministry-hierarchy.css?to2xf6",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/themes/custom/unee/css/print.css?to2xf6",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-184",
+   "url": "https://mib.gov.in/themes/custom/unee/favicon.ico",
+   "ts": "2026-11-17T23:39:03Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/2%20posts%20in%20Trifed5GaU0.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/4%20posts%20in%20TrifedgHZFD.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/4-24-202302T0i.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/6%20posts%20in%20TRIFEDp2hyP.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/8th%20CPC%20DS1AJOo.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/8th%20cpc%20USuVaJS.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/8th%20cpc%20circularF3pa4.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/ABVTs7YP2.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/AdvNWMMGGwj.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/AdviserEDIMFUSADEKk4.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/CATNEWDelhi1httS.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/CBSEEXiDz.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/CEPI%20Kolkata%20DS%20VacancyazAQH.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/CEPI%20Lucknow%20DS%20vacancyCWLes.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/CEPI%20Mumbai%20DS%20vacancyWpJT6.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/CSS-2023%20extension0LwPd.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Cgpdtmdir4aKFg.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/CgpdtmdsMmajz.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Circular%20CSS%202026%20Gp%20A63Vsb.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/DCMBrussels009LZ.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/DGFASLIiveOO3.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/DGMOPgq7.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/DS%20CEPI%20Mumbai5xn6U.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/DS%20CGPDTMV6JmW.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/DS%20Dir%20level%208th%20CPC9BPHn.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/DSBUsC6.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/DVCDeendayalPortAuthority68AHV.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/DirectorTLbTC.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Doc%2030-06-2025_compressed0FxL2.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Dr%20Ambedkar%20FoundationmCg03.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/FANCLTJjUw7.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/IAS%20Circular%20CSS2025_compressedefzUq.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/IFABARC1i0yi.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/IFAVJ6Ko.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/MPAAuex1G.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/MinisterLondontGw6u.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/NAFEdRA7Z2.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/PMI_WTOsax5x.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/SAAnandSingh0p6Sw.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/SECY%20NCMEI1QjD5.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/SSCtMSSX.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Scan%20Circular%20CSS%202026%20IAS_compressedvLOe2.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Scan20250616095252PAysS.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/U-JSV3ofe7.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/US%20level%208th%20CPCc4LeZ.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/USzyvtV.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvNMWv6ZrV.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvNWMyRZ21.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvisorNWMuLWyS.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCDBKochiLAANJ.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCEOIEPFAASQrA.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCMPFO8UWKQE.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCeoCDB5xCO1.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCChChennaiPABAOWi.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDCKandlSEZ6u1B8.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDGFASLIyHyJw.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDGManagegnOWS.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDirEICIXhWmR.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCExBhavinijZEFW.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCExCARAkvpB4.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCExDGFASLIZicQZ.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCJNPAAmunHz.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCJuteBoard5f5NZi.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCJuteCommKolkata6hKMo.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCKSEZ17N0g1g.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCMANAGE3-8Jskqv.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCMemberIWAIGYQfN.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCNIAMJaipurGC3L6.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDCochinport88M5o44.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDEXPORT88BUrob.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDFIN88yegh6.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDIIP66RkkZL.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDIWAIFIN99fGAL0.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDIWTRaffic99t3oej.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDJUTE66WFQv0.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDJUTECOMM55O6Zen.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDJUTENVgzo.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDKSEZ887Sjfq.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDMANAGE66T5vdu.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDNWM66atvzv.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDparadipport99sTGkK.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCSecyNCMEIi7c2w.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCSpiceBoardP4fyK.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCSyNCMEIZzZQz.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VacCirNCMEIiUJp2.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Vacancy%20Circular%20Senior%20Adviser%20in%20ADB%20Manila%20under%20DEA%20Ponnuraj%20VskJdf.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VacancycircularAdviserADBManilab7eJ0.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VcOrdCPTyDK43.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/adviser%204-27-2023HrRgz.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/ambedkar%20foundation%20circularcg1Aa.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/cao%20dda%20delhiiirfZOG.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/circular%20cgpdtm%20new%20delhiqHVoH.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/circularSfyUR.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/cmha%20circularicWe7.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/cmhacircular2HsJxx.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/cpcrgSKBE.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/custodian_mergedyVWUO.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/dafPwMix.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/dg%20niamk3QGj.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/dgm%20circular_mergedtzTEH.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/geneva%204-26-2023qcAHO.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/gm%20bengalurupM4De.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/group%20A%20Circular%20CSS2025_compressedfaE2c.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image02578bt4x.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image0272_compressed2dH3h.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image0281zUprM.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image0285mzk94.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image04596WHBO.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image0478YHHKN.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image0632pGas7.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image1035g6Aih.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image110929RaC.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image1320Wq7mk.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image1335Y14Zx.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image1338crgne.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image1439maNCi.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image1882Lmcmc.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image1889EbEUp.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image2085mbaWr.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image2235KsSN0.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image22398gjU4.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image22434tq8v.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image2356avooz.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image24816KxfK.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image2484dSW4a.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image2780ojdcc.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/member%20secretary6q1eO.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/nafedP4V8x.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/nafedYkxD9.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/ncltriMDH.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/odisha5BH5p.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/officeofcustodianZmMRV.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/raipursBVHp.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/smtrifedcircularCneVo.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/tea%20boardNumLL.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/trifedcircularyTtiY.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://documents.doptcirculars.nic.in/D2/D02eod/vacancy%20circularnpbTs.pdf",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-222",
+   "url": "https://doptcirculars.nic.in/Default.aspx?URL=wFJpTEk06p7xarch",
+   "ts": "2026-11-17T23:39:05Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://upsconline.nic.in/ora/",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/about-us/divisions/administration/functions",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/about-us/divisions/administration/introduction",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/about-us/divisions/administration/personnel",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/about-us/divisions/administration/recruitment-rules",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/examinations/demo-files-computer-based-combined-medical-service-examination",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/examinations/representation-question-papers",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/hi/vacancy-circulars",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/recruitment/lateral-recruitments",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/recruitment/recruitment-advertisement",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/recruitment/recruitment-cases-kept-hold-account-pending-litigations",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/recruitment/recruitment-performas",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/recruitment/recruitment-requisition",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/recruitment/recruitment-test",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/recruitment/status-recruitment-cases-advertisementwise",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/recruitment/time-frame-representation",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/sites/default/files/VacCirc-01-AsstDirViglDeput-Engl-100926.pdf",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/sites/default/files/VacCirc-ASO-consultants-Engl-030926.pdf",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/sites/default/files/VacCirc-SrRcptnPrtclOfcrDeput-Engl-211026.pdf",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/sites/default/files/VacCirc01-LglCnsltnt-Engl-270426.pdf",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/sites/default/files/VacCircHandwritingExpert-Engl-020726.pdf",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "SNO-225",
+   "url": "https://www.upsc.gov.in/vacancy-circulars",
+   "ts": "2026-11-17T23:39:06Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "hub-moD-jscao",
+   "url": "https://www.caomod.gov.in/career",
+   "ts": "2026-11-17T23:40:12Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "hub-moD-jscao",
+   "url": "https://www.caomod.gov.in/career/outstation-vacancies",
+   "ts": "2026-11-17T23:40:12Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "hub-moD-jscao",
+   "url": "https://www.caomod.gov.in/compassionate-appointment",
+   "ts": "2026-11-17T23:40:12Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "hub-moD-jscao",
+   "url": "https://www.caomod.gov.in/direct-recruits",
+   "ts": "2026-11-17T23:40:12Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "hub-moD-jscao",
+   "url": "https://www.caomod.gov.in/documents/circulars",
+   "ts": "2026-11-17T23:40:12Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "hub-moD-jscao",
+   "url": "https://www.caomod.gov.in/documents/publications",
+   "ts": "2026-11-17T23:40:12Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "hub-moD-jscao",
+   "url": "https://www.caomod.gov.in/manpower-planning-recruitment",
+   "ts": "2026-11-17T23:40:12Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "hub-moD-jscao",
+   "url": "https://www.caomod.gov.in/recruitment",
+   "ts": "2026-11-17T23:40:12Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "hub-moD-jscao",
+   "url": "https://www.caomod.gov.in/storage/circulars/en/3CayuKWwtHFA0h2O4eTx.pdf",
+   "ts": "2026-11-17T23:40:12Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "hub-moD-jscao",
+   "url": "https://www.caomod.gov.in/storage/circulars/en/3W3kB5pHPuprK4c6TezV.pdf",
+   "ts": "2026-11-17T23:40:12Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "hub-moD-jscao",
+   "url": "https://www.caomod.gov.in/storage/circulars/en/GBbqevyBgy8EaVB2JwIn.pdf",
+   "ts": "2026-11-17T23:40:12Z"
+  },
+  {
+   "type": "NEW_NOTICE",
+   "id": "hub-moD-jscao",
+   "url": "https://www.caomod.gov.in/storage/circulars/en/HHs6H129HgeAtMo6xYb1.pdf",
+   "ts": "2026-11-17T23:40:12Z"
+  }
+ ],
  "revisions": []
 }

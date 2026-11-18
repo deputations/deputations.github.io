@@ -1,68 +1,68 @@
 {
- "last_run": "2026-11-17T18:52:47Z",
+ "last_run": "2026-11-17T23:44:34Z",
  "counts": {
-  "tracked": 6,
-  "fail": 2,
-  "structure_changed": 4,
-  "fetch_ok": 0
+  "tracked": 8,
+  "ok": 7,
+  "js_shell": 1,
+  "fail": 1,
+  "structure_changed": 0,
+  "new_candidates": 232
  },
- "sources_tracked": 6,
+ "sources_tracked": 8,
  "unhealthy": [
   {
-   "id": "SRC-0010",
-   "name": "Ministry of Commerce & Industry (Dept. of Commerce), Government of India",
-   "tier": "T0",
-   "state": "FETCH_FAIL",
-   "detail": "1",
-   "last_good_ts": null
-  },
-  {
-   "id": "SRC-0013",
-   "name": "Department of Posts / India Post, GoI",
-   "tier": "T0",
-   "state": "STRUCTURE_CHANGED",
-   "detail": "0",
-   "last_good_ts": "2026-11-17T18:50:23Z"
-  },
-  {
-   "id": "SRC-0072",
-   "name": "Ministry of Information & Broadcasting (MIB)",
-   "tier": "T0",
-   "state": "STRUCTURE_CHANGED",
-   "detail": "0",
-   "last_good_ts": "2026-11-17T18:50:25Z"
-  },
-  {
-   "id": "SRC-0088",
-   "name": "Department of Personnel & Training (DoPT), DoPT Orders/circulars listing (doptcirculars.nic.in)",
-   "tier": "T0",
-   "state": "STRUCTURE_CHANGED",
-   "detail": "0",
-   "last_good_ts": "2026-11-17T18:50:26Z"
-  },
-  {
-   "id": "SRC-0089",
-   "name": "Union Public Service Commission (UPSC), www.upsc.gov.in (statutory commission; functionally under the Ministry of Personnel, Public Grievances and Pensions)",
-   "tier": "T0",
-   "state": "FETCH_FAIL",
-   "detail": "1",
-   "last_good_ts": null
-  },
-  {
-   "id": "SRC-0101",
+   "id": "SNO-246",
    "name": "Railway Recruitment Boards (17 RRBs under the Railway Board)",
    "tier": "T0",
-   "state": "STRUCTURE_CHANGED",
-   "detail": "0",
-   "last_good_ts": "2026-11-17T18:50:29Z"
+   "state": "FETCH_FAIL",
+   "detail": "consec_fail=1",
+   "last_good_ts": null,
+   "last_attempt_ts": "2026-11-17T23:39:07Z",
+   "requires_browser": false
   }
  ],
  "gaps": [
+  {
+   "sno": 2,
+   "org": "URL domain dahd.gov.in belongs to the Department of Animal Husbandry & Dairying (DAHD), Ministry of Fisheries, Animal Husbandry & Dairying - NOT DARE",
+   "verdict": "MISASSIGNED",
+   "next_action": "Confirm DARE's live official vacancy page in a browser (try agriwelfare.gov.in offerings filtered to DARE, or a live DARE NIC site); replace dahd.gov.in URL"
+  },
+  {
+   "sno": 3,
+   "org": "dof.gov.in = Department of Fisheries, Ministry of Fisheries, Animal Husbandry & Dairying - a DIFFERENT ministry. ICAR is an autonomous body under DARE/DAFW. Misassignment CONFIRMED.",
+   "verdict": "MISASSIGNED",
+   "next_action": "Browser-check https://icar.org.in/en/vacancies for a deputation / transfer-on-deputation notice; replace dof.gov.in URL with the verified ICAR page; consider a separate Department of Fisheries row for"
+  },
+  {
+   "sno": 4,
+   "org": "Cited URL icar.org.in/en/vacancies belongs to ICAR, not MANAGE. MANAGE's own site is manage.gov.in which has a live vacancies page.",
+   "verdict": "MISASSIGNED",
+   "next_action": "Point this row at https://www.manage.gov.in/vacancies/vacancies.asp; monitor it for deputation/transfer-on-deputation notices to upgrade from pending to VERIFIED"
+  },
+  {
+   "sno": 5,
+   "org": "CIB&RC content is published on ppqs.gov.in (Directorate of Plant Protection, Quarantine & Storage) and referenced on chemicals.gov.in (Department of Chemicals & Fertilizers). The cited manage.gov.in/vacancies/vacancies.asp belongs to MANAGE, not CIB&RC.",
+   "verdict": "MISASSIGNED",
+   "next_action": "Repoint this row to the CIB&RC division on ppqs.gov.in and correct the ministry to Chemicals & Fertilizers; CIB&RC does not appear to publish deputation circulars, so treat as a general notice source,"
+  },
+  {
+   "sno": 6,
+   "org": "Cited URL nraa.gov.in belongs to the National Rainfed Area Authority (NRAA), an ICAR institute - a DIFFERENT organisation from the Central Fertilizer Quality Control & Training Institute (CFQCTI).",
+   "verdict": "MISASSIGNED",
+   "next_action": "Confirm CFQCTI's actual vacancy page under the Department of Fertilizers / MoCF; keep the NRAA deputation notices as a candidate new row for National Rainfed Area Authority"
+  },
   {
    "sno": 7,
    "org": "Ministry of AYUSH, GoI (apex domain ayush.gov.in; www variant has a certificate mismatch)",
    "verdict": "NO_PUBLIC_ROUTE_FOUND",
    "next_action": "Confirm in a real browser whether ayush.gov.in exposes a recruitment route client-side that 404s server-side; if none, keep as broken - the Ministry currently has no discoverable public vacancy/deputa"
+  },
+  {
+   "sno": 8,
+   "org": "ppqs.gov.in actually belongs to the Directorate of Plant Protection, Quarantine & Storage (DPPQS), Department of Agriculture & Farmers Welfare, Ministry of Agriculture & Farmers Welfare - NOT a Department of AYUSH (Administration). The cited sub-path is a 404.",
+   "verdict": "MISASSIGNED",
+   "next_action": "Determine whether a genuine 'Department of AYUSH (Administration)' vacancy page exists at all; if AYUSH admin vacancies are published they likely sit on ayush.gov.in (JS shell, see S.No.7) or under a "
   },
   {
    "sno": 9,
@@ -71,10 +71,28 @@
    "next_action": "Use nia.nic.in/notice.html (browser) as the primary NIA route; monitor the empty Vacancies category and the esic.niajaipur.com notification for deputation/short-term entries to confirm deputation evid"
   },
   {
+   "sno": 12,
+   "org": "National Institute of Homoeopathy (NIH), Kolkata (HQ) with satellite campus NIH, Narela, Delhi",
+   "verdict": "MISASSIGNED",
+   "next_action": "replace nium.in/careers.html with https://nih.ayush.gov.in/recruitment-notice in the published table"
+  },
+  {
    "sno": 13,
    "org": "Central Council for Research in Unani Medicine (CCRUM), HQ",
    "verdict": "BROKEN_LINK_NO_CORRECTION",
    "next_action": "keep URL (it is the correct CCRUM vacancy page); re-test ccrum.res.in live access later - likely transient server outage"
+  },
+  {
+   "sno": 14,
+   "org": "Central Council for Research in Siddha (CCRS), HQ, Chennai",
+   "verdict": "MISASSIGNED",
+   "next_action": "replace ccras.nic.in with https://ccrs.ayush.gov.in/ for CCRS"
+  },
+  {
+   "sno": 15,
+   "org": "Central Council for Research in Homoeopathy (CCRH)",
+   "verdict": "MISASSIGNED",
+   "next_action": "replace ccrum.res.in link with https://ccrhindia.ayush.gov.in/recruitment/recruitment/vacancies"
   },
   {
    "sno": 22,
@@ -83,16 +101,64 @@
    "next_action": "CFQCTI is an independent publishing institute with no working public recruitment route; owner should confirm the institute's actual web domain or that it routes recruitment through a parent ministry p"
   },
   {
+   "sno": 24,
+   "org": "National Pharmaceutical Pricing Authority (NPPA) — a unit of Ministry of Chemicals & Fertilizers (separate from NIPER)",
+   "verdict": "MISASSIGNED",
+   "next_action": "Replace niper.gov.in with NPPA's nppa.gov.in recruitment + archive; deputation remains unconfirmed (history is contract-based)"
+  },
+  {
    "sno": 45,
    "org": "Tobacco Board of India",
    "verdict": "ACCESS_RESTRICTED",
    "next_action": "Replace original URL with https://tobaccoboard.in/ (only live property; note it carries no recruitment content). Register the ministry feed as a parallel TDO source. Flag to owner: tobaccoboard.co.in "
   },
   {
+   "sno": 53,
+   "org": "Ministry of Consumer Affairs, Food & Public Distribution (Department of Consumer Affairs)",
+   "verdict": "VERIFIED_OFFICIAL_SOURCE",
+   "reason": "no usable public URL resolved",
+   "next_action": "add National Test House (NTA/NTiH) to new_orgs — it publishes via this ministry page"
+  },
+  {
+   "sno": 54,
+   "org": "Department of Food & Public Distribution (DFPD)",
+   "verdict": "LISTING_FOUND_DEPUTATION_PENDING",
+   "reason": "no usable public URL resolved",
+   "next_action": "check ministry vacancy page for DFPD-specific deputation notices; no independent DFPD deputation source identified"
+  },
+  {
+   "sno": 56,
+   "org": "Directorate of Marketing & Inspection (DMI)",
+   "verdict": "VERIFIED_OFFICIAL_SOURCE",
+   "reason": "no usable public URL resolved",
+   "next_action": "flag ministry misassignment for DMI (Consumer Affairs -> Agriculture & Farmers Welfare) in source data"
+  },
+  {
    "sno": 57,
    "org": "Food Corporation of India (FCI)",
    "verdict": "ACCESS_RESTRICTED",
    "next_action": "flag TLS cert chain issue on fci.gov.in to FCI web team; no public static route found for deputation notices"
+  },
+  {
+   "sno": 59,
+   "org": "Ministry of Cooperation, Government of India",
+   "verdict": "FORWARDING_SOURCE_VERIFIED",
+   "reason": "no usable public URL resolved",
+   "next_action": "add NCDC and TRAI-Kolkata to new_orgs as independent publishers if not already listed; ministry page is a forwarding route"
+  },
+  {
+   "sno": 60,
+   "org": "Central Registrar of Cooperative Societies (CRCS)",
+   "verdict": "LISTING_FOUND_DEPUTATION_PENDING",
+   "reason": "no usable public URL resolved",
+   "next_action": "low priority; CRCS unlikely to be a deputation source"
+  },
+  {
+   "sno": 63,
+   "org": "Ministry of Corporate Affairs (MCA)",
+   "verdict": "LISTING_FOUND_DEPUTATION_PENDING",
+   "reason": "no usable public URL resolved",
+   "next_action": "Verify via browser that recruitment page renders deputation offers; cross-check MCA press releases"
   },
   {
    "sno": 77,
@@ -131,10 +197,23 @@
    "next_action": "Re-audit from an India-resident connection or use a domestic mirror; treat as accessible only for IN users"
   },
   {
+   "sno": 102,
+   "org": "North Eastern Development Finance Corporation Ltd. (unconfirmed this run - fetch blocked)",
+   "verdict": "LISTING_FOUND_DEPUTATION_PENDING",
+   "reason": "no usable public URL resolved",
+   "next_action": "re-fetch https://www.nedfi.com/nedfi-recruitment/ in a browser and confirm a deputation or short-term-contract notice"
+  },
+  {
    "sno": 103,
    "org": "Ministry of Earth Sciences",
    "verdict": "ACCESS_RESTRICTED",
    "next_action": "verify /vacancies in a real browser; treat M/o ES row as umbrella of the child bodies in this batch"
+  },
+  {
+   "sno": 105,
+   "org": "Geological Survey of India",
+   "verdict": "NO_PUBLIC_ROUTE_FOUND",
+   "next_action": "verify https://gssi.gov.in/recruitment/ in a browser; confirm deputation/short-term contract history"
   },
   {
    "sno": 108,

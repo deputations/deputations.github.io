@@ -571,8 +571,9 @@ function mapPasted(it, jobId, label, year, i, sourceFileUrl) {
     additional_details: it.additional_details || '',
     eligible_service: it.eligible_service || '', mode_of_application: it.mode_of_application || '',
     functional_area: it.functional_area || '', tags_keywords: it.tags_keywords || '',
-    status: 'draft', confidence: dv.confidence, source_type: 'employment_news',
-    source_category: label || 'Pasted import', source_file_url: sourceFileUrl || '',
+    status: 'draft', confidence: dv.confidence,
+    source_type: it._source_type || 'employment_news',
+    source_category: it.source_category || label || 'Pasted import', source_file_url: sourceFileUrl || '',
     ingest_job_id: jobId, raw_extraction: dv.fixNote ? { ...it, date_fix_note: dv.fixNote } : it,
   };
 }
@@ -3633,47 +3634,56 @@ async function loadMonitor() {
 
   // ---- KPI strip (pill vocabulary matches the Ingest overview) ----
   const c = status.counts || {};
-  const rev = (events && events.revisions) || (status.recent_revisions) || [];
-  const news = (events && events.new_notices) || (status.recent_notices) || [];
-  const failN = c.fail || 0, chgN = c.structure_changed || 0;
+  const rev = (events && events.revisions) || [];
+  const news = (events && events.new_notices) || [];
+  const failN = c.fail || 0, chgN = c.structure_changed || 0, jsN = c.js_shell || 0;
   const kpi = (n, label, tone) => `<div class="mon-kpi${tone ? ' ' + tone : ''}"><b>${n}</b><span>${label}</span></div>`;
   kpis.innerHTML =
     kpi(status.sources_tracked ?? c.tracked ?? 0, 'sources watched') +
+    kpi(c.ok || 0, 'healthy + extracted', 'ok') +
     kpi(news.length, 'new notices', news.length ? 'warn' : '') +
     kpi(rev.length, 'revisions', rev.length ? 'warn' : '') +
+    kpi(jsN, 'need browser', jsN ? 'warn' : '') +
     kpi(failN, 'fetch-failed', failN ? 'bad' : 'ok') +
     kpi(chgN, 'structure-changed', chgN ? 'bad' : 'ok');
   if ($('monCount')) $('monCount').textContent = (failN + chgN + news.length) ? ` (${failN + chgN + news.length})` : '';
 
-  // ---- events table ----
+  // ---- events table (new notices = candidate links the monitor saw; revisions = same-URL byte changes) ----
   const evBody = $('monEvents');
-  const allEvents = [...news, ...rev].map((e) => ({ ...e, _kind: (e.kind || (news.indexOf(e) >= 0 ? 'new' : 'revision')) }))
-    .sort((a, b) => new Date(b.ts || b.created_at || 0) - new Date(a.ts || a.created_at || 0));
+  const srcById = {};
+  if (cfg && cfg.sources) cfg.sources.forEach((s) => { srcById[s.id] = s; });
+  const allEvents = [...news, ...rev].map((e) => ({
+    ...e,
+    _kind: e.kind ? 'revision' : 'new',
+    _name: e.source_name || (srcById[e.id] ? srcById[e.id].name : (e.id || '')),
+    _ts: e.ts || e.created_at || 0,
+  })).sort((a, b) => new Date(b._ts).getTime() - new Date(a._ts).getTime());
   evBody.innerHTML = allEvents.length ? allEvents.slice(0, 40).map((e) => {
-    const kind = e.kind || (e.revision ? 'revision' : 'new');
-    const tone = kind === 'new' ? 'warn' : '';
+    const isRev = e._kind === 'revision';
+    const tone = isRev ? 'warn' : '';
+    const link = e.url || e.notice_url;
     return `<tr>
-      <td>${escapeHtml(monRel(e.ts || e.created_at))}</td>
-      <td>${escapeHtml(e.source_name || e.source || e.org || '—')}</td>
-      <td><span class="chip ${tone}" style="font-size:11px">${escapeHtml(kind)}</span></td>
-      <td><a href="${escapeHtml(e.url || e.notice_url || '#')}" target="_blank" rel="noopener">${escapeHtml((e.title || e.notice || e.revision_type || 'new notice').slice(0, 64))}</a></td>
-      <td class="muted">${escapeHtml(e.revision_type || e.status || '')}</td>
+      <td>${escapeHtml(monRel(e._ts))}</td>
+      <td>${escapeHtml(e._name)}</td>
+      <td><span class="chip ${tone}" style="font-size:11px">${isRev ? escapeHtml(e.kind || 'revision') : 'new'}</span></td>
+      <td>${link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener">${escapeHtml((link).slice(0, 58))}</a>` : '<span class="muted">no link captured</span>'}</td>
+      <td class="muted">${isRev ? escapeHtml(e.detail || '') : 'candidate — verify before publishing'}</td>
     </tr>`;
   }).join('') : '<tr><td colspan="5" class="muted">No new notices or revisions yet on this pass.</td></tr>';
 
-  // ---- unhealthy sources table ----
-  const unhealthy = (status.unhealthy || (cfg && cfg.sources ? cfg.sources : []) || []).filter((s) =>
+  // ---- unhealthy / needs-attention sources (fail, structure-changed, or browser-only) ----
+  const badRows = (status.unhealthy || []).filter((s) =>
     MON_STATE.tier === 'all' || s.tier === 'T0');
-  const badRows = (status.unhealthy || []).filter((s) => s.state && s.state !== 'FETCH_OK');
   const hb = $('monHealth');
   hb.innerHTML = badRows.length ? badRows.map((s) => {
-    const tone = s.state === 'FETCH_FAIL' ? 'bad' : 'warn';
+    const tone = (s.state === 'STRUCTURE_CHANGED' || s.state === 'FETCH_FAIL') ? 'bad' : 'warn';
+    const browser = s.requires_browser ? ' <span class="chip" style="font-size:10px">browser</span>' : '';
     return `<tr>
       <td>${escapeHtml(s.name || s.id)}</td>
       <td>${escapeHtml(s.tier || 'T1')}</td>
-      <td><span class="chip ${tone}" style="font-size:11px">${escapeHtml(s.state)}</span></td>
-      <td class="muted">${escapeHtml((s.detail || s.consec_fail || '').toString())}</td>
-      <td class="muted">${escapeHtml(monRel(s.last_good_ts))}</td>
+      <td><span class="chip ${tone}" style="font-size:11px">${escapeHtml(s.state || '?')}</span>${browser}</td>
+      <td class="muted">${escapeHtml((s.detail || '').toString())}</td>
+      <td class="muted">good ${escapeHtml(monRel(s.last_good_ts))}<br>tried ${escapeHtml(monRel(s.last_attempt_ts))}</td>
     </tr>`;
   }).join('') : '<tr><td colspan="5" class="muted" style="color:var(--good,#37c46b)">All watched sources healthy ✓</td></tr>';
 
@@ -3686,7 +3696,53 @@ async function loadMonitor() {
     '</tbody></table>' : '<p class="muted">No open T3 gaps.</p>';
 }
 
+// §3.4 publication bridge: route monitor-detected candidates into the EXISTING
+// Ingest -> Review -> Approve -> publish pipeline. The monitor never auto-
+// publishes; this only stages low-confidence drafts that a human then reviews.
+async function monImportLeads() {
+  const leads = await monFetch('leads.json');
+  const btn = $('monSendReview');
+  if (!leads || !leads.rows || !leads.rows.length) {
+    if (btn) { btn.disabled = true; btn.textContent = 'No candidates yet'; }
+    toast('No monitor candidates yet - run a pass first');
+    return;
+  }
+  // high-signal filter: key on the LINK itself (URL path/filename), not the
+  // free-text tags (every lead is tagged "deputation", so tags alone over-match).
+  // Keep attachment PDFs + link paths that read like a notice/vacancy/circular.
+  const cue = /vacanc|circular|recruit|deput|tender|notice|advert|notices|documents|files?\b|\.pdf\b/i;
+  const rows = leads.rows
+    .filter((r) => {
+      const link = r.official_notification_link || '';
+      if (!link) return false;
+      const path = link.split('?')[0];
+      return cue.test(path) && !/^https?:\/\/[^/]+\/?$/.test(link); // not a bare home page
+    })
+    .map((r) => ({
+      post_name: 'Monitor-detected candidate (verify + fill post)',
+      organisation: r.organisation || '',
+      source_website: r.source_website || '',
+      source_page: r.source_page || '',
+      official_notification_link: r.official_notification_link,
+      additional_details: r.additional_details || '',
+      tags_keywords: 'deputation',
+      confidence: 'low',
+      _source_type: 'monitor',
+      source_category: 'monitor',
+    }));
+  if (!rows.length) { toast('No high-signal monitor candidates to import'); return; }
+  // stage into the existing paste box, switch to paste mode, and hand off
+  $('pasteJson').value = JSON.stringify(rows, null, 2);
+  const st = $('srcType');
+  if (st) st.value = 'paste';
+  st && st.onchange && st.onchange();
+  document.querySelector('[data-tab="ingest"]')?.click();
+  const lbl = $('srcLabel'); if (lbl) lbl.value = 'Monitor candidates';
+  toast(`Staged ${rows.length} monitor candidate(s) into Ingest -> Review. Nothing is published until you Approve.`);
+}
+
 function wireMonitor() {
+  if ($('monSendReview')) $('monSendReview').onclick = monImportLeads;
   if ($('monRefresh')) $('monRefresh').onclick = loadMonitor;
   if ($('monTierToggle')) $('monTierToggle').onclick = (e) => {
     MON_STATE.tier = MON_STATE.tier === 'all' ? 'T0' : 'all';
