@@ -69,7 +69,7 @@
   if (READY_EVENT) document.addEventListener(READY_EVENT, function () { pageReady = true; }, { once: true });
   var SEEN_KEY = 'dep_tour_seen_v1';
   var OFF_KEY = 'dep_tour_off_v1';
-  var VERSION = '?v=8';
+  var VERSION = '?v=9';
   var CORE = ['/vendor/gsap.min.js', '/tour/tour.css', '/tour/tour-engine.js', '/tour/tour-kit.js'];
   var SCENES = {
     home: ['/tour/scenes/map.js', '/tour/scenes/pages.js', '/tour/scenes/home-more.js', '/tour/scenes/home.js'],

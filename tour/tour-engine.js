@@ -51,9 +51,6 @@
   }
   function layoutFor() { return scaleFor('wide') >= scaleFor('tall') ? 'wide' : 'tall'; }
   var MIN_SCALE = 0.5;               // below this the cinematic stage is unreadable
-  function reducedMotion() {
-    try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
-  }
   function lowPower() {
     var c = navigator.hardwareConcurrency, m = navigator.deviceMemory;
     return (typeof c === 'number' && c > 0 && c <= 4) || (typeof m === 'number' && m > 0 && m <= 4);
@@ -134,8 +131,11 @@
       warn('GSAP is not loaded');
       return Promise.resolve('error');
     }
-    var mode = (opts.mode === 'steps' || opts.mode === 'cinematic') ? opts.mode
-      : (reducedMotion() ? 'steps' : 'cinematic');
+    // Owner, 2026-11-06: always animate. A "reduce motion" signal mostly comes
+    // from Windows animation effects being off (common on office PCs), and the
+    // step cards there read as a broken tour. Only a stage too small to read
+    // falls back to the step cards.
+    var mode = (opts.mode === 'steps' || opts.mode === 'cinematic') ? opts.mode : 'cinematic';
     if (mode === 'cinematic' && scaleFor(layoutFor()) < MIN_SCALE) mode = 'steps';   // e.g. phone held sideways
     var resolve;
     var promise = new Promise(function (r) { resolve = r; });

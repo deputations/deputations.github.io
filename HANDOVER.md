@@ -7483,3 +7483,12 @@ focus:          Home tour before the page; slow fade; "How this works" on-screen
 - Replay button: 200 ms ticker counts on-screen time to `BUTTON_LIFE`; `place()` lifts it above `.sw-footer` and any `[data-tour-keepclear]` (map zoom buttons) that is on screen *under* it, via `--dt-lift` (hides only if the lift is over half the screen).
 - Asset versions: tour `?v=8`, site-widgets.js `?v=35`, hero-wave.js `?v=4`, home-flourish.js `?v=3`.
 - Tests: `tests/test_tour_home_hold.py`. Held-page checks wait inside the page (`_shown`): Playwright polling starves on the busy Home page under `-n 3`.
+
+## session shq-2026-11-06-tour-animate-always
+```
+branch:         fix/tour-animate-always
+focus:          reduced-motion visitors get the animated tour
+```
+- Owner's report: one office PC showed the steps view in Chrome and Firefox (Windows animation effects off → `prefers-reduced-motion: reduce`). Owner chose "always play the animation".
+- Engine `play()`: mode is `cinematic` unless `opts.mode` says otherwise or the stage scale < `MIN_SCALE`; `reducedMotion()` removed. tour.css reduced-motion overrides (aurora, CTA shine, search caret) removed. Tour assets `?v=9`.
+- The site's own page animations (typewriter, counters) still respect reduced motion; only the tour changed.
