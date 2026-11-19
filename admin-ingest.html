@@ -331,6 +331,9 @@
               <option value="rejected">Rejected</option>
               <option value="all">All</option>
             </select>
+            <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Level:
+              <select id="mgLevel" style="width:auto"><option value="">All</option></select>
+            </label>
             <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Source:
               <select id="mgSource" style="width:auto"><option value="">All</option></select>
             </label>
@@ -389,6 +392,13 @@
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
           <h2 style="margin:0">Pending updates &amp; duplicates <span id="updatesHdrCount" class="muted"></span></h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input id="updSearch" placeholder="Search post / org / ministry / city…" style="width:240px" />
+            <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Level:
+              <select id="updLevel" style="width:auto"><option value="">All</option></select>
+            </label>
+            <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Source:
+              <select id="updSource" style="width:auto"><option value="">All</option></select>
+            </label>
             <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Sort:
               <select id="updSort" style="width:auto"></select>
             </label>

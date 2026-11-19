@@ -1013,11 +1013,15 @@ function wireApp() {
   VERIFY_PAGE = Math.max(1, parseInt(ui.vfPage, 10) || 1);
   RESTORE_LEVEL = ui.draftLevel || '';
   RESTORE_SOURCE = ui.draftSource || '';
+  RESTORE_MG_LEVEL = ui.mgLevel || '';
   RESTORE_MG_SOURCE = ui.mgSource || '';
   RESTORE_VF_SOURCE = ui.vfSource || '';
+  RESTORE_UPD_LEVEL = ui.updLevel || '';
+  RESTORE_UPD_SOURCE = ui.updSource || '';
   if ($('draftSearch')) $('draftSearch').value = ui.draftSearch || '';
   if ($('mgSearch')) $('mgSearch').value = ui.mgSearch || '';
   if ($('vfSearch')) $('vfSearch').value = ui.vfSearch || '';
+  if ($('updSearch')) $('updSearch').value = ui.updSearch || '';
   if (ui.mgStatus && $('mgStatus')) $('mgStatus').value = ui.mgStatus;
   if (ui.flagStatus && $('flagStatus')) $('flagStatus').value = ui.flagStatus;
   if (ui.fbStatus && $('fbStatus')) $('fbStatus').value = ui.fbStatus;
@@ -1089,14 +1093,15 @@ function wireApp() {
     //   - MG_PAGE comes from saveUI({mgPage:...}) — the admin's last page (e.g. 7)
     //     lands on a slice that doesn't contain the Verify row.
     //   - mgStatus saved as draft/rejected/marked excludes approved rows.
-    //   - mgSearch / mgSource from a prior session may not match the row.
+    //   - mgSearch / mgLevel / mgSource from a prior session may not match the row.
     // The Verify tab only deals with approved rows, so landing on the approved
     // status + page 1 + empty search is always where the row lives.
     MG_PAGE = 1;
     if ($('mgStatus')) $('mgStatus').value = 'approved';
     if ($('mgSearch')) $('mgSearch').value = '';
+    if ($('mgLevel')) $('mgLevel').value = '';
     if ($('mgSource')) $('mgSource').value = '';
-    saveUI({ mgPage: 1, mgStatus: 'approved', mgSearch: '', mgSource: '' });
+    saveUI({ mgPage: 1, mgStatus: 'approved', mgSearch: '', mgLevel: '', mgSource: '' });
     document.querySelectorAll('.tabs button').forEach((x) => x.classList.remove('active'));
     const manageBtn = document.querySelector('.tabs button[data-tab="manage"]');
     if (manageBtn) manageBtn.classList.add('active');
@@ -1123,6 +1128,10 @@ function wireApp() {
 
   if ($('updRefresh')) $('updRefresh').onclick = loadUpdates;
   if ($('updSort')) $('updSort').onchange = () => { saveUI({ updSort: $('updSort').value }); renderUpdates(); };   // client-side re-sort, no refetch
+  if ($('updLevel')) $('updLevel').onchange = () => { saveUI({ updLevel: $('updLevel').value }); renderUpdates(); };
+  if ($('updSource')) $('updSource').onchange = () => { saveUI({ updSource: $('updSource').value }); renderUpdates(); };
+  let _updFilterTimer = null;
+  if ($('updSearch')) $('updSearch').oninput = () => { clearTimeout(_updFilterTimer); _updFilterTimer = setTimeout(() => { saveUI({ updSearch: $('updSearch').value }); renderUpdates(); }, 200); };
 
   $('flagRefresh').onclick = loadFlags;
   $('flagStatus').onchange = () => { saveUI({ flagStatus: $('flagStatus').value }); loadFlags(); };
@@ -1135,6 +1144,11 @@ function wireApp() {
   if ($('mgSource')) $('mgSource').onchange = () => {
     const v = $('mgSource').value;
     MG_PAGE = 1; saveUI({ mgSource: v, mgPage: 1 });
+    renderManage();
+  };
+  if ($('mgLevel')) $('mgLevel').onchange = () => {
+    const v = $('mgLevel').value;
+    MG_PAGE = 1; saveUI({ mgLevel: v, mgPage: 1 });
     renderManage();
   };
   // Populate all three sort dropdowns from the shared option list (keeps them
@@ -2243,6 +2257,7 @@ async function loadManage() {
   refreshWaPending().then(() => { if (WA_PENDING && !$('paneManage').classList.contains('hidden')) renderManage(); });
   try {
     MANAGE_ROWS = await fetchAll(q);
+    populateManageLevelFilter();
     populateManageSourceFilter();
     renderManage();
     // If the Verify tab's ✎ Edit button brought us here, navigate to the page
@@ -2255,7 +2270,7 @@ async function loadManage() {
       const view = getManageViewRows();
       const idx = view.findIndex((r) => String(r.id) === OPEN_MANAGE_ROW);
       if (idx < 0) {
-        // Row is in MANAGE_ROWS but got filtered out by mgSearch/mgSource. The
+        // Row is in MANAGE_ROWS but got filtered out by mgSearch/mgLevel/mgSource. The
         // reset in openManageForRow should have cleared those, but if a future
         // filter slips through, this guard keeps the flow graceful.
         console.warn('[openManageForRow] target filtered out of view:', OPEN_MANAGE_ROW,
@@ -2306,7 +2321,23 @@ async function loadManage() {
 
 // Mirror of populateDraftSourceFilter for Manage. (The Status dropdown's
 // "🚩 Marked" item handles the marked-for-review filter now.)
+// Level/Source options only exist after a load, so persistence restore is
+// one-shot — the value is consumed the first time the options are rebuilt.
+let RESTORE_MG_LEVEL = '';
 let RESTORE_MG_SOURCE = '';
+function populateManageLevelFilter() {
+  const sel = $('mgLevel');
+  if (!sel) return;
+  const prev = sel.value || RESTORE_MG_LEVEL; RESTORE_MG_LEVEL = '';
+  const byTok = new Map();
+  MANAGE_ROWS.forEach((r) => {
+    const tok = _levelTok(r);
+    if (tok && !byTok.has(tok)) byTok.set(tok, _levelNum(r));
+  });
+  const toks = [...byTok.keys()].sort((a, b) => byTok.get(b) - byTok.get(a));
+  sel.innerHTML = '<option value="">All</option>' + toks.map((t) => `<option value="${t}">Level ${t}</option>`).join('');
+  if (prev && byTok.has(prev)) sel.value = prev;
+}
 function populateManageSourceFilter() {
   const sel = $('mgSource');
   if (!sel) return;
@@ -2318,13 +2349,15 @@ function populateManageSourceFilter() {
   if (prev && srcs.includes(prev)) sel.value = prev;
 }
 
-// Apply the current mgSearch / mgSource / mgSort to MANAGE_ROWS and return the
+// Apply the current mgSearch / mgLevel / mgSource / mgSort to MANAGE_ROWS and return the
 // result. Used by renderManage() and by loadManage() to locate the Verify-tab
 // target's page (so the deep-link lands on the page that actually contains it).
 function getManageViewRows() {
   const q = ($('mgSearch').value || '').toLowerCase().trim();
+  const lvl = ($('mgLevel') && $('mgLevel').value || '').trim();
   const src = ($('mgSource') && $('mgSource').value || '').trim();
   let filtered = !q ? MANAGE_ROWS : MANAGE_ROWS.filter((r) => rowMatchesQuery(r, q));
+  if (lvl) filtered = filtered.filter((r) => _levelTok(r) === lvl);
   if (src) filtered = filtered.filter((r) => String(r.source_category || r.source_type || '').trim() === src);
   const mode = ($('mgSort') && $('mgSort').value) || 'upload';
   return sortRows(filtered, mode);
@@ -3389,8 +3422,56 @@ async function loadUpdates() {
     const r = await api('/rest/v1/vacancy_updates?status=eq.pending&select=*,target:target_id(post_name,organisation,level_text,status,vacancy_id)&order=created_at.desc&limit=500');
     if (!r.ok) throw new Error('HTTP ' + r.status);
     UPDATES_ROWS = await r.json();
+    populateUpdatesFilters();
     renderUpdates();
   } catch (e) { if (list) list.innerHTML = `<p class="muted">Load error: ${escapeHtml(e.message)}</p>`; }
+}
+
+// One-shot restore for the dynamic Level/Source dropdowns (their options only
+// exist after the first loadUpdates) — same pattern as the Review/Manage ones.
+let RESTORE_UPD_LEVEL = '';
+let RESTORE_UPD_SOURCE = '';
+
+function populateUpdatesFilters() {
+  const sel = $('updLevel');
+  if (sel) {
+    const prev = sel.value || RESTORE_UPD_LEVEL; RESTORE_UPD_LEVEL = '';
+    const byTok = new Map();
+    UPDATES_ROWS.forEach((u) => {
+      // the incoming (proposed) side of the diff — that's what the admin sees
+      const tok = _levelTok(u.proposed || u.target || {});
+      if (tok && !byTok.has(tok)) byTok.set(tok, _levelNum(u.proposed || u.target || {}));
+    });
+    const toks = [...byTok.keys()].sort((a, b) => byTok.get(b) - byTok.get(a));
+    sel.innerHTML = '<option value="">All</option>' + toks.map((t) => `<option value="${t}">Level ${t}</option>`).join('');
+    if (prev && byTok.has(prev)) sel.value = prev;
+  }
+  const src = $('updSource');
+  if (src) {
+    const prev = src.value || RESTORE_UPD_SOURCE; RESTORE_UPD_SOURCE = '';
+    const srcs = [...new Set(UPDATES_ROWS.map((u) => String(u.source_category || u.source_type || '').trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b));
+    src.innerHTML = '<option value="">All</option>' + srcs.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+    if (prev && srcs.includes(prev)) src.value = prev;
+  }
+}
+
+// Filter the cached updates by the search / Level / Source dropdowns. Level and
+// Source are read off the incoming (proposed) side — same fields the card's
+// "from …" line shows. No pagination in this tab: every pending row is shown.
+function filteredUpdatesRows() {
+  const q = ($('updSearch') && ($('updSearch').value || '').trim()) || '';
+  const lvl = ($('updLevel') && $('updLevel').value || '').trim();
+  const src = ($('updSource') && $('updSource').value || '').trim();
+  return UPDATES_ROWS.filter((u) => {
+    if (lvl && _levelTok(u.proposed || u.target || {}) !== lvl) return false;
+    if (src && String(u.source_category || u.source_type || '').trim() !== src) return false;
+    if (q) {
+      const t = u.target || {};
+      if (!rowMatchesQuery({ ...t, ...(u.proposed || {}) }, q)) return false;
+    }
+    return true;
+  });
 }
 
 // Adapt an update row to the shape sortRows() reads: notification_date comes
@@ -3412,11 +3493,19 @@ async function refreshUpdatesCount() {
 }
 
 function renderUpdates() {
-  const rows = UPDATES_ROWS;
+  const rows = filteredUpdatesRows();
   const list = $('updatesList');
   if ($('updatesHdrCount')) $('updatesHdrCount').textContent = `(${rows.length})`;
   if (!list) return;
-  if (!rows.length) { list.innerHTML = '<p class="muted">No pending updates or duplicate suggestions. 🎉</p>'; return; }
+  const filtered = Boolean(
+    ($('updSearch') && ($('updSearch').value || '').trim())
+    || ($('updLevel') && $('updLevel').value)
+    || ($('updSource') && $('updSource').value)
+  );
+  if (!rows.length) {
+    list.innerHTML = `<p class="muted">${filtered ? 'No pending updates match the current filters.' : 'No pending updates or duplicate suggestions. 🎉'}</p>`;
+    return;
+  }
   const mode = ($('updSort') && $('updSort').value) || 'upload';
   const ordered = sortRows(rows.map(_updSortable), mode).map((s) => s._u);
   list.innerHTML = '';
