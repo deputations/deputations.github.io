@@ -116,6 +116,30 @@
     button.ov.warn b{color:var(--warn)}
     button.ov.bad b{color:var(--bad)}
 
+    /* ---- Monitor tab (deputation source watch: health, revisions, gaps) ----
+       KPI strip uses the same pill vocabulary as the Ingest overview so the
+       two read as one system. Tables reuse the vf-table look. */
+    #monKpis{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+    .mon-kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-width:118px;background:var(--panel2)}
+    .mon-kpi b{display:block;font-size:22px;line-height:1.1}
+    .mon-kpi span{font-size:12px;color:var(--muted)}
+    .mon-kpi.ok b{color:var(--good,#37c46b)}
+    .mon-kpi.warn b{color:var(--warn,#f5b301)}
+    .mon-kpi.bad b{color:var(--bad,#ff5a5a)}
+    .mon-grid{display:grid;grid-template-columns:1fr;gap:14px}
+    .mon-sec{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:2px 0 8px}
+    .mon-legend{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5}
+    .mon-legend code{background:var(--panel2);padding:1px 5px;border-radius:4px}
+    /* scroll wrapper for the monitor tables + a small status pill */
+    .vf-table-wrap{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+    .vf-table-wrap table{margin:0}
+    .vf-table-wrap .vf-table th{position:sticky;top:0;background:var(--panel);z-index:1}
+    .chip{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 9px;
+          background:var(--panel2);color:var(--txt);white-space:nowrap;font-weight:600}
+    .chip.warn{color:var(--warn);border-color:var(--warn)}
+    .chip.bad{color:var(--bad);border-color:var(--bad)}
+    .chip.ok{color:var(--good);border-color:var(--good)}
+
     /* ---- Verify tab (bulk-published rows awaiting a human read) ----
        The ribbon is a slim bar clipped to the row's leading edge, sitting
        OUTSIDE the text so it reads as a status marker on the row rather than
@@ -187,6 +211,7 @@
         <button id="tabFeedback" data-tab="feedback">✉️ Feedback <span id="fbCount"></span></button>
         <button id="tabVerify" data-tab="verify">🎗 Verify <span id="verifyCount"></span></button>
         <button id="tabProjects" data-tab="projects">🚀 Projects <span id="projCount"></span></button>
+        <button id="tabMonitor" data-tab="monitor">📡 Monitor <span id="monCount"></span></button>
       </div>
 
       <!-- INGEST -->
@@ -505,6 +530,51 @@
         </div>
 
         <div id="projList"></div>
+      </section>
+
+      <section id="paneMonitor" class="card hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">📡 Deputation Source Monitor <span id="monLastRun" class="muted"></span></h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button id="monSendReview" title="Send monitor-detected candidate links into the Ingest paste box as low-confidence drafts. The monitor never auto-publishes - you review, then Approve to publish." class="good">→ Send candidates to Review</button>
+            <button id="monTierToggle" title="Show only T0 daily sources in the tables">Tier: all</button>
+            <button id="monRefresh" class="primary">↻ Refresh</button>
+          </div>
+        </div>
+        <p class="mon-legend">
+          The source register is watched by <code>run_monitor.py</code> (research-alldup/): every source gets a
+          <code>FETCH_OK / FETCH_FAIL / STRUCTURE_CHANGED</code> verdict, deputation PDFs are SHA-256 hash-watched
+          for same-URL revisions (extension / corrigendum / cancellation), and new notices surface as events below.
+          Data: <code>data/monitor/status.json</code> + <code>data/monitor/events.json</code>.
+        </p>
+
+        <div id="monKpis"></div>
+
+        <div class="mon-grid">
+          <div>
+            <div class="mon-sec">Recent events (new notices + revisions)</div>
+            <div class="vf-table-wrap">
+              <table class="vf-table" id="monEventsTable">
+                <thead><tr><th>When</th><th>Source</th><th>Kind</th><th>Notice / revision</th><th>Status</th></tr></thead>
+                <tbody id="monEvents"></tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <div class="mon-sec">Unhealthy sources (fail / structure-changed)</div>
+            <div class="vf-table-wrap">
+              <table class="vf-table" id="monHealthTable">
+                <thead><tr><th>Source</th><th>Tier</th><th>State</th><th>Detail</th><th>Last good</th></tr></thead>
+                <tbody id="monHealth"></tbody>
+              </table>
+              <div id="monDeferred"></div>
+            </div>
+          </div>
+          <div>
+            <div class="mon-sec">T3 manual gap queue <span class="muted" id="monGapNote"></span></div>
+            <div id="monGaps" class="vf-table-wrap"></div>
+          </div>
+        </div>
       </section>
     </div>
   </div>

@@ -81,6 +81,29 @@ jobs:
           echo "::error::Snapshot publication failed or deployment is pending. Inspect before changing database grants."
           echo "Snapshot publication failed. Preserve the last good version and check the production manifest. Optional enrichment did not gate this publication." >> "$GITHUB_STEP_SUMMARY"
 
+  openai_index:
+    needs: publish
+    if: needs.publish.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build OpenAI search index
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -n "$OPENAI_API_KEY" ]; then
+            python scripts/build_openai_embeddings.py || echo "::warning::OpenAI index unavailable; Gemini backup remains in use"
+          else
+            echo "OpenAI key not configured; Gemini remains in use."
+          fi
+
   enrichment:
     needs: publish
     if: needs.publish.outputs.changed == 'true'
@@ -110,7 +133,7 @@ jobs:
             git pull --rebase origin main
             git push
           fi
-      - name: Build embeddings after snapshot publication
+      - name: Build Gemini backup embeddings after snapshot publication
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
