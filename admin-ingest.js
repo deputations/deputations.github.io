@@ -1007,9 +1007,15 @@ function wireApp() {
   // Level/Source dropdowns are restored one-shot inside populateDraft*Filter
   const ui = loadUI();
   if (ui.draftSort) DRAFT_SORT = ui.draftSort;
-  DRAFT_QUICK = new Set(Array.isArray(ui.draftQuick) ? ui.draftQuick : []);
-  // a stale saved state may predate the active↔expired mutual exclusion
-  if (DRAFT_QUICK.has('active') && DRAFT_QUICK.has('expired')) { DRAFT_QUICK.delete('active'); DRAFT_QUICK.delete('expired'); }
+  const restoreQuickChips = (arr) => {
+    const s = new Set(Array.isArray(arr) ? arr : []);
+    // a stale saved state may predate the active↔expired mutual exclusion
+    if (s.has('active') && s.has('expired')) { s.delete('active'); s.delete('expired'); }
+    return s;
+  };
+  DRAFT_QUICK = restoreQuickChips(ui.draftQuick);
+  MG_QUICK = restoreQuickChips(ui.mgQuick);
+  UPD_QUICK = restoreQuickChips(ui.updQuick);
   MG_PAGE = Math.max(1, parseInt(ui.mgPage, 10) || 1);
   VERIFY_PAGE = Math.max(1, parseInt(ui.vfPage, 10) || 1);
   RESTORE_LEVEL = ui.draftLevel || '';
@@ -1173,22 +1179,31 @@ function wireApp() {
 
   // quick-filter chips (Review): High/Med/Low OR-combine; the rest AND-combine.
   // active ↔ expired are opposites, so turning one on turns the other off.
-  if ($('draftQuick')) $('draftQuick').querySelectorAll('button').forEach((b) => {
-    b.classList.toggle('on', DRAFT_QUICK.has(b.dataset.q));
-    b.onclick = () => {
-      const k = b.dataset.q;
-      if (DRAFT_QUICK.has(k)) {
-        DRAFT_QUICK.delete(k);
-      } else {
-        DRAFT_QUICK.add(k);
-        const opp = { active: 'expired', expired: 'active' }[k];
-        if (opp) DRAFT_QUICK.delete(opp);
-      }
-      $('draftQuick').querySelectorAll('button').forEach((x) => x.classList.toggle('on', DRAFT_QUICK.has(x.dataset.q)));
-      saveUI({ draftQuick: [...DRAFT_QUICK] });
-      DRAFT_PAGE = 1; renderDrafts();
-    };
-  });
+  const wireQuickChips = (paneId, setRef, uiKey, rerender) => {
+    const pane = $(paneId);
+    if (!pane) return;
+    pane.querySelectorAll('button[data-q]').forEach((b) => {
+      b.classList.toggle('on', setRef().has(b.dataset.q));
+      b.onclick = () => {
+        const s = setRef();
+        const k = b.dataset.q;
+        if (s.has(k)) { s.delete(k); }
+        else {
+          s.add(k);
+          const opp = { active: 'expired', expired: 'active' }[k];
+          if (opp) s.delete(opp);
+        }
+        pane.querySelectorAll('button[data-q]').forEach((x) => x.classList.toggle('on', s.has(x.dataset.q)));
+        saveUI({ [uiKey]: [...s] });
+        rerender();
+      };
+    });
+  };
+  wireQuickChips('draftQuick', () => DRAFT_QUICK, 'draftQuick', () => { DRAFT_PAGE = 1; renderDrafts(); });
+  // Manage + Updates share the same chip set shape; each persists under its
+  // own key so the two tabs don't filter each other.
+  wireQuickChips('mgQuick', () => MG_QUICK, 'mgQuick', () => { MG_PAGE = 1; renderManage(); });
+  wireQuickChips('updQuick', () => UPD_QUICK, 'updQuick', renderUpdates);
 
   // keyboard triage on the Review queue — see kbHelp overlay (?)
   document.addEventListener('keydown', onReviewKeydown);
@@ -1525,6 +1540,8 @@ let DRAFT_ROWS = [];   // full current draft list (display source for pagination
 // Both views share #paneReview and the same workflow; only the loaded set differs.
 let REVIEW_VIEW = 'review';
 let DRAFT_QUICK = new Set();   // active quick-filter chips (confidence / gaps / deadline)
+let MG_QUICK = new Set();      // same chips on the Manage data tab
+let UPD_QUICK = new Set();     // same chips on the Updates tab (filter the incoming side)
 // one-shot restore for the dynamic Level/Source dropdowns (their options only
 // exist after the first loadDrafts) — consumed by populateDraft*Filter below
 let RESTORE_LEVEL = '';
@@ -1610,6 +1627,29 @@ function rowMatchesQuery(r, q) {
 
 const _daysLeft = (r) => (window.DepUtils ? DepUtils.getDaysUntilDate(r.last_date_to_apply) : null);
 
+// Quick-chip set shared by the Review, Manage and Updates tabs. active ↔
+// expired are opposites, so turning one on turns the other off (same as the
+// Review chip wiring). Persisted per-tab via saveUI (draftQuick/mgQuick/
+// updQuick), restored in wireApp.
+const QUICK_OPS = ['high', 'medium', 'low', 'nolink', 'nodate', 'incomplete', 'active', 'closing', 'expired'];
+function applyQuickChips(rows, set, rowOf) {
+  // rowOf(r) → the record the chips read (Review/Manage: the row itself;
+  // Updates: the incoming/proposed side). High/Med/Low only fire when some
+  // high/med chip is on (same OR-combine as the Review queue).
+  if (!set.size) return rows;
+  let filtered = rows;
+  const conf = ['high', 'medium', 'low'].filter((c) => set.has(c));
+  if (conf.length) filtered = filtered.filter((r) => conf.includes(String((rowOf ? rowOf(r) : r).confidence || 'medium').toLowerCase()));
+  if (set.has('nolink')) filtered = filtered.filter((r) => { const x = rowOf ? rowOf(r) : r; return !String(x.official_notification_link || '').trim(); });
+  if (set.has('nodate')) filtered = filtered.filter((r) => { const x = rowOf ? rowOf(r) : r; return !String(x.last_date_to_apply || '').trim(); });
+  if (set.has('incomplete')) filtered = filtered.filter((r) => draftCompleteness(rowOf ? rowOf(r) : r) < 60);
+  const dl = (r) => _daysLeft(rowOf ? rowOf(r) : r);
+  if (set.has('active')) filtered = filtered.filter((r) => { const d = dl(r); return d == null || d >= 0; });
+  if (set.has('closing')) filtered = filtered.filter((r) => { const d = dl(r); return d != null && d >= 0 && d <= 7; });
+  if (set.has('expired')) filtered = filtered.filter((r) => { const d = dl(r); return d != null && d < 0; });
+  return filtered;
+}
+
 // The full Review filter chain (search + level + source + quick chips) — used
 // by renderDrafts and by dropFromQueue's pager refresh.
 function applyDraftFilters(rows) {
@@ -1620,17 +1660,7 @@ function applyDraftFilters(rows) {
   if (lvl) filtered = filtered.filter((r) => _levelTok(r) === lvl);
   if (src) filtered = filtered.filter((r) => String(r.source_category || r.source_type || '').trim() === src);
   if (q) filtered = filtered.filter((r) => rowMatchesQuery(r, q));
-  if (DRAFT_QUICK.size) {
-    const conf = ['high', 'medium', 'low'].filter((c) => DRAFT_QUICK.has(c));
-    if (conf.length) filtered = filtered.filter((r) => conf.includes(String(r.confidence || 'medium').toLowerCase()));
-    if (DRAFT_QUICK.has('nolink')) filtered = filtered.filter((r) => !String(r.official_notification_link || '').trim());
-    if (DRAFT_QUICK.has('nodate')) filtered = filtered.filter((r) => !String(r.last_date_to_apply || '').trim());
-    if (DRAFT_QUICK.has('incomplete')) filtered = filtered.filter((r) => draftCompleteness(r) < 60);
-    // active = not past the last date; rows with no/unparseable date stay visible
-    if (DRAFT_QUICK.has('active')) filtered = filtered.filter((r) => { const d = _daysLeft(r); return d == null || d >= 0; });
-    if (DRAFT_QUICK.has('closing')) filtered = filtered.filter((r) => { const d = _daysLeft(r); return d != null && d >= 0 && d <= 7; });
-    if (DRAFT_QUICK.has('expired')) filtered = filtered.filter((r) => { const d = _daysLeft(r); return d != null && d < 0; });
-  }
+  filtered = applyQuickChips(filtered, DRAFT_QUICK);
   return filtered;
 }
 
@@ -2365,6 +2395,7 @@ function getManageViewRows() {
   let filtered = !q ? MANAGE_ROWS : MANAGE_ROWS.filter((r) => rowMatchesQuery(r, q));
   if (lvl) filtered = filtered.filter((r) => _levelTok(r) === lvl);
   if (src) filtered = filtered.filter((r) => String(r.source_category || r.source_type || '').trim() === src);
+  filtered = applyQuickChips(filtered, MG_QUICK);
   const mode = ($('mgSort') && $('mgSort').value) || 'upload';
   return sortRows(filtered, mode);
 }
@@ -3469,7 +3500,7 @@ function filteredUpdatesRows() {
   const q = ($('updSearch') && ($('updSearch').value || '').trim()) || '';
   const lvl = ($('updLevel') && $('updLevel').value || '').trim();
   const src = ($('updSource') && $('updSource').value || '').trim();
-  return UPDATES_ROWS.filter((u) => {
+  const base = UPDATES_ROWS.filter((u) => {
     if (lvl && _levelTok(u.proposed || u.target || {}) !== lvl) return false;
     if (src && String(u.source_category || u.source_type || '').trim() !== src) return false;
     if (q) {
@@ -3478,6 +3509,9 @@ function filteredUpdatesRows() {
     }
     return true;
   });
+  // Quick chips read the EFFECTIVE row (live target + proposed changes, plus
+  // the update's own top-level confidence) — what Apply would actually write.
+  return applyQuickChips(base, UPD_QUICK, (u) => ({ ...(u.target || {}), ...(u.proposed || {}), confidence: u.confidence }));
 }
 
 // Adapt an update row to the shape sortRows() reads: notification_date comes
