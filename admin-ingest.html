@@ -373,6 +373,17 @@
           </div>
         </div>
         <p class="muted">Edit any field then <b>Save</b>, change <b>Status</b> to publish/unpublish, or <b>Delete</b> a row. Click <b>📄 source</b> if a PDF is attached.</p>
+        <div id="mgQuick" class="quick">
+          <button type="button" data-q="high">High</button>
+          <button type="button" data-q="medium">Med</button>
+          <button type="button" data-q="low">Low</button>
+          <button type="button" data-q="nolink">no link</button>
+          <button type="button" data-q="nodate">no last date</button>
+          <button type="button" data-q="incomplete">&lt;60% complete</button>
+          <button type="button" data-q="active" title="Hide rows already past their last date (rows with no date stay visible)">active</button>
+          <button type="button" data-q="closing">closing ≤7d</button>
+          <button type="button" data-q="expired">expired</button>
+        </div>
         <div id="mgPager" class="pager"></div>
         <div id="manageList"></div>
       </section>
@@ -431,6 +442,17 @@
           </div>
         </div>
         <p class="muted">A re-upload that matches a <b>live</b> vacancy queues here as an <b>update</b> — <b>Apply</b> to enrich the live row with the new data. A re-upload that looks like the same post on a <b>different date</b> shows as a <b>possible duplicate</b> — <b>Merge into existing</b> (update the live row) or <b>Create as new</b> (keep both). Identical re-uploads are skipped automatically.</p>
+        <div id="updQuick" class="quick">
+          <button type="button" data-q="high">High</button>
+          <button type="button" data-q="medium">Med</button>
+          <button type="button" data-q="low">Low</button>
+          <button type="button" data-q="nolink">no link</button>
+          <button type="button" data-q="nodate">no last date</button>
+          <button type="button" data-q="incomplete">&lt;60% complete</button>
+          <button type="button" data-q="active" title="Hide rows whose LAST DATE is past (rows with no date stay visible)">active</button>
+          <button type="button" data-q="closing">closing ≤7d</button>
+          <button type="button" data-q="expired">expired</button>
+        </div>
         <div id="updatesList"></div>
       </section>
 
