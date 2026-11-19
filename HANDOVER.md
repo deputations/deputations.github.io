@@ -26,6 +26,75 @@ schema:
     - reading this file: scan for last "## session " heading; that is current session
 ```
 
+## session shq-2026-11-19-001
+```
+started: 2026-11-19
+ended:   2026-11-19
+model:   claude-fable-5-2
+driver:  relay
+branch:  codex/reduce-supabase-egress
+starting_head: b9f0f69b
+ending_head:   2c67fa0
+focus:   admin-ingest: Level/Source filters on Manage tab, search+Level+Source on Updates tab
+```
+
+### inbound context read
+- admin-ingest.html Review/Manage/Updates panes; admin-ingest.js:
+  - populateDraftLevelFilter/populateDraftSourceFilter (the pattern copied)
+  - getManageViewRows(), populateManageSourceFilter(), loadManage()
+  - renderUpdates(), _updSortable(), loadUpdates(), wireApp() event section
+
+### owner's brief
+Enhance admin-ingest: bring the Review queue's filters into "Manage data"
+and "Updates" tabs.
+
+### work done (commit 2c67fa0)
+- Manage data: new Level dropdown (id=mgLevel) built from distinct pay
+  levels in MANAGE_ROWS (rank-desc options, "13A" between 14 and 13),
+  alongside the existing Source filter. Both filter in
+  getManageViewRows() via _levelTok/_levelNum. Persisted via saveUI
+  (mgLevel) with the same one-shot RESTORE_MG_LEVEL pattern as
+  mgSource/draftLevel. openManageForRow now also clears mgLevel so a
+  Verify-tab deep link can't land on a page where its target row is
+  filtered out.
+- Updates: new search input (updSearch, same fuzzy placeholder) +
+  Level (updLevel) + Source (updSource) dropdowns. populateUpdatesFilters()
+  builds options from the incoming side of each pending row
+  (u.proposed || u.target — matches the card's "from …" line; the target
+  level_text is already shown in the header, so filtering on it would be
+  confusing). filteredUpdatesRows() narrows UPDATES_ROWS; renderUpdates()
+  uses the narrowed set, shows "(N)" filtered count in the header, and
+  distinguishes "no match" vs "no pending updates at all".
+- Events wired in wireApp(): mgLevel.onchange (page reset + saveUI +
+  client-side renderManage, same as mgSource); updLevel/updSource
+  onchange; updSearch debounced 200ms like mgSearch. No refetch needed —
+  all filtering is client-side over the cached row sets.
+
+### decisions
+- Updates Level filter matches the PROPOSED level, not the target's.
+- No pagination added to Updates (tab shows ≤500 pending rows; filter
+  just hides non-matches).
+
+### handoff state
+- Committed on codex/reduce-supabase-egress (2c67fa0). Unverified in the
+  live app — needs admin sign-in to click through Manage/Updates tabs.
+- node --check passes; filter logic smoke-tested in a Node VM harness
+  (15 assertions: options build, rank order, filtering, one-shot
+  restore, search fuzzy match, conflict cases) — harness was
+  throwaway (_check_admin_filters.js, deleted).
+
+### gotchas for next session
+- DepUtils.levelLabel caps at one letter: "14A" → 14.5, "13A" → 13.5.
+  Fine for distinct option lists; do not reuse for multi-suffix levels
+  without checking.
+- rowMatchesQuery on Updates merges target+proposed (proposed wins)
+  before matching, so search hits either side of the diff.
+- mgLevel is cleared in openManageForRow's saveUI reset — if a new
+  Manage filter is ever added, add it to that reset too or the Verify
+  deep link can hide its own target row.
+
+## session shq-2026-11-19-001 end
+
 ---
 
 ## session shq-2026-08-10-009
