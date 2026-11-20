@@ -999,14 +999,14 @@
   }
  ],
  "deputation": {
-  "at": "2026-11-20T04:50:00Z",
-  "total_links": 298,
-  "confirmed": 4,
-  "maybe": 146,
-  "new_confirmed": 0,
+  "at": "2026-11-20T05:05:45Z",
+  "total_links": 512,
+  "confirmed": 207,
+  "maybe": 150,
+  "new_confirmed": 203,
   "already_added": 4,
-  "not_deputation": 148,
-  "pending": 0,
+  "not_deputation": 150,
+  "pending": 5,
   "ocr_needed": 0,
   "confirmed_list": [
    {
@@ -1032,6 +1032,342 @@
     "snip": "File No.CTE-ACD1/TR/D/4/2020-ACADEMIC-1 GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION OFFICE OF THE COMMISSIONER OF TECHNICAL ED",
     "where": "subject/heading",
     "already_added": true
+   },
+   {
+    "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-869-Deputation.pdf",
+    "snip": "F. No. A-35/1/2025-FSD-DCSA_AN/ 3864 ST ARAM STE PT OFFICE OF THE FOOD SAFETY COMMISSIONER sisara ud Prolare gto Was ANDAMAN AND NICOBAR ISL",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-884-VACANCY%20CIRCULAR%20for%20Deputation%20of%20DDShipping%20Services.pdf",
+    "snip": "CIRCULAR Sub: -Filling up of one post of “Deputy Director (Shipping Services)” in the Directorate of Shipping Services under Andaman & Nicob",
+    "where": "subject/heading",
+    "already_added": false
+   },
+   {
+    "url": "https://ansi.gov.in/recruitment?type=deputation",
+    "snip": "Recruitment/Vacancies – Anthropological Survey of India English हिन्दी Home About AnSI Profile History Vision & Mission Organization Functio",
+    "where": "",
+    "already_added": false
+   },
+   {
+    "url": "https://ard.delhi.gov.in/sites/default/files/Administrative%20Reforms/circulars-orders/eligibility_for_asstt._dir._in_ar_on_deputation_basis.pdf",
+    "snip": "1 2 3 4",
+    "where": "",
+    "already_added": false
+   },
+   {
+    "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_assistant_director_ar_on_deputation_basis.pdf",
+    "snip": "Scanned by CamScanner",
+    "where": "",
+    "already_added": false
+   },
+   {
+    "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_assistant_director_ar_on_deputation_basis_0.pdf",
+    "snip": "1",
+    "where": "",
+    "already_added": false
+   },
+   {
+    "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_research_assistant_in_the_pay_level_6_in_administrative_reforms_department_gnctd_on_deputation_basis.pdf",
+    "snip": "1",
+    "where": "",
+    "already_added": false
+   },
+   {
+    "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_research_assistant_in_the_pay_level_6_in_administrative_reforms_department_gnctd_on_deputation_basis_0.pdf",
+    "snip": "1",
+    "where": "",
+    "already_added": false
+   },
+   {
+    "url": "https://cifnet.gov.in/images/Deputation_for_CI_S_N.pdf",
+    "snip": "F. No.3-38/2018-Admn.V (e- 9684) Government of India Ministry of Fisheries, Animal Husbandry Dairying Department of Fisheries (Department of",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://cifnet.gov.in/images/SAO_Deputation.pdf",
+    "snip": "Fax 0484 - 2370879 Phone : 04842351610, 2851493, 2351790 E-mail + offnet@nic in Aller Office: 0484 - 2351610 ‘atnethg@yahoo.com Director(Per",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://dda.gov.in/sites/default/files/latest_jobs/deputation_notice_202623042026.pdf",
+    "snip": "For DDA Website fercett feresra wiftrexo1/ DELHI DEVELOPMENT AUTHORITY ‘wprftfes SRETI-/ PERSONNEL BRANCH-1 Steio war a. 311,398 Uy, fers Ge",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://dda.gov.in/sites/default/files/latest_jobs/dy_cla_notification_deputation_basis_dda.pdf",
+    "snip": "* For DDA’s Website For DDA’s Website feect faarra unfree veLH! DEVELOPMENT AUTHORITY ‘prftfar STRaT -1 /PERSONNEL BRANCH-1 ward. 311, tale ",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://dda.gov.in/sites/default/files/latest_jobs/extension_last_date_director_min.deputation.pdf",
+    "snip": "fctt faIH YtrUl DELHI DEVELOPMENT AUTHORITY i|* IRg|-1/ PERSONNEL BRANCH-1 No. F7(64)2008/PB-1/Pt.lI/ /10 Computer No. 6203 basis. t oiſco o",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://doe.gov.in/files/vacancy_attachment/PPDDeputationpost_1.pdf",
+    "snip": "F. No. A-11011/01/2023-Ad.1 Government of India Ministry of Finance Department of Expenditure D-Wing, Room No.10009, Ground Floor, Kartavya ",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/FSCounsellorPMI%20WTOGenevaviceTanuSinghN8KGJ.pdf",
+    "snip": "No. 4/37/2026-FA(UN) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training Kartavya",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/FSCounsellorPMIWTOGenevaFYDSo.pdf",
+    "snip": "No. 4/37/2026-FA(UN) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training Kartavya",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/SSCtMSSX.pdf",
+    "snip": "No 6/4/2024-EO(MN-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Office",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Scan%20Circular%20CSS%202026%20IAS_compressedvLOe2.pdf",
+    "snip": "THT WAV, aN. ART GSR Manisha Saxena, 1s aris site after fe Peer iaie Officer & Government Of India itional Secreta Dr ry ape partment of Per",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Scan20250616095252PAysS.pdf",
+    "snip": "No. 10/3/2024 EO(MM-II) Government of India Ministry of Personnel, P.G. and Pension Department of Personnel and Training (Office of the Esta",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/US%20level%208th%20CPCc4LeZ.pdf",
+    "snip": "No 18/1/2025-EO (MM-II) Government of India Ministry of Personnel, Public Grievances & Pension Department of Personnel & Training (Office of",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/USzyvtV.pdf",
+    "snip": "No 18/1/2025-EO(MM-ll) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Offic",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvNMWv6ZrV.pdf",
+    "snip": "F. No. 9/1/2026-EO(SM-l)(Pt.l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Gri",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvNWMyRZ21.pdf",
+    "snip": "F. No. 9/1/2026-EO(SM-l)(Pt.l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Gri",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvisorNWMuLWyS.pdf",
+    "snip": "F.No. 9/1/2026-EO(SM-I) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training Offic",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCDBKochiLAANJ.pdf",
+    "snip": "F. No. 9/1/2025-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCEOIEPFAASQrA.pdf",
+    "snip": "F.No. 14/1/2025-EO(SM-I) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCMPFO8UWKQE.pdf",
+    "snip": "Yours faithfully, (Annies Kanmani Joy) Director Tel. No. 24010544 F.No. 20/1/2025-EO(SM -l) Government of India Secretariat of the Appointme",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCeoCDB5xCO1.pdf",
+    "snip": "F. No. 9/1/2025 -EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCChChennaiPABAOWi.pdf",
+    "snip": "F.No. 1/1/2024-EO(SM -l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievanc",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDCKandlSEZ6u1B8.pdf",
+    "snip": "Yours faithfully, a es Kanman Joy) Director Tel. No. 011-24010544 No.1 0/3/2025-EO(SM-l) Government of India Secretariat of the Appointments",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDGFASLIyHyJw.pdf",
+    "snip": "To 1. 2. F. No.13/2/2024-EO(SM-I) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public ",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDGManagegnOWS.pdf",
+    "snip": "F. No. 9/6/2025-EO(SM-|) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDirEICIXhWmR.pdf",
+    "snip": "F. No. 10/1/2025 -EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievan",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCExBhavinijZEFW.pdf",
+    "snip": "F.No. 22/4/2019-EO(SM-l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievanc",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCExCARAkvpB4.pdf",
+    "snip": "F. No.4/i /2023-EO(SM -l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCExDGFASLIZicQZ.pdf",
+    "snip": "F. No.1 3/2/2024-EO(SM -l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievan",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCJNPAAmunHz.pdf",
+    "snip": "F.No. 1/3/2023-EO(SM-l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievance",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCJuteBoard5f5NZi.pdf",
+    "snip": "No.10/2/2026-EO(SM-I) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievances ",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCJuteCommKolkata6hKMo.pdf",
+    "snip": "F.No. 1O/4/2025-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCKSEZ17N0g1g.pdf",
+    "snip": "F. No. 10/3/2025-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCMANAGE3-8Jskqv.pdf",
+    "snip": "F. No. 9/6/2025 -EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCMemberIWAIGYQfN.pdf",
+    "snip": "No. 1/3/2026-EO(SM-I) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievances ",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCNIAMJaipurGC3L6.pdf",
+    "snip": "F. No. 9/8/2025 -EO(SM-I) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDCochinport88M5o44.pdf",
+    "snip": "F.No. 1/2/2026-EO(SM-l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievance",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDEXPORT88BUrob.pdf",
+    "snip": "F. No. 1O/3/2026-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDFIN88yegh6.pdf",
+    "snip": "No. 1/3/2026-EO(SM -l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievances",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDIIP66RkkZL.pdf",
+    "snip": "Yours faith Ily, (Annies Kanmani oy) Director Tel. No. 011-24010544 F. No. 1O/1/2026 -EO(SM-I) Government of India Secretariat of the Appoin",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDIWAIFIN99fGAL0.pdf",
+    "snip": "No. 113/2026-EO(SM-l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievances ",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDJUTE66WFQv0.pdf",
+    "snip": "F.No. 1 O/2/2026-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDJUTECOMM55O6Zen.pdf",
+    "snip": "F.No. 10/2/2026-EO(SM -l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDJUTENVgzo.pdf",
+    "snip": "No.10/4/2025-EO(SM-I) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievances ",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDKSEZ887Sjfq.pdf",
+    "snip": "No.1 0/3/2025-EO(SM-l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel. Public Grievances",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDMANAGE66T5vdu.pdf",
+    "snip": "Yours faith Ily, (Annies Kanman . .y) Director Tel. No. 011-24010544 F. No. 9/6/2025 -EO(SM-l) Government of India Secretariat of the Appoin",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDNWM66atvzv.pdf",
+    "snip": "To 1. 2. F. No. 9/1/2026-EO(SM-I)(Pt.l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, P",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDparadipport99sTGkK.pdf",
+    "snip": "F.No. 1/1/2026-EO(SM-l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievance",
+    "where": "body",
+    "already_added": false
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VacCirNCMEIiUJp2.pdf",
+    "snip": "F. No. 4/2/2025-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
+    "where": "body",
+    "already_added": false
    }
   ],
   "maybe_list": [
