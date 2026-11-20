@@ -116,7 +116,16 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r scripts/requirements.txt
-      - run: python -m playwright install --with-deps chromium
+      - name: Install Chromium and system dependencies
+        shell: bash
+        timeout-minutes: 8
+        run: |
+          if ! python -m playwright install-deps chromium; then
+            echo "::warning::Playwright system dependency installation failed. Retrying in 20 seconds."
+            sleep 20
+            python -m playwright install-deps chromium
+          fi
+          python -m playwright install chromium
       - name: Build optional link previews
         run: python scripts/build_link_previews.py
       - name: Build sitemap and images
