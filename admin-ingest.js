@@ -3785,52 +3785,97 @@ async function loadMonitor() {
     kpi(defCum.length, 'deferred (backoff, T3 review)', defCum.length ? 'warn' : '');
   if ($('monCount')) $('monCount').textContent = (failCum + chgCum + news.length) ? ` (${failCum + chgCum + news.length})` : '';
 
-  // ---- DEPUTATION card: the one list the user cares about. Shows ONLY links
-  // whose subject/PDF text actually contains "deputation" (the enrichment
-  // sidecar classifies every new candidate link each pass). Other buckets are
-  // intentionally not shown here.
+  // ---- DEPUTATION card: the ONLY list where select-and-push-to-webapp is
+  // offered. Shows ONLY links whose subject/PDF text actually contains
+  // "deputation" (the enrichment sidecar classifies every new candidate link
+  // each pass). Generic candidates (the "Candidate Extraction" picker below)
+  // must NOT get this treatment - they are not verified deputation notices.
   const dep = status.deputation || {};
   const depList = $('monDeputationList');
+  const fixupPushUrl = (u) => {
+    if (u.startsWith('//')) return 'https:' + u;                 // protocol-relative capture
+    if (u.startsWith('http://') && /\.gov\.in/i.test(u)) return 'https://' + u.slice(7); // NIC/DGFS class
+    return u;
+  };
   if (depList) {
-    // DEPUPLICATION: the sidecar flags confirmed links whose URL already
-    // exists in the site's published records / review exports
-    // (data/vacancies.json + data/monitor/leads.json) with already_added.
-    // Only GENUINELY NEW deputation links are shown; the ones already added
-    // are collapsed to a one-line count so a re-surfaced watch link is not
-    // mistaken for a fresh discovery.
     const confAll = (dep.confirmed || 0);
     const alreadyAdded = (dep.already_added || 0);
     const newCount = (dep.new_confirmed != null) ? dep.new_confirmed : confAll;
     const newRows = (dep.confirmed_list || []).filter((r) => r && r.url && !r.already_added);
     const dupRows = (dep.confirmed_list || []).filter((r) => r && r.already_added);
-    const headRow = (r) =>
-      `<li><a href="${escapeHtml(r.url)}" target="_blank" rel="noopener" style="word-break:break-all">${escapeHtml(r.url)}</a>` +
-      (r.snip ? ` <span class="muted">— ${escapeHtml(r.snip)}</span>` : '') + `</li>`;
-    if (newCount > 0 || confAll > 0) {
-      let body = '';
-      if (newCount > 0) {
-        body +=
-          `<div style="font-size:12px;margin:0 0 6px;color:var(--muted)">${newCount} NEW deputation link(s) not yet in the site records:</div>` +
-          (newRows.length ? `<ul style="margin:0 0 6px;padding-left:18px;font-size:13px;line-height:1.7">${newRows.map(headRow).join('')}</ul>` : '');
-      } else {
-        body += '<p class="muted" style="margin:0 0 6px">All confirmed "deputation" links are already in the site records (deduplicated).</p>';
-      }
-      if (dupRows.length || alreadyAdded > 0) {
-        body +=
-          `<details style="font-size:12px;color:var(--muted)">` +
-          `<summary style="cursor:pointer">${alreadyAdded} already in records — hide/show</summary>` +
-          (dupRows.length ? `<ul style="margin:4px 0;padding-left:18px;line-height:1.6">${dupRows.map(headRow).join('')}</ul>` : '') +
-          `</details>`;
-      }
-      depList.innerHTML = body;
+    const fmtSeen = (r) => {
+      const t = r.first_seen || '';
+      if (!t) return '';
+      const d = new Date(t);
+      return isNaN(d) ? '' : d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+    const depLine = (r, n, selectable) => {
+      const when = fmtSeen(r);
+      const num = `<span style="display:inline-block;min-width:26px;text-align:right;margin-right:8px;font-size:12px;color:var(--muted)">${n}.</span>`;
+      const box = selectable
+        ? `<input type="checkbox" class="depSel" value="${escapeHtml(r.url)}" style="width:15px;height:15px;margin:2px 8px 0 0;accent-color:var(--good,#37c46b)" title="Select for webapp push">`
+        : '<span style="display:inline-block;width:23px"></span>';
+      return `<div style="display:flex;align-items:flex-start;padding:3px 0;line-height:1.55">
+        ${box}${num}
+        <span style="flex:1;word-break:break-all">
+          <a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.url)}</a>
+          ${when ? ` <span class="muted" style="font-size:11px">[appeared ${escapeHtml(when)}]</span>` : ''}
+          ${r.snip ? `<br><span class="muted" style="font-size:11px">${escapeHtml(r.snip.slice(0, 110))}</span>` : ''}
+        </span></div>`;
+    };
+    let body = '';
+    if (newRows.length) {
+      body += `<div style="font-size:12px;margin:0 0 6px;color:var(--muted)">${newCount} NEW deputation link(s) not yet in the site records — tick one or more, then send them to the web app's review queue:</div>`;
+      body += `<div style="display:flex;align-items:center;gap:12px;margin:2px 0 8px;flex-wrap:wrap">
+        <label style="display:flex;gap:6px;align-items:center;cursor:pointer;font-size:12px">
+          <input type="checkbox" id="monDepAll" style="width:15px;height:15px;accent-color:var(--good,#37c46b)"> select all</label>
+        <button id="monDepPush" class="primary" style="font-size:12px;padding:5px 12px;border-radius:6px;border:0;cursor:pointer;background:var(--good,#37c46b);color:#04221a;font-weight:600">Send selected to web app</button>
+        <span id="monDepPushNote" class="muted" style="font-size:11px"></span>
+      </div>`;
+      body += `<div id="monDepList" style="margin:0 0 10px;font-size:13px;border-top:1px solid var(--border,#2a2f3a);padding-top:6px;max-height:360px;overflow:auto">` +
+        newRows.map((r, i) => depLine(r, i + 1, true)).join('') + `</div>`;
+    } else if (newCount > 0) {
+      body += `<p class="muted" style="margin:0 0 6px">${newCount} new deputation links exist but the list is truncated in this dashboard data — refresh after the next pass.</p>`;
     } else {
-      depList.innerHTML = '<p class="muted">No confirmed "deputation" links yet this pass.</p>';
+      body += '<p class="muted" style="margin:0 0 6px">All confirmed "deputation" links are already in the site records (deduplicated).</p>';
     }
+    if (dupRows.length || alreadyAdded > 0) {
+      body +=
+        `<details style="font-size:12px;color:var(--muted)">` +
+        `<summary style="cursor:pointer">${alreadyAdded} already in records — hide/show</summary>` +
+        `<div style="margin:4px 0;padding-left:4px;font-size:12px">` +
+        dupRows.map((r) => depLine(r, null, false)).join('') + `</div></details>`;
+    }
+    depList.innerHTML = body;
+    // select-all + the send button (push ONLY deputation-confirmed links)
+    const all = $('monDepAll');
+    const btn = $('monDepPush');
+    const note = $('monDepPushNote');
+    const boxes = () => [...depList.querySelectorAll('input.depSel')];
+    if (all) all.onchange = () => boxes().forEach((b) => { b.checked = all.checked; });
+    const label = () => {
+      if (!btn) return;
+      const n = boxes().filter((b) => b.checked).length;
+      btn.textContent = n ? `Send ${n} to web app` : 'Send selected to web app';
+      btn.disabled = !n;
+      btn.style.opacity = n ? '1' : '.45';
+    };
+    boxes().forEach((b) => { b.onchange = label; });
+    label();
+    if (btn) btn.onclick = () => {
+      const urls = boxes().filter((b) => b.checked).map((b) => fixupPushUrl(b.value));
+      if (!urls.length) return;
+      // the local web app's same-origin push page runs these ONE BY ONE into
+      // its review queue (a public dashboard page cannot POST cross-origin to
+      // a loopback service - the app's local_only middleware forbids it).
+      window.open('http://127.0.0.1:8766/push-from-monitor?urls=' + encodeURIComponent(urls.join('\n')), '_blank', 'noopener');
+      if (note) note.textContent = 'Opened the web app tab - click "Push all selected" there to queue the jobs.';
+    };
     if (dep.pending && dep.pending > 0) {
-      const note = document.createElement('div');
-      note.style.cssText = 'font-size:11px;color:var(--muted);margin-top:6px';
-      note.textContent = `+ ${dep.ocr_needed || 0} scanned PDFs awaiting OCR, ${(dep.pending - (dep.ocr_needed || 0))} still unreadable — retried automatically each pass.`;
-      depList.appendChild(note);
+      const ocr = document.createElement('div');
+      ocr.style.cssText = 'font-size:11px;color:var(--muted);margin-top:6px';
+      ocr.textContent = `+ ${dep.ocr_needed || 0} scanned PDFs awaiting OCR, ${(dep.pending - (dep.ocr_needed || 0))} still unreadable — retried automatically each pass.`;
+      depList.appendChild(ocr);
     }
   }
 
