@@ -3793,9 +3793,19 @@ async function loadMonitor() {
   const dep = status.deputation || {};
   const depList = $('monDeputationList');
   const fixupPushUrl = (u) => {
-    if (u.startsWith('//')) return 'https:' + u;                 // protocol-relative capture
-    if (u.startsWith('http://') && /\.gov\.in/i.test(u)) return 'https://' + u.slice(7); // NIC/DGFS class
+    if (u.startsWith('//')) return 'https:' + u;
+    if (u.startsWith('http://') && /\.gov\.in/i.test(u)) return 'https://' + u.slice(7);
     return u;
+  };
+  const orgOf = (r) => {
+    const s = (r.snip || '').replace(/\s+/g, ' ').trim();
+    // government PDFs usually open with "File No.X. GOVERNMENT OF ... DEPARTMENT OF ..."
+    // take the longest cap-letter run between "File No." and the first sentence-end/parenthesis
+    const m = s.match(/File No\.[^.]*\.?\s*([A-Z][A-Z0-9 &,.\-/'()]{12,})/);
+    if (m) return m[1].replace(/\s*\(.*$/, '').trim();
+    // fallback: first sentence, title-cased, trimmed
+    const first = s.split('. ')[0];
+    return first.length > 80 ? first.slice(0, 77) + '...' : first || '—';
   };
   if (depList) {
     const confAll = (dep.confirmed || 0);
@@ -3803,25 +3813,45 @@ async function loadMonitor() {
     const newCount = (dep.new_confirmed != null) ? dep.new_confirmed : confAll;
     const newRows = (dep.confirmed_list || []).filter((r) => r && r.url && !r.already_added);
     const dupRows = (dep.confirmed_list || []).filter((r) => r && r.already_added);
-    const fmtSeen = (r) => {
-      const t = r.first_seen || '';
+    const fmtSeen = (t) => {
       if (!t) return '';
       const d = new Date(t);
       return isNaN(d) ? '' : d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
     };
-    const depLine = (r, n, selectable) => {
-      const when = fmtSeen(r);
-      const num = `<span style="display:inline-block;min-width:26px;text-align:right;margin-right:8px;font-size:12px;color:var(--muted)">${n}.</span>`;
-      const box = selectable
-        ? `<input type="checkbox" class="depSel" value="${escapeHtml(r.url)}" style="width:15px;height:15px;margin:2px 8px 0 0;accent-color:var(--good,#37c46b)" title="Select for webapp push">`
-        : '<span style="display:inline-block;width:23px"></span>';
-      return `<div style="display:flex;align-items:flex-start;padding:3px 0;line-height:1.55">
-        ${box}${num}
-        <span style="flex:1;word-break:break-all">
-          <a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.url)}</a>
-          ${when ? ` <span class="muted" style="font-size:11px">[appeared ${escapeHtml(when)}]</span>` : ''}
-          ${r.snip ? `<br><span class="muted" style="font-size:11px">${escapeHtml(r.snip.slice(0, 110))}</span>` : ''}
-        </span></div>`;
+    const sortState = { col: 'seen', dir: 'asc' };
+    const sortedRows = (rows) => {
+      const c = sortState.col, d = sortState.dir === 'asc' ? 1 : -1;
+      return rows.slice().sort((a, b) => {
+        let av, bv;
+        if (c === 'seen') { av = a.first_seen || ''; bv = b.first_seen || ''; }
+        else if (c === 'org') { av = orgOf(a).toLowerCase(); bv = orgOf(b).toLowerCase(); }
+        else if (c === 'url') { av = (a.url || '').toLowerCase(); bv = (b.url || '').toLowerCase(); }
+        else { av = (a.url || '').toLowerCase(); bv = (b.url || '').toLowerCase(); }
+        if (av < bv) return -1 * d;
+        if (av > bv) return 1 * d;
+        return 0;
+      });
+    };
+    const tableFor = (rows, selectable) => {
+      const data = sortedRows(rows);
+      const th = (label, col) => {
+        const arrow = sortState.col === col ? (sortState.dir === 'asc' ? ' ▲' : ' ▼') : '';
+        return `<th style="cursor:pointer;user-select:none;text-align:left;padding:6px 8px;border-bottom:1px solid var(--border,#2a2f3a);white-space:nowrap;font-size:12px;color:var(--muted)" data-sort="${col}">${label}${arrow}</th>`;
+      };
+      const tr = (r, n) => {
+        const box = selectable
+          ? `<td style="width:22px;text-align:center"><input type="checkbox" class="depSel" value="${escapeHtml(fixupPushUrl(r.url))}" style="width:14px;height:14px;accent-color:var(--good,#37c46b)" title="Select for webapp push"></td>`
+          : '<td style="width:22px"></td>';
+        return `<tr style="border-bottom:1px solid var(--border,#2a2f3a)">${box}
+          <td style="padding:5px 8px;font-size:12px;color:var(--muted);text-align:right;width:28px">${n ?? '—'}</td>
+          <td style="padding:5px 8px;font-size:13px;max-width:220px;word-break:break-word">${escapeHtml(orgOf(r))}</td>
+          <td style="padding:5px 8px;font-size:13px"><a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.url)}</a>${r.snip ? `<br><span class="muted" style="font-size:11px">${escapeHtml(r.snip.slice(0, 90))}</span>` : ''}</td>
+          <td style="padding:5px 8px;font-size:12px;color:var(--muted);white-space:nowrap">${fmtSeen(r.first_seen) || '—'}</td></tr>`;
+      };
+      if (!data.length) return '<p class="muted" style="margin:6px 0">None.</p>';
+      return `<table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr>${selectable ? '<th style="width:22px"></th>' : ''}${th('#', '_idx')}${th('Organisation', 'org')}${th('Notice / revision link', 'url')}${th('Appeared', 'seen')}</tr></thead>
+        <tbody>${data.map((r, i) => tr(r, selectable ? i + 1 : null)).join('')}</tbody></table>`;
     };
     let body = '';
     if (newRows.length) {
@@ -3832,8 +3862,7 @@ async function loadMonitor() {
         <button id="monDepPush" class="primary" style="font-size:12px;padding:5px 12px;border-radius:6px;border:0;cursor:pointer;background:var(--good,#37c46b);color:#04221a;font-weight:600">Send selected to web app</button>
         <span id="monDepPushNote" class="muted" style="font-size:11px"></span>
       </div>`;
-      body += `<div id="monDepList" style="margin:0 0 10px;font-size:13px;border-top:1px solid var(--border,#2a2f3a);padding-top:6px;max-height:360px;overflow:auto">` +
-        newRows.map((r, i) => depLine(r, i + 1, true)).join('') + `</div>`;
+      body += `<div id="monDepList" style="overflow:auto;max-height:420px;border:1px solid var(--border,#2a2f3a);border-radius:6px">${tableFor(newRows, true)}</div>`;
     } else if (newCount > 0) {
       body += `<p class="muted" style="margin:0 0 6px">${newCount} new deputation links exist but the list is truncated in this dashboard data — refresh after the next pass.</p>`;
     } else {
@@ -3841,36 +3870,49 @@ async function loadMonitor() {
     }
     if (dupRows.length || alreadyAdded > 0) {
       body +=
-        `<details style="font-size:12px;color:var(--muted)">` +
+        `<details style="font-size:12px;color:var(--muted);margin-top:8px">` +
         `<summary style="cursor:pointer">${alreadyAdded} already in records — hide/show</summary>` +
-        `<div style="margin:4px 0;padding-left:4px;font-size:12px">` +
-        dupRows.map((r) => depLine(r, null, false)).join('') + `</div></details>`;
+        `<div style="margin:4px 0">${tableFor(dupRows, false)}</div></details>`;
     }
     depList.innerHTML = body;
+    const tbl = depList.querySelector('table');
+    if (tbl) {
+      tbl.querySelectorAll('th[data-sort]').forEach((th) => {
+        th.addEventListener('click', () => {
+          const col = th.dataset.sort;
+          if (sortState.col === col) sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+          else { sortState.col = col; sortState.dir = 'asc'; }
+          const target = depList.querySelector('#monDepList') || depList;
+          const isNew = !!target.querySelector('.depSel');
+          target.innerHTML = tableFor(isNew ? newRows : dupRows, isNew);
+          wireDepControls();
+        });
+      });
+    }
     // select-all + the send button (push ONLY deputation-confirmed links)
-    const all = $('monDepAll');
-    const btn = $('monDepPush');
-    const note = $('monDepPushNote');
-    const boxes = () => [...depList.querySelectorAll('input.depSel')];
-    if (all) all.onchange = () => boxes().forEach((b) => { b.checked = all.checked; });
-    const label = () => {
-      if (!btn) return;
-      const n = boxes().filter((b) => b.checked).length;
-      btn.textContent = n ? `Send ${n} to web app` : 'Send selected to web app';
-      btn.disabled = !n;
-      btn.style.opacity = n ? '1' : '.45';
+    const wireDepControls = () => {
+      const all = $('monDepAll');
+      const btn = $('monDepPush');
+      const note = $('monDepPushNote');
+      const boxes = () => [...depList.querySelectorAll('input.depSel')];
+      if (all) all.onchange = () => boxes().forEach((b) => { b.checked = all.checked; });
+      const label = () => {
+        if (!btn) return;
+        const n = boxes().filter((b) => b.checked).length;
+        btn.textContent = n ? `Send ${n} to web app` : 'Send selected to web app';
+        btn.disabled = !n;
+        btn.style.opacity = n ? '1' : '.45';
+      };
+      boxes().forEach((b) => { b.onchange = label; });
+      label();
+      if (btn) btn.onclick = () => {
+        const urls = boxes().filter((b) => b.checked).map((b) => b.value);
+        if (!urls.length) return;
+        window.open('http://127.0.0.1:8766/push-from-monitor?urls=' + encodeURIComponent(urls.join('\n')), '_blank', 'noopener');
+        if (note) note.textContent = 'Opened the web app tab - click "Push all selected" there to queue the jobs.';
+      };
     };
-    boxes().forEach((b) => { b.onchange = label; });
-    label();
-    if (btn) btn.onclick = () => {
-      const urls = boxes().filter((b) => b.checked).map((b) => fixupPushUrl(b.value));
-      if (!urls.length) return;
-      // the local web app's same-origin push page runs these ONE BY ONE into
-      // its review queue (a public dashboard page cannot POST cross-origin to
-      // a loopback service - the app's local_only middleware forbids it).
-      window.open('http://127.0.0.1:8766/push-from-monitor?urls=' + encodeURIComponent(urls.join('\n')), '_blank', 'noopener');
-      if (note) note.textContent = 'Opened the web app tab - click "Push all selected" there to queue the jobs.';
-    };
+    wireDepControls();
     if (dep.pending && dep.pending > 0) {
       const ocr = document.createElement('div');
       ocr.style.cssText = 'font-size:11px;color:var(--muted);margin-top:6px';
