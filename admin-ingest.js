@@ -3792,14 +3792,37 @@ async function loadMonitor() {
   const dep = status.deputation || {};
   const depList = $('monDeputationList');
   if (depList) {
-    const conf = (dep.confirmed_list || []).filter((r) => r && r.url);
+    // DEPUPLICATION: the sidecar flags confirmed links whose URL already
+    // exists in the site's published records / review exports
+    // (data/vacancies.json + data/monitor/leads.json) with already_added.
+    // Only GENUINELY NEW deputation links are shown; the ones already added
+    // are collapsed to a one-line count so a re-surfaced watch link is not
+    // mistaken for a fresh discovery.
     const confAll = (dep.confirmed || 0);
-    if (confAll > 0) {
-      depList.innerHTML =
-        `<div style="font-size:12px;margin:0 0 6px;color:var(--muted)">${confAll} link(s) say "deputation":</div>` +
-        (conf.length ? `<ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7">${conf.map((r) =>
-          `<li><a href="${escapeHtml(r.url)}" target="_blank" rel="noopener" style="word-break:break-all">${escapeHtml(r.url)}</a>` +
-          (r.snip ? ` <span class="muted">— ${escapeHtml(r.snip)}</span>` : '') + `</li>`).join('')}</ul>` : '<p class="muted">list truncated in dashboard</p>');
+    const alreadyAdded = (dep.already_added || 0);
+    const newCount = (dep.new_confirmed != null) ? dep.new_confirmed : confAll;
+    const newRows = (dep.confirmed_list || []).filter((r) => r && r.url && !r.already_added);
+    const dupRows = (dep.confirmed_list || []).filter((r) => r && r.already_added);
+    const headRow = (r) =>
+      `<li><a href="${escapeHtml(r.url)}" target="_blank" rel="noopener" style="word-break:break-all">${escapeHtml(r.url)}</a>` +
+      (r.snip ? ` <span class="muted">— ${escapeHtml(r.snip)}</span>` : '') + `</li>`;
+    if (newCount > 0 || confAll > 0) {
+      let body = '';
+      if (newCount > 0) {
+        body +=
+          `<div style="font-size:12px;margin:0 0 6px;color:var(--muted)">${newCount} NEW deputation link(s) not yet in the site records:</div>` +
+          (newRows.length ? `<ul style="margin:0 0 6px;padding-left:18px;font-size:13px;line-height:1.7">${newRows.map(headRow).join('')}</ul>` : '');
+      } else {
+        body += '<p class="muted" style="margin:0 0 6px">All confirmed "deputation" links are already in the site records (deduplicated).</p>';
+      }
+      if (dupRows.length || alreadyAdded > 0) {
+        body +=
+          `<details style="font-size:12px;color:var(--muted)">` +
+          `<summary style="cursor:pointer">${alreadyAdded} already in records — hide/show</summary>` +
+          (dupRows.length ? `<ul style="margin:4px 0;padding-left:18px;line-height:1.6">${dupRows.map(headRow).join('')}</ul>` : '') +
+          `</details>`;
+      }
+      depList.innerHTML = body;
     } else {
       depList.innerHTML = '<p class="muted">No confirmed "deputation" links yet this pass.</p>';
     }
