@@ -126,6 +126,17 @@
     .mon-kpi.ok b{color:var(--good,#37c46b)}
     .mon-kpi.warn b{color:var(--warn,#f5b301)}
     .mon-kpi.bad b{color:var(--bad,#ff5a5a)}
+    /* candidate-extraction picker (monitor tab) */
+    #monCandTable th:nth-child(1),#monCandTable td:nth-child(1){width:28px;text-align:center}
+    #monCandTable input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--good,#37c46b)}
+    #monCandTable input[type=checkbox]:disabled{cursor:default;opacity:.6}
+    #monCandTable tr.cand-extracted td{opacity:.55}
+    .cand-chip{font-size:10px;padding:2px 7px;border-radius:8px;border:1px solid var(--line);white-space:nowrap}
+    .cand-chip.ok{color:var(--good,#37c46b);border-color:rgba(55,196,107,.4)}
+    .cand-chip.doing{color:var(--warn,#f5b301);border-color:rgba(245,179,1,.4)}
+    .cand-chip.err{color:var(--bad,#ff5a5a);border-color:rgba(255,90,90,.4)}
+    #monExtractSel:disabled{opacity:.5;cursor:default}
+    #monCandAllRow input,#monCandTable thead input{cursor:pointer}
     .mon-grid{display:grid;grid-template-columns:1fr;gap:14px}
     .mon-sec{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:2px 0 8px}
     .mon-legend{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5}
@@ -356,9 +367,6 @@
               <option value="rejected">Rejected</option>
               <option value="all">All</option>
             </select>
-            <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Level:
-              <select id="mgLevel" style="width:auto"><option value="">All</option></select>
-            </label>
             <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Source:
               <select id="mgSource" style="width:auto"><option value="">All</option></select>
             </label>
@@ -417,13 +425,6 @@
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
           <h2 style="margin:0">Pending updates &amp; duplicates <span id="updatesHdrCount" class="muted"></span></h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input id="updSearch" placeholder="Search post / org / ministry / city…" style="width:240px" />
-            <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Level:
-              <select id="updLevel" style="width:auto"><option value="">All</option></select>
-            </label>
-            <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Source:
-              <select id="updSource" style="width:auto"><option value="">All</option></select>
-            </label>
             <label class="muted" style="display:flex;gap:4px;align-items:center;font-size:13px">Sort:
               <select id="updSort" style="width:auto"></select>
             </label>
@@ -549,6 +550,10 @@
         </p>
 
         <div id="monKpis"></div>
+        <div id="monDeputation" style="border:1px solid var(--border,#2a2f3a);border-radius:8px;padding:10px 12px;margin:0 0 14px;background:rgba(56,189,148,.05)">
+          <div class="mon-sec">🎯 Deputation notices (links that actually say "deputation")</div>
+          <div id="monDeputationList"></div>
+        </div>
 
         <div class="mon-grid">
           <div>
@@ -574,6 +579,24 @@
             <div class="mon-sec">T3 manual gap queue <span class="muted" id="monGapNote"></span></div>
             <div id="monGaps" class="vf-table-wrap"></div>
           </div>
+          <div style="grid-column:1/-1">
+            <div class="mon-sec" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              Candidate extraction <span class="muted" id="monCandNote"></span>
+              <span style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <label style="font-size:12px;color:var(--muted);cursor:pointer" title="Select every not-yet-extracted candidate">
+                  <input type="checkbox" id="monCandAll"> select all
+                </label>
+                <button id="monExtractSel" class="good" title="For each selected candidate, run the LLM extractor (Gemini, Mistral fallback) and file the result as DRAFT rows in the Review queue. Nothing is published until you Approve.">⚡ Extract selected</button>
+              </span>
+            </div>
+            <div id="monCandStatus" class="muted" style="font-size:12px;margin:6px 0"></div>
+            <div class="vf-table-wrap" style="max-height:340px;overflow:auto">
+              <table class="vf-table" id="monCandTable">
+                <thead><tr><th style="width:28px"></th><th>Source</th><th>Notice / revision link</th><th>Status</th></tr></thead>
+                <tbody id="monCand"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -593,6 +616,6 @@
   <script src="config.js?v=sb8"></script>
   <script src="enrich.js?v=elig-20261018-lines"></script>
   <script src="shared/vacancy-utils.js?v=elig-20261018-lines"></script>
-  <script src="admin-ingest.js?v=sb56"></script>
+  <script src="admin-ingest.js?v=sb57"></script>
 </body>
 </html>

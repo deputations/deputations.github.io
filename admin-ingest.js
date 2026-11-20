@@ -1014,15 +1014,11 @@ function wireApp() {
   VERIFY_PAGE = Math.max(1, parseInt(ui.vfPage, 10) || 1);
   RESTORE_LEVEL = ui.draftLevel || '';
   RESTORE_SOURCE = ui.draftSource || '';
-  RESTORE_MG_LEVEL = ui.mgLevel || '';
   RESTORE_MG_SOURCE = ui.mgSource || '';
   RESTORE_VF_SOURCE = ui.vfSource || '';
-  RESTORE_UPD_LEVEL = ui.updLevel || '';
-  RESTORE_UPD_SOURCE = ui.updSource || '';
   if ($('draftSearch')) $('draftSearch').value = ui.draftSearch || '';
   if ($('mgSearch')) $('mgSearch').value = ui.mgSearch || '';
   if ($('vfSearch')) $('vfSearch').value = ui.vfSearch || '';
-  if ($('updSearch')) $('updSearch').value = ui.updSearch || '';
   if (ui.mgStatus && $('mgStatus')) $('mgStatus').value = ui.mgStatus;
   if (ui.flagStatus && $('flagStatus')) $('flagStatus').value = ui.flagStatus;
   if (ui.fbStatus && $('fbStatus')) $('fbStatus').value = ui.fbStatus;
@@ -1096,15 +1092,14 @@ function wireApp() {
     //   - MG_PAGE comes from saveUI({mgPage:...}) — the admin's last page (e.g. 7)
     //     lands on a slice that doesn't contain the Verify row.
     //   - mgStatus saved as draft/rejected/marked excludes approved rows.
-    //   - mgSearch / mgLevel / mgSource from a prior session may not match the row.
+    //   - mgSearch / mgSource from a prior session may not match the row.
     // The Verify tab only deals with approved rows, so landing on the approved
     // status + page 1 + empty search is always where the row lives.
     MG_PAGE = 1;
     if ($('mgStatus')) $('mgStatus').value = 'approved';
     if ($('mgSearch')) $('mgSearch').value = '';
-    if ($('mgLevel')) $('mgLevel').value = '';
     if ($('mgSource')) $('mgSource').value = '';
-    saveUI({ mgPage: 1, mgStatus: 'approved', mgSearch: '', mgLevel: '', mgSource: '' });
+    saveUI({ mgPage: 1, mgStatus: 'approved', mgSearch: '', mgSource: '' });
     document.querySelectorAll('.tabs button').forEach((x) => x.classList.remove('active'));
     const manageBtn = document.querySelector('.tabs button[data-tab="manage"]');
     if (manageBtn) manageBtn.classList.add('active');
@@ -1134,10 +1129,6 @@ function wireApp() {
 
   if ($('updRefresh')) $('updRefresh').onclick = loadUpdates;
   if ($('updSort')) $('updSort').onchange = () => { saveUI({ updSort: $('updSort').value }); renderUpdates(); };   // client-side re-sort, no refetch
-  if ($('updLevel')) $('updLevel').onchange = () => { saveUI({ updLevel: $('updLevel').value }); renderUpdates(); };
-  if ($('updSource')) $('updSource').onchange = () => { saveUI({ updSource: $('updSource').value }); renderUpdates(); };
-  let _updFilterTimer = null;
-  if ($('updSearch')) $('updSearch').oninput = () => { clearTimeout(_updFilterTimer); _updFilterTimer = setTimeout(() => { saveUI({ updSearch: $('updSearch').value }); renderUpdates(); }, 200); };
 
   $('flagRefresh').onclick = loadFlags;
   $('flagStatus').onchange = () => { saveUI({ flagStatus: $('flagStatus').value }); loadFlags(); };
@@ -1150,11 +1141,6 @@ function wireApp() {
   if ($('mgSource')) $('mgSource').onchange = () => {
     const v = $('mgSource').value;
     MG_PAGE = 1; saveUI({ mgSource: v, mgPage: 1 });
-    renderManage();
-  };
-  if ($('mgLevel')) $('mgLevel').onchange = () => {
-    const v = $('mgLevel').value;
-    MG_PAGE = 1; saveUI({ mgLevel: v, mgPage: 1 });
     renderManage();
   };
   // Populate all three sort dropdowns from the shared option list (keeps them
@@ -2263,7 +2249,6 @@ async function loadManage() {
   refreshWaPending().then(() => { if (WA_PENDING && !$('paneManage').classList.contains('hidden')) renderManage(); });
   try {
     MANAGE_ROWS = await fetchAll(q);
-    populateManageLevelFilter();
     populateManageSourceFilter();
     renderManage();
     // If the Verify tab's ✎ Edit button brought us here, navigate to the page
@@ -2276,7 +2261,7 @@ async function loadManage() {
       const view = getManageViewRows();
       const idx = view.findIndex((r) => String(r.id) === OPEN_MANAGE_ROW);
       if (idx < 0) {
-        // Row is in MANAGE_ROWS but got filtered out by mgSearch/mgLevel/mgSource. The
+        // Row is in MANAGE_ROWS but got filtered out by mgSearch/mgSource. The
         // reset in openManageForRow should have cleared those, but if a future
         // filter slips through, this guard keeps the flow graceful.
         console.warn('[openManageForRow] target filtered out of view:', OPEN_MANAGE_ROW,
@@ -2327,23 +2312,7 @@ async function loadManage() {
 
 // Mirror of populateDraftSourceFilter for Manage. (The Status dropdown's
 // "🚩 Marked" item handles the marked-for-review filter now.)
-// Level/Source options only exist after a load, so persistence restore is
-// one-shot — the value is consumed the first time the options are rebuilt.
-let RESTORE_MG_LEVEL = '';
 let RESTORE_MG_SOURCE = '';
-function populateManageLevelFilter() {
-  const sel = $('mgLevel');
-  if (!sel) return;
-  const prev = sel.value || RESTORE_MG_LEVEL; RESTORE_MG_LEVEL = '';
-  const byTok = new Map();
-  MANAGE_ROWS.forEach((r) => {
-    const tok = _levelTok(r);
-    if (tok && !byTok.has(tok)) byTok.set(tok, _levelNum(r));
-  });
-  const toks = [...byTok.keys()].sort((a, b) => byTok.get(b) - byTok.get(a));
-  sel.innerHTML = '<option value="">All</option>' + toks.map((t) => `<option value="${t}">Level ${t}</option>`).join('');
-  if (prev && byTok.has(prev)) sel.value = prev;
-}
 function populateManageSourceFilter() {
   const sel = $('mgSource');
   if (!sel) return;
@@ -2355,15 +2324,13 @@ function populateManageSourceFilter() {
   if (prev && srcs.includes(prev)) sel.value = prev;
 }
 
-// Apply the current mgSearch / mgLevel / mgSource / mgSort to MANAGE_ROWS and return the
+// Apply the current mgSearch / mgSource / mgSort to MANAGE_ROWS and return the
 // result. Used by renderManage() and by loadManage() to locate the Verify-tab
 // target's page (so the deep-link lands on the page that actually contains it).
 function getManageViewRows() {
   const q = ($('mgSearch').value || '').toLowerCase().trim();
-  const lvl = ($('mgLevel') && $('mgLevel').value || '').trim();
   const src = ($('mgSource') && $('mgSource').value || '').trim();
   let filtered = !q ? MANAGE_ROWS : MANAGE_ROWS.filter((r) => rowMatchesQuery(r, q));
-  if (lvl) filtered = filtered.filter((r) => _levelTok(r) === lvl);
   if (src) filtered = filtered.filter((r) => String(r.source_category || r.source_type || '').trim() === src);
   const mode = ($('mgSort') && $('mgSort').value) || 'upload';
   return sortRows(filtered, mode);
@@ -3428,56 +3395,8 @@ async function loadUpdates() {
     const r = await api('/rest/v1/vacancy_updates?status=eq.pending&select=*,target:target_id(post_name,organisation,level_text,status,vacancy_id)&order=created_at.desc&limit=500');
     if (!r.ok) throw new Error('HTTP ' + r.status);
     UPDATES_ROWS = await r.json();
-    populateUpdatesFilters();
     renderUpdates();
   } catch (e) { if (list) list.innerHTML = `<p class="muted">Load error: ${escapeHtml(e.message)}</p>`; }
-}
-
-// One-shot restore for the dynamic Level/Source dropdowns (their options only
-// exist after the first loadUpdates) — same pattern as the Review/Manage ones.
-let RESTORE_UPD_LEVEL = '';
-let RESTORE_UPD_SOURCE = '';
-
-function populateUpdatesFilters() {
-  const sel = $('updLevel');
-  if (sel) {
-    const prev = sel.value || RESTORE_UPD_LEVEL; RESTORE_UPD_LEVEL = '';
-    const byTok = new Map();
-    UPDATES_ROWS.forEach((u) => {
-      // the incoming (proposed) side of the diff — that's what the admin sees
-      const tok = _levelTok(u.proposed || u.target || {});
-      if (tok && !byTok.has(tok)) byTok.set(tok, _levelNum(u.proposed || u.target || {}));
-    });
-    const toks = [...byTok.keys()].sort((a, b) => byTok.get(b) - byTok.get(a));
-    sel.innerHTML = '<option value="">All</option>' + toks.map((t) => `<option value="${t}">Level ${t}</option>`).join('');
-    if (prev && byTok.has(prev)) sel.value = prev;
-  }
-  const src = $('updSource');
-  if (src) {
-    const prev = src.value || RESTORE_UPD_SOURCE; RESTORE_UPD_SOURCE = '';
-    const srcs = [...new Set(UPDATES_ROWS.map((u) => String(u.source_category || u.source_type || '').trim()).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b));
-    src.innerHTML = '<option value="">All</option>' + srcs.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
-    if (prev && srcs.includes(prev)) src.value = prev;
-  }
-}
-
-// Filter the cached updates by the search / Level / Source dropdowns. Level and
-// Source are read off the incoming (proposed) side — same fields the card's
-// "from …" line shows. No pagination in this tab: every pending row is shown.
-function filteredUpdatesRows() {
-  const q = ($('updSearch') && ($('updSearch').value || '').trim()) || '';
-  const lvl = ($('updLevel') && $('updLevel').value || '').trim();
-  const src = ($('updSource') && $('updSource').value || '').trim();
-  return UPDATES_ROWS.filter((u) => {
-    if (lvl && _levelTok(u.proposed || u.target || {}) !== lvl) return false;
-    if (src && String(u.source_category || u.source_type || '').trim() !== src) return false;
-    if (q) {
-      const t = u.target || {};
-      if (!rowMatchesQuery({ ...t, ...(u.proposed || {}) }, q)) return false;
-    }
-    return true;
-  });
 }
 
 // Adapt an update row to the shape sortRows() reads: notification_date comes
@@ -3499,19 +3418,11 @@ async function refreshUpdatesCount() {
 }
 
 function renderUpdates() {
-  const rows = filteredUpdatesRows();
+  const rows = UPDATES_ROWS;
   const list = $('updatesList');
   if ($('updatesHdrCount')) $('updatesHdrCount').textContent = `(${rows.length})`;
   if (!list) return;
-  const filtered = Boolean(
-    ($('updSearch') && ($('updSearch').value || '').trim())
-    || ($('updLevel') && $('updLevel').value)
-    || ($('updSource') && $('updSource').value)
-  );
-  if (!rows.length) {
-    list.innerHTML = `<p class="muted">${filtered ? 'No pending updates match the current filters.' : 'No pending updates or duplicate suggestions. 🎉'}</p>`;
-    return;
-  }
+  if (!rows.length) { list.innerHTML = '<p class="muted">No pending updates or duplicate suggestions. 🎉</p>'; return; }
   const mode = ($('updSort') && $('updSort').value) || 'upload';
   const ordered = sortRows(rows.map(_updSortable), mode).map((s) => s._u);
   list.innerHTML = '';
@@ -3684,6 +3595,130 @@ function updateCard(u) {
    -------------------------------------------------------------------------- */
 let MON_STATE = { tier: 'all' };
 
+/* ------------------------------------------------------------------ */
+/* Candidate-extraction picker (Monitor tab).                          */
+/* The LLM extractor backend already exists (/functions/v1/extract:     */
+/* Gemini -> Mistral fallback, files DRAFT rows in the Review queue).  */
+/* This panel only adds SELECTION: which candidate links to extract.   */
+/* "Already extracted" is persisted in localStorage so re-opening the  */
+/* page never re-burns LLM quota on the same link.                     */
+/* ------------------------------------------------------------------ */
+const CAND_CUE = /vacanc|circular|recruit|deput|notice|advert/i;
+function candHighSignal(u) {
+  // PRE-CHECK ONLY when the URL itself reads like a deputation notice. A bare
+  // .pdf (e.g. a guidelines PDF on a monitored hub) is left unchecked — the
+  // monitor surfaced it from a listing page, but the filename alone doesn't
+  // prove it's a deputation; the extractor will answer 0 rows and you'll see
+  // it in the table. CSS/assets/params-only pages never pre-check.
+  if (!u) return false;
+  const p = u.split('?')[0];
+  return CAND_CUE.test(p) && !/^https?:\/\/[^/]+\/?$/.test(u);
+}
+function buildCands(events, cfg, leads) {
+  const srcById = {}; if (cfg && cfg.sources) cfg.sources.forEach((s) => { srcById[s.id] = s; });
+  const out = []; const seen = {};
+  const add = (u, name, kind, when) => {
+    if (!u || seen[u]) return; seen[u] = 1;
+    out.push({ url: u, name: name || '', kind: kind || 'new', when: when || '' });
+  };
+  (leads && leads.rows || []).forEach((r) =>
+    add(r.official_notification_link, r.organisation, (r._monitor_kind === 'revision' || r.source_category === 'revision') ? 'revision' : 'new'));
+  const ev = (events && events) || {};
+  (ev.revisions || []).forEach((e) =>
+    add(e.url || e.notice_url, e.source_name || (srcById[e.id] && srcById[e.id].name) || e.id, 'revision', e.ts));
+  (ev.new_notices || []).forEach((e) =>
+    add(e.url || e.notice_url, e.source_name || (srcById[e.id] && srcById[e.id].name) || e.id, 'new', e.ts));
+  out.sort((a, b) => new Date(b.when || 0) - new Date(a.when || 0));
+  return out;
+}
+function monCandRender() {
+  const body = $('monCand'); if (!body) return;
+  if (!MON_STATE.cand) MON_STATE.cand = { checked: new Set(), doing: new Set(), errs: new Set() };
+  const c = MON_STATE.cand;
+  if (!MON_STATE.extracted) MON_STATE.extracted = (loadUI().monCandExtracted || {});
+  const cands = MON_STATE.cands || [];
+  // first render only: pre-check the high-signal pending rows (junk links stay unchecked)
+  if (!c.prefilled && cands.length) {
+    cands.forEach((x) => { if (!MON_STATE.extracted[x.url] && candHighSignal(x.url)) c.checked.add(x.url); });
+    c.prefilled = true;
+  }
+  body.innerHTML = cands.map((x) => {
+    const ext = MON_STATE.extracted[x.url];
+    const doing = c.doing.has(x.url);
+    const selectable = !ext && !doing;
+    const chip = doing ? '<span class="cand-chip doing">extracting…</span>'
+      : c.errs.has(x.url) ? '<span class="cand-chip err">failed — re-check to retry</span>'
+      : ext ? `<span class="cand-chip ok">extracted · ${ext.n} row(s)</span>`
+      : '<span class="cand-chip">pending</span>';
+    return `<tr class="${ext ? 'cand-extracted' : ''}">
+      <td>${selectable ? `<input type="checkbox" data-mcu="${escapeHtml(x.url)}" ${c.checked.has(x.url) ? 'checked' : ''}>` : '<span class="muted">—</span>'}</td>
+      <td>${escapeHtml(x.name || '(monitor candidate)')} <span class="chip" style="font-size:10px">${x.kind}</span></td>
+      <td><a href="${escapeHtml(x.url)}" target="_blank" rel="noopener" style="font-size:12px">${escapeHtml(x.url.slice(0, 64))}</a></td>
+      <td>${chip}</td></tr>`;
+  }).join('') || '<tr><td colspan="4" class="muted">No candidates yet — run a monitor pass first.</td></tr>';
+  body.querySelectorAll('input[data-mcu]').forEach((el) => {
+    el.onchange = () => { el.checked ? c.checked.add(el.dataset.mcu) : c.checked.delete(el.dataset.mcu); monCandAllSync(); };
+  });
+  const pending = cands.filter((x) => !MON_STATE.extracted[x.url]).length;
+  const extr = cands.filter((x) => MON_STATE.extracted[x.url]).length;
+  if ($('monCandNote')) $('monCandNote').textContent = cands.length ? `(${pending} pending · ${extr} extracted · ${c.checked.size} selected)` : '';
+  monCandAllSync();
+}
+function monCandAllSync() {
+  const all = $('monCandAll'); if (!all) return;
+  const c = MON_STATE.cand;
+  const pend = (MON_STATE.cands || []).filter((x) => !MON_STATE.extracted[x.url]);
+  all.checked = pend.length > 0 && pend.every((x) => c.checked.has(x.url));
+  all.indeterminate = !all.checked && pend.some((x) => c.checked.has(x.url));
+}
+async function monExtractSelected() {
+  const c = MON_STATE.cand = MON_STATE.cand || { checked: new Set(), doing: new Set(), errs: new Set() };
+  if (!MON_STATE.extracted) MON_STATE.extracted = (loadUI().monCandExtracted || {});
+  if (!MON_STATE.cands) MON_STATE.cands = [];
+  const urls = (MON_STATE.cands || [])
+    .filter((x) => c.checked.has(x.url) && !MON_STATE.extracted[x.url] && !c.doing.has(x.url))
+    .map((x) => x.url);
+  if (!urls.length) { toast('Nothing selected — tick the candidate rows you want extracted'); return; }
+  const btn = $('monExtractSel'); const st = $('monCandStatus');
+  if (btn) btn.disabled = true;
+  let done = 0, totalRows = 0, stopped = false; const providers = new Set();
+  for (const u of urls) {
+    c.doing.add(u); c.errs.delete(u); monCandRender();
+    if (st) st.textContent = `Extracting ${done + 1}/${urls.length} — ${u.split('/').slice(-1)[0].slice(0, 60)} (each takes ~20s; LLM quota applies)`;
+    let fail = false;
+    try {
+      const r = await api('/functions/v1/extract', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source_type: 'notification', source_label: 'Monitor candidate', source_url: u }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+      totalRows += d.rows_extracted || 0; (d.providers || []).forEach((p) => providers.add(p));
+      MON_STATE.extracted[u] = { n: d.rows_extracted || 0, ts: Date.now() };
+      saveUI({ monCandExtracted: MON_STATE.extracted });
+      done++; c.checked.delete(u);
+    } catch (e) {
+      c.errs.add(u); fail = true;
+      const quota = /quota|429|all providers|402/i.test(String(e.message || e));
+      if (st) st.textContent = `Stopped at ${done + 1}/${urls.length}: ${e.message}` +
+        (quota ? ' — LLM quota exhausted (resets daily). The remaining rows stay selected; retry later.'
+               : ' — nothing was lost; tick them and retry.');
+    } finally { c.doing.delete(u); }
+    monCandRender();
+    if (fail) { stopped = true; break; }
+    await new Promise((res) => setTimeout(res, 1500));   // be gentle with the LLM quota
+  }
+  if (!stopped) {
+    if (st) st.textContent = `Done: ${done}/${urls.length} extracted → ${totalRows} draft row(s)` +
+      (providers.size ? ` · via ${[...providers].join(', ')}` : '') +
+      ' — check the Review queue. Nothing is published until you Approve.';
+  }
+  toast(stopped ? `Extraction stopped early (${done}/${urls.length})` : `Extracted ${done} candidate(s) → ${totalRows} draft row(s)`);
+  if (btn) btn.disabled = false;
+  monCandRender();
+  if (typeof refreshUpdatesCount === 'function') refreshUpdatesCount();
+}
+
 const MON_BASE = (typeof window !== 'undefined' && window.MONITOR_BASE) ? window.MONITOR_BASE : 'data/monitor/';
 
 async function monFetch(path) {
@@ -3709,7 +3744,7 @@ async function loadMonitor() {
   const kpis = $('monKpis');
   if (!kpis) return;
   kpis.innerHTML = '<p class="muted">Loading monitor…</p>';
-  const [status, events, cfg] = await Promise.all([monFetch('status.json'), monFetch('events.json'), monFetch('config.json')]);
+  const [status, events, cfg, leads] = await Promise.all([monFetch('status.json'), monFetch('events.json'), monFetch('config.json'), monFetch('leads.json')]);
 
   if (!status) {
     kpis.innerHTML = '';
@@ -3718,6 +3753,10 @@ async function loadMonitor() {
     $('monGaps').innerHTML = '<p class="muted">No monitor data yet. Run <code>research-alldup/run_monitor.py</code> once to create <code>data/monitor/status.json</code> + <code>events.json</code>, commit, and refresh.</p>';
     return;
   }
+
+  // ---- candidate-extraction picker: build the selectable list + render ----
+  MON_STATE.cands = buildCands(events, cfg, leads);
+  monCandRender();
 
   $('monLastRun').textContent = status.last_run ? ('last pass ' + monRel(status.last_run)) : '';
 
@@ -3745,6 +3784,32 @@ async function loadMonitor() {
     kpi(jsCum, 'need browser', jsCum ? 'warn' : '') +
     kpi(defCum.length, 'deferred (backoff, T3 review)', defCum.length ? 'warn' : '');
   if ($('monCount')) $('monCount').textContent = (failCum + chgCum + news.length) ? ` (${failCum + chgCum + news.length})` : '';
+
+  // ---- DEPUTATION card: the one list the user cares about. Shows ONLY links
+  // whose subject/PDF text actually contains "deputation" (the enrichment
+  // sidecar classifies every new candidate link each pass). Other buckets are
+  // intentionally not shown here.
+  const dep = status.deputation || {};
+  const depList = $('monDeputationList');
+  if (depList) {
+    const conf = (dep.confirmed_list || []).filter((r) => r && r.url);
+    const confAll = (dep.confirmed || 0);
+    if (confAll > 0) {
+      depList.innerHTML =
+        `<div style="font-size:12px;margin:0 0 6px;color:var(--muted)">${confAll} link(s) say "deputation":</div>` +
+        (conf.length ? `<ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7">${conf.map((r) =>
+          `<li><a href="${escapeHtml(r.url)}" target="_blank" rel="noopener" style="word-break:break-all">${escapeHtml(r.url)}</a>` +
+          (r.snip ? ` <span class="muted">— ${escapeHtml(r.snip)}</span>` : '') + `</li>`).join('')}</ul>` : '<p class="muted">list truncated in dashboard</p>');
+    } else {
+      depList.innerHTML = '<p class="muted">No confirmed "deputation" links yet this pass.</p>';
+    }
+    if (dep.pending && dep.pending > 0) {
+      const note = document.createElement('div');
+      note.style.cssText = 'font-size:11px;color:var(--muted);margin-top:6px';
+      note.textContent = `+ ${dep.ocr_needed || 0} scanned PDFs awaiting OCR, ${(dep.pending - (dep.ocr_needed || 0))} still unreadable — retried automatically each pass.`;
+      depList.appendChild(note);
+    }
+  }
 
   // ---- events table (new notices = candidate links the monitor saw; revisions = same-URL byte changes) ----
   const evBody = $('monEvents');
@@ -3861,6 +3926,13 @@ function wireMonitor() {
     MON_STATE.tier = MON_STATE.tier === 'all' ? 'T0' : 'all';
     e.target.textContent = 'Tier: ' + MON_STATE.tier;
     loadMonitor();
+  };
+  if ($('monExtractSel')) $('monExtractSel').onclick = monExtractSelected;
+  if ($('monCandAll')) $('monCandAll').onchange = (e) => {
+    const c = MON_STATE.cand; if (!c) return;
+    const pend = (MON_STATE.cands || []).filter((x) => !MON_STATE.extracted[x.url]).map((x) => x.url);
+    if (e.target.checked) pend.forEach((u) => c.checked.add(u)); else pend.forEach((u) => c.checked.delete(u));
+    monCandRender();
   };
 }
 
