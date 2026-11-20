@@ -1,16 +1,16 @@
 {
- "last_run": "2026-11-20T03:52:20Z",
+ "last_run": "2026-11-20T07:15:04Z",
  "counts": {
-  "tracked": 254,
-  "ok": 194,
-  "js_shell": 2,
-  "fail": 51,
-  "backoff": 9,
-  "structure_changed": 40,
-  "new_candidates": 6374,
+  "tracked": 8,
+  "ok": 8,
+  "js_shell": 1,
+  "fail": 0,
+  "backoff": 0,
+  "structure_changed": 0,
+  "new_candidates": 231,
   "pass_interrupted": false
  },
- "sources_tracked": 254,
+ "sources_tracked": 8,
  "unhealthy": [
   {
    "id": "SNO-001",
@@ -999,39 +999,39 @@
   }
  ],
  "deputation": {
-  "at": "2026-11-20T05:05:45Z",
-  "total_links": 512,
-  "confirmed": 207,
-  "maybe": 150,
-  "new_confirmed": 203,
-  "already_added": 4,
-  "not_deputation": 150,
-  "pending": 5,
+  "at": "2026-11-20T08:00:20Z",
+  "total_links": 707,
+  "confirmed": 278,
+  "maybe": 221,
+  "new_confirmed": 275,
+  "already_added": 3,
+  "not_deputation": 181,
+  "pending": 27,
   "ocr_needed": 0,
   "confirmed_list": [
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6532.pdf",
     "snip": "File No.CTE-TP/TRNG/3/2020-TPS. GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION OFFICE OF THE COMMISSIONER OF TECHNICAL EDUCATION ",
     "where": "body",
-    "already_added": true
+    "already_added": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6604.pdf",
     "snip": "File No.CTE-ACD1/TR/D/4/2020-ACADEMIC-1 GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION Office of the Commissioner of Technical Ed",
     "where": "subject/heading",
-    "already_added": true
+    "already_added": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6620.pdf",
     "snip": "File No.CTE-ACD1/TR/D/4/2020-ACADEMIC-1 GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION OFFICE OF THE COMMISSIONER OF TECHNICAL ED",
     "where": "subject/heading",
-    "already_added": true
+    "already_added": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6662.pdf",
     "snip": "File No.CTE-ACD1/TR/D/4/2020-ACADEMIC-1 GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION OFFICE OF THE COMMISSIONER OF TECHNICAL ED",
     "where": "subject/heading",
-    "already_added": true
+    "already_added": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-869-Deputation.pdf",
@@ -1110,6 +1110,12 @@
     "snip": "fctt faIH YtrUl DELHI DEVELOPMENT AUTHORITY i|* IRg|-1/ PERSONNEL BRANCH-1 No. F7(64)2008/PB-1/Pt.lI/ /10 Computer No. 6203 basis. t oiſco o",
     "where": "body",
     "already_added": false
+   },
+   {
+    "url": "https://doe.gov.in/files/vacancy_attachment/DeputationpostinPPD.pdf",
+    "snip": "F.No. A-11011/1/2023-Ad.I Government of India Ministry of Finance Department of Expenditure Admn. I Section ********** D-Wing, Room No. 1000",
+    "where": "body",
+    "already_added": true
    },
    {
     "url": "https://doe.gov.in/files/vacancy_attachment/PPDDeputationpost_1.pdf",
@@ -1360,12 +1366,6 @@
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDparadipport99sTGkK.pdf",
     "snip": "F.No. 1/1/2026-EO(SM-l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievance",
-    "where": "body",
-    "already_added": false
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VacCirNCMEIiUJp2.pdf",
-    "snip": "F. No. 4/2/2025-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
     "where": "body",
     "already_added": false
    }
