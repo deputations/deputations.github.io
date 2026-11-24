@@ -810,7 +810,6 @@
   font: 800 13px/1 "Sora", system-ui, sans-serif; color: #fde68a; background: rgba(250, 204, 21, 0.1); border: 1px solid rgba(250, 204, 21, 0.4);
   box-shadow: 0 0 30px -10px rgba(250, 204, 21, 0.6); opacity: 0; }
 .dt-even i { width: 8px; height: 8px; border-radius: 50%; background: #facc15; box-shadow: 0 0 10px #facc15; }
-@media (prefers-reduced-motion: reduce) { .dt-qs-caret { animation: none; } }
 .dt-ask {
   position: absolute;
   z-index: 3;
@@ -1228,8 +1227,4 @@
 .dt-paused *::before,
 .dt-paused *::after { animation-play-state: paused !important; }
 
-/* ---------- motion preferences ---------- */
-@media (prefers-reduced-motion: reduce) {
-  .dt-aurora i,
-  .dt-cta::after { animation: none; }
-}
+/* motion preferences: the tour always animates (owner, 2026-11-06) */

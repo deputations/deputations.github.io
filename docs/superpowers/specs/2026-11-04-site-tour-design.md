@@ -189,8 +189,9 @@ tests/test_tour_*.py          Playwright smoke tests (existing suite conventions
   `dep_tour_off_v1` not set; `navigator.webdriver` is false; no intent link
   (`?v=`, `?search=`…); no Save-Data / 2g. `?tour=play` forces play and bypasses
   all of them. Whether someone visited before the tour existed does not matter:
-  every browser gets it once. Reduce-motion visitors get the steps view
-  (revised 2026-11-05 evening; they used to be skipped).
+  every browser gets it once. Reduce-motion visitors get it too, animated
+  (revised 2026-11-05 evening: they used to be skipped; 2026-11-06: no longer
+  the steps view, see §5).
 - Visitors the auto-play skips (intent link, Save-Data) get no prompt: the tour
   waits for a later plain visit (owner declined a suggestion bubble, 2026-11-05).
 - Busy means busy *now* (owner, 2026-11-06): someone who touched the page in the
@@ -286,9 +287,12 @@ URL: `?tour=play` (force play), `&tourSpeed=N` (timeScale, tests only).
 
 ## 5. Accessibility, motion and performance
 
-- Reduced motion: the tour auto-plays once as a **steps view** (no animation):
-  the same overlay with each scene's title and a one-line description, advanced
-  with Next / Back, fades only. The button opens the same view.
+- Reduced motion: the tour animates anyway (owner, 2026-11-06). The signal
+  mostly comes from Windows animation effects being off (Chrome, Edge and
+  Firefox all pass it on), common on office PCs; there the **steps view** read
+  as a broken tour. The steps view (each scene's title and a one-line
+  description, Next / Back, fades only) remains only for a stage too small to
+  read (scale < 0.5, e.g. a phone held sideways) and `play(key, {mode: 'steps'})`.
 - Everything is reachable by keyboard; buttons have visible focus rings.
 - Text inside the stage is real DOM text (not canvas), so it stays crisp at any zoom.
 - Particle counts and card-wall size are reduced in `tall` layout and when
@@ -314,7 +318,7 @@ URL: `?tour=play` (force play), `&tourSpeed=N` (timeScale, tests only).
 3. Skip button and Esc close the tour and write the seen flag.
 4. "Don't show tours again" writes `dep_tour_off_v1`.
 5. "▶ How this works" button replays after the tour was seen.
-6. Emulated reduced motion → steps view, no timeline.
+6. Emulated reduced motion → still the animated (cinematic) tour.
 7. 390 px viewport → tall layout class on the stage.
 Plus: `scripts/build_tour_map.py` output check — 36 states, Karnataka districts
 present, file < 80 KB.
