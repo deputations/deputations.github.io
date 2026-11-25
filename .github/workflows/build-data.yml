@@ -21,9 +21,11 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     outputs:
-      changed: ${{ steps.stale.outputs.changed }}
+      enrich: ${{ steps.artifacts.outputs.enrich }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'schedule' && 'main' || github.ref }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -44,12 +46,17 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python scripts/build_data.py
       - name: Publish validated artifacts
+        id: artifacts
         if: steps.stale.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/vacancies.json data/meta.json data/filters.json data/stats.json data/vacancy-aliases.json data/vacancies-manifest.json data/snapshots feed.xml
+          if ! git diff --cached --quiet -- data/vacancies.json data/filters.json data/stats.json data/vacancy-aliases.json; then
+            echo "enrich=true" >> "$GITHUB_OUTPUT"
+          fi
           if ! git diff --cached --quiet; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
             git commit -m "chore: publish verified vacancy snapshot"
             pushed=false
             for attempt in 1 2 3 4 5; do
@@ -65,16 +72,16 @@ jobs:
             fi
           fi
       - name: Explicitly request a Pages build after the bot commit
-        if: steps.stale.outputs.changed == 'true'
+        if: steps.artifacts.outputs.publish == 'true' || github.event_name != 'schedule'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
       - name: Verify the actual production publication
-        if: steps.stale.outputs.changed == 'true'
+        if: steps.artifacts.outputs.publish == 'true' || github.event_name != 'schedule'
         run: python scripts/verify_publication.py --attempts 15
       - name: Record that the snapshot is current
         if: steps.stale.outputs.changed != 'true'
-        run: echo "Public vacancy snapshot already matches the latest Supabase update." >> "$GITHUB_STEP_SUMMARY"
+        run: echo "Public vacancy snapshot already matches the approved vacancies and ID aliases." >> "$GITHUB_STEP_SUMMARY"
       - name: Publication failure summary
         if: failure()
         run: |
@@ -83,7 +90,7 @@ jobs:
 
   openai_index:
     needs: publish
-    if: needs.publish.outputs.changed == 'true'
+    if: needs.publish.result == 'success' && (needs.publish.outputs.enrich == 'true' || github.event_name != 'schedule')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -106,7 +113,7 @@ jobs:
 
   enrichment:
     needs: publish
-    if: needs.publish.outputs.changed == 'true'
+    if: needs.publish.result == 'success' && (needs.publish.outputs.enrich == 'true' || github.event_name != 'schedule')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

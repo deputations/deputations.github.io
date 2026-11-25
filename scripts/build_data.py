@@ -1,4 +1,3 @@
-import gzip
 import json
 import os
 import re
@@ -9,9 +8,9 @@ from urllib.parse import quote
 from xml.sax.saxutils import escape
 
 import pandas as pd
-import urllib.request
 from dateutil import parser as date_parser
 
+from snapshot_source import REVISION_COLUMNS, approved_rows, fetch_vacancy_id_aliases, live_digest, source_digest
 from location_defaults import fill_missing_locations
 from public_snapshots import publish, status_row, IST
 
@@ -183,12 +182,12 @@ def to_display_date(value: str) -> str:
         return value
 
 
-def compute_days_left(last_date_iso: str) -> int | None:
+def compute_days_left(last_date_iso: str, today: date | None = None) -> int | None:
     if not last_date_iso:
         return None
     try:
         last_dt = datetime.fromisoformat(last_date_iso).date()
-        return (last_dt - date.today()).days
+        return (last_dt - (today or date.today())).days
     except Exception:
         return None
 
@@ -446,99 +445,16 @@ SUPABASE_TO_TITLE_MAP: dict[str, str] = {
 }
 
 
-def fetch_vacancy_id_aliases(supabase_url: str, supabase_key: str) -> dict[str, str]:
-    """old -> current public Vacancy_ID, from migration 0027's
-    public.vacancy_id_aliases. The service key bypasses the table's RLS
-    (anon has no read on purpose — this published JSON IS the public copy).
-    The trigger keeps new_id pointing at the row's CURRENT id, so the map
-    needs no transitive resolution. A missing table (0027 not applied yet)
-    is not an error: an empty map means identity resolution everywhere."""
-    import urllib.error
-    api = supabase_url.rstrip("/") + "/rest/v1/vacancy_id_aliases"
-    rows: list[dict[str, str]] = []
-    offset = 0
-    while True:
-        req = urllib.request.Request(
-            api + f"?select=old_id,new_id&order=old_id.asc&limit=1000&offset={offset}",
-            headers={"apikey": supabase_key, "Authorization": "Bearer " + supabase_key, "Accept-Profile": "public"},
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                page = json.load(resp)
-        except urllib.error.HTTPError as exc:
-            if offset == 0 and exc.code in (404, 400, 42501):
-                print(f"vacancy_id_aliases unreadable (HTTP {exc.code}) — publishing an empty alias map")
-                return {}
-            raise
-        if not isinstance(page, list):
-            raise RuntimeError(f"vacancy_id_aliases returned non-list payload: {type(page).__name__}")
-        rows.extend(page)
-        if len(page) < 1000:
-            break
-        offset += 1000
-    aliases = {str(r["old_id"]): str(r["new_id"]) for r in rows if r.get("old_id") and r.get("new_id")}
-    print(f"Alias export: {len(aliases)} renamed ids")
-    return aliases
-
-
-def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> tuple[list[dict[str, str]], str | None]:
-    """Read approved vacancies from Supabase REST. RLS already limits anon to
-    status='approved' rows, so the anon key works. Returns rows in Title_Case
-    shape (mapped from snake_case) plus a synthetic 'DRAFT / APPROVED' column
-    set to 'Approved ✅' so transform_rows() accepts them, together with the
-    newest updated_at among those rows — i.e. when a live vacancy was last
-    added or edited (the footer's "Updated" date)."""
-    api = supabase_url.rstrip("/") + "/rest/v1/vacancies"
-    # Page through the table: Supabase returns at most 1000 rows per request,
-    # so a single `limit=1000` call silently dropped every approved vacancy
-    # past the first 1000. Ordered by id so pages never overlap or skip.
-    page_size = 1000
-    # Select only known public fields and the two required extraction properties.
+def fetch_supabase_rows(url: str, key: str) -> list[dict[str, Any]]:
+    """Download the export columns plus the row identity and revision."""
     columns = [k for k in SUPABASE_TO_TITLE_MAP if k not in {"source_ref", "confidence"}]
-    columns += ["additional_details", "eligibility_tiers", "updated_at", "created_at",
+    columns += ["additional_details", "eligibility_tiers",
                 "source_page:raw_extraction->>source_page",
                 "detailed_eligibility:raw_extraction->>detailed_eligibility"]
-    select = quote(",".join(columns), safe=",")
-    transfer_bytes = 0
-    expected_count = None
-    transfer_limit = int(os.getenv("SNAPSHOT_MAX_TRANSFER_BYTES", "10000000"))
-    sb_rows: list[dict[str, Any]] = []
-    offset = 0
-    while True:
-        qs = f"status=eq.approved&select={select}&order=id.asc&limit={page_size}&offset={offset}"
-        req = urllib.request.Request(
-            api + "?" + qs,
-            headers={
-                "apikey": supabase_anon_key,
-                "Authorization": "Bearer " + supabase_anon_key,
-                "Accept-Profile": "public",
-                "Accept-Encoding": "gzip",
-                "Prefer": "count=exact",
-            },
-        )
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            wire = resp.read(transfer_limit - transfer_bytes + 1)
-            transfer_bytes += len(wire)
-            if transfer_bytes > transfer_limit:
-                raise RuntimeError("Snapshot transfer budget exceeded; previous publication retained")
-            content_range = resp.headers.get("Content-Range", "")
-            if "/" not in content_range or not content_range.rsplit("/", 1)[1].isdigit():
-                raise RuntimeError("Missing exact export count; refusing unverifiable publication")
-            count = int(content_range.rsplit("/", 1)[1])
-            if expected_count is not None and count != expected_count:
-                raise RuntimeError("Dataset changed while exporting; retry a fresh export")
-            expected_count = count
-            body = (gzip.decompress(wire) if resp.headers.get("Content-Encoding") == "gzip" else wire).decode("utf-8")
-        page = json.loads(body) if body else []
-        if not isinstance(page, list):
-            raise RuntimeError(f"Supabase returned non-list payload: {type(page).__name__}")
-        sb_rows.extend(page)
-        if len(page) < page_size:
-            break
-        offset += page_size
+    return approved_rows(url, key, list(dict.fromkeys([*columns, *REVISION_COLUMNS])))
 
-    if len(sb_rows) != expected_count:
-        raise RuntimeError("Partial export; last good publication retained")
+
+def map_supabase_rows(sb_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     mapped: list[dict[str, str]] = []
     for sb_row in sb_rows:
         row: dict[str, str] = {"DRAFT / APPROVED": "Approved ✅"}
@@ -557,8 +473,7 @@ def fetch_supabase_rows(supabase_url: str, supabase_anon_key: str) -> tuple[list
         row["Additional_Details"] = sb_row.get("additional_details") or ""
         row["eligibility_tiers"] = sb_row.get("eligibility_tiers") or []
         mapped.append(row)
-    print(f"Snapshot export: {len(sb_rows)} rows; {transfer_bytes} response bytes received")
-    return mapped, latest_updated_at(sb_rows)
+    return mapped
 
 
 def latest_updated_at(sb_rows: list[dict[str, Any]]) -> str | None:
@@ -579,7 +494,7 @@ def latest_updated_at(sb_rows: list[dict[str, Any]]) -> str | None:
             latest = dt
     if latest is None:
         return None
-    return latest.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return latest.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def previous_vacancies_updated_at() -> str | None:
@@ -607,7 +522,7 @@ def coerce_admin_verified(raw: Any) -> bool:
     """Normalise the two-stage-approval flag to a real bool for the JSON.
 
     The Supabase path stringifies the boolean on the way through
-    (`str(val)` in fetch_supabase_rows), so it arrives as "True"/"False"; the
+    (`str(val)` in map_supabase_rows), so it arrives as "True"/"False"; the
     legacy spreadsheet path has no such column at all.
 
     Absent means "this source does not track verification", which is treated as
@@ -625,7 +540,7 @@ def coerce_admin_verified(raw: Any) -> bool:
     return s not in {"false", "0", "no", "f"}
 
 
-def transform_rows(rows: list[dict[str, str]]) -> tuple[list[dict[str, Any]], int]:
+def transform_rows(rows: list[dict[str, str]], today: date | None = None) -> tuple[list[dict[str, Any]], int]:
     """Transform sheet / Supabase rows into the bundled-JSON shape.
 
     Returns (vacancies, date_fixes_count). The second tuple element is the
@@ -666,13 +581,13 @@ def transform_rows(rows: list[dict[str, str]]) -> tuple[list[dict[str, Any]], in
         # every rebuild. Fixing at the JSON stage means NIC users served from
         # data/vacancies.json never see a future notification date.
         notification_date_iso, last_date_iso, was_fixed = validate_and_fix_row_dates(
-            notification_date_iso, last_date_iso
+            notification_date_iso, last_date_iso, now=today
         )
         if was_fixed:
             vid = safe_str(row.get("Vacancy_ID", "?"))
             print(f"  date-fix: cleared/swapped ND/LD on {vid} → ND={notification_date_iso!r} LD={last_date_iso!r}")
             date_fixes += 1
-        days_left = compute_days_left(last_date_iso)
+        days_left = compute_days_left(last_date_iso, today)
         status = infer_status(row.get("Status", ""), days_left)
         location_label = build_location_label(row.get("Location_City", ""), row.get("Location_State", ""))
         eligibility_text = format_eligibility_text(row.get("Req_Level1", ""), row.get("Req_Level2", ""))
@@ -820,7 +735,7 @@ def _rfc822(iso_date: str) -> str:
         return ""
 
 
-def build_feed(vacancies: list) -> str:
+def build_feed(vacancies: list, generated_at: str) -> str:
     """RSS 2.0 feed of the newest active vacancies (review P1-5).
 
     Cheap alert channel for people who won't install the PWA: items deep-link
@@ -830,7 +745,7 @@ def build_feed(vacancies: list) -> str:
     items.sort(key=lambda v: str(v.get("Notification_Date") or ""), reverse=True)
     items = items[:30]
 
-    now = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
+    now = datetime.fromisoformat(generated_at.replace("Z", "+00:00")).astimezone(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S GMT")
     out = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
@@ -913,12 +828,14 @@ def main() -> None:
     key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
     if not url or not key:
         raise RuntimeError("Snapshot export requires SUPABASE_URL and a server-only SUPABASE_SERVICE_ROLE_KEY")
-    rows, updated = fetch_supabase_rows(url, key)
-    if not rows:
+    raw_rows = fetch_supabase_rows(url, key)
+    if not raw_rows:
         raise RuntimeError("Zero-row export requires investigation; last good snapshot retained")
-    vacancies, date_fixes = transform_rows(rows)
+    updated = latest_updated_at(raw_rows)
+    today = datetime.now(IST).date()
+    vacancies, date_fixes = transform_rows(map_supabase_rows(raw_rows), today)
     assert_no_credentials(vacancies)
-    vacancies = [status_row(r) for r in vacancies]
+    vacancies = [status_row(r, today) for r in vacancies]
     filters = build_filters(vacancies)
     stats = build_stats(vacancies)
     # Renamed-id map (migration 0027): old -> current public Vacancy_ID.
@@ -927,11 +844,15 @@ def main() -> None:
     # snapshot build.
     aliases = {"schema": 1, "aliases": fetch_vacancy_id_aliases(url, key)}
     meta = build_meta(vacancies, filters, stats, source="supabase_verified_snapshot", vacancies_updated_at=updated)
-    manifest = publish(vacancies, DATA_DIR, updated,
+    digest = source_digest(raw_rows, aliases["aliases"])
+    if live_digest(url, key) != digest:
+        raise RuntimeError("Approved vacancies or ID aliases changed during export; retry next poll")
+    meta["approved_source_sha256"] = digest
+    manifest = publish(vacancies, DATA_DIR, updated, today=today,
                        allow_large_change=os.getenv("ALLOW_LARGE_SNAPSHOT_CHANGE") == "true",
                        metadata=meta, extras={OUTPUT_FILTERS: filters, OUTPUT_STATS: stats, OUTPUT_ALIAS: aliases})
     # Feed generation is a pure local operation; it never gates the manifest.
-    OUTPUT_FEED.write_text(build_feed(vacancies), encoding="utf-8")
+    OUTPUT_FEED.write_text(build_feed(vacancies, manifest["generated_at_utc"]), encoding="utf-8")
     print(f"Published snapshot {manifest['version']}: {len(vacancies)} records; {date_fixes} date fixes")
 
 

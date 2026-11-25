@@ -117,7 +117,15 @@ def publish(rows, data_dir, source_updated_at=None, *, today=None, allow_large_c
     meta.update(generated_at_utc=generated, vacancies_updated_at_utc=source_updated_at,
                 record_count=len(rows), active_count=manifest["active_count"],
                 inactive_count=manifest["inactive_count"], source="supabase_verified_snapshot")
-    prepared.append((data_dir / "meta.json", encoded(meta)))
+    # Reuse the previous publication time if only the build clock advanced.
+    # A forced deadline pass still recomputes and validates all rows above.
+    old_time = previous.get("generated_at_utc")
+    meta_path = data_dir / "meta.json"
+    if (old_time and dict(manifest, generated_at_utc=old_time) == previous
+            and meta_path.exists() and encoded(dict(meta, generated_at_utc=old_time)) == meta_path.read_bytes()
+            and all(Path(p).exists() and Path(p).read_bytes() == encoded(v) for p, v in (extras or {}).items())):
+        manifest["generated_at_utc"] = meta["generated_at_utc"] = old_time
+    prepared.append((meta_path, encoded(meta)))
     prepared.extend((Path(path), encoded(value)) for path, value in (extras or {}).items())
     for path, body in prepared:
         atomic_write(path, body)

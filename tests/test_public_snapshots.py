@@ -74,7 +74,7 @@ class ExportTests(unittest.TestCase):
     def test_export_uses_narrow_fields_and_rejects_partial_result(self):
         import build_data
         response = self.response([{'vacancy_id':'A', 'post_name':'Officer'}], 2)
-        with patch.object(build_data.urllib.request, 'urlopen', return_value=response) as request:
+        with patch('urllib.request.urlopen', return_value=response) as request:
             with self.assertRaisesRegex(RuntimeError, 'Partial export'):
                 build_data.fetch_supabase_rows('https://example.invalid', 'test-only-token')
             req = request.call_args.args[0]
@@ -86,8 +86,8 @@ class ExportTests(unittest.TestCase):
 
     def test_transfer_budget_fails_before_publication(self):
         import build_data
-        with patch.dict('os.environ', {'SNAPSHOT_MAX_TRANSFER_BYTES':'1'}), patch.object(
-                build_data.urllib.request, 'urlopen', return_value=self.response([{'vacancy_id':'A'}], 1)):
+        with patch.dict('os.environ', {'SNAPSHOT_MAX_TRANSFER_BYTES':'1'}), patch(
+                'urllib.request.urlopen', return_value=self.response([{'vacancy_id':'A'}], 1)):
             with self.assertRaisesRegex(RuntimeError, 'transfer budget'):
                 build_data.fetch_supabase_rows('https://example.invalid', 'test-only-token')
 
