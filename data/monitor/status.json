@@ -1009,7 +1009,7 @@
   }
  ],
  "deputation": {
-  "at": "2026-11-26T09:29:13Z",
+  "at": "2026-11-26T09:41:44Z",
   "total_links": 1990,
   "confirmed": 625,
   "maybe": 695,
@@ -1021,14 +1021,6 @@
   "ocr_needed": 0,
   "confirmed_list": [
    {
-    "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6532.pdf",
-    "snip": "File No.CTE-TP/TRNG/3/2020-TPS. GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION OFFICE OF THE COMMISSIONER OF TECHNICAL EDUCATION ",
-    "where": "body",
-    "already_added": true,
-    "first_seen": "2026-11-18T06:43:50Z",
-    "in_queue": true
-   },
-   {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6604.pdf",
     "snip": "File No.CTE-ACD1/TR/D/4/2020-ACADEMIC-1 GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION Office of the Commissioner of Technical Ed",
     "where": "subject/heading",
@@ -1037,84 +1029,12 @@
     "in_queue": false
    },
    {
-    "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6620.pdf",
-    "snip": "File No.CTE-ACD1/TR/D/4/2020-ACADEMIC-1 GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION OFFICE OF THE COMMISSIONER OF TECHNICAL ED",
-    "where": "subject/heading",
-    "already_added": true,
-    "first_seen": "2026-11-18T06:43:50Z",
-    "in_queue": true
-   },
-   {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6662.pdf",
     "snip": "File No.CTE-ACD1/TR/D/4/2020-ACADEMIC-1 GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION OFFICE OF THE COMMISSIONER OF TECHNICAL ED",
     "where": "subject/heading",
     "already_added": true,
     "first_seen": "2026-11-18T06:43:50Z",
     "in_queue": false
-   },
-   {
-    "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-869-Deputation.pdf",
-    "snip": "F. No. A-35/1/2025-FSD-DCSA_AN/ 3864 ST ARAM STE PT OFFICE OF THE FOOD SAFETY COMMISSIONER sisara ud Prolare gto Was ANDAMAN AND NICOBAR ISL",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-884-VACANCY%20CIRCULAR%20for%20Deputation%20of%20DDShipping%20Services.pdf",
-    "snip": "CIRCULAR Sub: -Filling up of one post of “Deputy Director (Shipping Services)” in the Directorate of Shipping Services under Andaman & Nicob",
-    "where": "subject/heading",
-    "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://ansi.gov.in/recruitment?type=deputation",
-    "snip": "Recruitment/Vacancies – Anthropological Survey of India English हिन्दी Home About AnSI Profile History Vision & Mission Organization Functio",
-    "where": "",
-    "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://ard.delhi.gov.in/sites/default/files/Administrative%20Reforms/circulars-orders/eligibility_for_asstt._dir._in_ar_on_deputation_basis.pdf",
-    "snip": "1 2 3 4",
-    "where": "",
-    "already_added": false,
-    "first_seen": "2026-11-18T06:43:59Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_assistant_director_ar_on_deputation_basis.pdf",
-    "snip": "Scanned by CamScanner",
-    "where": "",
-    "already_added": false,
-    "first_seen": "2026-11-18T06:43:59Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_assistant_director_ar_on_deputation_basis_0.pdf",
-    "snip": "1",
-    "where": "",
-    "already_added": false,
-    "first_seen": "2026-11-18T06:43:59Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_research_assistant_in_the_pay_level_6_in_administrative_reforms_department_gnctd_on_deputation_basis.pdf",
-    "snip": "1",
-    "where": "",
-    "already_added": false,
-    "first_seen": "2026-11-18T06:43:59Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_research_assistant_in_the_pay_level_6_in_administrative_reforms_department_gnctd_on_deputation_basis_0.pdf",
-    "snip": "1",
-    "where": "",
-    "already_added": false,
-    "first_seen": "2026-11-18T06:43:59Z",
-    "in_queue": true
    },
    {
     "url": "https://cifnet.gov.in/images/Deputation_for_CI_S_N.pdf",
@@ -1171,142 +1091,6 @@
     "already_added": false,
     "first_seen": "2026-11-18T06:33:52Z",
     "in_queue": false
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/FSCounsellorPMI%20WTOGenevaviceTanuSinghN8KGJ.pdf",
-    "snip": "No. 4/37/2026-FA(UN) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training Kartavya",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-18T07:51:35Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/FSCounsellorPMIWTOGenevaFYDSo.pdf",
-    "snip": "No. 4/37/2026-FA(UN) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training Kartavya",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-18T06:36:22Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/SSCtMSSX.pdf",
-    "snip": "No 6/4/2024-EO(MN-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Office",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Scan%20Circular%20CSS%202026%20IAS_compressedvLOe2.pdf",
-    "snip": "THT WAV, aN. ART GSR Manisha Saxena, 1s aris site after fe Peer iaie Officer & Government Of India itional Secreta Dr ry ape partment of Per",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Scan20250616095252PAysS.pdf",
-    "snip": "No. 10/3/2024 EO(MM-II) Government of India Ministry of Personnel, P.G. and Pension Department of Personnel and Training (Office of the Esta",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/US%20level%208th%20CPCc4LeZ.pdf",
-    "snip": "No 18/1/2025-EO (MM-II) Government of India Ministry of Personnel, Public Grievances & Pension Department of Personnel & Training (Office of",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/USzyvtV.pdf",
-    "snip": "No 18/1/2025-EO(MM-ll) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Offic",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvNMWv6ZrV.pdf",
-    "snip": "F. No. 9/1/2026-EO(SM-l)(Pt.l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Gri",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvNWMyRZ21.pdf",
-    "snip": "F. No. 9/1/2026-EO(SM-l)(Pt.l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Gri",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvisorNWMuLWyS.pdf",
-    "snip": "F.No. 9/1/2026-EO(SM-I) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training Offic",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCDBKochiLAANJ.pdf",
-    "snip": "F. No. 9/1/2025-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCEOIEPFAASQrA.pdf",
-    "snip": "F.No. 14/1/2025-EO(SM-I) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCMPFO8UWKQE.pdf",
-    "snip": "Yours faithfully, (Annies Kanmani Joy) Director Tel. No. 24010544 F.No. 20/1/2025-EO(SM -l) Government of India Secretariat of the Appointme",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCeoCDB5xCO1.pdf",
-    "snip": "F. No. 9/1/2025 -EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCChChennaiPABAOWi.pdf",
-    "snip": "F.No. 1/1/2024-EO(SM -l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievanc",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDCKandlSEZ6u1B8.pdf",
-    "snip": "Yours faithfully, a es Kanman Joy) Director Tel. No. 011-24010544 No.1 0/3/2025-EO(SM-l) Government of India Secretariat of the Appointments",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
-   },
-   {
-    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDGFASLIyHyJw.pdf",
-    "snip": "To 1. 2. F. No.13/2/2024-EO(SM-I) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public ",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDGManagegnOWS.pdf",
@@ -1915,14 +1699,6 @@
     "already_added": false,
     "first_seen": "2026-11-17T23:39:05Z",
     "in_queue": false
-   },
-   {
-    "url": "https://dop.rajasthan.gov.in/writereaddata/modulCategory/202610260123128841253AdvtNo10Year2026websitedeputation.pdf",
-    "snip": "GOA PUBLIC SERVICE COMMISSION EDC House, Block ‘C’, Dada Vaidya Road, Panaji-Goa, 403001. Web: http://gpsc.goa.gov.in ADVERTISEMENT NO. 10 Y",
-    "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-19T03:30:52Z",
-    "in_queue": true
    },
    {
     "url": "https://doptcirculars.nic.in/Default.aspx?URL=wFJpTEk06p7xarch",
@@ -3317,14 +3093,6 @@
     "in_queue": false
    },
    {
-    "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-884-vacancy%20circular.pdf",
-    "snip": "ANDAMAN AND NICOBAR ADMINISTRATION SECRETARIAT sees Sri Vijaya Puram, dated the 4h November, 2026 Vacancy Notice Subject: Vacancy Circular f",
-    "where": "subject/heading",
-    "already_added": false,
-    "first_seen": "2026-11-19T11:57:10Z",
-    "in_queue": true
-   },
-   {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-885-Vacancy%20Circular%20of%20Architect.pdf",
     "snip": "Andaman and Nicobar Administration Secretariat Perens Sri Vijaya Puram dated the 11te November , 2026 pee Vacancy Notice Subject: Vacancy Ci",
     "where": "subject/heading",
@@ -4214,6 +3982,238 @@
    },
    {
     "url": "https://cga.nic.in/Circular/Published/9424.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9425.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9426.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9427.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9428.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9429.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9430.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9431.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9432.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9433.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9434.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9435.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9436.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9437.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9438.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9439.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9445.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9446.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9447.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9448.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9451.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9452.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9453.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9454.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9455.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9456.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9457.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9458.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9459.aspx",
+    "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   },
+   {
+    "url": "https://cga.nic.in/Circular/Published/9461.aspx",
     "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
     "where": "body",
     "already_added": false,
