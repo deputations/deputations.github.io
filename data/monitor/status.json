@@ -1009,15 +1009,15 @@
   }
  ],
  "deputation": {
-  "at": "2026-11-26T08:55:35Z",
-  "total_links": 1840,
-  "confirmed": 548,
-  "maybe": 665,
-  "new_confirmed": 506,
-  "in_queue": 23,
-  "already_added": 19,
-  "not_deputation": 454,
-  "pending": 173,
+  "at": "2026-11-26T09:29:13Z",
+  "total_links": 1990,
+  "confirmed": 625,
+  "maybe": 695,
+  "new_confirmed": 571,
+  "in_queue": 31,
+  "already_added": 23,
+  "not_deputation": 482,
+  "pending": 188,
   "ocr_needed": 0,
   "confirmed_list": [
    {
@@ -1266,7 +1266,7 @@
     "where": "body",
     "already_added": false,
     "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": false
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCMPFO8UWKQE.pdf",
@@ -1274,7 +1274,7 @@
     "where": "body",
     "already_added": false,
     "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": false
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCeoCDB5xCO1.pdf",
@@ -1282,7 +1282,7 @@
     "where": "body",
     "already_added": false,
     "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": false
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCChChennaiPABAOWi.pdf",
@@ -1290,7 +1290,7 @@
     "where": "body",
     "already_added": false,
     "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": false
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDCKandlSEZ6u1B8.pdf",
@@ -1298,7 +1298,7 @@
     "where": "body",
     "already_added": false,
     "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": false
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDGFASLIyHyJw.pdf",
@@ -1306,7 +1306,7 @@
     "where": "body",
     "already_added": false,
     "first_seen": "2026-11-17T23:39:05Z",
-    "in_queue": false
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDGManagegnOWS.pdf",
@@ -4391,6 +4391,54 @@
     "in_queue": true
    },
    {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCEOIEPFAASQrA.pdf",
+    "snip": "F.No. 14/1/2025-EO(SM-I) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCMPFO8UWKQE.pdf",
+    "snip": "Yours faithfully, (Annies Kanmani Joy) Director Tel. No. 24010544 F.No. 20/1/2025-EO(SM -l) Government of India Secretariat of the Appointme",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCeoCDB5xCO1.pdf",
+    "snip": "F. No. 9/1/2025 -EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCChChennaiPABAOWi.pdf",
+    "snip": "F.No. 1/1/2024-EO(SM -l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievanc",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDCKandlSEZ6u1B8.pdf",
+    "snip": "Yours faithfully, a es Kanman Joy) Director Tel. No. 011-24010544 No.1 0/3/2025-EO(SM-l) Government of India Secretariat of the Appointments",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDGFASLIyHyJw.pdf",
+    "snip": "To 1. 2. F. No.13/2/2024-EO(SM-I) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public ",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
     "url": "https://dop.rajasthan.gov.in/writereaddata/modulCategory/202610260123128841253AdvtNo10Year2026websitedeputation.pdf",
     "snip": "GOA PUBLIC SERVICE COMMISSION EDC House, Block ‘C’, Dada Vaidya Road, Panaji-Goa, 403001. Web: http://gpsc.goa.gov.in ADVERTISEMENT NO. 10 Y",
     "where": "body",
@@ -4404,6 +4452,22 @@
     "where": "subject/heading",
     "already_added": false,
     "first_seen": "2026-11-19T11:57:10Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://dop.rajasthan.gov.in/writereaddata/modulCategory/202610160303298900558VacancyCircular.pdf",
+    "snip": "No. NCSC-Adm.015/5/2026-ADMIN (109839) Government of India National Commission for Scheduled Castes Sth & 7th Floor, Lok Nayak Bhawan, Khan ",
+    "where": "body",
+    "already_added": true,
+    "first_seen": "2026-11-19T03:30:52Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://dop.rajasthan.gov.in/writereaddata/modulCategory/202611040538427408561CentralHealthServiceGovernment.pdf",
+    "snip": "No. A.36011/01/2019-CHS.IV भारत सरकार / Government of India \u0007वा\u0007 य एवं प\u000eरवार क\u000fयाण मं\u0012ालय / Ministry of Health & Family Welfare \u0007वा\u0007 य एवं ",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-19T03:30:52Z",
     "in_queue": true
    }
   ],
