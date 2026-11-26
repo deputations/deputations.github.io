@@ -3811,7 +3811,12 @@ async function loadMonitor() {
     const confAll = (dep.confirmed || 0);
     const alreadyAdded = (dep.already_added || 0);
     const newCount = (dep.new_confirmed != null) ? dep.new_confirmed : confAll;
-    const newRows = (dep.confirmed_list || []).filter((r) => r && r.url && !r.already_added);
+    // main table = confirmed links that are NOT yet in the site records and
+    // NOT yet successfully pushed to the web app. Links whose push SUCCEEDED
+    // (web app has a live job) move to their own table below; a failed push
+    // leaves the link here so it can be retried.
+    const newRows = (dep.confirmed_list || []).filter((r) => r && r.url && !r.already_added && !r.in_queue);
+    const queueRows = (dep.in_queue_list || (dep.confirmed_list || [])).filter((r) => r && r.in_queue);
     const dupRows = (dep.confirmed_list || []).filter((r) => r && r.already_added);
     const fmtSeen = (t) => {
       if (!t) return '';
@@ -3868,27 +3873,36 @@ async function loadMonitor() {
     } else {
       body += '<p class="muted" style="margin:0 0 6px">All confirmed "deputation" links are already in the site records (deduplicated).</p>';
     }
+    if (queueRows.length) {
+      body += `<div class="mon-sec" style="margin-top:14px">📥 In review queue (successfully sent to the web app) <span class="muted">— ${queueRows.length} link(s)</span></div>`;
+      body += `<div id="monDepQueueList" style="overflow:auto;max-height:300px;border:1px solid var(--border,#2a2f3a);border-radius:6px;margin:0 0 10px">${tableFor(queueRows, false)}</div>`;
+    }
     if (dupRows.length || alreadyAdded > 0) {
       body +=
         `<details style="font-size:12px;color:var(--muted);margin-top:8px">` +
         `<summary style="cursor:pointer">${alreadyAdded} already in records — hide/show</summary>` +
-        `<div style="margin:4px 0">${tableFor(dupRows, false)}</div></details>`;
+        `<div id="monDupList" style="margin:4px 0">${tableFor(dupRows, false)}</div></details>`;
     }
     depList.innerHTML = body;
-    const tbl = depList.querySelector('table');
-    if (tbl) {
-      tbl.querySelectorAll('th[data-sort]').forEach((th) => {
-        th.addEventListener('click', () => {
-          const col = th.dataset.sort;
-          if (sortState.col === col) sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
-          else { sortState.col = col; sortState.dir = 'asc'; }
-          const target = depList.querySelector('#monDepList') || depList;
-          const isNew = !!target.querySelector('.depSel');
-          target.innerHTML = tableFor(isNew ? newRows : dupRows, isNew);
-          wireDepControls();
-        });
+    // re-render every deputation table on a sort click (all share the
+    // sortable headers; the selectable one is the main #monDepList table)
+    const repaintAll = () => {
+      const m = depList.querySelector('#monDepList');
+      if (m) m.innerHTML = tableFor(newRows, true);
+      const q = depList.querySelector('#monDepQueueList');
+      if (q) q.innerHTML = tableFor(queueRows, false);
+      const du = depList.querySelector('#monDupList');
+      if (du) du.innerHTML = tableFor(dupRows, false);
+      wireDepControls();
+    };
+    depList.querySelectorAll('table th[data-sort]').forEach((th) => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.sort;
+        if (sortState.col === col) sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+        else { sortState.col = col; sortState.dir = 'asc'; }
+        repaintAll();
       });
-    }
+    });
     // select-all + the send button (push ONLY deputation-confirmed links)
     const wireDepControls = () => {
       const all = $('monDepAll');
