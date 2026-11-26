@@ -3811,11 +3811,20 @@ async function loadMonitor() {
     const confAll = (dep.confirmed || 0);
     const alreadyAdded = (dep.already_added || 0);
     const newCount = (dep.new_confirmed != null) ? dep.new_confirmed : confAll;
-    // main table = confirmed links that are NOT yet in the site records and
-    // NOT yet successfully pushed to the web app. Links whose push SUCCEEDED
-    // (web app has a live job) move to their own table below; a failed push
-    // leaves the link here so it can be retried.
-    const newRows = (dep.confirmed_list || []).filter((r) => r && r.url && !r.already_added && !r.in_queue);
+    // DISMISS: links the user marked irrelevant/duplicate from this machine.
+    // Persisted by the web app bridge (127.0.0.1:8766/dismiss-from-monitor ->
+    // research-alldup/state/dismissed-deputation.json, which the sidecar reads
+    // every pass so they are hidden + never auto-pushed again); also kept in
+    // localStorage for an instant local hide while the bridge confirms.
+    const DISM_KEY = 'adp_dismissed_dep_urls_v1';
+    let dismissedLocal = new Set();
+    try { dismissedLocal = new Set(JSON.parse(localStorage.getItem(DISM_KEY) || '[]')); } catch (e) { dismissedLocal = new Set(); }
+    const isDismissed = (r) => r.dismissed || dismissedLocal.has((r.url || '').toLowerCase());
+    // main table = confirmed links that are NOT yet in the site records, NOT
+    // successfully pushed to the web app, NOT same-doc variants, NOT
+    // dismissed. Pushed links move to their own table below; failed pushes
+    // stay here for retry.
+    const newRows = (dep.confirmed_list || []).filter((r) => r && r.url && !r.already_added && !r.in_queue && !r.dup_of && !isDismissed(r));
     const queueRows = (dep.in_queue_list || (dep.confirmed_list || [])).filter((r) => r && r.in_queue);
     const dupRows = (dep.confirmed_list || []).filter((r) => r && r.already_added);
     const fmtSeen = (t) => {
@@ -3847,11 +3856,21 @@ async function loadMonitor() {
         const box = selectable
           ? `<td style="width:22px;text-align:center"><input type="checkbox" class="depSel" value="${escapeHtml(fixupPushUrl(r.url))}" style="width:14px;height:14px;accent-color:var(--good,#37c46b)" title="Select for webapp push"></td>`
           : '<td style="width:22px"></td>';
+        // same-document variants hidden behind this row (BSI english/hindi copies,
+        // ncpcr uploads/ vs viewPdf/, etc.) - the link stays pushed once, not N times
+        const dupBadge = (r.dup_count > 0)
+          ? ` <span class="chip" style="font-size:10px;padding:1px 6px" title="Hidden: ${r.dup_count} same-document variant(s) of this notice (e.g. language copies or viewer/redirect paths). Deduped automatically.">+${r.dup_count} variant(s)</span>`
+          : '';
+        // dismiss button: mark this link as irrelevant / duplicate so it disappears
+        // from the main table AND is never auto-pushed again (persists on the machine)
+        const dismiss = selectable
+          ? ` <button class="depDismiss" data-url="${escapeHtml(fixupPushUrl(r.url))}" style="border:0;background:none;color:var(--muted,#8b93a7);cursor:pointer;font-size:11px;padding:0 4px" title="Dismiss - treat as irrelevant or duplicate; it will not be shown again nor pushed to the web app">✕ dismiss</button>`
+          : '';
         return `<tr style="border-bottom:1px solid var(--border,#2a2f3a)">${box}
           <td style="padding:5px 8px;font-size:12px;color:var(--muted);text-align:right;width:28px">${n ?? '—'}</td>
           <td style="padding:5px 8px;font-size:13px;max-width:220px;word-break:break-word">${escapeHtml(orgOf(r))}</td>
-          <td style="padding:5px 8px;font-size:13px"><a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.url)}</a>${r.snip ? `<br><span class="muted" style="font-size:11px">${escapeHtml(r.snip.slice(0, 90))}</span>` : ''}</td>
-          <td style="padding:5px 8px;font-size:12px;color:var(--muted);white-space:nowrap">${fmtSeen(r.first_seen) || '—'}</td></tr>`;
+          <td style="padding:5px 8px;font-size:13px"><a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.url)}</a>${dupBadge}${r.snip ? `<br><span class="muted" style="font-size:11px">${escapeHtml(r.snip.slice(0, 90))}</span>` : ''}</td>
+          <td style="padding:5px 8px;font-size:12px;color:var(--muted);white-space:nowrap">${fmtSeen(r.first_seen) || '—'}${dismiss}</td></tr>`;
       };
       if (!data.length) return '<p class="muted" style="margin:6px 0">None.</p>';
       return `<table style="width:100%;border-collapse:collapse;font-size:13px">
@@ -3925,6 +3944,28 @@ async function loadMonitor() {
         window.open('http://127.0.0.1:8766/push-from-monitor?urls=' + encodeURIComponent(urls.join('\n')), '_blank', 'noopener');
         if (note) note.textContent = 'Opened the web app tab - click "Push all selected" there to queue the jobs.';
       };
+      // DISMISS buttons: local immediate hide + persist via the web app
+      // bridge (the public page cannot POST to the loopback app itself).
+      const persistDismiss = (u) => {
+        try {
+          dismissedLocal.add((u || '').toLowerCase());
+          localStorage.setItem(DISM_KEY, JSON.stringify([...dismissedLocal]));
+        } catch (e) { /* private mode - the bridge still persists it */ }
+        const w = window.open('http://127.0.0.1:8766/dismiss-from-monitor?url=' + encodeURIComponent(u), '_blank', 'noopener');
+        if (!w) {
+          if (note) note.textContent = 'Opened the web app tab - click "Push all selected" there to queue the jobs.';
+          console.warn('web app bridge unreachable - dismissal kept in local storage only');
+        }
+      };
+      depList.querySelectorAll('button.depDismiss').forEach((b) => {
+        b.addEventListener('click', () => {
+          persistDismiss(b.dataset.url);
+          const tr = b.closest('tr');
+          if (tr) tr.remove();
+          label();
+          if (note) note.textContent = 'Dismissed - it will not appear again nor be auto-pushed.';
+        });
+      });
     };
     wireDepControls();
     if (dep.pending && dep.pending > 0) {
