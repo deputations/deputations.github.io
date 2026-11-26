@@ -1,13 +1,13 @@
 {
- "last_run": "2026-11-21T18:33:32Z",
+ "last_run": "2026-11-26T08:25:45Z",
  "counts": {
   "tracked": 254,
-  "ok": 196,
+  "ok": 193,
   "js_shell": 2,
-  "fail": 49,
-  "backoff": 9,
-  "structure_changed": 40,
-  "new_candidates": 6488,
+  "fail": 54,
+  "backoff": 7,
+  "structure_changed": 39,
+  "new_candidates": 6663,
   "pass_interrupted": false
  },
  "sources_tracked": 254,
@@ -16,10 +16,10 @@
    "id": "SNO-001",
    "name": "Department of Agriculture & Farmers Welfare (DAFW), Ministry of Agriculture & Farmers Welfare",
    "tier": "T1",
-   "state": "STRUCTURE_CHANGED",
-   "detail": "consec_fail=0",
+   "state": "FETCH_FAIL",
+   "detail": "consec_fail=1",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:16:21Z",
+   "last_attempt_ts": "2026-11-26T08:01:56Z",
    "requires_browser": false
   },
   {
@@ -29,7 +29,7 @@
    "state": "FETCH_FAIL",
    "detail": "consec_fail=1",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:16:29Z",
+   "last_attempt_ts": "2026-11-26T08:02:04Z",
    "requires_browser": false
   },
   {
@@ -39,17 +39,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:16:34Z",
-   "requires_browser": false
-  },
-  {
-   "id": "SNO-029",
-   "name": "Aircraft Accident Investigation Bureau (AAIB)",
-   "tier": "T1",
-   "state": "FETCH_FAIL",
-   "detail": "consec_fail=3",
-   "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:16:46Z",
+   "last_attempt_ts": "2026-11-26T08:02:10Z",
    "requires_browser": false
   },
   {
@@ -59,7 +49,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:17:16Z",
+   "last_attempt_ts": "2026-11-26T08:02:41Z",
    "requires_browser": false
   },
   {
@@ -69,7 +59,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:17:19Z",
+   "last_attempt_ts": "2026-11-26T08:02:44Z",
    "requires_browser": false
   },
   {
@@ -79,7 +69,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:17:31Z",
+   "last_attempt_ts": "2026-11-26T08:03:04Z",
    "requires_browser": false
   },
   {
@@ -89,7 +79,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:18:09Z",
+   "last_attempt_ts": "2026-11-26T08:03:59Z",
    "requires_browser": false
   },
   {
@@ -99,7 +89,7 @@
    "state": "FETCH_FAIL",
    "detail": "consec_fail=1",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:18:17Z",
+   "last_attempt_ts": "2026-11-26T08:04:12Z",
    "requires_browser": false
   },
   {
@@ -109,7 +99,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:18:21Z",
+   "last_attempt_ts": "2026-11-26T08:04:15Z",
    "requires_browser": false
   },
   {
@@ -119,7 +109,7 @@
    "state": "FETCH_FAIL",
    "detail": "consec_fail=1",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:18:22Z",
+   "last_attempt_ts": "2026-11-26T08:04:16Z",
    "requires_browser": false
   },
   {
@@ -129,7 +119,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:18:24Z",
+   "last_attempt_ts": "2026-11-26T08:04:18Z",
    "requires_browser": false
   },
   {
@@ -139,7 +129,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:18:26Z",
+   "last_attempt_ts": "2026-11-26T08:04:19Z",
    "requires_browser": false
   },
   {
@@ -149,7 +139,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:18:30Z",
+   "last_attempt_ts": "2026-11-26T08:04:23Z",
    "requires_browser": false
   },
   {
@@ -159,7 +149,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:18:32Z",
+   "last_attempt_ts": "2026-11-26T08:04:25Z",
    "requires_browser": false
   },
   {
@@ -169,7 +159,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:18:45Z",
+   "last_attempt_ts": "2026-11-26T08:04:35Z",
    "requires_browser": false
   },
   {
@@ -179,7 +169,17 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:19:05Z",
+   "last_attempt_ts": "2026-11-26T08:04:47Z",
+   "requires_browser": false
+  },
+  {
+   "id": "SNO-109",
+   "name": "National Centre for Coastal Research",
+   "tier": "T1",
+   "state": "FETCH_FAIL",
+   "detail": "consec_fail=1",
+   "last_good_ts": "2026-11-24T18:04:20Z",
+   "last_attempt_ts": "2026-11-26T08:05:16Z",
    "requires_browser": false
   },
   {
@@ -189,7 +189,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:19:16Z",
+   "last_attempt_ts": "2026-11-26T08:06:05Z",
    "requires_browser": false
   },
   {
@@ -199,7 +199,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:19:29Z",
+   "last_attempt_ts": "2026-11-26T08:06:55Z",
    "requires_browser": false
   },
   {
@@ -209,7 +209,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:19:31Z",
+   "last_attempt_ts": "2026-11-26T08:06:56Z",
    "requires_browser": false
   },
   {
@@ -219,7 +219,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:20:45Z",
+   "last_attempt_ts": "2026-11-26T08:07:11Z",
    "requires_browser": false
   },
   {
@@ -229,7 +229,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:21:35Z",
+   "last_attempt_ts": "2026-11-26T08:08:02Z",
    "requires_browser": false
   },
   {
@@ -237,9 +237,19 @@
    "name": "ICAR-Central Inland Fisheries Research Institute (CIFRI), Barrasapara, Howrah",
    "tier": "T1",
    "state": "FETCH_FAIL",
-   "detail": "consec_fail=1",
+   "detail": "consec_fail=2",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:21:55Z",
+   "last_attempt_ts": "2026-11-26T08:08:25Z",
+   "requires_browser": false
+  },
+  {
+   "id": "SNO-172",
+   "name": "National Crime Records Bureau",
+   "tier": "T1",
+   "state": "FETCH_FAIL",
+   "detail": "consec_fail=1",
+   "last_good_ts": "2026-11-24T18:09:05Z",
+   "last_attempt_ts": "2026-11-26T08:09:29Z",
    "requires_browser": false
   },
   {
@@ -249,7 +259,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:22:42Z",
+   "last_attempt_ts": "2026-11-26T08:10:14Z",
    "requires_browser": false
   },
   {
@@ -259,7 +269,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:22:44Z",
+   "last_attempt_ts": "2026-11-26T08:10:15Z",
    "requires_browser": false
   },
   {
@@ -269,7 +279,17 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:23:04Z",
+   "last_attempt_ts": "2026-11-26T08:10:39Z",
+   "requires_browser": false
+  },
+  {
+   "id": "SNO-201",
+   "name": "V. V. Giri National Labour Institute (VVGNLI), Noida - autonomous body of MoLE",
+   "tier": "T1",
+   "state": "FETCH_FAIL",
+   "detail": "consec_fail=1",
+   "last_good_ts": "2026-11-21T18:23:13Z",
+   "last_attempt_ts": "2026-11-26T08:10:47Z",
    "requires_browser": false
   },
   {
@@ -279,7 +299,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:23:14Z",
+   "last_attempt_ts": "2026-11-26T08:10:48Z",
    "requires_browser": false
   },
   {
@@ -289,7 +309,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:23:16Z",
+   "last_attempt_ts": "2026-11-26T08:10:50Z",
    "requires_browser": false
   },
   {
@@ -299,7 +319,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:23:17Z",
+   "last_attempt_ts": "2026-11-26T08:10:51Z",
    "requires_browser": false
   },
   {
@@ -309,7 +329,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:23:21Z",
+   "last_attempt_ts": "2026-11-26T08:10:56Z",
    "requires_browser": false
   },
   {
@@ -319,7 +339,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:23:31Z",
+   "last_attempt_ts": "2026-11-26T08:11:14Z",
    "requires_browser": false
   },
   {
@@ -329,7 +349,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:24:24Z",
+   "last_attempt_ts": "2026-11-26T08:11:36Z",
    "requires_browser": false
   },
   {
@@ -339,7 +359,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:24:25Z",
+   "last_attempt_ts": "2026-11-26T08:11:37Z",
    "requires_browser": false
   },
   {
@@ -349,7 +369,7 @@
    "state": "FETCH_FAIL",
    "detail": "consec_fail=1",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:24:29Z",
+   "last_attempt_ts": "2026-11-26T08:11:41Z",
    "requires_browser": false
   },
   {
@@ -359,7 +379,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:24:37Z",
+   "last_attempt_ts": "2026-11-26T08:11:48Z",
    "requires_browser": false
   },
   {
@@ -369,7 +389,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:24:47Z",
+   "last_attempt_ts": "2026-11-26T08:11:59Z",
    "requires_browser": false
   },
   {
@@ -379,7 +399,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:25:09Z",
+   "last_attempt_ts": "2026-11-26T08:12:13Z",
    "requires_browser": false
   },
   {
@@ -389,7 +409,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:25:12Z",
+   "last_attempt_ts": "2026-11-26T08:12:17Z",
    "requires_browser": false
   },
   {
@@ -399,7 +419,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:25:13Z",
+   "last_attempt_ts": "2026-11-26T08:12:18Z",
    "requires_browser": false
   },
   {
@@ -409,7 +429,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:25:16Z",
+   "last_attempt_ts": "2026-11-26T08:12:21Z",
    "requires_browser": false
   },
   {
@@ -419,7 +439,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:25:22Z",
+   "last_attempt_ts": "2026-11-26T08:12:28Z",
    "requires_browser": false
   },
   {
@@ -429,7 +449,17 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:25:24Z",
+   "last_attempt_ts": "2026-11-26T08:12:30Z",
+   "requires_browser": false
+  },
+  {
+   "id": "SNO-270",
+   "name": "National Institute of Design (NID) - autonomous body under MoTextiles",
+   "tier": "T1",
+   "state": "FETCH_FAIL",
+   "detail": "consec_fail=1",
+   "last_good_ts": "2026-11-24T18:13:19Z",
+   "last_attempt_ts": "2026-11-26T08:12:39Z",
    "requires_browser": false
   },
   {
@@ -439,7 +469,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:25:44Z",
+   "last_attempt_ts": "2026-11-26T08:13:06Z",
    "requires_browser": false
   },
   {
@@ -449,7 +479,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:25:47Z",
+   "last_attempt_ts": "2026-11-26T08:13:09Z",
    "requires_browser": false
   },
   {
@@ -459,7 +489,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:26:02Z",
+   "last_attempt_ts": "2026-11-26T08:13:48Z",
    "requires_browser": false
   },
   {
@@ -469,7 +499,7 @@
    "state": "STRUCTURE_CHANGED",
    "detail": "consec_fail=0",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:26:04Z",
+   "last_attempt_ts": "2026-11-26T08:13:49Z",
    "requires_browser": false
   },
   {
@@ -479,7 +509,7 @@
    "state": "FETCH_FAIL",
    "detail": "consec_fail=1",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:26:08Z",
+   "last_attempt_ts": "2026-11-26T08:13:55Z",
    "requires_browser": false
   },
   {
@@ -489,7 +519,7 @@
    "state": "FETCH_FAIL",
    "detail": "consec_fail=1",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:27:11Z",
+   "last_attempt_ts": "2026-11-26T08:16:43Z",
    "requires_browser": false
   },
   {
@@ -499,39 +529,39 @@
    "state": "FETCH_FAIL",
    "detail": "consec_fail=1",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-21T18:26:25Z",
+   "last_attempt_ts": "2026-11-26T08:14:10Z",
+   "requires_browser": false
+  },
+  {
+   "id": "st-NL-DPAR",
+   "name": "Nagaland - Nagaland Dept of Personnel & Notifications",
+   "tier": "T1",
+   "state": "FETCH_FAIL",
+   "detail": "consec_fail=1",
+   "last_good_ts": "2026-11-24T18:14:39Z",
+   "last_attempt_ts": "2026-11-26T08:14:18Z",
+   "requires_browser": false
+  },
+  {
+   "id": "st-TN-TNPSC",
+   "name": "Tamil Nadu - Tamil Nadu Public Service Commission",
+   "tier": "T1",
+   "state": "FETCH_FAIL",
+   "detail": "consec_fail=1",
+   "last_good_ts": "2026-11-24T18:14:56Z",
+   "last_attempt_ts": "2026-11-26T08:15:41Z",
    "requires_browser": false
   }
  ],
  "deferred": [
   {
-   "id": "SNO-071",
-   "name": "National Archives of India",
-   "tier": "T1",
-   "state": "BACKOFF",
-   "detail": "consec_fail=2",
-   "last_good_ts": "2026-11-18T06:29:37Z",
-   "last_attempt_ts": "2026-11-19T03:18:56Z",
-   "requires_browser": false
-  },
-  {
-   "id": "SNO-112",
-   "name": "NCERT",
-   "tier": "T1",
-   "state": "BACKOFF",
-   "detail": "consec_fail=2",
-   "last_good_ts": "2026-11-19T11:46:50Z",
-   "last_attempt_ts": "2026-11-20T03:32:53Z",
-   "requires_browser": false
-  },
-  {
    "id": "SNO-158",
    "name": "ICAR-Central Institute of Fisheries Technology (CIFT), Cochin",
    "tier": "T1",
    "state": "BACKOFF",
-   "detail": "consec_fail=2",
+   "detail": "consec_fail=3",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-19T03:24:02Z",
+   "last_attempt_ts": "2026-11-24T18:08:00Z",
    "requires_browser": false
   },
   {
@@ -539,9 +569,9 @@
    "name": "National Dairy Development Board (NDDB), Anand - statutory body under the Ministry of Cooperation (dairy development), historically under AHA&D",
    "tier": "T1",
    "state": "BACKOFF",
-   "detail": "consec_fail=2",
+   "detail": "consec_fail=3",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-19T03:24:17Z",
+   "last_attempt_ts": "2026-11-24T18:08:15Z",
    "requires_browser": false
   },
   {
@@ -549,9 +579,9 @@
    "name": "Central Vigilance Commission (CVC), cvc.gov.in (statutory commission under the CVC Act, 2003; functionally associated with the Ministry of Personnel, Public Grievances and Pensions)",
    "tier": "T1",
    "state": "BACKOFF",
-   "detail": "consec_fail=2",
+   "detail": "consec_fail=3",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-19T03:27:06Z",
+   "last_attempt_ts": "2026-11-24T18:12:05Z",
    "requires_browser": false
   },
   {
@@ -559,9 +589,9 @@
    "name": "RITES Limited (GoI enterprise, Rail Min; HQ Gurugram)",
    "tier": "T1",
    "state": "BACKOFF",
-   "detail": "consec_fail=2",
+   "detail": "consec_fail=3",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-19T03:27:49Z",
+   "last_attempt_ts": "2026-11-24T18:12:44Z",
    "requires_browser": false
   },
   {
@@ -569,9 +599,9 @@
    "name": "Central Silk Board (CSB), Ministry of Textiles",
    "tier": "T1",
    "state": "BACKOFF",
-   "detail": "consec_fail=2",
+   "detail": "consec_fail=3",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-19T03:28:58Z",
+   "last_attempt_ts": "2026-11-24T18:13:06Z",
    "requires_browser": false
   },
   {
@@ -579,9 +609,9 @@
    "name": "Maharashtra - MMRDA recruitment",
    "tier": "T1",
    "state": "BACKOFF",
-   "detail": "consec_fail=2",
+   "detail": "consec_fail=3",
    "last_good_ts": null,
-   "last_attempt_ts": "2026-11-19T03:30:04Z",
+   "last_attempt_ts": "2026-11-24T18:14:21Z",
    "requires_browser": false
   },
   {
@@ -589,9 +619,9 @@
    "name": "Manipur - Directorate of Information Technology, Manipur",
    "tier": "T1",
    "state": "BACKOFF",
-   "detail": "consec_fail=2",
+   "detail": "consec_fail=3",
    "last_good_ts": "2026-11-19T14:46:56Z",
-   "last_attempt_ts": "2026-11-20T18:15:10Z",
+   "last_attempt_ts": "2026-11-24T18:14:28Z",
    "requires_browser": false
   }
  ],
@@ -979,14 +1009,15 @@
   }
  ],
  "deputation": {
-  "at": "2026-11-21T18:51:20Z",
-  "total_links": 1280,
-  "confirmed": 477,
-  "maybe": 429,
-  "new_confirmed": 458,
+  "at": "2026-11-26T08:55:35Z",
+  "total_links": 1840,
+  "confirmed": 548,
+  "maybe": 665,
+  "new_confirmed": 506,
+  "in_queue": 23,
   "already_added": 19,
-  "not_deputation": 298,
-  "pending": 76,
+  "not_deputation": 454,
+  "pending": 173,
   "ocr_needed": 0,
   "confirmed_list": [
    {
@@ -994,2800 +1025,3386 @@
     "snip": "File No.CTE-TP/TRNG/3/2020-TPS. GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION OFFICE OF THE COMMISSIONER OF TECHNICAL EDUCATION ",
     "where": "body",
     "already_added": true,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": true
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6604.pdf",
     "snip": "File No.CTE-ACD1/TR/D/4/2020-ACADEMIC-1 GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION Office of the Commissioner of Technical Ed",
     "where": "subject/heading",
     "already_added": true,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6620.pdf",
     "snip": "File No.CTE-ACD1/TR/D/4/2020-ACADEMIC-1 GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION OFFICE OF THE COMMISSIONER OF TECHNICAL ED",
     "where": "subject/heading",
     "already_added": true,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": true
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6662.pdf",
     "snip": "File No.CTE-ACD1/TR/D/4/2020-ACADEMIC-1 GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION OFFICE OF THE COMMISSIONER OF TECHNICAL ED",
     "where": "subject/heading",
     "already_added": true,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-869-Deputation.pdf",
     "snip": "F. No. A-35/1/2025-FSD-DCSA_AN/ 3864 ST ARAM STE PT OFFICE OF THE FOOD SAFETY COMMISSIONER sisara ud Prolare gto Was ANDAMAN AND NICOBAR ISL",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": true
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-884-VACANCY%20CIRCULAR%20for%20Deputation%20of%20DDShipping%20Services.pdf",
     "snip": "CIRCULAR Sub: -Filling up of one post of “Deputy Director (Shipping Services)” in the Directorate of Shipping Services under Andaman & Nicob",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": true
    },
    {
     "url": "https://ansi.gov.in/recruitment?type=deputation",
     "snip": "Recruitment/Vacancies – Anthropological Survey of India English हिन्दी Home About AnSI Profile History Vision & Mission Organization Functio",
     "where": "",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": true
    },
    {
     "url": "https://ard.delhi.gov.in/sites/default/files/Administrative%20Reforms/circulars-orders/eligibility_for_asstt._dir._in_ar_on_deputation_basis.pdf",
     "snip": "1 2 3 4",
     "where": "",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:59Z"
+    "first_seen": "2026-11-18T06:43:59Z",
+    "in_queue": true
    },
    {
     "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_assistant_director_ar_on_deputation_basis.pdf",
     "snip": "Scanned by CamScanner",
     "where": "",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:59Z"
+    "first_seen": "2026-11-18T06:43:59Z",
+    "in_queue": true
    },
    {
     "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_assistant_director_ar_on_deputation_basis_0.pdf",
     "snip": "1",
     "where": "",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:59Z"
+    "first_seen": "2026-11-18T06:43:59Z",
+    "in_queue": true
    },
    {
     "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_research_assistant_in_the_pay_level_6_in_administrative_reforms_department_gnctd_on_deputation_basis.pdf",
     "snip": "1",
     "where": "",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:59Z"
+    "first_seen": "2026-11-18T06:43:59Z",
+    "in_queue": true
    },
    {
     "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_research_assistant_in_the_pay_level_6_in_administrative_reforms_department_gnctd_on_deputation_basis_0.pdf",
     "snip": "1",
     "where": "",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:59Z"
+    "first_seen": "2026-11-18T06:43:59Z",
+    "in_queue": true
    },
    {
     "url": "https://cifnet.gov.in/images/Deputation_for_CI_S_N.pdf",
     "snip": "F. No.3-38/2018-Admn.V (e- 9684) Government of India Ministry of Fisheries, Animal Husbandry Dairying Department of Fisheries (Department of",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:36Z"
+    "first_seen": "2026-11-18T06:34:36Z",
+    "in_queue": false
    },
    {
     "url": "https://cifnet.gov.in/images/SAO_Deputation.pdf",
     "snip": "Fax 0484 - 2370879 Phone : 04842351610, 2851493, 2351790 E-mail + offnet@nic in Aller Office: 0484 - 2351610 ‘atnethg@yahoo.com Director(Per",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:36Z"
+    "first_seen": "2026-11-18T06:34:36Z",
+    "in_queue": false
    },
    {
     "url": "https://dda.gov.in/sites/default/files/latest_jobs/deputation_notice_202623042026.pdf",
     "snip": "For DDA Website fercett feresra wiftrexo1/ DELHI DEVELOPMENT AUTHORITY ‘wprftfes SRETI-/ PERSONNEL BRANCH-1 Steio war a. 311,398 Uy, fers Ge",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:35:24Z"
+    "first_seen": "2026-11-18T06:35:24Z",
+    "in_queue": false
    },
    {
     "url": "https://dda.gov.in/sites/default/files/latest_jobs/dy_cla_notification_deputation_basis_dda.pdf",
     "snip": "* For DDA’s Website For DDA’s Website feect faarra unfree veLH! DEVELOPMENT AUTHORITY ‘prftfar STRaT -1 /PERSONNEL BRANCH-1 ward. 311, tale ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:35:24Z"
+    "first_seen": "2026-11-18T06:35:24Z",
+    "in_queue": false
    },
    {
     "url": "https://dda.gov.in/sites/default/files/latest_jobs/extension_last_date_director_min.deputation.pdf",
     "snip": "fctt faIH YtrUl DELHI DEVELOPMENT AUTHORITY i|* IRg|-1/ PERSONNEL BRANCH-1 No. F7(64)2008/PB-1/Pt.lI/ /10 Computer No. 6203 basis. t oiſco o",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:35:24Z"
+    "first_seen": "2026-11-18T06:35:24Z",
+    "in_queue": false
    },
    {
     "url": "https://doe.gov.in/files/vacancy_attachment/DeputationpostinPPD.pdf",
     "snip": "F.No. A-11011/1/2023-Ad.I Government of India Ministry of Finance Department of Expenditure Admn. I Section ********** D-Wing, Room No. 1000",
     "where": "body",
     "already_added": true,
-    "first_seen": "2026-11-18T06:33:52Z"
+    "first_seen": "2026-11-18T06:33:52Z",
+    "in_queue": false
    },
    {
     "url": "https://doe.gov.in/files/vacancy_attachment/PPDDeputationpost_1.pdf",
     "snip": "F. No. A-11011/01/2023-Ad.1 Government of India Ministry of Finance Department of Expenditure D-Wing, Room No.10009, Ground Floor, Kartavya ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:33:52Z"
+    "first_seen": "2026-11-18T06:33:52Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/FSCounsellorPMI%20WTOGenevaviceTanuSinghN8KGJ.pdf",
     "snip": "No. 4/37/2026-FA(UN) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training Kartavya",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T07:51:35Z"
+    "first_seen": "2026-11-18T07:51:35Z",
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/FSCounsellorPMIWTOGenevaFYDSo.pdf",
     "snip": "No. 4/37/2026-FA(UN) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training Kartavya",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:22Z"
+    "first_seen": "2026-11-18T06:36:22Z",
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/SSCtMSSX.pdf",
     "snip": "No 6/4/2024-EO(MN-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Office",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Scan%20Circular%20CSS%202026%20IAS_compressedvLOe2.pdf",
     "snip": "THT WAV, aN. ART GSR Manisha Saxena, 1s aris site after fe Peer iaie Officer & Government Of India itional Secreta Dr ry ape partment of Per",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Scan20250616095252PAysS.pdf",
     "snip": "No. 10/3/2024 EO(MM-II) Government of India Ministry of Personnel, P.G. and Pension Department of Personnel and Training (Office of the Esta",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/US%20level%208th%20CPCc4LeZ.pdf",
     "snip": "No 18/1/2025-EO (MM-II) Government of India Ministry of Personnel, Public Grievances & Pension Department of Personnel & Training (Office of",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/USzyvtV.pdf",
     "snip": "No 18/1/2025-EO(MM-ll) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Offic",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvNMWv6ZrV.pdf",
     "snip": "F. No. 9/1/2026-EO(SM-l)(Pt.l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Gri",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvNWMyRZ21.pdf",
     "snip": "F. No. 9/1/2026-EO(SM-l)(Pt.l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Gri",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvisorNWMuLWyS.pdf",
     "snip": "F.No. 9/1/2026-EO(SM-I) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training Offic",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCDBKochiLAANJ.pdf",
     "snip": "F. No. 9/1/2025-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCEOIEPFAASQrA.pdf",
     "snip": "F.No. 14/1/2025-EO(SM-I) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCMPFO8UWKQE.pdf",
     "snip": "Yours faithfully, (Annies Kanmani Joy) Director Tel. No. 24010544 F.No. 20/1/2025-EO(SM -l) Government of India Secretariat of the Appointme",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCeoCDB5xCO1.pdf",
     "snip": "F. No. 9/1/2025 -EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCChChennaiPABAOWi.pdf",
     "snip": "F.No. 1/1/2024-EO(SM -l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievanc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDCKandlSEZ6u1B8.pdf",
     "snip": "Yours faithfully, a es Kanman Joy) Director Tel. No. 011-24010544 No.1 0/3/2025-EO(SM-l) Government of India Secretariat of the Appointments",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDGFASLIyHyJw.pdf",
     "snip": "To 1. 2. F. No.13/2/2024-EO(SM-I) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDGManagegnOWS.pdf",
     "snip": "F. No. 9/6/2025-EO(SM-|) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCDirEICIXhWmR.pdf",
     "snip": "F. No. 10/1/2025 -EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievan",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCExBhavinijZEFW.pdf",
     "snip": "F.No. 22/4/2019-EO(SM-l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievanc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCExCARAkvpB4.pdf",
     "snip": "F. No.4/i /2023-EO(SM -l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCExDGFASLIZicQZ.pdf",
     "snip": "F. No.1 3/2/2024-EO(SM -l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievan",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCJNPAAmunHz.pdf",
     "snip": "F.No. 1/3/2023-EO(SM-l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievance",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCJuteBoard5f5NZi.pdf",
     "snip": "No.10/2/2026-EO(SM-I) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievances ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCJuteCommKolkata6hKMo.pdf",
     "snip": "F.No. 1O/4/2025-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCKSEZ17N0g1g.pdf",
     "snip": "F. No. 10/3/2025-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCMANAGE3-8Jskqv.pdf",
     "snip": "F. No. 9/6/2025 -EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCMemberIWAIGYQfN.pdf",
     "snip": "No. 1/3/2026-EO(SM-I) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievances ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCNIAMJaipurGC3L6.pdf",
     "snip": "F. No. 9/8/2025 -EO(SM-I) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDCochinport88M5o44.pdf",
     "snip": "F.No. 1/2/2026-EO(SM-l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievance",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDEXPORT88BUrob.pdf",
     "snip": "F. No. 1O/3/2026-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDFIN88yegh6.pdf",
     "snip": "No. 1/3/2026-EO(SM -l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievances",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDIIP66RkkZL.pdf",
     "snip": "Yours faith Ily, (Annies Kanmani oy) Director Tel. No. 011-24010544 F. No. 1O/1/2026 -EO(SM-I) Government of India Secretariat of the Appoin",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDIWAIFIN99fGAL0.pdf",
     "snip": "No. 113/2026-EO(SM-l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievances ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDJUTE66WFQv0.pdf",
     "snip": "F.No. 1 O/2/2026-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDJUTECOMM55O6Zen.pdf",
     "snip": "F.No. 10/2/2026-EO(SM -l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievanc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDJUTENVgzo.pdf",
     "snip": "No.10/4/2025-EO(SM-I) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievances ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDKSEZ887Sjfq.pdf",
     "snip": "No.1 0/3/2025-EO(SM-l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel. Public Grievances",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDMANAGE66T5vdu.pdf",
     "snip": "Yours faith Ily, (Annies Kanman . .y) Director Tel. No. 011-24010544 F. No. 9/6/2025 -EO(SM-l) Government of India Secretariat of the Appoin",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDNWM66atvzv.pdf",
     "snip": "To 1. 2. F. No. 9/1/2026-EO(SM-I)(Pt.l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, P",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCORDparadipport99sTGkK.pdf",
     "snip": "F.No. 1/1/2026-EO(SM-l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievance",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCSpiceBoardP4fyK.pdf",
     "snip": "No.10/i /2024-EO(SM-I) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievances ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VacCirNCMEIiUJp2.pdf",
     "snip": "F. No. 4/2/2025-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Vacancy%20Circular%20Senior%20Adviser%20in%20ADB%20Manila%20under%20DEA%20Ponnuraj%20VskJdf.pdf",
     "snip": "No. 4/2/2026-FA(UN) Government of lndia Ministry of Personnel, Public Grievances & Pensions Department of Personnel & Training Kartavya Bhaw",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VacancycircularAdviserADBManilab7eJ0.pdf",
     "snip": "No. 4/33/2026-FA(UN) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training Kartavya",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VcOrdCPTyDK43.pdf",
     "snip": "F.No. 1/3/2025-EO(SM-l) Government of India Secretariat of the Appointments Committee of the Cabinet Ministry of Personnel, Public Grievance",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/adviser%204-27-2023HrRgz.pdf",
     "snip": "No. 4/27I203-FA(UN) Governmeit of India Ministry of Personnel, Publi Grievances and Pensions Department of Perspnnel and Training North Bloc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/ambedkar%20foundation%20circularcg1Aa.pdf",
     "snip": ". Immediate No 4/1/2025-EO(MM-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Trai",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/cao%20dda%20delhiiirfZOG.pdf",
     "snip": "(1/2) No. 26/1/2026 EO(MM-II) Government of India ry of Personnel, P.G. and Pensions Department of Personnel and Training (Office of the Est",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/circular%20cgpdtm%20new%20delhiqHVoH.pdf",
     "snip": "No. 10/3/2024 EO(MM-II) Government of India Ministry of Personnel, P.G. and Pensions Department of Personnel and Training (Office of the Est",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/circularSfyUR.pdf",
     "snip": "No. 9/3/2025-EO(MW-II) Government of India Ministry of Personnel, Public Grievances & Pension Department of Personnel & Training (Office of ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/cpcrgSKBE.pdf",
     "snip": "No. 4/3/2025-EO(MM-ll) Government of India Ministry of Personnel, Public Grievances & Pension Department of Personnel & Training (Office of ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/custodian_mergedyVWUO.pdf",
     "snip": "No 18/2/2025-EO(MM-Il) * Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Off",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/dafPwMix.pdf",
     "snip": "Immediate No 4/1/2025-EO(MM-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Traini",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/dg%20niamk3QGj.pdf",
     "snip": "F. No. 9/8/2025-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/dgm%20circular_mergedtzTEH.pdf",
     "snip": "Immediate No 4/2/2025-EO(MM-I1)(Pt. I) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/geneva%204-26-2023qcAHO.pdf",
     "snip": "No. 4/26/20 Governme Ministry of Personnel, Publi Department of Pers 3-FA(UN) toflndia Grievances and Pensions nnel and Training ** North Bl",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/gm%20bengalurupM4De.pdf",
     "snip": "No 4/2/2025-EO(MM-Il) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Office",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/group%20A%20Circular%20CSS2025_compressedfaE2c.pdf",
     "snip": "wit wR, awe. Rohaffiossad wifes atte wftreret fart pect egy a wifte, ate frees wen er Fares ESTABLISHMENT OFFICER & lef wares, 7g feeeit—sq0",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image02578bt4x.pdf",
     "snip": "No. 6/5/2025-EO(MM-l) - Government of India Ministry of Personnel, Public Grievances & Pension Department of Personnel & Training (Office of",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image0272_compressed2dH3h.pdf",
     "snip": "Immediate No 4/2/2025-EO(MM-I1)(Pt. II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel an",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image0281zUprM.pdf",
     "snip": "No. 6/2/2026-EO(MM-I!) Government of India Ministry of Personnel, Public Grievances & Pension Department of Personnel & Training (Office of ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image0285mzk94.pdf",
     "snip": "(1/2) No. 5/2/2025 EO(MWV-II) Government of India Ministry of Personnel, P.G. and Pensions Department of Personnel and Training (Office of t",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image04596WHBO.pdf",
     "snip": "No. 9/1/2026 EO(MM-II) Government of India Ministry of Personnel, P.G. and Pensions Department of Personnel and Training (Office of the Esta",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image0478YHHKN.pdf",
     "snip": "Immediate No 6/4/2025-EO(MM-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Traini",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image0632pGas7.pdf",
     "snip": "No 10/1/2026-EO(MM-Il) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Offic",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image1035g6Aih.pdf",
     "snip": "No 9/2/2023-EO(MM-II) ¢ Government of India Ministry of Personnel, Public Grievances and Pension Department of Personnel and Training (Offic",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image110929RaC.pdf",
     "snip": "No 10/1/2025-EO(MM-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Offic",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image1320Wq7mk.pdf",
     "snip": "Immediate No. 10/3/2024 EO(MM-Il) Government of India Ministry of Personnel, P.G. and Pensions Department of Personnel and Training (Office ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image1335Y14Zx.pdf",
     "snip": "No 10/2/2025-EO(MM-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Offic",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image1338crgne.pdf",
     "snip": "No 10/3/2025-EO(MM-Il) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Offic",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image1439maNCi.pdf",
     "snip": "No 18/2/2025-EO(MM-Il) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Offic",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image1882Lmcmc.pdf",
     "snip": "No. 5/1/2025 EO(MIV-II) Government of India Ministry of Personnel, P.G. and Pensions Department of Personnel and Training (Office of the Est",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image1889EbEUp.pdf",
     "snip": "No. 10/3/2024 EO(MM-II) Government of India Ministry of Personnel, P.G. and Pensions Department of Personnel and Training (Office of the Est",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image2085mbaWr.pdf",
     "snip": "No. 9/2/2025-EO(MM-II) Government of India ry of Personnel, Public Grievances & Pension Department of Personnel & Training (Office of the Es",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image2235KsSN0.pdf",
     "snip": "Immediate No 4/2/2025-EO(MM-lI)(Pt. I!) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel an",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image22398gjU4.pdf",
     "snip": "Immediate No 4/2/2025-EO(MM-II)(Pt. 1) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image22434tq8v.pdf",
     "snip": "Immediate No 4/2/2025-EO(MM-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Traini",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image2356avooz.pdf",
     "snip": "No 4/7/2026-EO(MM-Il) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Office",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image24816KxfK.pdf",
     "snip": "No 18/2/2025-EO(MM-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Offic",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image2484dSW4a.pdf",
     "snip": "No 18/2/2025-EO(MIV-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training 1 (Of",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/image2780ojdcc.pdf",
     "snip": "Immediate No 4/2/2025-EO(MM-II)(Pt. II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel an",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/member%20secretary6q1eO.pdf",
     "snip": "No 4/3/2026-EO(MM-I!) < Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Offi",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/nafedP4V8x.pdf",
     "snip": "No 9/2/2023-EO(MM-lI) Government of India Ministry of Personnel, Public Grievances and Pension Department of Personnel and Training (Office ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/nafedYkxD9.pdf",
     "snip": "uf No 9/2/2023-EO(MM-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Off",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/ncltriMDH.pdf",
     "snip": "No 9/1/2024-EO(MN-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Office",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/odisha5BH5p.pdf",
     "snip": "No 4/2/2025-EO(MM-II)(Pt. II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/officeofcustodianZmMRV.pdf",
     "snip": "No 18/2/2025-EO(MM-II) eS Government of India Ministry of Personnel, Public Grievances and Pension Department of Personnel and Training (Off",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/raipursBVHp.pdf",
     "snip": "No 4/5/2026-EO(MM-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Office",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/smtrifedcircularCneVo.pdf",
     "snip": "Immediate No 4/2/2025-EO(MM-I1)(Pt. I!) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel an",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/tea%20boardNumLL.pdf",
     "snip": "No 10/4/2025-EO(MM-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Offic",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/trifedcircularyTtiY.pdf",
     "snip": "Immediate No 4/2/2025-EO(MM-11)(Pt. Il) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel an",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://documents.doptcirculars.nic.in/D2/D02eod/vacancy%20circularnpbTs.pdf",
     "snip": "Immediate No 4/1/2025-EO(MM-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Traini",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://dop.rajasthan.gov.in/writereaddata/modulCategory/202610260123128841253AdvtNo10Year2026websitedeputation.pdf",
     "snip": "GOA PUBLIC SERVICE COMMISSION EDC House, Block ‘C’, Dada Vaidya Road, Panaji-Goa, 403001. Web: http://gpsc.goa.gov.in ADVERTISEMENT NO. 10 Y",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-19T03:30:52Z"
+    "first_seen": "2026-11-19T03:30:52Z",
+    "in_queue": true
    },
    {
     "url": "https://doptcirculars.nic.in/Default.aspx?URL=wFJpTEk06p7xarch",
     "snip": "DoPT Orders Government of India | Ministry of Personnel, Public Grievances and Pensions हिन्दी --> कार्मिक एवं प्रशिक्षण विभाग Department of",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-17T23:39:05Z"
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.nagaland.gov.in/wp-content/uploads/2016/04/deputation-1.pdf",
     "snip": "GOVERNMENT OF NAGALAND PERSONNEL&ADMINISTRATIVE REFROMS DEPARTMENT (ADMINISTRATIVE REFORMS BRANCH) NAGALAND: KOIMA ADVERIISEMENT Dated Kohim",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-19T03:30:44Z"
+    "first_seen": "2026-11-19T03:30:44Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/CirAyurColl03Nov15.pdf",
     "snip": "PROFORMA 1. Name of the Authority 2. Post applied for 3. Name of the Applicant (in BLOCK LETTERS) 4. Name of father/ husband 5. Present post",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/CirCorrigenIGMC08Sep2017.pdf",
     "snip": "No.A-35015/2/2014-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) eK Puducherry,",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/CirDRDA14Aug17.pdf",
     "snip": "No,A-35016/ll/2006-DP&AR/SS.II(l) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) Puducherry, d",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/CirKVK07Aug17.pdf",
     "snip": "No.A-35016/19/98-DP&AR/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) KK Puducherr",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/CirNewDelhiGH23Nov15.pdf",
     "snip": "No.A-35016/20/2002-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) Puducherry, d",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/CirPAJANCOA04Nov15.pdf",
     "snip": "PROFORMA :: PANDIT JAWAHARLAL NEHRU COLLEGE OF AGRICULTURE AND RESEARCH INSTITUTE, KARAIKAL. :: SUPERINTENDENT 1. Name of the Authority 2. P",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/CirPAJANCOA07Aug17.pdf",
     "snip": "No.A-35016/14/2003-DP&AR/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) Se Puduche",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/CirPIA20Jul2017.pdf",
     "snip": "No.A-35015/3/2005-DP&AR/SS.1I(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) IK Puducher",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/CirPIHM03Aug2017.pdf",
     "snip": "No.A-35016/11/2001-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS, (PERSONNEL WING) coors Puduch",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/CirPPA20Nov15.pdf",
     "snip": "No.A-35015/2/2005-DPAR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) Puducherry, dat",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/CirPdyMunic28Nov17.pdf",
     "snip": "No.A-35015/4/2017-DP&AR/SS.1I(1) GOVERNMENT OF PUDUCHIERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) poores . Pudu",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Cir_FishFarmers22Dec15.pdf",
     "snip": "PeriodSI. No. Designation Department ToFrom PROFORMA 1. Name of the barrowing Agency :: Fish Farmers Development Agency, Karaikal. 2. Post a",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Cir_MTPGRIHS16Dec2015.pdf",
     "snip": "No.A-35016/14/2006-DP&AR/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) Puducherry",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Cir_RGASC18Dec2015.pdf",
     "snip": "No.A-35016/1/2011-DP&AR/SS.1I(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) FeO Puducherry",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DRDA_Cir_14.10.14.pdf",
     "snip": "No.A-35016/11/2006-DPAR/SS.1I(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) se Puducherry,",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepCirDIET22Mar18.pdf",
     "snip": "No.A-35016/2/2013-DPAR/SS.II(2) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) IK Puducherry, ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepCirPCPCR30Jan18.pdf",
     "snip": "No.A-35016/1/2018-DPAR/SS.1I(2) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) creer Puducherr",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepCirPWC27Feb18.pdf",
     "snip": "No.A-35016/1/2015-DPAR/SS.1I(2) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) ORI Puducherry,",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirCancel20Apr18.pdf",
     "snip": "No.A-35016/10/2002-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) peers Puduche",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirDIET3Apr18.pdf",
     "snip": "No.A-22015/3/2018-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS. (PERSONNEL WING) eK Puducherry",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirIGMCRI29Aug17.pdf",
     "snip": "No.A-35015/2/2014-DP&AR/SS.II(l) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) Puducherry, da",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirIGMCRI9Feb18.pdf",
     "snip": "No.A-35016/12/2005-DP&AR/SS.II(1)/PF.2 GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) se Puduc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirIGPC4Apr18.pdf",
     "snip": "No.A-35016/10/2002-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) see Puducherr",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirMTPGRI12Feb18.pdf",
     "snip": "No.A-35016/14/2006-DP&AR/SS.1I(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) OK Puduche",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirMTPGRI2Apr18.pdf",
     "snip": "No.A-35016/14/2006-DP&AR/SS.1I(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) seek Puduc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirPAJANCOA15Mar18.pdf",
     "snip": "No.A-22015/1/2015-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) soe Puducherry",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirPBCMDC20Jul17.pdf",
     "snip": "No,A-35016/12/99-DP&AR(PW)/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS. (PERSONNEL WING) sone Pu",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirPBCMDC30Jun2017.pdf",
     "snip": "No.A-35016/12/99-DP&AR/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY, DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS. (PERSONNEL WING) rans Puduc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirPDL3Apr18.pdf",
     "snip": "No.A-35015/2/2006-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS. (PERSONNEL WING) ORK Puducherr",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirPIA30Apr18.pdf",
     "snip": "No.A-35015/1/2018-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) ORI Puducherry",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirPKIET16Oct2015.pdf",
     "snip": "No.A-35016/1/2012-DP&AR/SS.1I(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) FIO Puducherry",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirPKKVK14Jul17.pdf",
     "snip": "No.A-35016/19/98-DP8tAR/SS.II(l)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) Puducherry,",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirPM28Mar18.pdf",
     "snip": "No.A-35015/4/2017-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) piers Puducher",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirPPCL28Mar18.pdf",
     "snip": "No.A-35016/2/2002-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) OR IK Puducher",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirPonshe25Sep17.pdf",
     "snip": "No.A-35015/5/2017-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) eK Puducherry,",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirRGSP15Mar18.pdf",
     "snip": "No.A-35016/13/2005-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) cores Puduche",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuCirRegnDept25Sep17.pdf",
     "snip": "No.A.35016/5/2005-DPAR/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) -000- Puducher",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuOrd.SR10Aug15.pdf",
     "snip": "l i ANNEXURE 1. PAY: During the period of deputation the officials will have the option either to •E :' : get their pay fixed in the deputat",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuOrdPAJANCOA20Jul17.pdf",
     "snip": "No. A.35016/14/2003-DP&AR/SS.1I(1) GOVERNMENT OF PUDUCHERRY, DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) poco Puducher",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuOrder11Sep17.pdf",
     "snip": "No. A.35015/4/2017-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) se Puducherry, ",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuOrderKPC20Jul17.pdf",
     "snip": "No. A.35016/7/2002-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) 2K Puducherry, ",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuOrderPM28Mar18.pdf",
     "snip": "No. A.35015/4/2017-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) soe Puducherry,",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuRepartCancel20Apr18.pdf",
     "snip": "No.A.35016/10/2002-DP&AR/SS.1I(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) peeres Puducher",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/DepuRepatKVK30Oct17.pdf",
     "snip": "No. A.35016/19/98-DP&AR/SS.1I(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) .O. Puducherr",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Depu_Aids_Cir_22dec14.pdf",
     "snip": "No.A-35016/3/2010-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) SORIOK Puduche",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Depu_Cir_DIET15Nov17.pdf",
     "snip": "No.A-35016/19/99-DP&AR/SS. II 1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) SIE Puducherry",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Depu_Cir_MTPG16Nov17.pdf",
     "snip": "No.A-35016/19/2006-DP&AR/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) EOE Puduch",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Depu_Cir_PKAC_24.10.14.pdf",
     "snip": "No.A-35016/4/2001-DP&AR/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) see Puduche",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Depu_IGMC&RI21Dec15.pdf",
     "snip": "No.A-35016/3/2009-DPAR/SS.1I(2)/PF.1 GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) seo Puduch",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Depu_PIPMATE21Dec15.pdf",
     "snip": "No.A-35016/7/2002-DP&AR/SS.1I(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS. (PERSONNEL WING) res Puducherr",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Depu_PRA_15Feb16.pdf",
     "snip": "No.A.35016/17/2003-DPAR/SS.1I(2) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) so Puducherry,",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Depu_PSLCBC21Dec15.pdf",
     "snip": "No.A-35016/8/2005-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) sos Puducherry",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Haj2016.pdf",
     "snip": "No.A-35016/6/2007-DPAR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) Puducherry, dt. 0",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Hajj_Deptn_2014.pdf",
     "snip": "No.A-35016/6/2007-DPAR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) eK Puducherry, dt",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/PBCMDC_Circular.pdf",
     "snip": "No.A-35016/12/99-DPAR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) sex Puducherry, ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/PGGHND_dptn_28aug14.pdf",
     "snip": "No.A-35016/4/2002-DPAR/SS.II(2) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) cores Puducherr",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/PIA_Cir_15.10.14.pdf",
     "snip": "No.A-35015/3/2005-DPAR/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) eee Puducher",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/PIHMCT_15sep14.pdf",
     "snip": "No.A-35016/4/2013-DPAR/SS.1I(2) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) eK Puducherry, ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/PONSHE.pdf",
     "snip": "No.A-35016/4/2001-DP&AR/SS.1I(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) KKK Puduche",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/PONSHECir03Dec15.pdf",
     "snip": "No.A-350 16/4/200 1-DP&AR/SS .II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) Puducher",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/PRTC.pdf",
     "snip": "No.A-35015/9/2004-DPAR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) eI Puducherry, ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/PWRO.pdf",
     "snip": "No.A-35016/13/2006-DPAR/SS. II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) seek Puduc",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/REAPCir03Dec2015.pdf",
     "snip": "PROFORMA 1. Name of the Borrowing :: RENEWABLE ENERGY AGENCY Institute / Authority PUDUCHERRY, PUDUCHERRY. 2. Post applied for :: STENOGRAPH",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/RepartPPCL28Mar18.pdf",
     "snip": "No, A.35016/2/2002-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS. (PERSONNEL WING) .0. Puducherry",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/RepatDIET3Apr18.pdf",
     "snip": "No.A-22015/3/2018-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) sek Puducherry",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/RepatPAJANCOA15Mar18.pdf",
     "snip": "No, A.22015/1/2015-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) .0. Puducherry,",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/RepatPIA04Apr18.pdf",
     "snip": "No.A-35015/3/2005-DP&AR/SS.II(1/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) .0. Puducherry",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/RepatPIA23Apr18.pdf",
     "snip": "No.A-35016/1/2013-DPAR/SS.II(2)/PF.1 GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) oes Puducher",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/RepatSR08Sep2017.pdf",
     "snip": "No, A.35016/5/2005-DP&AR/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) 0. Puducherr",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/RepatrOrd10Aug15.pdf",
     "snip": "No.A-35016/5/2005-DP&AR/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) .0. Puducherr",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/RepatrOrdPIA20Jul17.pdf",
     "snip": "No. A.35015/3/2005-DP&AR/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) .0. Puducher",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/RepatrPAJANCOA20Jul17.pdf",
     "snip": "No, A.35016/14/2003-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY, DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS. (PERSONNEL WING) FeO Puducher",
     "where": "",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/StenoDepu08Oct15.pdf",
     "snip": "No.A.35015/3/2005-DP&AR/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) pears Puduche",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/StenoGR1_Deptn_28feb14.pdf",
     "snip": "No.A.48011/7/2013-DP&AR/SS.II(1) | GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS i (PERSONNEL WING) | EE Puduche",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Steno_Deputation_17dec13.pdf",
     "snip": "No.A-35016/4/2006-DPAR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) see Puducherry,",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/SubRegYNM03Jun15.pdf",
     "snip": "No.A-35016/5/2005-DP&AR/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) RK Puducherry",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/Sub_Registrar.pdf",
     "snip": "No.A.35016/5/2005-DPAR/SS.II(1)/PF GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS. (PERSONNEL WING) -o00- Puduche",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/UDC_Repatr29Sep15.pdf",
     "snip": "No.A.35016/1/2013-DPAR/SS.1I(2)/PF.1 GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL & ADMINISTRATIVE REFORMS (PERSONNEL WING) SHOE Puduche",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/aao_deptn_15sep14.pdf",
     "snip": "No.A-35015/2/2014-DPAR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) SOE Puducherry,",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/anx_steno3_21dec10.pdf",
     "snip": "il !trtrvt rnr.Fa---FitidF ...,-j*^ lL^ *.**;-.J -t J,-.!.!.+..*+t._-. -?-^-.ts *^t_!_!-.rs?:!,i:l!1,irr?:ts'rtst.Eljiiiiiii.:'i.ii;;iiiiEil",
     "where": "",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/depu1a.pdf",
     "snip": "No.A-35016/10/2003-DPAR/SS.1I(2) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) eK Puducherry,",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/depu2a.pdf",
     "snip": "No.A-35016/3/2004-DPAR/SS.II(2) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) errs Puducherry",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/depu3a.pdf",
     "snip": "No.A-35016/25/2000/DPAR/SS.1I(2) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) seo Puducherry",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/ext_udc_30dec10.pdf",
     "snip": "i.i*.4-3 5* I €i 6i 30 06- D p,4Rl 55. II f : ) Gfr VE RNI TNT fl F PU NLJ{HERRY i-:FD'r'rEi\"Tiv'rF?:i-i. frF PEFISI;i,ii.jEL f+ AL''r\"iii{i",
     "where": "",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/or_steno3_21dec10.pdf",
     "snip": "i{ 3 . e - i 3 EJ t b,r' I 5 j.i L-t'j j - lJ :--F1 F*.' r r . i i t j j G'*VE F.l.iiltEFiT * F pUAUei\"iE RpJ F * FA F,:Ti{ f i41- * F P E P",
     "where": "",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/pbcmdc_cir.pdf",
     "snip": "No.A-35016/2/2007-DPAR/SS.II(2) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) HK Puducherry, ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/pipmate_circular_12aug14.pdf",
     "snip": "No.A-35016/7/2002-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) pens Puducherr",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/ppcl_circular_12aug14.pdf",
     "snip": "No.A-35016/2/2002-DPAR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) rs Puducherry, ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/psca_dptn_28aug14.pdf",
     "snip": "No.A-35016/13/2002-DPAR/SS.II(2) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) eK Puducherry,",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/rep_udc_30dec10.pdf",
     "snip": "1t^ I Arn{ f ,.{ a rnrn-r r i'.i +, A-.3 50 i €i i3i i *il4- DFS.AFv'SS. Ii i3 ) ';*\\j'F F,ili f\"1 i i\\iT * F P'.j DUCH E Rp-Y *fFAgTitEi'iT",
     "where": "",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://dpar.py.gov.in/ss2/deputation/stenogr1_deptn_15sep14.pdf",
     "snip": "No.A-35016/16/99-DP&AR/SS.II(1) GOVERNMENT OF PUDUCHERRY DEPARTMENT OF PERSONNEL AND ADMINISTRATIVE REFORMS (PERSONNEL WING) OK Puducherry, ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:08Z"
+    "first_seen": "2026-11-18T06:44:08Z",
+    "in_queue": false
    },
    {
     "url": "https://ftii.ac.in/recruitment/advertisement-for-the-post-of-administrative-officer-on-deputation-basis",
     "snip": "Advertisement for the Post of Administrative Officer on deputation basis Alumni Work Display Alumni Information Renowned Alumni Admission El",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:35:38Z"
+    "first_seen": "2026-11-18T06:35:38Z",
+    "in_queue": false
    },
    {
     "url": "https://ga.odisha.gov.in/en/civil-services/IAS/deputation-repatriation",
     "snip": "Deputation/ Repatriation | Department of General Administration & Public Grievance Skip to main content Government of Odisha ଓଡ଼ିଶା ସରକାର Lo",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:42:56Z"
+    "first_seen": "2026-11-18T06:42:56Z",
+    "in_queue": false
    },
    {
     "url": "https://ga.odisha.gov.in/en/civil-services/OAS/deputation-repatriation",
     "snip": "Deputation/ Repatriation | Department of General Administration & Public Grievance Skip to main content Government of Odisha ଓଡ଼ିଶା ସରକାର Lo",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:42:56Z"
+    "first_seen": "2026-11-18T06:42:56Z",
+    "in_queue": false
    },
    {
     "url": "https://gsv.ac.in/careers-details/34/recruitment-non-teaching-positions-deputationdep-direct-recruitmentdr-keep-visiting-regular-updates/34",
     "snip": "Gati Shakti Vishwavidyalaya Latest Registration of Vendors for Electrical, HVAC and Other Related Services | Registration of Vendors for IT ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:38:09Z"
+    "first_seen": "2026-11-18T06:38:09Z",
+    "in_queue": false
    },
    {
     "url": "https://gsv.ac.in/careers-details/57/recruitment-non-teaching-positions-deputation/57",
     "snip": "Gati Shakti Vishwavidyalaya Latest Registration of Vendors for Electrical, HVAC and Other Related Services | Registration of Vendors for IT ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:38:09Z"
+    "first_seen": "2026-11-18T06:38:09Z",
+    "in_queue": false
    },
    {
     "url": "https://gsv.ac.in/careers-details/61/recruitment-non-teaching-positions-registrar-direct-recruitment-deputation/61",
     "snip": "Gati Shakti Vishwavidyalaya Latest Registration of Vendors for Electrical, HVAC and Other Related Services | Registration of Vendors for IT ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:38:09Z"
+    "first_seen": "2026-11-18T06:38:09Z",
+    "in_queue": false
    },
    {
     "url": "https://hkrnl.itiharyana.gov.in/pdf/advertisement_along_with_application_for_the_posts_to_be_filled_on_deputation_basis.pdf",
     "snip": "APPLICATION FORM FOR DEPUTATION IN HARYANA KAUSHAL ROZGAR NIGAM LIMITED Application For The Post of:- ______________________________________",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:40:03Z"
+    "first_seen": "2026-11-18T06:40:03Z",
+    "in_queue": false
    },
    {
     "url": "https://ignca.gov.in/vaccancy/Adv-Deputation-posts-newspaper.pdf",
     "snip": "Employmer \\S COMPLEX © tifr TATA INSTITUTE OF | FUNDAMENTAL RESEARCH féome afte, avafhr, at ‘Shit sp ats, Ferra, Wa - 400005 / Homi Bhabha R",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:43Z"
+    "first_seen": "2026-11-18T06:29:43Z",
+    "in_queue": false
    },
    {
     "url": "https://irctc.com/deputation.php",
     "snip": "Train Trip Packages, Leading Indian Railway Tour Package Services --> Corporate Coordinations --> Online Vendor Empanelment Empanelment Empa",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:38:18Z"
+    "first_seen": "2026-11-18T06:38:18Z",
+    "in_queue": false
    },
    {
     "url": "https://moef.gov.in/deputation",
     "snip": "Ministry of Environment, Forest and Climate Change --> Home || Deputation (CSS and Non-CSS of MoEFCC) मुख्य सामग्री पर जाएं भारत सरकार पर्या",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:32:53Z"
+    "first_seen": "2026-11-18T06:32:53Z",
+    "in_queue": false
    },
    {
     "url": "https://moef.gov.in/inter-cadre-transferdeputation",
     "snip": "Ministry of Environment, Forest and Climate Change --> Home || Inter-Cadre Transfer/Deputation मुख्य सामग्री पर जाएं भारत सरकार पर्यावरण, वन",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:32:53Z"
+    "first_seen": "2026-11-18T06:32:53Z",
+    "in_queue": false
    },
    {
     "url": "https://nclt.gov.in/sites/default/files/Career/Advt%2520for%2520Deputation%2520for%2520all%2520posts%2520dated%252021.05.2026.pdf",
     "snip": "1 National Company Law Tribunal Block No.3, 6th floor, C.G.O. Complex, Lodhi Road, New Delhi-110003 File No. 10/121/2016-NCLT(Pt.VI) Date: -",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:14Z"
+    "first_seen": "2026-11-18T06:29:14Z",
+    "in_queue": false
    },
    {
     "url": "https://nclt.gov.in/sites/default/files/Career/Deputation%20Advt%20dated%2004.08.2025.pdf",
     "snip": "F. No. 10/121/2016-NCLT(Pt.V) Govt of India NATIONAL COMPANY LAW TRIBUNAL 6th Floor, Block-3, CGO Complex, Lodhi Road, New Delhi- 110003 Dat",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:14Z"
+    "first_seen": "2026-11-18T06:29:14Z",
+    "in_queue": false
    },
    {
     "url": "https://ncpcr.gov.in/public/uploads/167100582463998680b8072_filling-up-of-posts-in-ncpcr-on-deputation-on-foreign-service-terms-13-12-2022.pdf",
     "snip": "Office Memorandum subiect:FillingupofpostsintheNationalCommissionforProtectionofChildRights,New' Delhi-on deputation on Foreign Service Term",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:39:03Z"
+    "first_seen": "2026-11-18T06:39:03Z",
+    "in_queue": false
    },
    {
     "url": "https://ncpcr.gov.in/public/uploads/1700646423655dce17c8c6d_filling-up-of-various-posts-in-the-national-commission-for-protection-of-child-rights-new-delhi-through-deputation-on-foreign-service-terms-regarding---21-11-2023.pdf",
     "snip": "File No.A- 1 1 0I4 / 01. / 2019_Admn National Commission for protection of Child Rights, [A Statutory Body of Government of India) 5th Floor",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:39:03Z"
+    "first_seen": "2026-11-18T06:39:03Z",
+    "in_queue": false
    },
    {
     "url": "https://ncpcr.gov.in/public/uploads/170504953665a0fdc02de71_filling-up-of-various-posts-in-the-national-commission-for-protection-of-child-rights-new-delhi-through-deputation-on-foreign-service-terms---regarding-12-01-2024.pdf",
     "snip": "File No.A-1 1 014 / 0l / 2019-Admn National Commission for Protection of Child Rights, (A Statutory Body of Government of lndia) 5tt, Floor,",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:39:03Z"
+    "first_seen": "2026-11-18T06:39:03Z",
+    "in_queue": false
    },
    {
     "url": "https://ncpcr.gov.in/public/viewPdf/167100582463998680b8072_filling-up-of-posts-in-ncpcr-on-deputation-on-foreign-service-terms-13-12-2022.pdf",
     "snip": "Office Memorandum subiect:FillingupofpostsintheNationalCommissionforProtectionofChildRights,New' Delhi-on deputation on Foreign Service Term",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:39:03Z"
+    "first_seen": "2026-11-18T06:39:03Z",
+    "in_queue": false
    },
    {
     "url": "https://ncpcr.gov.in/public/viewPdf/1700646423655dce17c8c6d_filling-up-of-various-posts-in-the-national-commission-for-protection-of-child-rights-new-delhi-through-deputation-on-foreign-service-terms-regarding---21-11-2023.pdf",
     "snip": "File No.A- 1 1 0I4 / 01. / 2019_Admn National Commission for protection of Child Rights, [A Statutory Body of Government of India) 5th Floor",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:39:03Z"
+    "first_seen": "2026-11-18T06:39:03Z",
+    "in_queue": false
    },
    {
     "url": "https://ncpcr.gov.in/public/viewPdf/170504953665a0fdc02de71_filling-up-of-various-posts-in-the-national-commission-for-protection-of-child-rights-new-delhi-through-deputation-on-foreign-service-terms---regarding-12-01-2024.pdf",
     "snip": "File No.A-1 1 014 / 0l / 2019-Admn National Commission for Protection of Child Rights, (A Statutory Body of Government of lndia) 5tt, Floor,",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:39:03Z"
+    "first_seen": "2026-11-18T06:39:03Z",
+    "in_queue": false
    },
    {
     "url": "https://niyuktionline.upsdc.gov.in/Page/OnDeputation.aspx",
     "snip": "Official Website of Department of Appointment And Personnel, Government of Uttar Pradesh. Feedback Feedback | FAQs FAQs | Sitemap Sitemap | ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-19T03:31:12Z"
+    "first_seen": "2026-11-19T03:31:12Z",
+    "in_queue": false
    },
    {
     "url": "https://pandr.py.gov.in/prd-notice-extension-last-date-receipt-applications-filling-3-posts-joint-director-deputation-basis",
     "snip": "PRD - Notice - Extension of last date for receipt of applications for filling up of 3 posts of Joint Director on deputation basis - Reg. | O",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:44:24Z"
+    "first_seen": "2026-11-18T06:44:24Z",
+    "in_queue": false
    },
    {
     "url": "https://sites.fssai.gov.in/fssaideputation/files/Corrigendum_DEP_01_2021.pdf",
     "snip": "",
     "where": "URL/filename - not fetched (URL signal)",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:56Z"
+    "first_seen": "2026-11-18T06:34:56Z",
+    "in_queue": false
    },
    {
     "url": "https://sites.fssai.gov.in/fssaideputation/files/DeputationPostExttension02112020.pdf",
     "snip": "",
     "where": "URL/filename - not fetched (URL signal)",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:56Z"
+    "first_seen": "2026-11-18T06:34:56Z",
+    "in_queue": false
    },
    {
     "url": "https://sites.fssai.gov.in/fssaideputation/files/advertisement.pdf",
     "snip": "MINISTRY OF HEALTH AND FAMILY WELFARE SSAT ree re er afer untt watg CIRCULAR — DEP-04/2026 an Date: 8 August, 2026 Subject: - Filling up of ",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:56Z"
+    "first_seen": "2026-11-18T06:34:56Z",
+    "in_queue": false
    },
    {
     "url": "https://sites.fssai.gov.in/fssaideputation/index.php",
     "snip": "FSSAI - Recruitment Portal !--> FSSAI Recruitment For Deputation HOME Apply Online !--> Login / Signup Advertisement Corrigendum Circular !-",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:56Z"
+    "first_seen": "2026-11-18T06:34:56Z",
+    "in_queue": false
    },
    {
     "url": "https://sites.fssai.gov.in/fssaideputation/inform.php",
     "snip": "FSSAI - Recruitment Portal FSSAI Recruitment For Deputation HOME Apply Online !--> Login / Signup Advertisement Corrigendum Circular !--> We",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:56Z"
+    "first_seen": "2026-11-18T06:34:56Z",
+    "in_queue": false
    },
    {
     "url": "https://wii.gov.in/recruitments/extension-of-last-date-of-applications-for-section-officer-on-deputation",
     "snip": "Extension of last date of Applications for Section Officer on deputation (Advt. No. WII/ADM/2023/29/23) --> Screen Reader Access Skip to mai",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:33:31Z"
+    "first_seen": "2026-11-18T06:33:31Z",
+    "in_queue": false
    },
    {
     "url": "https://wii.gov.in/recruitments/filling-up-of-one-post-of-section-officer-on-deputation-basis-in-wildlife-institute-of-india,-dehradun",
     "snip": "Filling up of one post of Section Officer on Deputation basis in Wildlife Institute of India, Dehradun (Advt no WII/ADM/2023/29/23) --> Scre",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:33:31Z"
+    "first_seen": "2026-11-18T06:33:31Z",
+    "in_queue": false
    },
    {
     "url": "https://www.bis.gov.in/wp-content/uploads/2025/01/English-Interview-Result-Deputation-2-files-merged.pdf",
     "snip": "BUREAU OF INDIAN STANDARDS Near Saale Aare BATT adie oie mae dena ‘wet wet wrem ved andar fraror NATIONAL STANDARDS BODY OF INDIA and Wa MIN",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T12:12:51Z"
+    "first_seen": "2026-11-18T12:12:51Z",
+    "in_queue": false
    },
    {
     "url": "https://www.bis.gov.in/wp-content/uploads/2025/02/Deputation_Final_Result_2025.pdf",
     "snip": "smc aera saat BUREAU OF INDIAN STANDARDS ‘ / Saale are stare ade wea mae FETT went aot We wa dates avr NATIONAL STANDARDS BODY OF INDIA aa W",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T12:12:51Z"
+    "first_seen": "2026-11-18T12:12:51Z",
+    "in_queue": false
    },
    {
     "url": "https://www.bis.gov.in/wp-content/uploads/2025/08/Advt_SO-on-Deputation.pdf",
     "snip": "BUREAU OF INDIAN STANDARDS Ministry of Consumer Affairs, Food & Public Distribution (Department of Consumer Affairs), Govt. of India Manak B",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T12:12:51Z"
+    "first_seen": "2026-11-18T12:12:51Z",
+    "in_queue": false
    },
    {
     "url": "https://www.bis.gov.in/wp-content/uploads/2026/02/Result-SO-Deputation-2025.pdf",
     "snip": "BUREAU OF INDIAN STANDARDS. saatrar are fast Department of Consumer Affairs Swaitrar ane, wren sit ardarferes Praxor saree Ministry of Consu",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T12:12:51Z"
+    "first_seen": "2026-11-18T12:12:51Z",
+    "in_queue": false
    },
    {
     "url": "https://www.bis.gov.in/wp-content/uploads/2026/05/Advertisement-for-the-post-of-SO-on-deputation.pdf",
     "snip": "",
     "where": "URL/filename - not fetched (URL signal)",
     "already_added": true,
-    "first_seen": "2026-11-18T12:12:51Z"
+    "first_seen": "2026-11-18T12:12:51Z",
+    "in_queue": false
    },
    {
     "url": "https://www.caomod.gov.in/vacancy/deputation",
     "snip": "Vacancy/Deputation | Office of JS & Chief Administrative Officers Skip to main contents Change Languages English हिंदी Change Text Sizes Dec",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-17T23:40:12Z"
+    "first_seen": "2026-11-17T23:40:12Z",
+    "in_queue": false
    },
    {
     "url": "https://www.dnhddpcl.in/includes/pdfs/Advertisement-%20Applications%20are%20invited%20for%20the%20post%20of%20Chief%20Financial%20Officer%20(CFO)%20on%20Deputation%20basis.pdf",
     "snip": "(seen wT 36H) DNH POWER DISTRIBUTION CORPORATION LTD. (A Government Undertaking) CIN : U40100DN2012G01000405 aS aed TR each sat ea Pera fate",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:56Z"
+    "first_seen": "2026-11-18T06:43:56Z",
+    "in_queue": false
    },
    {
     "url": "https://www.dosje.gov.in/vacancies/filling-up-of-the-vacant-posts-on-deputation-basis-in-the-national-commission-for-scheduled-castes-2/",
     "snip": "Filling up of the vacant posts on deputation basis in the National Commission for Scheduled Castes. – Department of Social Justice and Empow",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:38:29Z"
+    "first_seen": "2026-11-18T06:38:29Z",
+    "in_queue": false
    },
    {
     "url": "https://www.dosje.gov.in/vacancies/filling-up-the-post-of-deputy-director-trg-on-deputation-basis-in-national-institute-of-social-defence-new-delhi-under-ministry-of-social-justice-empowerment-government-of-india/",
     "snip": "Filling up the post of Deputy Director (Trg.) on deputation basis in National Institute of Social Defence, New Delhi under Ministry of Socia",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:38:29Z"
+    "first_seen": "2026-11-18T06:38:29Z",
+    "in_queue": false
    },
    {
     "url": "https://www.dosje.gov.in/vacancies/filling-up-the-post-of-junior-research-officer-technical-assistant-stenographer-grade-iii-in-national-institute-of-social-defence-nisd-on-deputation-basis/",
     "snip": "Filling up the post of Junior Research Officer, Technical Assistant & Stenographer Grade-III in National Institute of Social Defence (NISD) ",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:38:29Z"
+    "first_seen": "2026-11-18T06:38:29Z",
+    "in_queue": false
    },
    {
     "url": "https://www.imu.edu.in/imunew///uploads/files/recruitments/2026/Notification-Result_DR&AR_Deputation.pdf",
     "snip": "adr wast faeafeenctret INDIAN MARITIME UNIVERSITY (A Central University under the Ministry of Ports, Shipping and Waterways, Gol) HEADQUARTE",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:56Z"
+    "first_seen": "2026-11-18T06:36:56Z",
+    "in_queue": false
    },
    {
     "url": "https://www.indiancoastguard.gov.in/sites/default/files/advertisement%20for%20filling%20up%20the%20post%20of%20AD%28OL%29%20on%20deputation.pdf",
     "snip": "COAST GUARD HEADQUARTERS, National Stadium Complex New Delhi-110001 1. Indian Coast Guard invites applications from willing and eligible can",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:30:29Z"
+    "first_seen": "2026-11-18T06:30:29Z",
+    "in_queue": false
    },
    {
     "url": "https://www.ircon.org/career-ircon/deputation",
     "snip": "On Deputation | Ircon International Limited Skip to main content --> A navratna company A navratna company Login Ex-Employee Main navigation",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:38:14Z"
+    "first_seen": "2026-11-18T06:38:14Z",
+    "in_queue": false
    },
    {
     "url": "https://www.irctc.com/deputation-hindi.php",
     "snip": "Train Trip Packages, Leading Indian Railway Tour Package Services --> सदस्य ऑनलाइन विक्रेता पैनलीकरण Empanelment Empanelment IT शिकायत मदद च",
     "where": "",
     "already_added": false,
-    "first_seen": "2026-11-18T06:38:18Z"
+    "first_seen": "2026-11-18T06:38:18Z",
+    "in_queue": false
    },
    {
     "url": "https://www.irctc.com/deputation.php",
     "snip": "Train Trip Packages, Leading Indian Railway Tour Package Services --> Corporate Coordinations --> Online Vendor Empanelment Empanelment Empa",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:38:18Z"
+    "first_seen": "2026-11-18T06:38:18Z",
+    "in_queue": false
    },
    {
     "url": "https://www.mea.gov.in/officers-on-deputation",
     "snip": "Officers on Deputation in India | Ministry of External Affairs , Government of India Skip to main content Government of India Ministry of Ex",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:33:43Z"
+    "first_seen": "2026-11-18T06:33:43Z",
+    "in_queue": false
    },
    {
     "url": "https://www.mha.gov.in/files/vacancies_documents/LPAIdeputationbasisapplications_0003.pdf",
     "snip": "IMMEDIATE BY SPEED POST F. No.2/3/2026-BM-II/ICP (CFN: 3785310) Government of India Ministry of Home Affairs Department of Border Management",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:35:06Z"
+    "first_seen": "2026-11-18T06:35:06Z",
+    "in_queue": false
    },
    {
     "url": "https://www.mha.gov.in/files/vacancies_documents/PD_LPAIdeputationBasis_invitingapplications_0003.pdf",
     "snip": "IMMEDIATE BY SPEED POST F. No.2/6/2025-BM-II/ICP (CFN: 3742176) Government of India Ministry of Home Affairs Department of Border Management",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:35:06Z"
+    "first_seen": "2026-11-18T06:35:06Z",
+    "in_queue": false
    },
    {
     "url": "https://www.ncw.gov.in/recruitment/invitation-of-applications-for-filling-up-vacant-anticipated-vacant-posts-in-the-national-commission-for-women-on-deputation-on-foreign-service-term-basis-2/",
     "snip": "Invitation of applications for filling up vacant/anticipated vacant posts in the National Commission for Women on deputation on Foreign Serv",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:39:05Z"
+    "first_seen": "2026-11-18T06:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://www.ncw.gov.in/recruitment/invitation-of-applications-for-filling-up-vacant-anticipated-vacant-posts-in-the-national-commission-for-women-on-deputation-on-foreign-service-term-basis/",
     "snip": "Invitation of applications for filling up vacant/anticipated vacant posts in the National Commission for Women on deputation on Foreign Serv",
     "where": "subject/heading",
     "already_added": true,
-    "first_seen": "2026-11-18T06:39:05Z"
+    "first_seen": "2026-11-18T06:39:05Z",
+    "in_queue": false
    },
    {
     "url": "https://www.nift.ac.in/sites/default/files/2026-10/Final%20Deputation_Advertisment_2026_19.10.2026_0.pdf",
     "snip": "Page 1 of 13 राष्ट्रीय फ ै शन प्रोद्योगिकी संस्थान National Institute of Fashion Technology (A Statutory Institute governed by the NIFT Act ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:38:45Z"
+    "first_seen": "2026-11-18T06:38:45Z",
+    "in_queue": false
    },
    {
     "url": "http://bsi.gov.in/advertisments/hi/orders-and-circulars",
     "snip": "???????? > ???? ?? ??????? --> --> Government of India Botanical Survey of India Ministry of Environment, Forest and Climate Change --> Sele",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:33:05Z"
+    "first_seen": "2026-11-18T06:33:05Z",
+    "in_queue": false
    },
    {
     "url": "http://coal.gov.in//nominated-authority/archive-vacancy",
     "snip": "Archive Vacancy | Ministry of Coal, Government of India Skip to main content Government of India Ministry of Coal Search Skip to main conten",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T05:31:34Z"
+    "first_seen": "2026-11-18T05:31:34Z",
+    "in_queue": false
    },
    {
     "url": "http://gad.assam.gov.in/index.php/document/advertisements",
     "snip": "Advertisements | General Administration | Government of Assam, India --> --> × --> English অসমীয়া --> Government of Assam General Administra",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:39:46Z"
+    "first_seen": "2026-11-18T06:39:46Z",
+    "in_queue": false
    },
    {
     "url": "http://trai.gov.in/vacancy",
     "snip": "Vacancy | Telecom Regulatory Authority of India | Government of India Skip to main content Consumer Researcher / Student Service Providers S",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T12:12:07Z"
+    "first_seen": "2026-11-18T12:12:07Z",
+    "in_queue": false
    },
    {
     "url": "http://www.niftem-t.ac.in/careerdeptao.php",
     "snip": "RECRUITMENT OF AAO ON DEPUTATION BASIS - NIFTEM-T --> Home Administration NIFTEM Act About Us Vision, Mission & Mandates Council for NIFTEMs",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:35:03Z"
+    "first_seen": "2026-11-18T06:35:03Z",
+    "in_queue": false
    },
    {
     "url": "http://www.niftem-t.ac.in/careers.php",
     "snip": "CAREERS --> Home Administration NIFTEM Act About Us Vision, Mission & Mandates Council for NIFTEMs Board of Governors Finance Committee Buil",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:35:03Z"
+    "first_seen": "2026-11-18T06:35:03Z",
+    "in_queue": false
    },
    {
     "url": "https://ajnifm.ac.in/alumni",
     "snip": "Alumni | Arun Jaitley National Institute of Financial Management Skip to main content Skip to Main Content Screen Reader Access English हिंद",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:11Z"
+    "first_seen": "2026-11-18T06:34:11Z",
+    "in_queue": false
    },
    {
     "url": "https://ajnifm.ac.in/faculty",
     "snip": "Faculty | Arun Jaitley National Institute of Financial Management Skip to main content Skip to Main Content Screen Reader Access English हिं",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:11Z"
+    "first_seen": "2026-11-18T06:34:11Z",
+    "in_queue": false
    },
    {
     "url": "https://ajnifm.ac.in/faculty_extra",
     "snip": "Faculty(Deputation/Secondment) | Arun Jaitley National Institute of Financial Management Skip to main content Skip to Main Content Screen Re",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:11Z"
+    "first_seen": "2026-11-18T06:34:11Z",
+    "in_queue": false
    },
    {
     "url": "https://ajnifm.ac.in/hi/vacancy",
     "snip": "रिक्ति | अरुण जेटली राष्ट्रीय वित्तीय प्रबंधन संस्थान मुख्य सामग्री पर जाएँ मुख्य सामग्री पर जाएँ स्क्रीन रीडर एक्सेस English हिंदी अरुण जेट",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:11Z"
+    "first_seen": "2026-11-18T06:34:11Z",
+    "in_queue": false
    },
    {
     "url": "https://ajnifm.ac.in/participants",
     "snip": "Participants | Arun Jaitley National Institute of Financial Management Skip to main content Skip to Main Content Screen Reader Access Englis",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:11Z"
+    "first_seen": "2026-11-18T06:34:11Z",
+    "in_queue": false
    },
    {
     "url": "https://ajnifm.ac.in/pay",
     "snip": "Log in | Arun Jaitley National Institute of Financial Management Skip to main content Skip to Main Content Screen Reader Access English हिंद",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:11Z"
+    "first_seen": "2026-11-18T06:34:11Z",
+    "in_queue": false
    },
    {
     "url": "https://ajnifm.ac.in/rti",
     "snip": "Right to Information | Arun Jaitley National Institute of Financial Management Skip to main content Skip to Main Content Screen Reader Acces",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:11Z"
+    "first_seen": "2026-11-18T06:34:11Z",
+    "in_queue": false
    },
    {
     "url": "https://ajnifm.ac.in/services-support",
     "snip": "Services & Support | Arun Jaitley National Institute of Financial Management Skip to main content Skip to Main Content Screen Reader Access ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:11Z"
+    "first_seen": "2026-11-18T06:34:11Z",
+    "in_queue": false
    },
    {
     "url": "https://ajnifm.ac.in/tender",
     "snip": "Tender | Arun Jaitley National Institute of Financial Management Skip to main content Skip to Main Content Screen Reader Access English हिंद",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:11Z"
+    "first_seen": "2026-11-18T06:34:11Z",
+    "in_queue": false
    },
    {
     "url": "https://ajnifm.ac.in/vacancy",
     "snip": "Vacancy | Arun Jaitley National Institute of Financial Management Skip to main content Skip to Main Content Screen Reader Access English हिं",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:11Z"
+    "first_seen": "2026-11-18T06:34:11Z",
+    "in_queue": false
    },
    {
     "url": "https://ajnifm.ac.in/vacancy/archived-vacancy",
     "snip": "Archived Vacancy | Arun Jaitley National Institute of Financial Management Skip to main content Skip to Main Content Screen Reader Access En",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:11Z"
+    "first_seen": "2026-11-18T06:34:11Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-824-Fisheries-20260526145240_organized.pdf",
     "snip": "= aNd Bar GOVERNMENT OF INDIA ASeTaTeT, atte Sard aiarerr MINISTRY OF FISHERIES, ANIMAL HUSBANDRY AND DAIRYING certs fase DEPARTMENT OF FISH",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-825-VacEE.pdf",
     "snip": "ANDAMAN AND NICOBAR ADMINISTRATION SECRETARIAT ****** Sri Vijaya Puram, dated the 22 nd May , 2026 Vacancy Notice Subject: Vacancy Circular ",
     "where": "subject/heading",
     "already_added": true,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-831-Vacancy%20Advertisement%20for%20deputaion%20post%20in%20ANIIMS.pdf",
     "snip": "F.NO. 1-274/ANIIMS/NTS/RECRUITMENT 2022/610 निदे शक एनिम्स का कार्ाालर् OFFICE OF THE DIRECTOR OF ANIIMS अंडमाि निकोबार द्वीप समूह निनकत्सा ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-832-Fisheries.pdf",
     "snip": "A-12025/1/2024-Estt-Fisheries-FISH_AN /E-94574/FA8 ssa car Prete WRIT ANDAMAN AND NICOBAR ADMINISTRATION wee Preenera DIRECTORATE OF FISHERI",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-838-SE%20Vacancy%20%20biodata.pdf",
     "snip": "SSA Cer Pela HIRT Andaman and Nicobar Administration /Secretariat seletobobek rh Sri Vijaya Puram, dated the G July 2026 VACANCY NOTICE Sub:",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-843-Executive%20Officer%20Add.pdf",
     "snip": "ANDAMAN AND NICOBAR ISLAND INSTITUTE OF MEDICAL SCIENCES SRI VIJAYA PURAM अंडमान एवं ननकोबार द्वीपसमूह निनकत्सा नवज्ञान संस्थान श्री नवजया प",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-844-Faculty%20recruitmet%20for%20Cardiology%20department.pdf",
     "snip": "1 OFFICE OF THE DIRECTOR (ANIIMS) v.Meku rFkk fudksckj }hi lewg fpfdRlk laLFkku ANDAMAN & NICOBAR ISLANDS INSTITUTE OF MEDICAL SCIENCES v.Me",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-845-Filling%20up%20of%20post%20of%20ADTW.pdf",
     "snip": "WebSil- F, No. A/12/2026-Estt Section-TW-TW-A | 95\" ANDAMAN AND NICOBAR ADMINISTRATION DIRECTORATE OF TRIBAL WEL FARE see Sri Vijayapuram da",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-853-Vacancy%20Notice%20TA%20KVIB.pdf",
     "snip": "Fits No- Ate/2024 Gant Kua -rnps An/i6H atom ud Patan go age ware wa até eal A & N ISLANDS KHADI & VILLAGE INDUSTRIES BOARD q / SRI VIJAYA P",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-866-Medical%20Superintendent-Final%20Add.pdf",
     "snip": "ANDAMAN AND NICOBAR ISLAND INSTITUTE OF MEDICAL SCIENCES SRI VIJAYA PURAM अंडमान एवं ननकोबार द्वीपसमूह निनकत्सा नवज्ञान संस्थान श्री नवजया प",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-868-Fisheries-20260914144418.pdf",
     "snip": "piv oe 7 “TRER/ BENGAL /p ase F. No. j-1304/4/2026-Fy (@:27865) Wey \" ° Ne TF o Wo? Government of India fata p, Yo a Ministry of Fisheries, ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-871-Advertisement%20of%20Sr.%20Consultant.pdf",
     "snip": "icobar Islands Integrated Development Corporation Limited(ANIIDCO) Andaman and Applications invited for engagement of Senior Consultant (Urb",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-872-vancancy%20circular.pdf",
     "snip": "A-11013/1/2026-Estt-DIC-DIC_AN 17367740/2026 F.No. A-11013/1/2026-Estt-DIC-DIC-AN /289 A & N ADMINISTRATION DISTRICT INDUSTRIES CENTRE SRI V",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-873-filling%20up%20of%20AD%20T%20of%20the%20directorate%20of%20industries.pdf",
     "snip": "F.No.4-115/Bstt/Ind/2018 / 16 7 isa cor Paar werent Andaman & Nicobar Administration welt Peerert Directorate of Industries St Sri Vijaya Pu",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-875-SE%20Vacancy%20%20and%20Biodata.pdf",
     "snip": "asa car Preatare Fee Andaman and Nicobar Administration affaret /Secretariat see Ah Sri Vijaya Puram, dated the October 2026 VACANCY NOTICE ",
     "where": "subject/heading",
     "already_added": true,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-884-vacancy%20circular.pdf",
     "snip": "ANDAMAN AND NICOBAR ADMINISTRATION SECRETARIAT sees Sri Vijaya Puram, dated the 4h November, 2026 Vacancy Notice Subject: Vacancy Circular f",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-19T11:57:10Z"
+    "first_seen": "2026-11-19T11:57:10Z",
+    "in_queue": true
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-885-Vacancy%20Circular%20of%20Architect.pdf",
     "snip": "Andaman and Nicobar Administration Secretariat Perens Sri Vijaya Puram dated the 11te November , 2026 pee Vacancy Notice Subject: Vacancy Ci",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-19T11:57:10Z"
+    "first_seen": "2026-11-19T11:57:10Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-886-Vacancy%20Circular%20of%20Sr.%20Architect.pdf",
     "snip": "ANDAMAN AND NICOBAR ADMINISTRATION SECRETARIAT see Sri Vijaya Puram, dated the 11% November, 2026 Io Vacancy Notice Subject: Vacancy Circula",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-19T11:57:10Z"
+    "first_seen": "2026-11-19T11:57:10Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/index.php",
     "snip": "The official website of Andaman & Nicobar Administration ﻿ SCREEN READER SKIP TO MAIN CONTENT SKIP TO NAVIGATION A+ A A- Fri 20-11-2026 13:4",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://andamannicobar.gov.in/vacancy_all",
     "snip": "Andaman UT Administration ﻿ SCREEN READER SKIP TO MAIN CONTENT SKIP TO NAVIGATION A+ A A- Fri 20-11-2026 13:45 Lang English Hindi अंडमान तथा",
     "where": "body",
-    "already_added": false,
-    "first_seen": "2026-11-18T06:43:53Z"
+    "already_added": true,
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": false
    },
    {
     "url": "https://ansi.gov.in/download.php?type=recruitment&id=1",
     "snip": "No. 2-179/2022/Estt. Anthropological Survey of India Ministry of Culture E.N-7-9, Sector-V, Salt Lake City, KOLKATA-700 091 Subject: Filling",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": false
    },
    {
     "url": "https://ansi.gov.in/download.php?type=recruitment&id=10",
     "snip": "No. 2-179/2022/Estt. Anthropological Survey of India Ministry of Culture E.N-7-9, Sector-V, Salt Lake City, KOLKATA-700 091 Subject: Filling",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": false
    },
    {
     "url": "https://ansi.gov.in/download.php?type=recruitment&id=12",
     "snip": "-ofireét xf, Ace, (0) 0410007/2003—05 REGD. NO. D. L. (N) 04/0007/2003—05 JR = Che Gazette of Jndia SSA.-S.0a.-B.-27122025-268844 CG-DL-W-27",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": false
    },
    {
     "url": "https://ansi.gov.in/download.php?type=recruitment&id=15",
     "snip": "File No. 2-175/2022/Estt. Dated: Subject: Filling up one post of Joint Director, General Central Service, Group -‘A’, Gazetted, Non - Minist",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": false
    },
    {
     "url": "https://ansi.gov.in/download.php?type=recruitment&id=2",
     "snip": "File No. 2-175/2022/Estt. Dated: 22/09/2025 Subject: Filling up one post of Joint Director, General Central Service, Group -‘A’, Gazetted , ",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": false
    },
    {
     "url": "https://ansi.gov.in/download.php?type=recruitment&id=3",
     "snip": "No. 2-189/2023/Estt. भारतीयमानवववज्ञानसवेक्षण/ANTHROPOLOGICAL SURVEY OF INDIA संस्क ृ वतमंत्रालय/MINISTRY OF CULTURE भारतसरकार/GOVERNMENT OF",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": false
    },
    {
     "url": "https://ansi.gov.in/download.php?type=recruitment&id=4",
     "snip": "No. 24-57/2014/Estt. भारतीयमानव�व�ानसव��ण/ANTHROPOLOGICAL SURVEY OF INDIA सं� ृ �तमंत्रालय/MINISTRY OF CULTURE भारतसरकार/GOVERNMENT OF INDIA",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": false
    },
    {
     "url": "https://ansi.gov.in/download.php?type=recruitment&id=5",
     "snip": "भारतीयमानवववज्ञानसवेक्षण/ANTHROPOLOGICAL SURVEY OF INDIA संस्क ृ वतमंत्रालय/MINISTRY OF CULTURE भारतसरकार/GOVERNMENT OF INDIA इ.न ७-९, सेक्ट",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": false
    },
    {
     "url": "https://ansi.gov.in/download.php?type=recruitment&id=6",
     "snip": "भारतीयमानवववज्ञानसवेक्षण/ANTHROPOLOGICAL SURVEY OF INDIA संस्क ृ वतमंत्रालय/MINISTRY OF CULTURE भारतसरकार/GOVERNMENT OF INDIA इ.न ७-९, सेक्ट",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": false
    },
    {
     "url": "https://ansi.gov.in/download.php?type=recruitment&id=7",
     "snip": "No. 2-175/2022/Estt. भारतीयमानवववज्ञानसवेक्षण/ANTHROPOLOGICAL SURVEY OF INDIA संस्क ृ वतमंत्रालय/MINISTRY OF CULTURE भारतसरकार/GOVERNMENT OF",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": false
    },
    {
     "url": "https://ansi.gov.in/download.php?type=recruitment&id=8",
     "snip": "No. 2-189/2023/Estt. भारतीयमानवववज्ञानसवेक्षण/ANTHROPOLOGICAL SURVEY OF INDIA संस्क ृ वतमंत्रालय/MINISTRY OF CULTURE भारतसरकार/GOVERNMENT OF",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": false
    },
    {
     "url": "https://ansi.gov.in/download.php?type=recruitment&id=9",
     "snip": "No. 2-188/2023/Estt. Anthropological Survey of India Ministry of Culture E.N-7-9, Sector-V, Salt Lake City, KOLKATA-700 091 Subject: Filling",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": false
    },
    {
     "url": "https://ansi.gov.in/recruitment.php",
     "snip": "Recruitment/Vacancies – Anthropological Survey of India English हिन्दी Home About AnSI Profile History Vision & Mission Organization Functio",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": false
    },
    {
     "url": "https://ansi.gov.in/recruitment?type=regular",
     "snip": "Recruitment/Vacancies – Anthropological Survey of India English हिन्दी Home About AnSI Profile History Vision & Mission Organization Functio",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:27Z"
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": false
    },
    {
     "url": "https://ard.delhi.gov.in/",
     "snip": "Home | Administrative Reforms Department Skip to main content A + A A - A A Login Select your language English Hindi Administrative Reforms ",
     "where": "body",
     "already_added": true,
-    "first_seen": "2026-11-18T06:43:59Z"
+    "first_seen": "2026-11-18T06:43:59Z",
+    "in_queue": false
    },
    {
     "url": "https://ard.delhi.gov.in/ard/recruitment",
     "snip": "Recruitment | Administrative Reforms Department Skip to main content A + A A - A A Login Select your language English Administrative Reforms",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:59Z"
+    "first_seen": "2026-11-18T06:43:59Z",
+    "in_queue": false
    },
    {
     "url": "https://ard.delhi.gov.in/circulars-orders",
     "snip": "Circulars-Orders | Administrative Reforms Department Skip to main content A + A A - A A Login Select your language English Hindi Administrat",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:59Z"
+    "first_seen": "2026-11-18T06:43:59Z",
+    "in_queue": false
    },
    {
     "url": "https://ard.delhi.gov.in/sites/default/files/ARD/circulars-orders/2483-86_0001.pdf",
     "snip": "GOVT. OF NCT OF DELHI ADMINISTRATIVE REFORMS DEPARTMENT ea 7h FLOOR, C WING, LP. ESTATE, DELHI SECRETARIAT, NEW DELHI-1 10002 Email-arupdate",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:59Z"
+    "first_seen": "2026-11-18T06:43:59Z",
+    "in_queue": false
    },
    {
     "url": "https://asi.nic.in/HQ/jobsvacancies/?p=1",
     "snip": "Archaeological Survey of India menu Home Who Is Who RTI FAQ's About Us History Organisation ASI Logo Archive Image Gallery Video Gallery Eng",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:25Z"
+    "first_seen": "2026-11-18T06:29:25Z",
+    "in_queue": false
    },
    {
     "url": "https://asi.nic.in/HQ/jobsvacancies/?p=3",
     "snip": "Archaeological Survey of India menu Home Who Is Who RTI FAQ's About Us History Organisation ASI Logo Archive Image Gallery Video Gallery Eng",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:25Z"
+    "first_seen": "2026-11-18T06:29:25Z",
+    "in_queue": false
    },
    {
     "url": "https://asi.nic.in/admin/jobsvacancie/download/90",
     "snip": "qr.frq grril€ {i[STur ffid rfilFc qrfa E(6I:tq*rr qrr z+, frrc cFl, r$ ffi-rrooor ARCHAEOLOGICAL SURVEY OF INDIA MINISTRY OF CULTURE GOVERNM",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:25Z"
+    "first_seen": "2026-11-18T06:29:25Z",
+    "in_queue": false
    },
    {
     "url": "https://asi.nic.in/admin/jobsvacancie/download/91",
     "snip": "qr.frq grril€ {i[STur ffid rfilFc qrfa E(6I:tq*rr qrr z+, frrc cFl, r$ ffi-rrooor ARCHAEOLOGICAL SURVEY OF INDIA MINISTRY OF CULTURE GOVERNM",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:25Z"
+    "first_seen": "2026-11-18T06:29:25Z",
+    "in_queue": false
    },
    {
     "url": "https://asi.nic.in/admin/jobsvacancie/download/93",
     "snip": "F. No. A4 4t261 2}Z2-ADMN. I Government of lndia Archaeological Survey of lndia (Administration-l Section) Dharohar Bhawan 24 Tilak Marg, Ne",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:29:25Z"
+    "first_seen": "2026-11-18T06:29:25Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/L45218/6427470215181489.pdf",
     "snip": "~A fl CAT a oy d . Che Gazette of India rere ; EXTRAORDINARY SPU — we 3 — aye () PART I—Sectlon3~Sub-section (i) PUBLISHED BY ADTAORTY fare,",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/L45218/7425111601251321.pdf",
     "snip": "Energy Conservation: Building Blocks of a Sustainable Future REPORT 2022-2023 ANNUAL REPORT 2022-2023 ANNUAL REPORT 2022-2023 ANNUAL Index P",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-03f8e843bb28fecf_1790836004.pdf",
     "snip": "Bureau of Energy Efficiency (A body corporate under Ministry of Power, Govt. of India,) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-11006",
     "where": "body",
     "already_added": true,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-0fc5bbc2a1ac04ed_1775106246.pdf",
     "snip": "Bureau of Energy Efficiency (A Body Corporate under Ministry of Power, Govt. of India) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-110066",
     "where": "body",
     "already_added": true,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-1800026f8d20e698_1775108247.pdf",
     "snip": "Bureau of Energy Efficiency (A statutory body under Ministry of Power, Govt. of India,) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-11006",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-2595deb2ce00660e_1775107904.pdf",
     "snip": "Bureau of Energy Efficiency (A statutory body under Ministry of Power, Govt. of India,) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-11006",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-2b981463eea41f88_1775106553.pdf",
     "snip": "BUREAU OF ENERGY EFFICIENCY (A Body Gorporate under Ministry of Power, Government of India) 4th Floor, Sewa Bhawan, R. K. Puram, New Defh110",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-41d438a554a242a3_1781003496.pdf",
     "snip": "Bureau of Energy Efficiency (A body corporate under Ministry of Power, Govt. of India,) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-11006",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-5d076955b1fbcce3_1775108221.pdf",
     "snip": "Bureau of Energy Efficiency (A statutory body under Ministry of Power, Govt. of India,) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-11006",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-6299bc3aacdb6914_1775106643.pdf",
     "snip": "BUREAU OF ENERGY EFFICIENCY (A Body Corporate under Ministry of Power, Govt. of India) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-110066",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-6dc7f691d04785dd_1781003460.pdf",
     "snip": "Bureau of Energy Efficiency (A body corporate under Ministry of Power, Govt. of India,) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-11006",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-7313de0d3a87a104_1775108600.pdf",
     "snip": "F. No. 13/3/2024-EC Government of India Ministry of Power tee F-Wing, 2\" Floor, Nirman Bhawan, New Delhi, the 20\" June, 2025 OFFICE MEMORAND",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-8ebb10f7ac872341_1775108540.pdf",
     "snip": "F. No.13/3/2024-EC Government of India Ministry of Power KK ‘F' Wing, 2nd Floor, Nirman Bhawan, New Delhi, the 29°\" May, 2025. OFFICE MEMORA",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-99899be026044312_1781003389.pdf",
     "snip": "Bureau of Energy Efficiency (A body corporate under Ministry of Power, Govt. of India,) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-11006",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-a07b0e4552a95f78_1785136368.pdf",
     "snip": "BUREAU OF ENERGY EFFICIENCY (A Body Corporate under Ministry of Power, Govt. of India) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-110066",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-a26bbb0cc36442d4_1775108305.pdf",
     "snip": "Bureau of Energy Efficiency (A statutory body under Ministry of Power, Govt. of India,) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-11006",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-b408facb0174c091_1781003527.pdf",
     "snip": "Bureau of Energy Efficiency (A body corporate under Ministry of Power, Govt. of India,) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-11006",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-b51fc0243cd71545_1775106090.pdf",
     "snip": "SING BTH/Government of India feaqyct Harea/Ministry of Power Date: 25.03.2026 VACANCY CIRCULAR Subject: Filling up one anticipated vacancy o",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-c6c7bf800bf29684_1775108276.pdf",
     "snip": "Bureau of Energy Efficiency (A statutory body under Ministry of Power, Govt. of India,) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-11006",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-d4cbd19af5af3055_1789984311.pdf",
     "snip": "Bureau of Energy Efficiency (A Body Corporate under Ministry of Power, Govt. of India) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-110066",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-e8c89327927c8384_1775107968.pdf",
     "snip": "Bureau of Energy Efficiency (A statutory body under Ministry of Power, Govt. of India,) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-11006",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-eb9302b084684523_1775108190.pdf",
     "snip": "Bureau of Energy Efficiency (A statutory body under Ministry of Power, Govt. of India,) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-11006",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-ebe8f96255f9dc6f_1782299689.pdf",
     "snip": "EN luDr BUREAU OF ENERGY EFFICIENCY (A Body Corporate under Ministry of Power SY. LiFE Government of India) AE 4th Floor, Sewa Bhawan, R. K.",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-f2c0a382d5888215_1781003421.pdf",
     "snip": "Bureau of Energy Efficiency (A body corporate under Ministry of Power, Govt. of India,) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-11006",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/WriteReadData/RTF1984/RTF-PDF-fe02d7c344057b45_1775107831.pdf",
     "snip": "Bureau of Energy Efficiency (A statutory body under Ministry of Power, Govt. of India,) 4th Floor, Sewa Bhawan, R. K. Puram, New Delhi-11006",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/sites/default/files/2025-03/Vacancy%20Circular%20dated%2017-03-2025.pdf",
     "snip": "No. 13/3/2024-EC Government of India Ministry of Power Date: 17.03.2025 VACANCY CIRCULAR Subject: Filling up one post of Director General in",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/sites/default/files/2025-05/LETTER%20TO%20%20SECYS%20TO%20GOI%20ON%20NOTIFICATION%20FOR%20VACANCIES%20IN%20BEE.pdf",
     "snip": "wcrf EffiIr qt (rilvo Tr*DN, trg-d rfTrdq) BUREAU OF ENERGY EFFICIENCY (Government of lndia, Ministry of Power) No.: ADMN -LLl6l2O2s-BE rlq4",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://beeindia.gov.in/sites/default/files/2025-05/LETTER%20TO%20CHIEF%20SECYS%20AND%20SDA%20ON%20NOTIFICATION%20FOR%20VACANCIES%20IN%20BEE.pdf",
     "snip": "EFut EffiIt qt (,TRm rr*Dr{, f{qF riTrf,q) BUREAU OF ENERGY EFFICIENCY (Government of lndia, Ministry of Power) File To The Chief Secretarie",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:36:59Z"
+    "first_seen": "2026-11-18T06:36:59Z",
+    "in_queue": false
    },
    {
     "url": "https://bhel.com/sites/default/files/CDA%20Rules_0.pdf",
     "snip": "Page 1 of 62 BHEL CONDUCT, DISCIPLINE AND APPEAL RULES 1. SHORT TITLE AND COMMENCEMENT (i) These rules may be called BHEL Conduct, Dis cipli",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:39:24Z"
+    "first_seen": "2026-11-18T06:39:24Z",
+    "in_queue": false
    },
    {
     "url": "https://cbes.goa.gov.in/advertisement",
     "snip": "Advertisement Details Online Recruitment System Department of Information Technology, Electronics & Communications Government of Goa Home Ab",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:39:59Z"
+    "first_seen": "2026-11-18T06:39:59Z",
+    "in_queue": false
    },
    {
     "url": "https://cbes.goa.gov.in/advertisement?id=aa2d769d8e8aaec86f198190db38730d",
     "snip": "Advertisement Details Online Recruitment System Department of Information Technology, Electronics & Communications Government of Goa Home Ab",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:39:59Z"
+    "first_seen": "2026-11-18T06:39:59Z",
+    "in_queue": false
    },
    {
     "url": "https://cbes.goa.gov.in/advertisement?id=b3245ab3686e41a5029f96092196ea29",
     "snip": "Advertisement Details Online Recruitment System Department of Information Technology, Electronics & Communications Government of Goa Home Ab",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:39:59Z"
+    "first_seen": "2026-11-18T06:39:59Z",
+    "in_queue": false
    },
    {
     "url": "https://cbes.goa.gov.in/advertisement?id=b3245ab3686e41a5029f96092196f226",
     "snip": "Advertisement Details Online Recruitment System Department of Information Technology, Electronics & Communications Government of Goa Home Ab",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:39:59Z"
+    "first_seen": "2026-11-18T06:39:59Z",
+    "in_queue": false
    },
    {
     "url": "https://cca.gov.in/archived-advertisements.html",
     "snip": "List of Advertisements | CCA Skip to main content Hello --> A + A - A Skip to main content | Screen reader access | Abbreviations Select Lan",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:32:44Z"
+    "first_seen": "2026-11-18T06:32:44Z",
+    "in_queue": false
    },
    {
     "url": "https://cca.gov.in/sites/files/pdf/RRs-CCA-2003.pdf",
     "snip": "!-,: \". .: rr{E GAzErrE or- nrore'i;Oglpiun'l u\"3pHb (-,Aztrr lE \\ff. r+vgr t-)'Y-Y+.- - -' ; 4dt MINISIRT or c0l,t$Ul.{!.c4Trpl{st* ;';: ;'",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:32:44Z"
+    "first_seen": "2026-11-18T06:32:44Z",
+    "in_queue": false
    },
    {
     "url": "https://cca.gov.in/sites/files/pdf/RRs-CCA-2009.pdf",
     "snip": "(arr les 30] Sra TA : STATE 19 MINISTRY OF COMMUNICATIONS AND INFORMATION TECHNOLOGY | (Department of Information Technology) NOTIFICATION ‘",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:32:44Z"
+    "first_seen": "2026-11-18T06:32:44Z",
+    "in_queue": false
    },
    {
     "url": "https://cca.gov.in/sites/files/pdf/RRs-CCA-2013.pdf",
     "snip": "(-_--'- ,,/'.4'1.-,|J1)/ bt ../ ( .'' dsrd TI. if o (qto 33004/()() It | 1(ll) NO. J) . l. -33fi)4ly) @h,e 6qz, of Sndio\\- er€ret|-wt EXIRAO",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:32:44Z"
+    "first_seen": "2026-11-18T06:32:44Z",
+    "in_queue": false
    },
    {
     "url": "https://cca.gov.in/sites/files/pdf/RRs-CCA-2017.pdf",
     "snip": "@ q' do g€\"-3loo,4^r9 R.UGD. NO. D. t..-33004t99 ffi rr€r+q qqi 6ffiT ette6h,e $ez, of &l rldio STfiTqRUT r]XTRAORDINARY qFr ll_qus 3_3q_srs",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:32:44Z"
+    "first_seen": "2026-11-18T06:32:44Z",
+    "in_queue": false
    },
    {
     "url": "https://cca.gov.in/sites/files/pdf/news/Filling_up_Two_posts(PA).pdf",
     "snip": "No. a(a36)/2015-cca / $4) — Qe / Den gat Government of India Ministry of Electronics and Information Technology (MeitY) Office of Controller",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:32:44Z"
+    "first_seen": "2026-11-18T06:32:44Z",
+    "in_queue": false
    },
    {
     "url": "https://cca.gov.in/sites/files/pdf/news/SCAN0034.pdf",
     "snip": "No. 1(224)2022.068/778-82/2025-26 Government of India Ministry. tronics and Information Technology (MeitY) Office of Controller of Certifyin",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:32:44Z"
+    "first_seen": "2026-11-18T06:32:44Z",
+    "in_queue": false
    },
    {
     "url": "https://cca.gov.in/sites/files/pdf/news/SCAN0035.pdf",
     "snip": "No. sesoya0rs-con/ 783-98 fo02 $26 Government of India Ministry of Electronics and Information Technology (MeitY) Office of Controller of Ce",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:32:44Z"
+    "first_seen": "2026-11-18T06:32:44Z",
+    "in_queue": false
    },
    {
     "url": "https://cca.gov.in/sites/files/pdf/news/advt_ASO.PDF",
     "snip": "No. 1(284)/2026-CCA Government of India Ministry of Electronics and Information Technology (MeitY) Office of Controller of Certifying Author",
     "where": "body",
     "already_added": true,
-    "first_seen": "2026-11-18T06:32:44Z"
+    "first_seen": "2026-11-18T06:32:44Z",
+    "in_queue": false
    },
    {
     "url": "https://cca.gov.in/sites/files/pdf/news/advt_Director.PDF",
     "snip": "_ No. 1(226)/2022-CCA Awwtare T Government of India Ministry of Electronics & Information Technology Office of Controller of Certifying Auth",
     "where": "body",
     "already_added": true,
-    "first_seen": "2026-11-18T06:32:44Z"
+    "first_seen": "2026-11-18T06:32:44Z",
+    "in_queue": false
    },
    {
     "url": "https://cca.gov.in/sites/files/pdf/news/result_PA.pdf",
     "snip": "Office of Controller of Certifying Authorities (CCA) Ministry of Electronics & Information Technology (MeitY) Electronics Niketan, 6 CGO Com",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:32:44Z"
+    "first_seen": "2026-11-18T06:32:44Z",
+    "in_queue": false
    },
    {
     "url": "https://cca.gov.in/sites/files/pdf/news/result_stenographer.pdf",
     "snip": "Office of Controller of Certifying Authorities (CCA) Ministry of Electronics & Information Technology (MeitY) Electronics Niketan, 6 CGO Com",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:32:44Z"
+    "first_seen": "2026-11-18T06:32:44Z",
+    "in_queue": false
    },
    {
     "url": "https://cdnbbsr.s3waas.gov.in/s32e45f93088c7db59767efef516b306aa/uploads/2026/09/202609101814595937.pdf",
     "snip": "File No. A/02/2025-NALSA Government of India National Legal Services Authority Ground Floor, B-Block Administrative Buildings Complex Suprem",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:35:57Z"
+    "first_seen": "2026-11-18T06:35:57Z",
+    "in_queue": false
    },
    {
     "url": "https://cdnbbsr.s3waas.gov.in/s32e45f93088c7db59767efef516b306aa/uploads/2026/10/202610101347959564.pdf",
     "snip": "qe o “\" NATIONAL LEGAL SERVICES AUTHORITY ee Ministry of Law & Justice, Govt. of India B-Block, Ground Floor, Administrative Buildings Compl",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:35:57Z"
+    "first_seen": "2026-11-18T06:35:57Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2016/vacancy/feb.pdf",
     "snip": "Ground Floor, Chanderlok Building, 36, Janpath, New Delhi - 110 001 No. 2/2(7)/2016/ Estt/CERC Dated, the 29th January, 2016 VACANCY CIRCULA",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2016/vacancy/sec.pdf",
     "snip": "Ground Floor, Chanderlok Building, 36, Janpath, New Delhi - 110 001 No. 2/2(7)/2016/ Estt/CERC Dated, the 8th November, 2016 VACANCY CIRCULA",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2017/vacancy/advertisement112017.pdf",
     "snip": "Ground Floor, Chanderlok Building, 36, Janpath, New Delhi - 110 001 No. 2/2(7)/2016/ Estt/CERC Dated, the 8th November, 2017 VACANCY CIRCULA",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2017/vacancy/advertisement2017.pdf",
     "snip": "Ground Floor, Chanderlok Building, 36, Janpath, New Delhi - 110 001 No. 2/2(7)/2016/ Estt/CERC Dated, the 20th February, 2017 VACANCY CIRCUL",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2018/vacancy/POSTS.pdf",
     "snip": "Ground Floor, Chanderlok Building, 36, Janpath, New Delhi - 110 001 No. 2/2(7)/2016/ Estt/CERC Dated, the 8th March, 2018 VACANCY CIRCULAR C",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2020/vacancy/Adv-Chief_Eco2020.pdf",
     "snip": "Ground Floor, Chanderlok Building, 36, Janpath, New Delhi - 110 001 Website: www.cercind.gov.in No. ADMN-12012/1/2019-CERC Dated, the 29th J",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2020/vacancy/Adv-Chief_Engg2020.pdf",
     "snip": "Ground Floor, Chanderlok Building, 36, Janpath, New Delhi - 110 001 No. ADMN-12012/1/2019-CERC Dated, the 16th June, 2020 VACANCY CIRCULAR C",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2021/vacancy/CORRIGENDUM_230721.pdf",
     "snip": "4)o1i f1qT R1 IkH'P 3I14101 CENTRAL ELECTRICITY REGULATORY COMMISSION Ground Floor, Chanderlok Building, 36, Janpath, New Delhi -110001 No. ",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2021/vacancy/Engagement_staff201221.pdf",
     "snip": "Ground Floor, Chanderlok Building, 36, Janpath, New Delhi - 110 001 No. ADMN-12012/1/2019-CERC Dated, the 20 Dec, 2021 VACANCY CIRCULAR Cent",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2021/vacancy/ExtensionNotice-160821.pdf",
     "snip": "<A. 11 bo4 Icici 11i.iioicp 3jJj1oJ CENTRAL ELECTRICITY REGULATORY COMMISSION Ground Floor, Chanderlok Building, 36, Janpath, New Delhi -110",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://bsi.gov.in/uploads/documents/advertisments/vacancies/english/Scan_0001_20-11-2026_1542.pdf",
     "snip": "Fil,. N,. 8Sl-62/99/2026-E,tt. ICIO \\ mta €rqFn /GOV£RNM£NT OF INDIA w6gwr,qa 3al aaa! qftda #qrav /MINISTRy OF ENViRONMENT, FOREST & CLiMAT",
     "where": "body",
-    "already_added": true,
-    "first_seen": "2026-11-21T18:20:57Z"
+    "already_added": false,
+    "first_seen": "2026-11-21T18:20:57Z",
+    "in_queue": false
    },
    {
     "url": "https://bsi.gov.in/uploads/documents/advertisments/vacancies/english/Scan_0001_20-11-2026_1544.pdf",
     "snip": "Fil,. No, BSl-62/24/2026-Estt. Id 7 OC HRH raFfI /GOVERNMENT OF INDIA wagwr,aa 3Br aavr3 qftMa Itnav /MINiSTRY OF ENVIRONMENT, FOREST & CUMA",
     "where": "body",
-    "already_added": true,
-    "first_seen": "2026-11-21T18:20:57Z"
+    "already_added": false,
+    "first_seen": "2026-11-21T18:20:57Z",
+    "in_queue": false
    },
    {
     "url": "https://bsi.gov.in/uploads/documents/whatsnew/hindi/Scan_0001_20-11-2026_1542.pdf",
     "snip": "Fil,. N,. 8Sl-62/99/2026-E,tt. ICIO \\ mta €rqFn /GOV£RNM£NT OF INDIA w6gwr,qa 3al aaa! qftda #qrav /MINISTRy OF ENViRONMENT, FOREST & CLiMAT",
     "where": "body",
-    "already_added": true,
-    "first_seen": "2026-11-21T18:20:57Z"
+    "already_added": false,
+    "first_seen": "2026-11-21T18:20:57Z",
+    "in_queue": false
    },
    {
     "url": "https://bsi.gov.in/uploads/documents/whatsnew/hindi/Scan_0001_20-11-2026_1544.pdf",
     "snip": "Fil,. No, BSl-62/24/2026-Estt. Id 7 OC HRH raFfI /GOVERNMENT OF INDIA wagwr,aa 3Br aavr3 qftMa Itnav /MINiSTRY OF ENVIRONMENT, FOREST & CUMA",
     "where": "body",
-    "already_added": true,
-    "first_seen": "2026-11-21T18:20:57Z"
+    "already_added": false,
+    "first_seen": "2026-11-21T18:20:57Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2022/vacancy/Extension_080222.pdf",
     "snip": "A. 41a14 fl?I f11iinp 3111o1 CENTRAL ELECTRICITY REGULATORY CoMMissioN Ground Floor, Chanderlok Building, 36, Janpath, New Delhi -110 001 AD",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2022/vacancy/TOR-2022.pdf",
     "snip": "A bcr1'I 1CIci 1 1cH(-li 3I1IcI CENTRAL ELECTRICITY REGULATORY COMMISSION cp f[ 36, i1'1'4T, 9 IYc'I —110 001 aiic. www.cercind.gov.in 3.11I",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2023/vacancy/TOR-040823.pdf",
     "snip": "c4k Ic1 111414ici 3iii C) 36, F{TT, -t - 110 001 www.cercind.gov-in <-A-,> II.-12011/O1/2019—c113ff f-iicp: 04 3{TL 2023 'ti1i c ç R1ci Rl1i",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2023/vacancy/advt-050823.pdf",
     "snip": "+frqffidfrqrf,oo{rfrrr CENTRAL ELECTRICITY REGULATORY COMMISSION Ground Floor, Chanderlok Building, 36, Janpath, New Delhi-l10001 Website : ",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2023/vacancy/extension-notice-180923.pdf",
     "snip": "-A- ffiq frgd frfrqrro 3rr*dr CeNrnel Euecrntctrv ReoulAToRy CotvttvussroN Ground Floor, Chanderlok Building, 36, Janpath, New Delhi -11O OO",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2024/vacancy/Extension-Notice_301124.pdf",
     "snip": "कŐ ūीय िवद् धुत िविनयामक आयोग CENTRAL ELECTRICITY REGULATORY COMMISSION 8th Floor, Towar B, World Trade Center, Nauroji Nagar, New Delhi-110",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2024/vacancy/TOR-141024.pdf",
     "snip": "+#IRqgaRRqrqT 3rl®l CENTRAL ELECTRICITY REGULATORY COMMISSION 8th Floor, Towar B, World Trade Center, A Nauroji Nagar, New Delhi- IIO 029 cA",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2025/vacancy/Avt-241225.pdf",
     "snip": "##qRqdRRqlq© arM CENTRAL ELECTRICITY REGULATORY COMMISSION 8th Floor, Towar B, World Trade Center, Naruji Nagar, New delhi-110 029IPTTTTT+ A",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2025/vacancy/Avt-241225_Extention.pdf",
     "snip": "CENTRAI i ELECTRICITY REGULATORY COMMISSION 8th Floor, Tower –B, World Trade Center. Nauroji Nagar. New Delhi-110 029 ADMIN- 1201 1/ 1 /2019",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2025/vacancy/TOR-090625.pdf",
     "snip": "MR mg(T RRTrq© NMr CENTRAL ELECTRICITY REGULATORY COMMISSION 8vt Ta, ant dt. qd is get JIa\\ii nrl, q{ ft6dt–110 029 U.q9:wls–12012/1/2019–dj",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2026/vacancy/Advrtise-220126.pdf",
     "snip": "+aqBqdRRHq© GIIM CENTRAL ELECTRICITY REGULATORY COMMISSION 8th Floor, Tower B, World Trade Center, Nauroji Nagar, New Delhi-110 029 ADMIN-12",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2026/vacancy/Circular-020426.pdf",
     "snip": "##IRqdRRqlqv wM CENTRAT4 ELECTRICITY REGULATORY COMMISSION 8th Floor, Towar B, World Trade Center, Naruji Nagar, New delhi-110 029 o2+ ADMIN",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2026/vacancy/Circular-120326.pdf",
     "snip": "+#qRqdRRqlqT wM CENTRAI I ELECTRICITY REGULATORY COMMISSION 8th Floor, Tower B, World Trade Center, Nauroji Nagar, New Delhi-110 029 +B lbfi",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2026/vacancy/VacancyNotice-030926.pdf",
     "snip": "##IRqgaRRqlq6 3rrWI CENTRAL ELECTRICITY REGULATORY COMMISSION 8th Floor, Towar B, World Trade Center, Nauroji Nagar, New Delhi- 110 029 No. ",
     "where": "subject/heading",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/2026/vacancy/VacancyNotice-240826.pdf",
     "snip": "MqRqaRRTrq©mM CENTRAL ELECTRICITY REGULATORY COMMISSION 8vF ea, ent it. qd is det avRil on. q{ fte6ft–rlo 029 d.RaW?q–12012 / 1 /201hW3TTM f",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cercind.gov.in/vacancy.html",
     "snip": "﻿ Central Electricity Regulatory Commission --> Screen Reader A+ A A- Toggle navigation Home About Us Mission Function Commission Organizati",
     "where": "body",
     "already_added": true,
-    "first_seen": "2026-11-18T06:37:00Z"
+    "first_seen": "2026-11-18T06:37:00Z",
+    "in_queue": false
    },
    {
     "url": "https://cga.nic.in/Circular/Published/10617.aspx",
     "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:02Z"
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
    },
    {
     "url": "https://cga.nic.in/Circular/Published/10618.aspx",
     "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:02Z"
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
    },
    {
     "url": "https://cga.nic.in/Circular/Published/10619.aspx",
     "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:02Z"
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
    },
    {
     "url": "https://cga.nic.in/Circular/Published/10622.aspx",
     "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-19T03:23:47Z"
+    "first_seen": "2026-11-19T03:23:47Z",
+    "in_queue": false
    },
    {
     "url": "https://cga.nic.in/Circular/Published/10623.aspx",
     "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-20T18:08:20Z"
+    "first_seen": "2026-11-20T18:08:20Z",
+    "in_queue": false
    },
    {
     "url": "https://cga.nic.in/Circular/Published/10624.aspx",
     "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-20T18:08:20Z"
+    "first_seen": "2026-11-20T18:08:20Z",
+    "in_queue": false
    },
    {
     "url": "https://cga.nic.in/Circular/Published/9423.aspx",
     "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:02Z"
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
    },
    {
     "url": "https://cga.nic.in/Circular/Published/9424.aspx",
     "snip": "Orders / Circulars : CGA Select Theme --> Screen Reader Access A + A A - Screen Reader Access A + A A - Sitemap Contact Us Feedback Close Ma",
     "where": "body",
     "already_added": false,
-    "first_seen": "2026-11-18T06:34:02Z"
+    "first_seen": "2026-11-18T06:34:02Z",
+    "in_queue": false
+   }
+  ],
+  "in_queue_list": [
+   {
+    "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6532.pdf",
+    "snip": "File No.CTE-TP/TRNG/3/2020-TPS. GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION OFFICE OF THE COMMISSIONER OF TECHNICAL EDUCATION ",
+    "where": "body",
+    "already_added": true,
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6620.pdf",
+    "snip": "File No.CTE-ACD1/TR/D/4/2020-ACADEMIC-1 GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION OFFICE OF THE COMMISSIONER OF TECHNICAL ED",
+    "where": "subject/heading",
+    "already_added": true,
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-869-Deputation.pdf",
+    "snip": "F. No. A-35/1/2025-FSD-DCSA_AN/ 3864 ST ARAM STE PT OFFICE OF THE FOOD SAFETY COMMISSIONER sisara ud Prolare gto Was ANDAMAN AND NICOBAR ISL",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-884-VACANCY%20CIRCULAR%20for%20Deputation%20of%20DDShipping%20Services.pdf",
+    "snip": "CIRCULAR Sub: -Filling up of one post of “Deputy Director (Shipping Services)” in the Directorate of Shipping Services under Andaman & Nicob",
+    "where": "subject/heading",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:43:53Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://ansi.gov.in/recruitment?type=deputation",
+    "snip": "Recruitment/Vacancies – Anthropological Survey of India English हिन्दी Home About AnSI Profile History Vision & Mission Organization Functio",
+    "where": "",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:29:27Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://ard.delhi.gov.in/sites/default/files/Administrative%20Reforms/circulars-orders/eligibility_for_asstt._dir._in_ar_on_deputation_basis.pdf",
+    "snip": "1 2 3 4",
+    "where": "",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:43:59Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_assistant_director_ar_on_deputation_basis.pdf",
+    "snip": "Scanned by CamScanner",
+    "where": "",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:43:59Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_assistant_director_ar_on_deputation_basis_0.pdf",
+    "snip": "1",
+    "where": "",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:43:59Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_research_assistant_in_the_pay_level_6_in_administrative_reforms_department_gnctd_on_deputation_basis.pdf",
+    "snip": "1",
+    "where": "",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:43:59Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://ard.delhi.gov.in/sites/default/files/circulars-orders/recruitment_to_the_post_of_research_assistant_in_the_pay_level_6_in_administrative_reforms_department_gnctd_on_deputation_basis_0.pdf",
+    "snip": "1",
+    "where": "",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:43:59Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/FSCounsellorPMI%20WTOGenevaviceTanuSinghN8KGJ.pdf",
+    "snip": "No. 4/37/2026-FA(UN) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training Kartavya",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T07:51:35Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/FSCounsellorPMIWTOGenevaFYDSo.pdf",
+    "snip": "No. 4/37/2026-FA(UN) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training Kartavya",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-18T06:36:22Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/SSCtMSSX.pdf",
+    "snip": "No 6/4/2024-EO(MN-II) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Office",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Scan%20Circular%20CSS%202026%20IAS_compressedvLOe2.pdf",
+    "snip": "THT WAV, aN. ART GSR Manisha Saxena, 1s aris site after fe Peer iaie Officer & Government Of India itional Secreta Dr ry ape partment of Per",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/Scan20250616095252PAysS.pdf",
+    "snip": "No. 10/3/2024 EO(MM-II) Government of India Ministry of Personnel, P.G. and Pension Department of Personnel and Training (Office of the Esta",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/US%20level%208th%20CPCc4LeZ.pdf",
+    "snip": "No 18/1/2025-EO (MM-II) Government of India Ministry of Personnel, Public Grievances & Pension Department of Personnel & Training (Office of",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/USzyvtV.pdf",
+    "snip": "No 18/1/2025-EO(MM-ll) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training (Offic",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvNMWv6ZrV.pdf",
+    "snip": "F. No. 9/1/2026-EO(SM-l)(Pt.l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Gri",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvNWMyRZ21.pdf",
+    "snip": "F. No. 9/1/2026-EO(SM-l)(Pt.l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Gri",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCAdvisorNWMuLWyS.pdf",
+    "snip": "F.No. 9/1/2026-EO(SM-I) Government of India Ministry of Personnel, Public Grievances and Pensions Department of Personnel and Training Offic",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://documents.doptcirculars.nic.in/D2/D02eod/VCCDBKochiLAANJ.pdf",
+    "snip": "F. No. 9/1/2025-EO(SM-l) Government of India Secretariat of the Appointment Committee of the Cabinet Ministry of Personnel, Public Grievance",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-17T23:39:05Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://dop.rajasthan.gov.in/writereaddata/modulCategory/202610260123128841253AdvtNo10Year2026websitedeputation.pdf",
+    "snip": "GOA PUBLIC SERVICE COMMISSION EDC House, Block ‘C’, Dada Vaidya Road, Panaji-Goa, 403001. Web: http://gpsc.goa.gov.in ADVERTISEMENT NO. 10 Y",
+    "where": "body",
+    "already_added": false,
+    "first_seen": "2026-11-19T03:30:52Z",
+    "in_queue": true
+   },
+   {
+    "url": "https://andamannicobar.gov.in/admin-pannel/vacancy/1-884-vacancy%20circular.pdf",
+    "snip": "ANDAMAN AND NICOBAR ADMINISTRATION SECRETARIAT sees Sri Vijaya Puram, dated the 4h November, 2026 Vacancy Notice Subject: Vacancy Circular f",
+    "where": "subject/heading",
+    "already_added": false,
+    "first_seen": "2026-11-19T11:57:10Z",
+    "in_queue": true
    }
   ],
   "maybe_list": [
@@ -3796,105 +4413,120 @@
     "snip": "GOVERNMENT OF TELANGANA DEPARTMENT OF TECHNICAL EDUCATION CIRCULAR Sub : Technical Education– Isha Foundation – Inner Engineering Online Course - Nomination from Principals, Lectur",
     "where": "generic vacancy/circular words only",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6384.pdf",
     "snip": "GOVERNMENT OF TELANGANA OFFICE OF THE COMMISSIONER OF TECHNICAL EDUCATION TELANGANA: HYDERABAD Sub:-Technical Education – Establishment – TS",
     "where": "generic words only - human glance",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6385.pdf",
     "snip": "File No.CTE-ACD1/ACAD/70/2020-ACADEMIC-I Digitally signed by GUNDALA GIRIBABU Date: 2020.05.02 15:19:03 IST Reason: Approved Signature valid",
     "where": "generic words only - human glance",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6394.pdf",
     "snip": "File No.CTE-EST2/SMSL/73/2020-ESTABLISHMENT-2-CTE GOVERNMENT OF TELANGANA OFFICE OF THE COMMISSIONER OF TECHNICAL EDUCATION TELANGANA : : HY",
     "where": "generic words only - human glance",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6395.pdf",
     "snip": "File No.CTE-EST3/EST3/133/2019-ESTABLISHMENT-3-CTE GOVERNMENT OF TELANGANA OFFICE OF THE COMMISSIONER OF TECHNICAL EDUCATION TELANGANA : :HY",
     "where": "generic words only - human glance",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6397.pdf",
     "snip": "File No.CTE-EST3/EST3/32/2020-EST3 GOVERNMENT OF TELANGANA OFFICE OF THE COMMISSIONER OF TECHNICAL EDUCATION TELANGANA : : HYDERABAD CIRCULA",
     "where": "generic words only - human glance",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6399.pdf",
     "snip": "File No.CTE-EST2/SMSL/280/2019-ESTABLISHMENT-2-CTE PROCEEDINGS OF THE COMMISSIONER OF TECHNICAL EDUCATION TELANGANA: HYDERABAD. PRESENT: Sri",
     "where": "generic words only - human glance",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6400.pdf",
     "snip": "File No.CTE-EST2/SMSL/280/2019-ESTABLISHMENT-2-CTE PROCEEDINGS OF THE COMMISSIONER OF TECHNICAL EDUCATION TELANGANA: HYDERABAD. PRESENT: Sri",
     "where": "generic words only - human glance",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6401.pdf",
     "snip": "File No.CTE-EST2/SMSL/53/2020-ESTABLISHMENT-2-CTE GOVERNMENT OF TELANGANA OFFICE OF THE COMMISSIONER OF TECHNICAL EDUCATION TELANGANA :: HYD",
     "where": "generic words only - human glance",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6405.pdf",
     "snip": "File No.CTE-EST3/SMWS/5/2019-ESTABLISHMENT-3-CTE GOVERNMENT OF TELANGANA OFFICE OF THE COMMISSIONER OF TECHNICAL EDUCATION TELANGANA STATE: ",
     "where": "generic words only - human glance",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6406.pdf",
     "snip": "File No.CTE-EST2/SMSL/53/2020-ESTABLISHMENT-2-CTE GOVERNMENT OF TELANGANA OFFICE OF THE COMMISSIONER OF TECHNICAL EDUCATION TELANGANA :: HYD",
     "where": "generic words only - human glance",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6412.pdf",
     "snip": "File No.CTE-EST2/SMSL/53/2020-ESTABLISHMENT-2-CTE GOVERNMENT OF TELANGANA OFFICE OF THE COMMISSIONER OF TECHNICAL EDUCATION TELANGANA :: HYD",
     "where": "generic words only - human glance",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6424.pdf",
     "snip": "File No.CTE-EST3/SMWS/5/2019-ESTABLISHMENT-3-CTE GOVERNMENT OF TELANGANA OFFICE OF THE COMMISSIONER OF TECHNICAL EDUCATION TELANGANA:: HYDER",
     "where": "generic words only - human glance",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6431.pdf",
     "snip": "File No.CTE-ACD1/ISSU/50/2020-ACADEMIC-I File No.CTE-ACD1/ISSU/50/2020-ACADEMIC-I Digitally signed by GUNDALA GIRIBABU Date: 2020.06.04 15:18:03 IST Reason: Approved Signature vali",
     "where": "generic vacancy/circular words only",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    },
    {
     "url": "https://dte.telangana.gov.in/filePreview?fileName=CMS/6433.pdf",
     "snip": "PROCEEDINGS OF THE SECRETARY STATE BOARD OF TECHNICAL EDUCATION AND TRAINING TELANGANA STATE::HYDERABAD Present: Sri UVSN MURTHY, M.TECH Secretary Proc. No. SBTET/Academic/AppNo(20",
     "where": "generic vacancy/circular words only",
     "already_added": false,
-    "first_seen": "2026-11-18T06:43:50Z"
+    "first_seen": "2026-11-18T06:43:50Z",
+    "in_queue": false
    }
   ],
   "ocr_needed_list": []
